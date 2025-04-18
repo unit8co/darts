@@ -1,3 +1,13 @@
+
+
+
 .. automodule:: darts.utils.likelihood_models
-   :members:
-   :undoc-members:
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.utils.likelihood_models.base
+        darts.utils.likelihood_models.sklearn
+        darts.utils.likelihood_models.statsforecast
+        darts.utils.likelihood_models.torch

@@ -557,11 +557,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.baselines.html">
        Baseline Models
       </a>
@@ -579,11 +574,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
        Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.croston.html">
-       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -663,32 +653,47 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       StatsForecastAutoARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       StatsForecastAutoCES
+       AutoCES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       StatsForecastAutoETS
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       StatsForecastAutoTBATS
+       AutoTBATS
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       StatsForecastAutoTheta
+       AutoTheta
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
-       BATS and TBATS
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
       </a>
      </li>
      <li class="toctree-l3">
@@ -782,10 +787,42 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2">
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        RegressionModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.losses.html">
@@ -928,7 +965,7 @@ Darts’ <code class="xref py py-class docutils literal notranslate"><span class
 <li><p><strong>loss_fn</strong> – PyTorch loss function used for training.
 This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
-<li><p><strong>likelihood</strong> – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
+<li><p><strong>likelihood</strong> – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>torch_metrics</strong> – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
 at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
@@ -1084,49 +1121,52 @@ techniques that can be used to improve the forecasts quality compared to this si
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.extreme_lags" title="darts.models.forecasting.tide_model.TiDEModel.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
 <td><p>A 8-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag, output shift, max target lag train (only for RNNModel)).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.min_train_samples" title="darts.models.forecasting.tide_model.TiDEModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.likelihood" title="darts.models.forecasting.tide_model.TiDEModel.likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood</span></code></a></p></td>
+<td><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.min_train_samples" title="darts.models.forecasting.tide_model.TiDEModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.output_chunk_length" title="darts.models.forecasting.tide_model.TiDEModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.output_chunk_length" title="darts.models.forecasting.tide_model.TiDEModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.output_chunk_shift" title="darts.models.forecasting.tide_model.TiDEModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.output_chunk_shift" title="darts.models.forecasting.tide_model.TiDEModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_future_covariates" title="darts.models.forecasting.tide_model.TiDEModel.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_future_covariates" title="darts.models.forecasting.tide_model.TiDEModel.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.tide_model.TiDEModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.tide_model.TiDEModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
 <td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_multivariate" title="darts.models.forecasting.tide_model.TiDEModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_multivariate" title="darts.models.forecasting.tide_model.TiDEModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.tide_model.TiDEModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.tide_model.TiDEModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_past_covariates" title="darts.models.forecasting.tide_model.TiDEModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_past_covariates" title="darts.models.forecasting.tide_model.TiDEModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_probabilistic_prediction" title="darts.models.forecasting.tide_model.TiDEModel.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_probabilistic_prediction" title="darts.models.forecasting.tide_model.TiDEModel.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
 <td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_sample_weight" title="darts.models.forecasting.tide_model.TiDEModel.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_sample_weight" title="darts.models.forecasting.tide_model.TiDEModel.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_static_covariates" title="darts.models.forecasting.tide_model.TiDEModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_static_covariates" title="darts.models.forecasting.tide_model.TiDEModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_transferrable_series_prediction" title="darts.models.forecasting.tide_model.TiDEModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.supports_transferable_series_prediction" title="darts.models.forecasting.tide_model.TiDEModel.supports_transferable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferable_series_prediction</span></code></a></p></td>
 <td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.uses_future_covariates" title="darts.models.forecasting.tide_model.TiDEModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.uses_future_covariates" title="darts.models.forecasting.tide_model.TiDEModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.uses_past_covariates" title="darts.models.forecasting.tide_model.TiDEModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.uses_past_covariates" title="darts.models.forecasting.tide_model.TiDEModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.uses_static_covariates" title="darts.models.forecasting.tide_model.TiDEModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tide_model.TiDEModel.uses_static_covariates" title="darts.models.forecasting.tide_model.TiDEModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -1143,13 +1183,10 @@ techniques that can be used to improve the forecasts quality compared to this si
 <tr class="row-even"><td><p><strong>input_chunk_length</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>likelihood</strong></p></td>
+<tr class="row-odd"><td><p><strong>model_created</strong></p></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><strong>model_created</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><strong>model_params</strong></p></td>
+<tr class="row-even"><td><p><strong>model_params</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -1955,10 +1992,11 @@ each series.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.tide_model.TiDEModel.likelihood">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><span class="pre">Likelihood</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.tide_model.TiDEModel.likelihood" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><span class="pre">TorchLikelihood</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.tide_model.TiDEModel.likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchLikelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2688,8 +2726,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.tide_model.TiDEModel.supports_transferrable_series_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.tide_model.TiDEModel.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tide_model.TiDEModel.supports_transferable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.tide_model.TiDEModel.supports_transferable_series_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>

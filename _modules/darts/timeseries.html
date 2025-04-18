@@ -234,7 +234,6 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">get_logger</span><span class="p">,</span>
-    <span class="n">raise_deprecation_warning</span><span class="p">,</span>
     <span class="n">raise_if</span><span class="p">,</span>
     <span class="n">raise_if_not</span><span class="p">,</span>
     <span class="n">raise_log</span><span class="p">,</span>
@@ -1998,29 +1997,6 @@
 
         <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">index</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="TimeSeries.pd_series"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.pd_series">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">pd_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Return a Pandas Series representation of this time series.</span>
-
-<span class="sd">        Works only for univariate series that are deterministic (i.e., made of 1 sample).</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        copy</span>
-<span class="sd">            Whether to return a copy of the series. Leave it to True unless you know what you are doing.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        pandas.Series</span>
-<span class="sd">            A Pandas Series representation of this univariate time series.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">raise_deprecation_warning</span><span class="p">(</span>
-            <span class="s2">&quot;`TimeSeries.pd_series()` is deprecated and will be removed in Darts version 0.35.0. Use &quot;</span>
-            <span class="s2">&quot;`TimeSeries.to_series()` instead&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_series</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="n">copy</span><span class="p">)</span></div>
-
 <div class="viewcode-block" id="TimeSeries.to_dataframe"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.to_dataframe">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_dataframe</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2100,35 +2076,6 @@
         <span class="p">}</span>
 
         <span class="k">return</span> <span class="n">nw</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="n">backend</span><span class="p">)</span><span class="o">.</span><span class="n">to_native</span><span class="p">()</span></div>
-
-<div class="viewcode-block" id="TimeSeries.pd_dataframe"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.pd_dataframe">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">pd_dataframe</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">suppress_warnings</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Return a Pandas DataFrame representation of this time series.</span>
-
-<span class="sd">        Each of the series components will appear as a column in the DataFrame.</span>
-<span class="sd">        If the series is stochastic, the samples are returned as columns of the dataframe with column names</span>
-<span class="sd">        as &#39;component_s#&#39; (e.g. with two components and two samples:</span>
-<span class="sd">        &#39;comp0_s0&#39;, &#39;comp0_s1&#39; &#39;comp1_s0&#39; &#39;comp1_s1&#39;).</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        copy</span>
-<span class="sd">            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.</span>
-<span class="sd">        suppress_warnings</span>
-<span class="sd">            Whether to suppress the warnings for the `DataFrame` creation.</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        pandas.DataFrame</span>
-<span class="sd">            The Pandas DataFrame representation of this time series</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="n">raise_deprecation_warning</span><span class="p">(</span>
-            <span class="s2">&quot;`TimeSeries.pd_dataframe()` is deprecated, and will be removed in Darts version 0.35.0. Use &quot;</span>
-            <span class="s2">&quot;`TimeSeries.to_dataframe()` instead&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="n">copy</span><span class="p">,</span> <span class="n">suppress_warnings</span><span class="o">=</span><span class="n">suppress_warnings</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.quantile_df"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.quantile_df">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">quantile_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>

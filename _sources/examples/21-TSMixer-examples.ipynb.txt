@@ -69,7 +69,7 @@
     "from darts.metrics import mql\n",
     "from darts.models import TiDEModel, TSMixerModel\n",
     "from darts.utils.callbacks import TFMProgressBar\n",
-    "from darts.utils.likelihood_models import QuantileRegression"
+    "from darts.utils.likelihood_models.torch import QuantileRegression"
    ]
   },
   {
@@ -274,7 +274,7 @@
     "    trafo = ds().load().astype(np.float32)\n",
     "    trafo = trafo.with_static_covariates(pd.DataFrame({\"transformer_id\": [idx]}))\n",
     "    series.append(trafo)\n",
-    "series[0].pd_dataframe()"
+    "series[0].to_dataframe()"
    ]
   },
   {

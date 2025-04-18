@@ -183,19 +183,28 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">catboost</span><span class="w"> </span><span class="kn">import</span> <span class="n">CatBoostRegressor</span><span class="p">,</span> <span class="n">Pool</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span><span class="p">,</span> <span class="n">_LikelihoodMixin</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RegressionModelWithCategoricalCovariates</span><span class="p">,</span>
+    <span class="n">_QuantileModelContainer</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QuantileRegression</span><span class="p">,</span>
+    <span class="n">_check_likelihood</span><span class="p">,</span>
+    <span class="n">_get_likelihood</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="CatBoostModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CatBoostModel</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">,</span> <span class="n">_LikelihoodMixin</span><span class="p">):</span>
+<div class="viewcode-block" id="CatBoostModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CatBoostModel</span><span class="p">(</span><span class="n">RegressionModelWithCategoricalCovariates</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -204,11 +213,14 @@
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">likelihood</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">quantiles</span><span class="p">:</span> <span class="nb">list</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">multi_models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">categorical_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">categorical_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">categorical_static_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;CatBoost Model</span>
@@ -305,6 +317,20 @@
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
 <span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
+<span class="sd">        categorical_past_covariates</span>
+<span class="sd">            Optionally, component name or list of component names specifying the past covariates that should be treated</span>
+<span class="sd">            as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical</span>
+<span class="sd">            must be integer-encoded. For more information on how CatBoost handles categorical features,</span>
+<span class="sd">            visit: `Categorical feature support documentatio</span>
+<span class="sd">            &lt;https://catboost.ai/docs/en/features/categorical-features&gt;`_.</span>
+<span class="sd">        categorical_future_covariates</span>
+<span class="sd">            Optionally, component name or list of component names specifying the future covariates that should be</span>
+<span class="sd">            treated as categorical by the underlying `CatBoostRegressor`. The components that</span>
+<span class="sd">            are specified as categorical must be integer-encoded.</span>
+<span class="sd">        categorical_static_covariates</span>
+<span class="sd">            Optionally, string or list of strings specifying the static covariates that should be treated as categorical</span>
+<span class="sd">            by the underlying `CatBoostRegressor`. The components that</span>
+<span class="sd">            are specified as categorical must be integer-encoded.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional keyword arguments passed to `catboost.CatBoostRegressor`.</span>
 <span class="sd">            Native multi-output support can be achieved by using an appropriate `loss_function` (&#39;MultiRMSE&#39;,</span>
@@ -342,33 +368,32 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">random_state</span>  <span class="c1"># seed for tree learner</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">likelihood</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
-
-        <span class="n">likelihood_map</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;quantile&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="s2">&quot;poisson&quot;</span><span class="p">:</span> <span class="s2">&quot;Poisson&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">,</span>
-            <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">:</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">,</span>
-        <span class="p">}</span>
-
-        <span class="n">available_likelihoods</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">likelihood_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
-
+        <span class="c1"># parse likelihood</span>
         <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">available_likelihoods</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>  <span class="c1"># seed for sampling</span>
+            <span class="n">likelihood_map</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;quantile&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="s2">&quot;poisson&quot;</span><span class="p">:</span> <span class="s2">&quot;Poisson&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">:</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="n">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">likelihood_map</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+            <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">:</span>
+                <span class="c1"># RMSEWithUncertainty returns mean and variance which is equivalent to gaussian</span>
+                <span class="n">likelihood</span> <span class="o">=</span> <span class="s2">&quot;gaussian&quot;</span>
 
             <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_container</span><span class="p">()</span>
-
+                <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="n">_QuantileModelContainer</span><span class="p">()</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;loss_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood_map</span><span class="p">[</span><span class="n">likelihood</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">_get_likelihood</span><span class="p">(</span>
+            <span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span>
+            <span class="n">n_outputs</span><span class="o">=</span><span class="n">output_chunk_length</span> <span class="k">if</span> <span class="n">multi_models</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="c1"># suppress writing catboost info files when user does not specifically ask to</span>
         <span class="k">if</span> <span class="s2">&quot;allow_writing_files&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
@@ -384,6 +409,9 @@
             <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
             <span class="n">model</span><span class="o">=</span><span class="n">CatBoostRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">categorical_past_covariates</span><span class="o">=</span><span class="n">categorical_past_covariates</span><span class="p">,</span>
+            <span class="n">categorical_future_covariates</span><span class="o">=</span><span class="n">categorical_future_covariates</span><span class="p">,</span>
+            <span class="n">categorical_static_covariates</span><span class="o">=</span><span class="n">categorical_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># if no loss provided, get the default loss from the model</span>
@@ -450,10 +478,11 @@
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional kwargs passed to `catboost.CatboostRegressor.fit()`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+        <span class="n">likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">):</span>
             <span class="c1"># empty model container in case of multiple calls to fit, e.g. when backtesting</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span><span class="p">:</span>
                 <span class="n">this_quantile</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">quantile</span><span class="p">)</span>
                 <span class="c1"># translating to catboost argument</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;loss_function&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Quantile:alpha=</span><span class="si">{</span><span class="n">this_quantile</span><span class="si">}</span><span class="s2">&quot;</span>
@@ -491,42 +520,6 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_predict_and_sample</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Override of RegressionModel&#39;s method to allow for the probabilistic case&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;gaussian&quot;</span><span class="p">,</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_and_sample_likelihood</span><span class="p">(</span>
-                <span class="n">x</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="s2">&quot;normal&quot;</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-            <span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_and_sample_likelihood</span><span class="p">(</span>
-                <span class="n">x</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_predict_and_sample</span><span class="p">(</span>
-                <span class="n">x</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-            <span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_likelihood_components_names</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Override of RegressionModel&#39;s method to support the gaussian/normal likelihood&quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantiles_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;poisson&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lamba&quot;</span><span class="p">])</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;gaussian&quot;</span><span class="p">,</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span>
-                <span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">]</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_add_val_set_to_kwargs</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
@@ -556,14 +549,11 @@
                     <span class="n">data</span><span class="o">=</span><span class="n">val_set</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
                     <span class="n">label</span><span class="o">=</span><span class="n">val_set</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
                     <span class="n">weight</span><span class="o">=</span><span class="n">val_weights</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">if</span> <span class="n">val_weights</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">cat_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_categorical_indices</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">)</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="n">val_set_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">val_pools</span>
         <span class="k">return</span> <span class="n">kwargs</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">supports_val_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -592,7 +582,29 @@
         <span class="c1"># (&quot;MultiRMSE&quot;, &quot;MultiRMSEWithMissingValues&quot;, ...)</span>
         <span class="k">return</span> <span class="n">CatBoostRegressor</span><span class="o">.</span><span class="n">_is_multiregression_objective</span><span class="p">(</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;loss_function&quot;</span><span class="p">)</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_categorical_fit_param</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the name of the categorical features parameter from model&#39;s `fit` method .</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;cat_features&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_samples</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        CatBoost currently only supports categorical features as int.</span>
+<span class="sd">        If categorical features are specified, the samples are converted into a pandas DataFrame and categorical</span>
+<span class="sd">        columns are cast to integer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">samples</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_format_samples</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_categorical_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># transform into pandas df and cast categorical columns to int</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+            <span class="n">samples</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">astype</span><span class="p">({</span><span class="n">col</span><span class="p">:</span> <span class="nb">int</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_indices</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">labels</span></div>
 </pre></div>
 
               </div>

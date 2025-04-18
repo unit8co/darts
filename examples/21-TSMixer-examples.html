@@ -708,7 +708,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mql</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TiDEModel</span><span class="p">,</span> <span class="n">TSMixerModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFMProgressBar</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
 </pre></div>
 </div>
 </div>
@@ -727,7 +727,7 @@ div.rendered_html tbody tr:hover {
     <span class="n">trafo</span> <span class="o">=</span> <span class="n">ds</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
     <span class="n">trafo</span> <span class="o">=</span> <span class="n">trafo</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;transformer_id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">idx</span><span class="p">]}))</span>
     <span class="n">series</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">trafo</span><span class="p">)</span>
-<span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
+<span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>

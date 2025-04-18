@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Croston method &#8212; darts  documentation</title>
+    <title>TBATS &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -39,8 +39,8 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="D-Linear" href="darts.models.forecasting.dlinear.html" />
-    <link rel="prev" title="Conformal Models" href="darts.models.forecasting.conformal_models.html" />
+    <link rel="next" title="Temporal Convolutional Network" href="darts.models.forecasting.tcn_model.html" />
+    <link rel="prev" title="StatsForecastModel" href="darts.models.forecasting.sf_model.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -557,11 +557,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.baselines.html">
        Baseline Models
       </a>
@@ -579,11 +574,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
        Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3 current active">
-      <a class="current reference internal" href="#">
-       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -663,32 +653,47 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       StatsForecastAutoARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       StatsForecastAutoCES
+       AutoCES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       StatsForecastAutoETS
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       StatsForecastAutoTBATS
+       AutoTBATS
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       StatsForecastAutoTheta
+       AutoTheta
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
-       BATS and TBATS
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       TBATS
       </a>
      </li>
      <li class="toctree-l3">
@@ -782,10 +787,42 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2">
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        RegressionModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.losses.html">
@@ -870,62 +907,92 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.forecasting.croston"></span><section id="croston-method">
-<h1>Croston method<a class="headerlink" href="#croston-method" title="Permalink to this heading">¶</a></h1>
+  <span class="target" id="module-darts.models.forecasting.sf_tbats"></span><section id="tbats">
+<h1>TBATS<a class="headerlink" href="#tbats" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.croston.</span></span><span class="sig-name descname"><span class="pre">Croston</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">version</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'classic'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_d</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/croston.html#Croston"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.croston.Croston" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">LocalForecastingModel</span></code></p>
-<p>An implementation of the <a class="reference external" href="https://otexts.com/fpp3/counts.html">Croston method</a> for intermittent
-count series.</p>
-<p>Relying on the implementation of <a class="reference external" href="https://github.com/Nixtla/statsforecast">Statsforecasts package</a>.</p>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.sf_tbats.</span></span><span class="sig-name descname"><span class="pre">TBATS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/sf_tbats.html#TBATS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.sf_model.html#darts.models.forecasting.sf_model.StatsForecastModel" title="darts.models.forecasting.sf_model.StatsForecastModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">StatsForecastModel</span></code></a></p>
+<p>TBATS based on the <a class="reference external" href="https://github.com/Nixtla/statsforecast">Statsforecasts package</a>.</p>
+<p>Trigonometric Box-Cox transform, ARMA errors, Trend and Seasonal components (TBATS) model. It is an innovations
+state space model framework used for forecasting time series with multiple seasonalities. It uses a Box-Cox
+tranformation, ARMA errors, and a trigonometric representation of the seasonal patterns based on Fourier series.</p>
+<p>We refer to the <a class="reference external" href="https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tbats">StatsForecast documentation</a> for the exhaustive documentation of
+the arguments.</p>
+<p>In addition to univariate deterministic forecasting, it comes with additional support:</p>
+<ul class="simple">
+<li><p><strong>Future covariates:</strong> Use exogenous features to potentially improve predictive accuracy.
+Darts adds support by first regressing the series against the future covariates using a
+<a class="reference internal" href="darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel" title="darts.models.forecasting.linear_regression_model.LinearRegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></a> model and then running the
+StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
+<a class="reference external" href="https://stats.stackexchange.com/q/220885">this post of Stephan Kolassa</a>.</p></li>
+<li><p><strong>Probabilstic forecasting:</strong> To generate probabilistic forecasts, you can set the following
+parameters when calling <a class="reference internal" href="darts.models.forecasting.sf_model.html#darts.models.forecasting.sf_model.StatsForecastModel.predict" title="darts.models.forecasting.sf_model.StatsForecastModel.predict"><code class="xref py py-meth docutils literal notranslate"><span class="pre">predict()</span></code></a>:</p>
+<ul>
+<li><p>Forecast quantile values directly by setting <cite>predict_likelihood_parameters=True</cite>.</p></li>
+<li><p>Generate sampled forecasts from these quantiles by setting <cite>num_samples &gt;&gt; 1</cite>.</p></li>
+</ul>
+</li>
+<li><p><strong>Transferable series forecasting:</strong> Apply the fitted model to a new input <cite>series</cite> at prediction time.
+Darts adds support by first fitting a copy of the model on the new series, and then using that model to
+generate the corresponding forecast.</p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Future covariates are not supported when the input series contain missing values.</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The first model call might take more time than all subsequent calls as the model relies on Numba and jit
+compilation.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>version</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <ul>
-<li><p>“classic” corresponds to classic Croston.</p></li>
-<li><p>”optimized” corresponds to optimized classic Croston, which searches
-for the optimal <code class="docutils literal notranslate"><span class="pre">alpha</span></code> smoothing parameter and can take longer
-to run. Otherwise, a fixed value of <code class="docutils literal notranslate"><span class="pre">alpha=0.1</span></code> is used.</p></li>
-<li><p>”sba” corresponds to the adjustment of the Croston method known as
-the Syntetos-Boylan Approximation <a class="reference internal" href="#ra29e38d91b54-1" id="id2">[1]</a>.</p></li>
-<li><p>”tsb” corresponds to the adjustment of the Croston method proposed by
-Teunter, Syntetos and Babai <a class="reference internal" href="#ra29e38d91b54-2" id="id3">[2]</a>. In this case, <cite>alpha_d</cite> and <cite>alpha_p</cite> must
-be set.</p></li>
-</ul>
+<li><p><strong>args</strong> – Positional arguments for <code class="docutils literal notranslate"><span class="pre">statsforecasts.models.TBATS</span></code>.</p></li>
+<li><p><strong>add_encoders</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>A large number of future covariates can be automatically generated with <cite>add_encoders</cite>.
+This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+will be used as index encoders. Additionally, a transformer such as Darts’ <code class="xref py py-class docutils literal notranslate"><span class="pre">Scaler</span></code> can be added to
+transform the generated covariates. This happens all under one hood and only needs to be specified at
+model creation.
+Read <code class="xref py py-meth docutils literal notranslate"><span class="pre">SequentialEncoder</span></code> to find out more about
+<code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>. An example showing some of <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> features:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">encode_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span>
+
+<span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span>
+    <span class="s1">&#39;cyclic&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;month&#39;</span><span class="p">]},</span>
+    <span class="s1">&#39;datetime_attribute&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span> <span class="s1">&#39;dayofweek&#39;</span><span class="p">]},</span>
+    <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;relative&#39;</span><span class="p">]},</span>
+    <span class="s1">&#39;custom&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="n">encode_year</span><span class="p">]},</span>
+    <span class="s1">&#39;transformer&#39;</span><span class="p">:</span> <span class="n">Scaler</span><span class="p">(),</span>
+    <span class="s1">&#39;tz&#39;</span><span class="p">:</span> <span class="s1">&#39;CET&#39;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
 </p></li>
-<li><p><strong>alpha_d</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – For the “tsb” version, the alpha smoothing parameter to apply on demand.</p></li>
-<li><p><strong>alpha_p</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – For the “tsb” version, the alpha smoothing parameter to apply on probability.</p></li>
+<li><p><strong>quantiles</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, produce quantile predictions at <cite>quantiles</cite> levels when performing probabilistic forecasting
+with <cite>num_samples &gt; 1</cite> or <cite>predict_likelihood_parameters=True</cite>.</p></li>
+<li><p><strong>random_state</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.</p></li>
+<li><p><strong>kwargs</strong> – Keyword arguments for <code class="docutils literal notranslate"><span class="pre">statsforecasts.models.TBATS</span></code>.</p></li>
 </ul>
-</dd>
-</dl>
-<p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="ra29e38d91b54-1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
-<dd><p>Aris A. Syntetos and John E. Boylan. The accuracy of intermittent demand estimates.
-International Journal of Forecasting, 21(2):303 – 314, 2005.</p>
-</dd>
-<dt class="label" id="ra29e38d91b54-2"><span class="brackets"><a class="fn-backref" href="#id3">2</a></span></dt>
-<dd><p>Ruud H. Teunter, Aris A. Syntetos, and M. Zied Babai.
-Intermittent demand: Linking forecasting to inventory obsolescence.
-European Journal of Operational Research, 214(3):606 – 615, 2011.</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Croston</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TBATS</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># use the optimized version to automatically select best alpha parameter</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">Croston</span><span class="p">(</span><span class="n">version</span><span class="o">=</span><span class="s2">&quot;optimized&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># define TBATS parameters</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">model</span> <span class="o">=</span> <span class="n">TBATS</span><span class="p">(</span><span class="n">season_length</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="mi">6</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">pred</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
-<span class="go">array([[461.7666],</span>
-<span class="go">       [461.7666],</span>
-<span class="go">       [461.7666],</span>
-<span class="go">       [461.7666],</span>
-<span class="go">       [461.7666],</span>
-<span class="go">       [461.7666]])</span>
+<span class="go">array([[450.79653684],</span>
+<span class="go">       [472.09265790],</span>
+<span class="go">       [497.76948306],</span>
+<span class="go">       [510.74927369],</span>
+<span class="go">       [520.92224557],</span>
+<span class="go">       [570.33881522]])</span>
 </pre></div>
 </div>
 <p class="rubric">Attributes</p>
@@ -935,55 +1002,58 @@ European Journal of Operational Research, 214(3):606 – 615, 2011.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.considers_static_covariates" title="darts.models.forecasting.croston.Croston.considers_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">considers_static_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.considers_static_covariates" title="darts.models.forecasting.sf_tbats.TBATS.considers_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">considers_static_covariates</span></code></a></p></td>
 <td><p>Whether the model considers static covariates, if there are any.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.extreme_lags" title="darts.models.forecasting.croston.Croston.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.extreme_lags" title="darts.models.forecasting.sf_tbats.TBATS.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
 <td><p>A 8-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag, output shift, max target lag train (only for RNNModel)).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.min_train_samples" title="darts.models.forecasting.croston.Croston.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.likelihood" title="darts.models.forecasting.sf_tbats.TBATS.likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood</span></code></a></p></td>
+<td><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.min_train_samples" title="darts.models.forecasting.sf_tbats.TBATS.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.output_chunk_length" title="darts.models.forecasting.croston.Croston.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.output_chunk_length" title="darts.models.forecasting.sf_tbats.TBATS.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.output_chunk_shift" title="darts.models.forecasting.croston.Croston.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.output_chunk_shift" title="darts.models.forecasting.sf_tbats.TBATS.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.supports_future_covariates" title="darts.models.forecasting.croston.Croston.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.supports_future_covariates" title="darts.models.forecasting.sf_tbats.TBATS.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.supports_likelihood_parameter_prediction" title="darts.models.forecasting.croston.Croston.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.supports_likelihood_parameter_prediction" title="darts.models.forecasting.sf_tbats.TBATS.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
 <td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.supports_multivariate" title="darts.models.forecasting.croston.Croston.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.supports_multivariate" title="darts.models.forecasting.sf_tbats.TBATS.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.supports_optimized_historical_forecasts" title="darts.models.forecasting.croston.Croston.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.supports_optimized_historical_forecasts" title="darts.models.forecasting.sf_tbats.TBATS.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.supports_past_covariates" title="darts.models.forecasting.croston.Croston.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.supports_past_covariates" title="darts.models.forecasting.sf_tbats.TBATS.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.supports_probabilistic_prediction" title="darts.models.forecasting.croston.Croston.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.supports_probabilistic_prediction" title="darts.models.forecasting.sf_tbats.TBATS.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
 <td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.supports_sample_weight" title="darts.models.forecasting.croston.Croston.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.supports_sample_weight" title="darts.models.forecasting.sf_tbats.TBATS.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.supports_static_covariates" title="darts.models.forecasting.croston.Croston.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.supports_static_covariates" title="darts.models.forecasting.sf_tbats.TBATS.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.supports_transferrable_series_prediction" title="darts.models.forecasting.croston.Croston.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.supports_transferable_series_prediction" title="darts.models.forecasting.sf_tbats.TBATS.supports_transferable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferable_series_prediction</span></code></a></p></td>
 <td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.uses_future_covariates" title="darts.models.forecasting.croston.Croston.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.uses_future_covariates" title="darts.models.forecasting.sf_tbats.TBATS.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.uses_past_covariates" title="darts.models.forecasting.croston.Croston.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.uses_past_covariates" title="darts.models.forecasting.sf_tbats.TBATS.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.uses_static_covariates" title="darts.models.forecasting.croston.Croston.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.uses_static_covariates" title="darts.models.forecasting.sf_tbats.TBATS.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -1006,47 +1076,47 @@ European Journal of Operational Research, 214(3):606 – 615, 2011.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.backtest" title="darts.models.forecasting.croston.Croston.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.backtest" title="darts.models.forecasting.sf_tbats.TBATS.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute error values that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.fit" title="darts.models.forecasting.croston.Croston.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
-<td><p>Fit/train the model on the provided series.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.fit" title="darts.models.forecasting.sf_tbats.TBATS.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series[, future_covariates])</p></td>
+<td><p>Fit/train the model on the (single) provided series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.generate_fit_encodings" title="darts.models.forecasting.croston.Croston.generate_fit_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_encodings</span></code></a>(series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.generate_fit_encodings" title="darts.models.forecasting.sf_tbats.TBATS.generate_fit_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_encodings</span></code></a>(series[, ...])</p></td>
 <td><p>Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.generate_fit_predict_encodings" title="darts.models.forecasting.croston.Croston.generate_fit_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_predict_encodings</span></code></a>(n, series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.generate_fit_predict_encodings" title="darts.models.forecasting.sf_tbats.TBATS.generate_fit_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_fit_predict_encodings</span></code></a>(n, series[, ...])</p></td>
 <td><p>Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.generate_predict_encodings" title="darts.models.forecasting.croston.Croston.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.generate_predict_encodings" title="darts.models.forecasting.sf_tbats.TBATS.generate_predict_encodings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">generate_predict_encodings</span></code></a>(n, series[, ...])</p></td>
 <td><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future covariates series with the original and encoded covariates stacked together.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.gridsearch" title="darts.models.forecasting.croston.Croston.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.gridsearch" title="darts.models.forecasting.sf_tbats.TBATS.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.historical_forecasts" title="darts.models.forecasting.croston.Croston.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.historical_forecasts" title="darts.models.forecasting.sf_tbats.TBATS.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of the provided (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.load" title="darts.models.forecasting.croston.Croston.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.load" title="darts.models.forecasting.sf_tbats.TBATS.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>(path)</p></td>
 <td><p>Loads a model from a given path or file handle.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.predict" title="darts.models.forecasting.croston.Croston.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples, verbose])</p></td>
-<td><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.predict" title="darts.models.forecasting.sf_tbats.TBATS.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, future_covariates, ...])</p></td>
+<td><p>If the <cite>series</cite> parameter is not set, forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.residuals" title="darts.models.forecasting.croston.Croston.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.residuals" title="darts.models.forecasting.sf_tbats.TBATS.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.save" title="darts.models.forecasting.croston.Croston.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.save" title="darts.models.forecasting.sf_tbats.TBATS.save"><code class="xref py py-obj docutils literal notranslate"><span class="pre">save</span></code></a>([path, clean])</p></td>
 <td><p>Saves the model under a given path or file handle.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.croston.Croston.untrained_model" title="darts.models.forecasting.croston.Croston.untrained_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">untrained_model</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.untrained_model" title="darts.models.forecasting.sf_tbats.TBATS.untrained_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">untrained_model</span></code></a>()</p></td>
 <td><p>Returns a new (untrained) model instance created with the same parameters.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.backtest">
-<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historical_forecasts=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.backtest" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.backtest">
+<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historical_forecasts=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute error values that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p>
 <p>If <cite>historical_forecasts</cite> are provided, the metric(s) (given by the <cite>metric</cite> function) is evaluated directly on
 all forecasts and actual values. The same <cite>series</cite> and <cite>last_points_only</cite> value must be passed that were used
@@ -1191,9 +1261,9 @@ computed per time <cite>series</cite>.</p></li>
 <li><p><em>np.ndarray</em> – An numpy array of backtest scores. For single series and one of:</p>
 <ul>
 <li><p>a single <cite>metric</cite> function, <cite>historical_forecasts</cite> generated with <cite>last_points_only=False</cite>
-and backtest <cite>reduction=None</cite>. The output has shape (n forecasts, <a href="#id4"><span class="problematic" id="id5">*</span></a>).</p></li>
+and backtest <cite>reduction=None</cite>. The output has shape (n forecasts, <a href="#id1"><span class="problematic" id="id2">*</span></a>).</p></li>
 <li><p>multiple <cite>metric</cite> functions and <cite>historical_forecasts</cite> generated with <cite>last_points_only=False</cite>.
-The output has shape (<a href="#id6"><span class="problematic" id="id7">*</span></a>, n metrics) when using a backtest <cite>reduction</cite>, and (n forecasts, <a href="#id8"><span class="problematic" id="id9">*</span></a>, n metrics)
+The output has shape (<a href="#id3"><span class="problematic" id="id4">*</span></a>, n metrics) when using a backtest <cite>reduction</cite>, and (n forecasts, <a href="#id5"><span class="problematic" id="id6">*</span></a>, n metrics)
 when <cite>reduction=None</cite></p></li>
 <li><p>multiple uni/multivariate series including <cite>series_reduction</cite> and at least one of
 <cite>component_reduction=None</cite> or <cite>time_reduction=None</cite> for “per time step metrics”</p></li>
@@ -1210,8 +1280,8 @@ when <cite>reduction=None</cite></p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.considers_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">considers_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.considers_static_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.considers_static_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">considers_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.considers_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model considers static covariates, if there are any.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1221,8 +1291,8 @@ when <cite>reduction=None</cite></p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.extreme_lags">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extreme_lags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.extreme_lags" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.extreme_lags">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">extreme_lags</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.extreme_lags" title="Permalink to this definition">¶</a></dt>
 <dd><p>A 8-tuple containing in order:
 (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
 lag, max future covariate lag, output shift, max target lag train (only for RNNModel)). If 0 is the index of the
@@ -1275,12 +1345,18 @@ lag and maximum target lags potentially different from -1 and 0.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/croston.html#Croston.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.croston.Croston.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit/train the model on the provided series.</p>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit/train the model on the (single) provided series.</p>
+<p>Optionally, a future covariates series can be provided as well.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – A target time series. The model will be trained to forecast this time series.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The model will be trained to forecast this time series. Can be multivariate if the model supports it.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A time series of future-known covariates. This time series will not be forecasted, but can be used by
+some models as an input. It must contain at least the same time steps/indices as the target <cite>series</cite>.
+If it is longer than necessary, it will be automatically trimmed.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Fitted model.</p>
@@ -1292,8 +1368,8 @@ lag and maximum target lags potentially different from -1 and 0.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.generate_fit_encodings">
-<span class="sig-name descname"><span class="pre">generate_fit_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.generate_fit_encodings" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.generate_fit_encodings">
+<span class="sig-name descname"><span class="pre">generate_fit_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.generate_fit_encodings" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates the covariate encodings that were used/generated for fitting the model and returns a tuple of
 past, and future covariates series with the original and encoded covariates stacked together. The encodings are
 generated by the encoders defined at model creation with parameter <cite>add_encoders</cite>. Pass the same <cite>series</cite>,
@@ -1317,8 +1393,8 @@ encoded covariates.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.generate_fit_predict_encodings">
-<span class="sig-name descname"><span class="pre">generate_fit_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.generate_fit_predict_encodings" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.generate_fit_predict_encodings">
+<span class="sig-name descname"><span class="pre">generate_fit_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.generate_fit_predict_encodings" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates covariate encodings for training and inference/prediction and returns a tuple of past, and future
 covariates series with the original and encoded covariates stacked together. The encodings are generated by the
 encoders defined at model creation with parameter <cite>add_encoders</cite>. Pass the same <cite>series</cite>, <cite>past_covariates</cite>,
@@ -1345,8 +1421,8 @@ encoded covariates.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.generate_predict_encodings">
-<span class="sig-name descname"><span class="pre">generate_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.generate_predict_encodings" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.generate_predict_encodings">
+<span class="sig-name descname"><span class="pre">generate_predict_encodings</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.generate_predict_encodings" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates covariate encodings for the inference/prediction set and returns a tuple of past, and future
 covariates series with the original and encoded covariates stacked together. The encodings are generated by the
 encoders defined at model creation with parameter <cite>add_encoders</cite>. Pass the same <cite>series</cite>, <cite>past_covariates</cite>,
@@ -1373,8 +1449,8 @@ encoded covariates.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.gridsearch">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.gridsearch" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.gridsearch">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the best hyper-parameters among a given set using a grid search.</p>
 <p>This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -1386,7 +1462,7 @@ thus the model resulting in the smallest <cite>metric</cite> output will be chos
 <p>Expanding window mode (activated when <cite>forecast_horizon</cite> is passed):
 For every hyperparameter combination, the model is repeatedly trained and evaluated on different
 splits of <cite>series</cite>. This process is accomplished by using
-the <a class="reference internal" href="#darts.models.forecasting.croston.Croston.backtest" title="darts.models.forecasting.croston.Croston.backtest"><code class="xref py py-func docutils literal notranslate"><span class="pre">backtest()</span></code></a> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
+the <a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.backtest" title="darts.models.forecasting.sf_tbats.TBATS.backtest"><code class="xref py py-func docutils literal notranslate"><span class="pre">backtest()</span></code></a> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
 that are compared against the ground truth values of <cite>series</cite>.
 Note that the model is retrained for every single prediction, thus this mode is slower.</p>
 <p>Split window mode (activated when <cite>val_series</cite> is passed):
@@ -1503,8 +1579,8 @@ and metric score for the best hyper-parameters.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.historical_forecasts">
-<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.historical_forecasts">
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates historical forecasts by simulating predictions at various points in time throughout the history of
 the provided (potentially multiple) <cite>series</cite>. This process involves retrospectively applying the model to
 different time steps, as if the forecasts were made in real-time at those specific moments. This allows for an
@@ -1661,9 +1737,20 @@ each series.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.likelihood">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html#darts.utils.likelihood_models.statsforecast.QuantilePrediction" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction"><span class="pre">QuantilePrediction</span></a></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html#darts.utils.likelihood_models.statsforecast.QuantilePrediction" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuantilePrediction</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.load">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.load" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.load">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Loads a model from a given path or file handle.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1676,8 +1763,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.min_train_samples">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">min_train_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.min_train_samples" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.min_train_samples">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">min_train_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.min_train_samples" title="Permalink to this definition">¶</a></dt>
 <dd><p>The minimum number of samples for training the model.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1687,8 +1774,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.model_params">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.model_params" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.model_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.model_params" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -1697,8 +1784,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.output_chunk_length">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.output_chunk_length" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.output_chunk_length">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.output_chunk_length" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of time steps predicted at once by the model, not defined for statistical models.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1708,8 +1795,8 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.output_chunk_shift">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_shift</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.output_chunk_shift" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.output_chunk_shift">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_shift</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.output_chunk_shift" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of time steps that the output/prediction starts after the end of the input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1719,30 +1806,41 @@ each series.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/croston.html#Croston.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.croston.Croston.predict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>If the <cite>series</cite> parameter is not set, forecasts values for <cite>n</cite> time steps after the end of the training
+series. If some future covariates were specified during the training, they must also be specified here.</p>
+<p>If the <cite>series</cite> parameter is set, forecasts values for <cite>n</cite> time steps after the end of the new target
+series. If some future covariates were specified during the training, they must also be specified here.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a new target series whose future values will be predicted. Defaults to <cite>None</cite>, meaning that the
+model will forecast the future value of the training series.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>The time series of future-known covariates which can be fed as input to the model. It must correspond to
+the covariate time series that has been used with the <a class="reference internal" href="#darts.models.forecasting.sf_tbats.TBATS.fit" title="darts.models.forecasting.sf_tbats.TBATS.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> method for training.</p>
+<p>If <cite>series</cite> is not set, it must contain at least the next <cite>n</cite> time steps/indices after the end of the
+training target series. If <cite>series</cite> is set, it must contain at least the time steps/indices corresponding
+to the new target series (historic future covariates), plus the next <cite>n</cite> time steps/indices after the end.</p>
+</p></li>
 <li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Must be <cite>1</cite> for deterministic models.</p></li>
+<li><p><strong>predict_likelihood_parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, the model predicts the parameters of its <cite>likelihood</cite> instead of the target. Only
+supported for probabilistic models with a likelihood, <cite>num_samples = 1</cite> and <cite>n&lt;=output_chunk_length</cite>.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, set the prediction verbosity. Not effective for all models.</p></li>
-<li><p><strong>show_warnings</strong> – Optionally, control whether warnings are shown. Not effective for all models.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, control whether warnings are shown. Not effective for all models.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A time series containing the <cite>n</cite> next points after then end of the training series.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>TimeSeries, a single time series containing the <cite>n</cite> next points after then end of the training series.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.residuals">
-<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historical_forecasts=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">err&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values_only=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.residuals" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.residuals">
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">historical_forecasts=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_format='value'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">err&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_optimization=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_transformers=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fit_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values_only=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.residuals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the residuals that the model produced for historical forecasts on (potentially multiple) <cite>series</cite>.</p>
 <p>This function computes the difference (or one of Darts’ “per time step” metrics) between the actual
 observations from <cite>series</cite> and the fitted values obtained by training the model on <cite>series</cite> (or using a
@@ -1901,8 +1999,8 @@ all possible series-specific historical forecasts.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.save">
-<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.save" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clean</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">pkl_kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.save" title="Permalink to this definition">¶</a></dt>
 <dd><p>Saves the model under a given path or file handle.</p>
 <p>Example for saving and loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>:</p>
 <blockquote>
@@ -1936,8 +2034,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.supports_future_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.supports_future_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.supports_future_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.supports_future_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports future covariates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1947,8 +2045,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.supports_likelihood_parameter_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.supports_likelihood_parameter_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_likelihood_parameter_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.supports_likelihood_parameter_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model instance supports direct prediction of likelihood parameters</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1958,8 +2056,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.supports_multivariate">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_multivariate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.supports_multivariate" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.supports_multivariate">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_multivariate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.supports_multivariate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model considers more than one variate in the time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1969,8 +2067,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.supports_optimized_historical_forecasts">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_optimized_historical_forecasts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.supports_optimized_historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.supports_optimized_historical_forecasts">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_optimized_historical_forecasts</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.supports_optimized_historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports optimized historical forecasts</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1980,8 +2078,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.supports_past_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.supports_past_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.supports_past_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.supports_past_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports past covariates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1991,8 +2089,8 @@ If <cite>True</cite>, the training series and covariates are removed.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.supports_probabilistic_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.supports_probabilistic_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_probabilistic_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.supports_probabilistic_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p>
 <p>By default, returns False. Needs to be overwritten by models that do support
 probabilistic predictions.</p>
@@ -2004,8 +2102,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.supports_sample_weight">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_sample_weight</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.supports_sample_weight" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.supports_sample_weight">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_sample_weight</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.supports_sample_weight" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports sample weight for training.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2015,8 +2113,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.supports_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.supports_static_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.supports_static_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.supports_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether model supports static covariates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2026,8 +2124,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.supports_transferrable_series_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.supports_transferable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.supports_transferable_series_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2037,14 +2135,14 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.untrained_model">
-<span class="sig-name descname"><span class="pre">untrained_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.croston.Croston.untrained_model" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.untrained_model">
+<span class="sig-name descname"><span class="pre">untrained_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.untrained_model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a new (untrained) model instance created with the same parameters.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.uses_future_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.uses_future_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses future covariates, once fitted.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2054,8 +2152,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.uses_past_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.uses_past_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses past covariates, once fitted.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2065,8 +2163,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.croston.Croston.uses_static_covariates">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.croston.Croston.uses_static_covariates" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.sf_tbats.TBATS.uses_static_covariates">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">uses_static_covariates</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.sf_tbats.TBATS.uses_static_covariates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model uses static covariates, once fitted.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2085,17 +2183,17 @@ probabilistic predictions.</p>
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.models.forecasting.conformal_models.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.models.forecasting.sf_model.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Conformal Models</p>
+            <p class="prev-next-title">StatsForecastModel</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.models.forecasting.dlinear.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.models.forecasting.tcn_model.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">D-Linear</p>
+        <p class="prev-next-title">Temporal Convolutional Network</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

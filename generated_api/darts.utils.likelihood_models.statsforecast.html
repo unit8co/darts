@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    <title>Likelihoods for StatsForecast Models &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -39,8 +39,8 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="darts.models.components.transformer.html" />
-    <link rel="prev" title="&lt;no title&gt;" href="darts.models.components.layer_norm_variants.html" />
+    <link rel="next" title="Likelihoods for TorchForecastingModel" href="darts.utils.likelihood_models.torch.html" />
+    <link rel="prev" title="Likelihoods for RegressionModel" href="darts.utils.likelihood_models.sklearn.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -95,7 +95,7 @@
  </a>
 </li>
 
-<li class="toctree-l1 nav-item">
+<li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="darts.html">
   API Reference
  </a>
@@ -154,7 +154,7 @@
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
   <div class="bd-toc-item active">
-    <ul class="nav bd-sidenav">
+    <ul class="current nav bd-sidenav">
  <li class="toctree-l1 has-children">
   <a class="reference internal" href="darts.ad.html">
    Anomaly Detection
@@ -557,11 +557,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.baselines.html">
        Baseline Models
       </a>
@@ -579,11 +574,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
        Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.croston.html">
-       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -663,32 +653,47 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       StatsForecastAutoARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       StatsForecastAutoCES
+       AutoCES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       StatsForecastAutoETS
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       StatsForecastAutoTBATS
+       AutoTBATS
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       StatsForecastAutoTheta
+       AutoTheta
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
-       BATS and TBATS
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
       </a>
      </li>
      <li class="toctree-l3">
@@ -735,16 +740,16 @@
    </li>
   </ul>
  </li>
- <li class="toctree-l1 has-children">
+ <li class="toctree-l1 current active has-children">
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
   <label for="toctree-checkbox-16">
    <i class="fas fa-chevron-down">
    </i>
   </label>
-  <ul>
+  <ul class="current">
    <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
@@ -782,10 +787,42 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2">
+   <li class="toctree-l2 current active has-children">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
     </a>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        RegressionModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.losses.html">
@@ -848,14 +885,9 @@
               
               <div class="toc-item">
                 
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
-</div>
 
 <nav id="bd-toc-nav">
-    <ul class="simple visible nav section-nav flex-column">
-</ul>
-
+    
 </nav>
               </div>
               
@@ -875,10 +907,110 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.components.statsforecast_utils"></span><dl class="py function">
-<dt class="sig sig-object py" id="darts.models.components.statsforecast_utils.create_normal_samples">
-<span class="sig-prename descclassname"><span class="pre">darts.models.components.statsforecast_utils.</span></span><span class="sig-name descname"><span class="pre">create_normal_samples</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mu</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/components/statsforecast_utils.html#create_normal_samples"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.components.statsforecast_utils.create_normal_samples" title="Permalink to this definition">¶</a></dt>
-<dd><p>Generate samples assuming a Normal distribution.</p>
+  <span class="target" id="module-darts.utils.likelihood_models.statsforecast"></span><section id="likelihoods-for-statsforecast-models">
+<h1>Likelihoods for <cite>StatsForecast</cite> Models<a class="headerlink" href="#likelihoods-for-statsforecast-models" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.statsforecast.QuantilePrediction">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.statsforecast.</span></span><span class="sig-name descname"><span class="pre">QuantilePrediction</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantiles</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/statsforecast.html#QuantilePrediction"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood" title="darts.utils.likelihood_models.base.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Quantile Prediction Likelihood</p>
+<p>Can be used to generate quantile predictions for any Darts model that wraps a <cite>statsforecast</cite> model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>quantiles</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – A list of quantiles. Default: <cite>[0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]</cite>.</p>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.num_parameters" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of distribution parameters for a single target value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.parameter_names" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.parameter_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameter_names</span></code></a></p></td>
+<td><p>Returns the likelihood parameter names.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.type" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a></p></td>
+<td><p>Returns the likelihood type.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<td><p>Generates names for the parameters of the Likelihood.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model_output, num_samples)</p></td>
+<td><p>Generates sampled or direct likelihood parameter predictions.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.sample" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output, num_samples)</p></td>
+<td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names">
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates names for the parameters of the Likelihood.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.statsforecast.QuantilePrediction.num_parameters">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.num_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of distribution parameters for a single target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.statsforecast.QuantilePrediction.parameter_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parameter_names</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.parameter_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood parameter names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/statsforecast.html#QuantilePrediction.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates sampled or direct likelihood parameter predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_output</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – The output of the StatsForecast model.</p></li>
+<li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from the likelihood model / distribution.
+If <cite>1</cite> and <cite>predict_likelihood_parameters=False</cite>, returns median / mean predictions.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.statsforecast.QuantilePrediction.sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/statsforecast.html#QuantilePrediction.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
@@ -886,12 +1018,20 @@
 </dl>
 </dd></dl>
 
-<dl class="py function">
-<dt class="sig sig-object py" id="darts.models.components.statsforecast_utils.unpack_sf_dict">
-<span class="sig-prename descclassname"><span class="pre">darts.models.components.statsforecast_utils.</span></span><span class="sig-name descname"><span class="pre">unpack_sf_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forecast_dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/components/statsforecast_utils.html#unpack_sf_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.components.statsforecast_utils.unpack_sf_dict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Unpack the dictionary that is returned by the StatsForecast ‘predict()’ method.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.statsforecast.QuantilePrediction.type">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.LikelihoodType" title="darts.utils.likelihood_models.base.LikelihoodType"><span class="pre">LikelihoodType</span></a></em><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.LikelihoodType" title="darts.utils.likelihood_models.base.LikelihoodType"><code class="xref py py-class docutils literal notranslate"><span class="pre">LikelihoodType</span></code></a></p>
+</dd>
+</dl>
 </dd></dl>
 
+</dd></dl>
+
+</section>
 
 
               </div>
@@ -899,17 +1039,17 @@
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.models.components.layer_norm_variants.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.utils.likelihood_models.sklearn.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">&lt;no title&gt;</p>
+            <p class="prev-next-title">Likelihoods for <cite>RegressionModel</cite></p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.models.components.transformer.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.utils.likelihood_models.torch.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">&lt;no title&gt;</p>
+        <p class="prev-next-title">Likelihoods for <cite>TorchForecastingModel</cite></p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

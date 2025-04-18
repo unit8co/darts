@@ -192,7 +192,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components.layer_norm_variants</span><span class="w"> </span><span class="kn">import</span> <span class="n">RINorm</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Likelihood</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorchLikelihood</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">_build_forecast_series</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">MonteCarloDropout</span>
 
@@ -254,7 +254,7 @@
         <span class="n">torch_metrics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
             <span class="n">Union</span><span class="p">[</span><span class="n">torchmetrics</span><span class="o">.</span><span class="n">Metric</span><span class="p">,</span> <span class="n">torchmetrics</span><span class="o">.</span><span class="n">MetricCollection</span><span class="p">]</span>
         <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Likelihood</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TorchLikelihood</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">optimizer_cls</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">,</span>
         <span class="n">optimizer_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lr_scheduler_cls</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">lr_scheduler</span><span class="o">.</span><span class="n">_LRScheduler</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -299,7 +299,7 @@
 <span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
 <span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        likelihood</span>
-<span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.Likelihood&gt;` models to be used for</span>
+<span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.torch.TorchLikelihood&gt;` models to be used for</span>
 <span class="sd">            probabilistic forecasts. Default: ``None``.</span>
 <span class="sd">        optimizer_cls</span>
 <span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
@@ -527,7 +527,7 @@
                 <span class="p">[</span><span class="n">batch_prediction</span><span class="p">[</span><span class="n">batch_idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">batch_prediction</span> <span class="ow">in</span> <span class="n">batch_predictions</span><span class="p">],</span>
                 <span class="n">input_series</span><span class="p">,</span>
                 <span class="n">custom_columns</span><span class="o">=</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">likelihood_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">component_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">)</span>
                     <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span>
                     <span class="k">else</span> <span class="kc">None</span>
                 <span class="p">),</span>

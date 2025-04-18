@@ -171,39 +171,15 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - 
      - ✅
      - 
-   * - `AutoARIMA <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.auto_arima.html#darts.models.forecasting.auto_arima.AutoARIMA>`_
-     - 
-     - ✅
-     - 
-   * - `StatsForecastAutoArima <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA>`_
-     - 
-     - ✅
-     - 
    * - `ExponentialSmoothing <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.exponential_smoothing.html#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing>`_
      - 
      - 
      - 
-   * - `StatsforecastAutoETS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS>`_
+   * - `TBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_tbats.html#darts.models.forecasting.sf_tbats.TBATS>`_
      - 
      - ✅
      - 
-   * - `StatsforecastAutoCES <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES>`_
-     - 
-     - 
-     - 
-   * - `BATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS>`_ and `TBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS>`_
-     - 
-     - 
-     - 
-   * - `StatsForecastAutoTBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS>`_
-     - 
-     - 
-     - 
    * - `Theta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta>`_ and `FourTheta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta>`_
-     - 
-     - 
-     - 
-   * - `StatsForecastAutoTheta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta>`_
      - 
      - 
      - 
@@ -221,7 +197,35 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - 
    * - `Croston <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston>`_ method
      - 
+     - ✅
      - 
+   * - `StatsForecastModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_model.html#darts.models.forecasting.sf_model.StatsForecastModel>`_
+     - 
+     - ✅
+     - 
+   * - `AutoARIMA <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.AutoARIMA>`_
+     - 
+     - ✅
+     - 
+   * - `AutoETS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.AutoETS>`_
+     - 
+     - ✅
+     - 
+   * - `AutoCES <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.AutoCES>`_
+     - 
+     - ✅
+     - 
+   * - `AutoMFLES <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_mfles.html#darts.models.forecasting.sf_auto_mfles.AutoMFLES>`_
+     - 
+     - ✅
+     - 
+   * - `AutoTBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.AutoTBATS>`_
+     - 
+     - ✅
+     - 
+   * - `AutoTheta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.AutoTheta>`_
+     - 
+     - ✅
      - 
    * - **Global Forecasting Models (GFMs)**
      - 

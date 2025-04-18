@@ -184,7 +184,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">linprog</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegression</span><span class="p">,</span> <span class="n">PoissonRegressor</span><span class="p">,</span> <span class="n">QuantileRegressor</span>
 
@@ -193,14 +192,19 @@
     <span class="n">FUTURE_LAGS_TYPE</span><span class="p">,</span>
     <span class="n">LAGS_TYPE</span><span class="p">,</span>
     <span class="n">RegressionModel</span><span class="p">,</span>
-    <span class="n">_LikelihoodMixin</span><span class="p">,</span>
+    <span class="n">_QuantileModelContainer</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QuantileRegression</span><span class="p">,</span>
+    <span class="n">_check_likelihood</span><span class="p">,</span>
+    <span class="n">_get_likelihood</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="LinearRegressionModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LinearRegressionModel</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">,</span> <span class="n">_LikelihoodMixin</span><span class="p">):</span>
+<div class="viewcode-block" id="LinearRegressionModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LinearRegressionModel</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -348,26 +352,25 @@
 <span class="sd">               [1005.81830675]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">likelihood</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># parse likelihood</span>
-        <span class="n">available_likelihoods</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="s2">&quot;poisson&quot;</span><span class="p">]</span>  <span class="c1"># to be extended</span>
         <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">available_likelihoods</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
-
+            <span class="n">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="s2">&quot;poisson&quot;</span><span class="p">])</span>
             <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;poisson&quot;</span><span class="p">:</span>
                 <span class="n">model</span> <span class="o">=</span> <span class="n">PoissonRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
                 <span class="n">model</span> <span class="o">=</span> <span class="n">QuantileRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_container</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="n">_QuantileModelContainer</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">_get_likelihood</span><span class="p">(</span>
+            <span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span>
+            <span class="n">n_outputs</span><span class="o">=</span><span class="n">output_chunk_length</span> <span class="k">if</span> <span class="n">multi_models</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
@@ -391,7 +394,8 @@
         <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+        <span class="n">likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">):</span>
             <span class="c1"># set solver for linear program</span>
             <span class="k">if</span> <span class="s2">&quot;solver&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">:</span>
                 <span class="c1"># set default fast solver</span>
@@ -411,7 +415,7 @@
             <span class="c1"># empty model container in case of multiple calls to fit, e.g. when backtesting</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
 
-            <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;quantile&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantile</span>
                 <span class="c1"># assign the Quantile regressor to self.model to leverage existing logic</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">QuantileRegressor</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
@@ -443,27 +447,7 @@
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="k">return</span> <span class="bp">self</span></div>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_predict_and_sample</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_and_sample_likelihood</span><span class="p">(</span>
-                <span class="n">x</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_predict_and_sample</span><span class="p">(</span>
-                <span class="n">x</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-            <span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span></div>
+            <span class="k">return</span> <span class="bp">self</span></div></div>
 </pre></div>
 
               </div>

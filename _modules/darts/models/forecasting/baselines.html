@@ -589,12 +589,8 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_average</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Average across the components after grouping by likelihood parameter, rename components&quot;&quot;&quot;</span>
-        <span class="c1"># str or torch Likelihood</span>
-        <span class="n">likelihood</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;likelihood&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-            <span class="n">likelihood_n_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">num_parameters</span>
-        <span class="k">else</span><span class="p">:</span>  <span class="c1"># Likelihood</span>
-            <span class="n">likelihood_n_params</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
+        <span class="n">likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">likelihood</span>
+        <span class="n">likelihood_n_params</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
         <span class="n">n_forecasting_models</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">)</span>
         <span class="n">n_components</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span>
         <span class="c1"># aggregate across predictions [model1_param0, model1_param1, ..., modeln_param0, modeln_param1]</span>

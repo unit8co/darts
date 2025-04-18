@@ -1,0 +1,3 @@
+.. automodule:: darts.utils.likelihood_models.base
+   :members:
+   :undoc-members:

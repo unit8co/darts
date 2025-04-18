@@ -557,11 +557,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.baselines.html">
        Baseline Models
       </a>
@@ -579,11 +574,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
        Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.croston.html">
-       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -663,32 +653,47 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       StatsForecastAutoARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       StatsForecastAutoCES
+       AutoCES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       StatsForecastAutoETS
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       StatsForecastAutoTBATS
+       AutoTBATS
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       StatsForecastAutoTheta
+       AutoTheta
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
-       BATS and TBATS
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
       </a>
      </li>
      <li class="toctree-l3">
@@ -782,10 +787,42 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2">
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        RegressionModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.losses.html">
@@ -913,7 +950,7 @@ This parameter will be ignored for probabilistic models if the <code class="docu
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
 <li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
 at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
+<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchLikelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
 <li><p><strong>optimizer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>
@@ -4911,7 +4948,7 @@ This parameter will be ignored for probabilistic models if the <code class="docu
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
 <li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
 at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
+<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchLikelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
 <li><p><strong>optimizer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>
@@ -8909,7 +8946,7 @@ This parameter will be ignored for probabilistic models if the <code class="docu
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
 <li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
 at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
+<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchLikelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
 <li><p><strong>optimizer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>
@@ -12962,7 +12999,7 @@ This parameter will be ignored for probabilistic models if the <code class="docu
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
 <li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
 at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
+<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchLikelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
 <li><p><strong>optimizer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>
@@ -17015,7 +17052,7 @@ This parameter will be ignored for probabilistic models if the <code class="docu
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
 <li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
 at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
+<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchLikelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
 <li><p><strong>optimizer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>
@@ -21068,7 +21105,7 @@ This parameter will be ignored for probabilistic models if the <code class="docu
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
 <li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
 at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
-<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
+<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchLikelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood" title="darts.utils.likelihood_models.torch.TorchLikelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
 <li><p><strong>optimizer_kwargs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>

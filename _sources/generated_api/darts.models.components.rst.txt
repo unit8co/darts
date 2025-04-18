@@ -10,5 +10,4 @@
         darts.models.components.feed_forward
         darts.models.components.glu_variants
         darts.models.components.layer_norm_variants
-        darts.models.components.statsforecast_utils
         darts.models.components.transformer

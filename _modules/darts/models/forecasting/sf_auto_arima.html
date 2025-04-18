@@ -174,45 +174,60 @@
                 
   <h1>Source code for darts.models.forecasting.sf_auto_arima</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">StatsForecastAutoARIMA</span>
-<span class="sd">-----------</span>
+<span class="sd">AutoARIMA</span>
+<span class="sd">---------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">statsforecast.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoARIMA</span> <span class="k">as</span> <span class="n">SFAutoARIMA</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components.statsforecast_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">create_normal_samples</span><span class="p">,</span>
-    <span class="n">one_sigma_rule</span><span class="p">,</span>
-    <span class="n">unpack_sf_dict</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.sf_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatsForecastModel</span>
 
 
-<div class="viewcode-block" id="StatsForecastAutoARIMA"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">StatsForecastAutoARIMA</span><span class="p">(</span><span class="n">FutureCovariatesLocalForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="AutoARIMA"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.AutoARIMA">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">AutoARIMA</span><span class="p">(</span><span class="n">StatsForecastModel</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">autoarima_args</span><span class="p">,</span> <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">autoarima_kwargs</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Auto-ARIMA based on `Statsforecasts package</span>
-<span class="sd">        &lt;https://github.com/Nixtla/statsforecast&gt;`_.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Auto-ARIMA based on the `Statsforecasts package &lt;https://github.com/Nixtla/statsforecast&gt;`_.</span>
 
-<span class="sd">        This implementation can perform faster than the :class:`AutoARIMA` model,</span>
-<span class="sd">        but typically requires more time on the first call, because it relies</span>
-<span class="sd">        on Numba and jit compilation.</span>
+<span class="sd">        Automatically selects the best AutoRegressive Integrated Moving Average (ARIMA) using an information criterion.</span>
+<span class="sd">        We refer to the `StatsForecast documentation</span>
+<span class="sd">        &lt;https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima&gt;`_ for the exhaustive documentation</span>
+<span class="sd">        of the arguments.</span>
 
-<span class="sd">        It is probabilistic, whereas :class:`AutoARIMA` is not.</span>
+<span class="sd">        In addition to univariate deterministic forecasting, it comes with additional support:</span>
 
-<span class="sd">        We refer to the `statsforecast AutoARIMA documentation</span>
-<span class="sd">        &lt;https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima&gt;`_</span>
-<span class="sd">        for the exhaustive documentation of the arguments.</span>
+<span class="sd">        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.</span>
+
+<span class="sd">        - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following</span>
+<span class="sd">          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:</span>
+
+<span class="sd">          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.</span>
+
+<span class="sd">          - Generate sampled forecasts from these quantiles by setting `num_samples &gt;&gt; 1`.</span>
+
+<span class="sd">        - **Conformal prediction:** In addition to the native probabilistic support, you can perform conformal</span>
+<span class="sd">          prediction / forecasting by setting `prediction_intervals` at model creation. Then predict the in the same</span>
+<span class="sd">          way as described above.</span>
+
+<span class="sd">        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Future covariates are not supported when the input series contain missing values.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            The first model call might take more time than all subsequent calls as the model relies on Numba and jit</span>
+<span class="sd">            compilation.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        autoarima_args</span>
+<span class="sd">        args</span>
 <span class="sd">            Positional arguments for ``statsforecasts.models.AutoARIMA``.</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of future covariates can be automatically generated with `add_encoders`.</span>
@@ -238,79 +253,40 @@
 <span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
-<span class="sd">        autoarima_kwargs</span>
+<span class="sd">        quantiles</span>
+<span class="sd">            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting</span>
+<span class="sd">            with `num_samples &gt; 1` or `predict_likelihood_parameters=True`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.</span>
+<span class="sd">        kwargs</span>
 <span class="sd">            Keyword arguments for ``statsforecasts.models.AutoARIMA``.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
-<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoARIMA</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import AutoARIMA</span>
 <span class="sd">        &gt;&gt;&gt; from darts.utils.timeseries_generation import datetime_attribute_timeseries</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
 <span class="sd">        &gt;&gt;&gt; # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series</span>
 <span class="sd">        &gt;&gt;&gt; future_cov = datetime_attribute_timeseries(series, &quot;month&quot;, cyclic=True, add_length=6)</span>
-<span class="sd">        &gt;&gt;&gt; # define StatsForecastAutoARIMA parameters</span>
-<span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoARIMA(season_length=12)</span>
+<span class="sd">        &gt;&gt;&gt; # define AutoARIMA parameters</span>
+<span class="sd">        &gt;&gt;&gt; model = AutoARIMA(season_length=12)</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(series, future_covariates=future_cov)</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(6, future_covariates=future_cov)</span>
 <span class="sd">        &gt;&gt;&gt; pred.values()</span>
-<span class="sd">        array([[450.55179949],</span>
-<span class="sd">               [415.00597806],</span>
-<span class="sd">               [454.61353249],</span>
-<span class="sd">               [486.51218795],</span>
-<span class="sd">               [504.09229632],</span>
-<span class="sd">               [555.06463942]])</span>
+<span class="sd">        array([[445.4276575 ],</span>
+<span class="sd">               [420.04912881],</span>
+<span class="sd">               [448.7142377 ],</span>
+<span class="sd">               [491.23406559],</span>
+<span class="sd">               [502.67834069],</span>
+<span class="sd">               [566.04774778]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoARIMA</span><span class="p">(</span><span class="o">*</span><span class="n">autoarima_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoarima_kwargs</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-            <span class="n">X</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_predict</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
-        <span class="n">forecast_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-            <span class="n">h</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-            <span class="n">X</span><span class="o">=</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="p">(</span><span class="n">one_sigma_rule</span><span class="p">,),</span>  <span class="c1"># ask one std for the confidence interval.</span>
-        <span class="p">)</span>
-
-        <span class="n">mu</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">unpack_sf_dict</span><span class="p">(</span><span class="n">forecast_dict</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">samples</span> <span class="o">=</span> <span class="n">create_normal_samples</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">samples</span> <span class="o">=</span> <span class="n">mu</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">10</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_range_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">SFAutoARIMA</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
+            <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

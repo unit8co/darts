@@ -41,7 +41,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="AutoARIMA" href="darts.models.forecasting.auto_arima.html" />
+    <link rel="next" title="Baseline Models" href="darts.models.forecasting.baselines.html" />
     <link rel="prev" title="Forecasting Models" href="darts.models.forecasting.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -559,11 +559,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.baselines.html">
        Baseline Models
       </a>
@@ -581,11 +576,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
        Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.croston.html">
-       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -665,32 +655,47 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       StatsForecastAutoARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       StatsForecastAutoCES
+       AutoCES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       StatsForecastAutoETS
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       StatsForecastAutoTBATS
+       AutoTBATS
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       StatsForecastAutoTheta
+       AutoTheta
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
-       BATS and TBATS
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
       </a>
      </li>
      <li class="toctree-l3">
@@ -784,10 +789,42 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2">
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        RegressionModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.losses.html">
@@ -972,49 +1009,52 @@ Read <code class="xref py py-meth docutils literal notranslate"><span class="pre
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.extreme_lags" title="darts.models.forecasting.arima.ARIMA.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
 <td><p>A 8-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag, output shift, max target lag train (only for RNNModel)).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.min_train_samples" title="darts.models.forecasting.arima.ARIMA.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.likelihood" title="darts.models.forecasting.arima.ARIMA.likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood</span></code></a></p></td>
+<td><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.min_train_samples" title="darts.models.forecasting.arima.ARIMA.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.output_chunk_length" title="darts.models.forecasting.arima.ARIMA.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.output_chunk_length" title="darts.models.forecasting.arima.ARIMA.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.output_chunk_shift" title="darts.models.forecasting.arima.ARIMA.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.output_chunk_shift" title="darts.models.forecasting.arima.ARIMA.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_future_covariates" title="darts.models.forecasting.arima.ARIMA.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_future_covariates" title="darts.models.forecasting.arima.ARIMA.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_likelihood_parameter_prediction" title="darts.models.forecasting.arima.ARIMA.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_likelihood_parameter_prediction" title="darts.models.forecasting.arima.ARIMA.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
 <td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_multivariate" title="darts.models.forecasting.arima.ARIMA.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_multivariate" title="darts.models.forecasting.arima.ARIMA.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_optimized_historical_forecasts" title="darts.models.forecasting.arima.ARIMA.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_optimized_historical_forecasts" title="darts.models.forecasting.arima.ARIMA.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_past_covariates" title="darts.models.forecasting.arima.ARIMA.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_past_covariates" title="darts.models.forecasting.arima.ARIMA.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_probabilistic_prediction" title="darts.models.forecasting.arima.ARIMA.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_probabilistic_prediction" title="darts.models.forecasting.arima.ARIMA.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
 <td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_sample_weight" title="darts.models.forecasting.arima.ARIMA.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_sample_weight" title="darts.models.forecasting.arima.ARIMA.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_static_covariates" title="darts.models.forecasting.arima.ARIMA.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_static_covariates" title="darts.models.forecasting.arima.ARIMA.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_transferrable_series_prediction" title="darts.models.forecasting.arima.ARIMA.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.supports_transferable_series_prediction" title="darts.models.forecasting.arima.ARIMA.supports_transferable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferable_series_prediction</span></code></a></p></td>
 <td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.uses_future_covariates" title="darts.models.forecasting.arima.ARIMA.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.uses_future_covariates" title="darts.models.forecasting.arima.ARIMA.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.uses_past_covariates" title="darts.models.forecasting.arima.ARIMA.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.uses_past_covariates" title="darts.models.forecasting.arima.ARIMA.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.uses_static_covariates" title="darts.models.forecasting.arima.ARIMA.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.arima.ARIMA.uses_static_covariates" title="darts.models.forecasting.arima.ARIMA.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -1698,6 +1738,17 @@ each series.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.arima.ARIMA.likelihood">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood" title="darts.utils.likelihood_models.base.Likelihood"><span class="pre">Likelihood</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.arima.ARIMA.likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood" title="darts.utils.likelihood_models.base.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.arima.ARIMA.load">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.arima.ARIMA.load" title="Permalink to this definition">¶</a></dt>
@@ -1757,7 +1808,7 @@ each series.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.arima.ARIMA.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.arima.ARIMA.predict" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.arima.ARIMA.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>If the <cite>series</cite> parameter is not set, forecasts values for <cite>n</cite> time steps after the end of the training
 series. If some future covariates were specified during the training, they must also be specified here.</p>
 <p>If the <cite>series</cite> parameter is set, forecasts values for <cite>n</cite> time steps after the end of the new target
@@ -1775,6 +1826,9 @@ training target series. If <cite>series</cite> is set, it must contain at least 
 to the new target series (historic future covariates), plus the next <cite>n</cite> time steps/indices after the end.</p>
 </p></li>
 <li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Must be <cite>1</cite> for deterministic models.</p></li>
+<li><p><strong>predict_likelihood_parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, the model predicts the parameters of its <cite>likelihood</cite> instead of the target. Only
+supported for probabilistic models with a likelihood, <cite>num_samples = 1</cite> and <cite>n&lt;=output_chunk_length</cite>.
+Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, set the prediction verbosity. Not effective for all models.</p></li>
 <li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, control whether warnings are shown. Not effective for all models.</p></li>
 </ul>
@@ -2071,8 +2125,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.arima.ARIMA.supports_transferrable_series_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.arima.ARIMA.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.arima.ARIMA.supports_transferable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.arima.ARIMA.supports_transferable_series_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2137,10 +2191,10 @@ probabilistic predictions.</p>
             <p class="prev-next-title">Forecasting Models</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.models.forecasting.auto_arima.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.models.forecasting.baselines.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">AutoARIMA</p>
+        <p class="prev-next-title">Baseline Models</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

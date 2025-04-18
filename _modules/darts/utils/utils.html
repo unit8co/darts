@@ -178,7 +178,7 @@
 <span class="sd">-------------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">wraps</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">inspect</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">getcallargs</span><span class="p">,</span> <span class="n">signature</span>
@@ -194,10 +194,19 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">IPython</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_ipython</span>
 <span class="k">except</span> <span class="ne">ModuleNotFoundError</span><span class="p">:</span>
     <span class="n">get_ipython</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">torch</span>  <span class="c1"># noqa: F401</span>
+
+    <span class="n">TORCH_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">TORCH_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -228,6 +237,25 @@
     <span class="s2">&quot;sum&quot;</span><span class="p">,</span>
     <span class="s2">&quot;var&quot;</span><span class="p">,</span>
 <span class="p">]</span>
+
+
+<div class="viewcode-block" id="NotImportedModule"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.NotImportedModule">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">NotImportedModule</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper class for handling import errors of optional dependencies.&quot;&quot;&quot;</span>
+
+    <span class="n">usable</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">module_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">warn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">error_message</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;The `</span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2">` module could not be imported. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;To enable </span><span class="si">{</span><span class="n">module_name</span><span class="si">}</span><span class="s2"> support in Darts, follow the detailed &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;instructions in the installation guide: &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;https://github.com/unit8co/darts/blob/master/INSTALL.md&quot;</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">warn</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error_message</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ImportError</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">error_message</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span></div>
 
 
 <span class="c1"># Enums</span>
@@ -270,66 +298,6 @@
     <span class="s2">&quot;us&quot;</span><span class="p">:</span> <span class="s2">&quot;us&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;U&quot;</span><span class="p">,</span>
     <span class="s2">&quot;ns&quot;</span><span class="p">:</span> <span class="s2">&quot;ns&quot;</span> <span class="k">if</span> <span class="n">pd_above_v22</span> <span class="k">else</span> <span class="s2">&quot;N&quot;</span><span class="p">,</span>
 <span class="p">}</span>
-
-
-<div class="viewcode-block" id="likelihood_component_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.likelihood_component_names">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">likelihood_component_names</span><span class="p">(</span>
-    <span class="n">components</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]],</span> <span class="n">parameter_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates formatted likelihood parameter names for components and parameter names.</span>
-
-<span class="sd">    The order of the returned names is: `[comp1_param_1, ... comp1_param_n, ..., comp_n_param_n]`.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    components</span>
-<span class="sd">        A sequence of component names to add to the beginning of the returned names.</span>
-<span class="sd">    parameter_names</span>
-<span class="sd">        A sequence of likelihood parameter names to add to the end of the returned names.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="p">[</span>
-        <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tgt_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">param_n</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="k">for</span> <span class="n">tgt_name</span> <span class="ow">in</span> <span class="n">components</span>
-        <span class="k">for</span> <span class="n">param_n</span> <span class="ow">in</span> <span class="n">parameter_names</span>
-    <span class="p">]</span></div>
-
-
-<div class="viewcode-block" id="quantile_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.quantile_names">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">quantile_names</span><span class="p">(</span><span class="n">q</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span> <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates formatted quantile names, optionally added to a component name.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    q</span>
-<span class="sd">        A float or list of floats with the quantiles to generate the names for.</span>
-<span class="sd">    component</span>
-<span class="sd">        Optionally, a component name to add to the beginning of the quantile names.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># predicted quantile text format</span>
-    <span class="n">comp</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">_&quot;</span> <span class="k">if</span> <span class="n">component</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">q</span><span class="si">{</span><span class="n">q</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">q</span><span class="si">{</span><span class="n">q_i</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">q_i</span> <span class="ow">in</span> <span class="n">q</span><span class="p">]</span></div>
-
-
-<div class="viewcode-block" id="quantile_interval_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.quantile_interval_names">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">quantile_interval_names</span><span class="p">(</span>
-    <span class="n">q_interval</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]],</span>
-    <span class="n">component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Generates formatted quantile interval names, optionally added to a component name.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    q_interval</span>
-<span class="sd">        A tuple or multiple tuples with the (lower bound, upper bound) of the quantile intervals.</span>
-<span class="sd">    component</span>
-<span class="sd">        Optionally, a component name to add to the beginning of the quantile names.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># predicted quantile text format</span>
-    <span class="n">comp</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">_&quot;</span> <span class="k">if</span> <span class="n">component</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q_interval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">q</span><span class="si">{</span><span class="n">q_interval</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_q</span><span class="si">{</span><span class="n">q_interval</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">comp</span><span class="si">}</span><span class="s2">q</span><span class="si">{</span><span class="n">q_lo</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">_q</span><span class="si">{</span><span class="n">q_hi</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">q_lo</span><span class="p">,</span> <span class="n">q_hi</span> <span class="ow">in</span> <span class="n">q_interval</span><span class="p">]</span></div>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_build_tqdm_iterator</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">verbose</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>

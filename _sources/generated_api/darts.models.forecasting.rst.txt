@@ -8,12 +8,10 @@
         
         
         darts.models.forecasting.arima
-        darts.models.forecasting.auto_arima
         darts.models.forecasting.baselines
         darts.models.forecasting.block_rnn_model
         darts.models.forecasting.catboost_model
         darts.models.forecasting.conformal_models
-        darts.models.forecasting.croston
         darts.models.forecasting.dlinear
         darts.models.forecasting.ensemble_model
         darts.models.forecasting.exponential_smoothing
@@ -35,9 +33,12 @@
         darts.models.forecasting.sf_auto_arima
         darts.models.forecasting.sf_auto_ces
         darts.models.forecasting.sf_auto_ets
+        darts.models.forecasting.sf_auto_mfles
         darts.models.forecasting.sf_auto_tbats
         darts.models.forecasting.sf_auto_theta
-        darts.models.forecasting.tbats_model
+        darts.models.forecasting.sf_croston
+        darts.models.forecasting.sf_model
+        darts.models.forecasting.sf_tbats
         darts.models.forecasting.tcn_model
         darts.models.forecasting.tft_model
         darts.models.forecasting.tft_submodels

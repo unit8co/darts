@@ -192,6 +192,9 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
+<span class="n">NP_2_OR_ABOVE</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">2</span>
+<span class="n">STABLE_SORT_KWARGS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;stable&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span> <span class="k">if</span> <span class="n">NP_2_OR_ABOVE</span> <span class="k">else</span> <span class="p">{</span><span class="s2">&quot;kind&quot;</span><span class="p">:</span> <span class="s2">&quot;stable&quot;</span><span class="p">}</span>
+
 <span class="n">ArrayOrArraySequence</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span>
 
 
@@ -1057,7 +1060,7 @@
             <span class="c1"># combine all the lags and sort them in ascending order across all the components</span>
             <span class="n">comp_lags_reordered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">variate_lags</span><span class="p">[</span><span class="n">comp_name</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">comp_name</span> <span class="ow">in</span> <span class="n">components</span>
-            <span class="p">])</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
+            <span class="p">])</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">**</span><span class="n">STABLE_SORT_KWARGS</span><span class="p">)</span>
             <span class="n">tmp_lagged_feats_names</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">components</span><span class="p">:</span>
                 <span class="n">tmp_lagged_feats_names</span> <span class="o">+=</span> <span class="p">[</span>
@@ -1124,7 +1127,7 @@
             <span class="c1"># Lags are grouped by component, extracted from the same window</span>
             <span class="n">lags_extract_i</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">c_lags</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span> <span class="k">for</span> <span class="n">c_lags</span> <span class="ow">in</span> <span class="n">lags_i</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
             <span class="c1"># Sort the lags across the components in ascending order</span>
-            <span class="n">lags_order_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">lags_extract_i</span><span class="p">)</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
+            <span class="n">lags_order_i</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">lags_extract_i</span><span class="p">)</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">**</span><span class="n">STABLE_SORT_KWARGS</span><span class="p">)</span>
         <span class="n">lags_extract</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lags_extract_i</span><span class="p">)</span>
         <span class="n">lags_order</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lags_order_i</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">lags_extract</span><span class="p">,</span> <span class="n">lags_order</span>
@@ -1603,7 +1606,7 @@
     <span class="c1"># prepare index to reorder features by lags across components</span>
     <span class="n">comp_lags_reordered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
         <span class="n">comp_lags</span> <span class="k">for</span> <span class="n">comp_lags</span> <span class="ow">in</span> <span class="n">component_lags</span><span class="p">[</span><span class="n">series_type</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
-    <span class="p">])</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
+    <span class="p">])</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="o">**</span><span class="n">STABLE_SORT_KWARGS</span><span class="p">)</span>
 
     <span class="c1"># convert relative lags to absolute</span>
     <span class="k">if</span> <span class="n">series_type</span> <span class="o">==</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span>

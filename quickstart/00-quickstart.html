@@ -1265,7 +1265,7 @@ Mean absolute percentage error for the combined naive drift + seasonal: 5.66%.
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 model ExponentialSmoothing() obtains MAPE: 5.11%
-model AutoARIMA() obtains MAPE: 11.65%
+model AutoARIMA() obtains MAPE: 12.70%
 model Theta() obtains MAPE: 8.15%
 </pre></div></div>
 </div>
@@ -2545,7 +2545,7 @@ arbitrary quantiles.</p>
 </section>
 <section id="With-Neural-Network-Models-(TorchForecastingModel)">
 <h2>With Neural Network Models (TorchForecastingModel)<a class="headerlink" href="#With-Neural-Network-Models-(TorchForecastingModel)" title="Permalink to this heading">¶</a></h2>
-<p>With neural networks, we have to use a <code class="docutils literal notranslate"><span class="pre">Likelihood</span></code> object at model creation. The likelihoods specify which distribution the model will try to fit, along with potential prior values for the distributions’ parameters. The full list of available likelihoods is <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html">available in the docs</a>.</p>
+<p>With neural networks, we have to use a <code class="docutils literal notranslate"><span class="pre">Likelihood</span></code> object at model creation. The likelihoods specify which distribution the model will try to fit, along with potential prior values for the distributions’ parameters. The full list of available likelihoods is <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html">available in the docs</a>.</p>
 <p>Next to the distributions, we also support <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> as likelihood, which estimates future quantile values of the target series.</p>
 <p>Using likelihoods is easy. For instance, here is what training an <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code> to fit a Laplace likelihood looks like:</p>
 <div class="nbinput docutils container">
@@ -2554,7 +2554,7 @@ arbitrary quantiles.</p>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TCNModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">LaplaceLikelihood</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">LaplaceLikelihood</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
@@ -2819,9 +2819,9 @@ HPU available: False, using: 0 HPUs
 </section>
 <section id="Types-of-distributions">
 <h3>Types of distributions<a class="headerlink" href="#Types-of-distributions" title="Permalink to this heading">¶</a></h3>
-<p>The likelihood has to be compatible with the domain of your time series’ values. For instance <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.PoissonLikelihood">PoissonLikelihood</a> can be used on discrete positive values, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ExponentialLikelihood">ExponentialLikelihood</a> can be used on real positive values, and
-<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BetaLikelihood">BetaLikelihood</a> on real values in <span class="math notranslate nohighlight">\((0,1)\)</span>.</p>
-<p>It is also possible to use <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression">QuantileRegression</a> to apply a quantile loss and fit some desired quantiles directly.</p>
+<p>The likelihood has to be compatible with the domain of your time series’ values. For instance <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.PoissonLikelihood">PoissonLikelihood</a> can be used on discrete positive values, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.ExponentialLikelihood">ExponentialLikelihood</a> can be used on real
+positive values, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.BetaLikelihood">BetaLikelihood</a> on real values in <span class="math notranslate nohighlight">\((0,1)\)</span>.</p>
+<p>It is also possible to use <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression">QuantileRegression</a> to apply a quantile loss and fit some desired quantiles directly.</p>
 </section>
 <section id="Evaluating-Probabilistic-Forecasts">
 <h3>Evaluating Probabilistic Forecasts<a class="headerlink" href="#Evaluating-Probabilistic-Forecasts" title="Permalink to this heading">¶</a></h3>
@@ -2864,7 +2864,7 @@ quantile loss at quantile 0.95: 12.20
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
+<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>

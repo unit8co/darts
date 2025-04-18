@@ -192,13 +192,15 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">dtw</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">likelihood_component_names</span><span class="p">,</span>
+    <span class="n">quantile_names</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SeriesType</span><span class="p">,</span> <span class="n">get_series_seq_type</span><span class="p">,</span> <span class="n">series2seq</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_build_tqdm_iterator</span><span class="p">,</span>
     <span class="n">_parallel_apply</span><span class="p">,</span>
-    <span class="n">likelihood_component_names</span><span class="p">,</span>
     <span class="n">n_steps_between</span><span class="p">,</span>
-    <span class="n">quantile_names</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>

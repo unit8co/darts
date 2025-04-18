@@ -670,7 +670,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RNNModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">concatenate</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFMProgressBar</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianLikelihood</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianLikelihood</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.missing_values</span><span class="w"> </span><span class="kn">import</span> <span class="n">fill_missing_values</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
 
@@ -816,7 +816,7 @@ RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=1, dropout=0, training_length=5
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">df3</span> <span class="o">=</span> <span class="n">EnergyDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
+<span></span><span class="n">df3</span> <span class="o">=</span> <span class="n">EnergyDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
 <span class="n">df3_day_avg</span> <span class="o">=</span> <span class="p">(</span>
     <span class="n">df3</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">df3</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">reset_index</span><span class="p">()</span>
 <span class="p">)</span>

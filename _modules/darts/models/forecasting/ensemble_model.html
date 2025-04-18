@@ -183,6 +183,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LikelihoodType</span>
+
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Self</span>
 <span class="k">else</span><span class="p">:</span>
@@ -194,9 +196,9 @@
     <span class="n">GlobalForecastingModel</span><span class="p">,</span>
     <span class="n">LocalForecastingModel</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TORCH_AVAILABLE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TORCH_AVAILABLE</span>
 
 <span class="k">if</span> <span class="n">TORCH_AVAILABLE</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorchForecastingModel</span>
@@ -738,19 +740,13 @@
         <span class="n">lkl_same_params</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="n">tmp_quantiles</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">:</span>
-            <span class="c1"># regression model likelihood is a string, torch-based model likelihoods is an object</span>
-            <span class="n">likelihood</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="s2">&quot;likelihood&quot;</span><span class="p">)</span>
-            <span class="n">is_obj_lkl</span> <span class="o">=</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
-            <span class="n">lkl_simplified_name</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="n">likelihood</span><span class="o">.</span><span class="n">simplified_name</span><span class="p">()</span> <span class="k">if</span> <span class="n">is_obj_lkl</span> <span class="k">else</span> <span class="n">likelihood</span>
-            <span class="p">)</span>
-            <span class="n">models_likelihood</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">lkl_simplified_name</span><span class="p">)</span>
+            <span class="n">likelihood</span> <span class="o">=</span> <span class="n">m</span><span class="o">.</span><span class="n">likelihood</span>
+            <span class="n">lkl_type</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">type</span>
+            <span class="n">models_likelihood</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">lkl_type</span><span class="p">)</span>
 
             <span class="c1"># check the quantiles</span>
-            <span class="k">if</span> <span class="n">lkl_simplified_name</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
-                <span class="n">quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-                    <span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span> <span class="k">if</span> <span class="n">is_obj_lkl</span> <span class="k">else</span> <span class="n">m</span><span class="o">.</span><span class="n">quantiles</span>
-                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">lkl_type</span> <span class="ow">is</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="p">:</span>
+                <span class="n">quantiles</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span>
                 <span class="k">if</span> <span class="n">tmp_quantiles</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                     <span class="n">tmp_quantiles</span> <span class="o">=</span> <span class="n">quantiles</span>
                 <span class="k">elif</span> <span class="n">tmp_quantiles</span> <span class="o">!=</span> <span class="n">quantiles</span><span class="p">:</span>

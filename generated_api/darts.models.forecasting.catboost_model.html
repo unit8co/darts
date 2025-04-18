@@ -557,11 +557,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.baselines.html">
        Baseline Models
       </a>
@@ -579,11 +574,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
        Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.croston.html">
-       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -663,32 +653,47 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       StatsForecastAutoARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       StatsForecastAutoCES
+       AutoCES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       StatsForecastAutoETS
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       StatsForecastAutoTBATS
+       AutoTBATS
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       StatsForecastAutoTheta
+       AutoTheta
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
-       BATS and TBATS
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
       </a>
      </li>
      <li class="toctree-l3">
@@ -782,10 +787,42 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2">
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        RegressionModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.losses.html">
@@ -876,8 +913,8 @@
 <p>This implementation comes with the ability to produce probabilistic forecasts.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.catboost_model.CatBoostModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.catboost_model.</span></span><span class="sig-name descname"><span class="pre">CatBoostModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/catboost_model.html#CatBoostModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.catboost_model.CatBoostModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel" title="darts.models.forecasting.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_LikelihoodMixin</span></code></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.catboost_model.</span></span><span class="sig-name descname"><span class="pre">CatBoostModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">categorical_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/catboost_model.html#CatBoostModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.catboost_model.CatBoostModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates" title="darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates"><code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModelWithCategoricalCovariates</span></code></a></p>
 <p>CatBoost Model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -959,6 +996,16 @@ is trained to predict all the steps in ‘output_chunk_length’ (features lags 
 <li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the model should use static covariate information in case the input <cite>series</cite> passed to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>
 contain static covariates. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, and static covariates are available at fitting time, will enforce
 that all target <cite>series</cite> have the same static covariate dimensionality in <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p></li>
+<li><p><strong>categorical_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, component name or list of component names specifying the past covariates that should be treated
+as categorical by the underlying <cite>CatBoostRegressor</cite>. The components that are specified as categorical
+must be integer-encoded. For more information on how CatBoost handles categorical features,
+visit: <a class="reference external" href="https://catboost.ai/docs/en/features/categorical-features">Categorical feature support documentatio</a>.</p></li>
+<li><p><strong>categorical_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, component name or list of component names specifying the future covariates that should be
+treated as categorical by the underlying <cite>CatBoostRegressor</cite>. The components that
+are specified as categorical must be integer-encoded.</p></li>
+<li><p><strong>categorical_static_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, string or list of strings specifying the static covariates that should be treated as categorical
+by the underlying <cite>CatBoostRegressor</cite>. The components that
+are specified as categorical must be integer-encoded.</p></li>
 <li><p><strong>**kwargs</strong> – Additional keyword arguments passed to <cite>catboost.CatBoostRegressor</cite>.
 Native multi-output support can be achieved by using an appropriate <cite>loss_function</cite> (‘MultiRMSE’,
 ‘MultiRMSEWithMissingValues’). Otherwise, Darts uses its <cite>MultiOutputRegressor</cite> wrapper to add multi-output
@@ -1014,11 +1061,11 @@ support.</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.lagged_label_names" title="darts.models.forecasting.catboost_model.CatBoostModel.lagged_label_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lagged_label_names</span></code></a></p></td>
 <td><p>The lagged label name for the model's estimators.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.min_train_samples" title="darts.models.forecasting.catboost_model.CatBoostModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
-<td><p>The minimum number of samples for training the model.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.likelihood" title="darts.models.forecasting.catboost_model.CatBoostModel.likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood</span></code></a></p></td>
+<td><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.num_parameters" title="darts.models.forecasting.catboost_model.CatBoostModel.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
-<td><p>Mimic function of Likelihood class</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.min_train_samples" title="darts.models.forecasting.catboost_model.CatBoostModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<td><p>The minimum number of samples for training the model.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.output_chunk_length" title="darts.models.forecasting.catboost_model.CatBoostModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
@@ -1050,7 +1097,7 @@ support.</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.supports_static_covariates" title="darts.models.forecasting.catboost_model.CatBoostModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.supports_transferrable_series_prediction" title="darts.models.forecasting.catboost_model.CatBoostModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.supports_transferable_series_prediction" title="darts.models.forecasting.catboost_model.CatBoostModel.supports_transferable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferable_series_prediction</span></code></a></p></td>
 <td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.catboost_model.CatBoostModel.supports_val_set" title="darts.models.forecasting.catboost_model.CatBoostModel.supports_val_set"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_val_set</span></code></a></p></td>
@@ -1076,10 +1123,7 @@ support.</p></li>
 <col style="width: 38%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><strong>likelihood</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><strong>model_params</strong></p></td>
+<tr class="row-odd"><td><p><strong>model_params</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -1839,10 +1883,11 @@ each series.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.catboost_model.CatBoostModel.likelihood">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.catboost_model.CatBoostModel.likelihood" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.SKLearnLikelihood" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood"><span class="pre">SKLearnLikelihood</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.models.forecasting.catboost_model.CatBoostModel.likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.SKLearnLikelihood" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnLikelihood</span></code></a>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1878,17 +1923,6 @@ each series.</p></li>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.catboost_model.CatBoostModel.num_parameters">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.catboost_model.CatBoostModel.num_parameters" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mimic function of Likelihood class</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2234,8 +2268,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.catboost_model.CatBoostModel.supports_transferrable_series_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.catboost_model.CatBoostModel.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.catboost_model.CatBoostModel.supports_transferable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.catboost_model.CatBoostModel.supports_transferable_series_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>

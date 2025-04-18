@@ -382,44 +382,8 @@ on bringing more models and features.
      - 🔴 ✅ 🔴
      - ✅ 🔴
      - 🔴
-   * - `AutoARIMA <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.auto_arima.html#darts.models.forecasting.auto_arima.AutoARIMA>`_
-     - 
-     - ✅ 🔴
-     - 🔴 ✅ 🔴
-     - 🔴 🔴
-     - 🔴
-   * - `StatsForecastAutoArima <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.StatsForecastAutoARIMA>`_ (faster AutoARIMA)
-     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
-     - ✅ 🔴
-     - 🔴 ✅ 🔴
-     - ✅ 🔴
-     - 🔴
    * - `ExponentialSmoothing <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.exponential_smoothing.html#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing>`_
      - 
-     - ✅ 🔴
-     - 🔴 🔴 🔴
-     - ✅ 🔴
-     - 🔴
-   * - `StatsforecastAutoETS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.StatsForecastAutoETS>`_
-     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
-     - ✅ 🔴
-     - 🔴 ✅ 🔴
-     - ✅ 🔴
-     - 🔴
-   * - `StatsforecastAutoCES <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES>`_
-     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
-     - ✅ 🔴
-     - 🔴 🔴 🔴
-     - 🔴 🔴
-     - 🔴
-   * - `BATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.BATS>`_ and `TBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tbats_model.html#darts.models.forecasting.tbats_model.TBATS>`_
-     - `TBATS paper <https://robjhyndman.com/papers/ComplexSeasonality.pdf>`_
-     - ✅ 🔴
-     - 🔴 🔴 🔴
-     - ✅ 🔴
-     - 🔴
-   * - `StatsForecastAutoTBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS>`_
-     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
      - ✅ 🔴
      - 🔴 🔴 🔴
      - ✅ 🔴
@@ -429,12 +393,6 @@ on bringing more models and features.
      - ✅ 🔴
      - 🔴 🔴 🔴
      - 🔴 🔴
-     - 🔴
-   * - `StatsForecastAutoTheta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.StatsForecastAutoTheta>`_
-     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
-     - ✅ 🔴
-     - 🔴 🔴 🔴
-     - ✅ 🔴
      - 🔴
    * - `Prophet <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet>`_
      - `Prophet repo <https://github.com/facebook/prophet>`_
@@ -454,11 +412,59 @@ on bringing more models and features.
      - 🔴 ✅ 🔴
      - ✅ 🔴
      - 🔴
+   * - `TBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_tbats.html#darts.models.forecasting.sf_tbats.TBATS>`_
+     - `TBATS paper <https://robjhyndman.com/papers/ComplexSeasonality.pdf>`_
+     - ✅ 🔴
+     - 🔴 ✅ 🔴
+     - ✅ ✅
+     - 🔴
    * - `Croston <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston>`_ method
      - 
      - ✅ 🔴
-     - 🔴 🔴 🔴
-     - 🔴 🔴
+     - 🔴 ✅ 🔴
+     - ✅ ✅
+     - 🔴
+   * - `StatsForecastModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_model.html#darts.models.forecasting.sf_model.StatsForecastModel>`_ wrapper around any `StatsForecast <https://nixtlaverse.nixtla.io/statsforecast/index.html#models>`_ model
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+     - ✅ 🔴
+     - 🔴 ✅ 🔴
+     - ✅ ✅
+     - 🔴
+   * - `AutoARIMA <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.AutoARIMA>`_
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+     - ✅ 🔴
+     - 🔴 ✅ 🔴
+     - ✅ ✅
+     - 🔴
+   * - `AutoETS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.AutoETS>`_
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+     - ✅ 🔴
+     - 🔴 ✅ 🔴
+     - ✅ ✅
+     - 🔴
+   * - `AutoCES <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.AutoCES>`_
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+     - ✅ 🔴
+     - 🔴 ✅ 🔴
+     - ✅ ✅
+     - 🔴
+   * - `AutoMFLES <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_mfles.html#darts.models.forecasting.sf_auto_mfles.AutoMFLES>`_
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+     - ✅ 🔴
+     - 🔴 ✅ 🔴
+     - ✅ ✅
+     - 🔴
+   * - `AutoTBATS <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.AutoTBATS>`_
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+     - ✅ 🔴
+     - 🔴 ✅ 🔴
+     - ✅ ✅
+     - 🔴
+   * - `AutoTheta <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.AutoTheta>`_
+     - `Nixtla's statsforecast <https://github.com/Nixtla/statsforecast>`_
+     - ✅ 🔴
+     - 🔴 ✅ 🔴
+     - ✅ ✅
      - 🔴
    * - **Global Baseline Models**\ :raw-html-m2r:`<br/>`\ (\ `GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_\ )
      - 
@@ -490,7 +496,7 @@ on bringing more models and features.
      - 
      - 
      - 
-   * - `RegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel>`_\ : generic wrapper around any sklearn regression model
+   * - `RegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel>`_\ : wrapper around any scikit-learn-like regression model
      - 
      - ✅ ✅
      - ✅ ✅ ✅

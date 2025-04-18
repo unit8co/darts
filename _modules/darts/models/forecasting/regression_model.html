@@ -202,6 +202,7 @@
 <span class="sd">if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">OrderedDict</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
@@ -225,13 +226,9 @@
     <span class="n">_optimized_historical_forecasts_last_points_only</span><span class="p">,</span>
     <span class="n">_process_historical_forecast_input</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span><span class="p">,</span> <span class="n">SKLearnLikelihood</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.multioutput</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_single_series</span><span class="p">,</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">_check_quantiles</span><span class="p">,</span>
-    <span class="n">likelihood_component_names</span><span class="p">,</span>
-    <span class="n">quantile_names</span><span class="p">,</span>
-<span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -730,7 +727,7 @@
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">estimators_</span><span class="p">[</span><span class="n">idx_estimator</span><span class="p">]</span>
 
         <span class="c1"># for quantile-models, the estimators are also grouped by quantiles</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">!=</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">):</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>
                     <span class="s2">&quot;`quantile` is only supported for probabilistic models that &quot;</span>
@@ -855,7 +852,17 @@
         <span class="p">):</span>
             <span class="n">sample_weights</span> <span class="o">=</span> <span class="n">sample_weights</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
 
+        <span class="n">features</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_samples</span><span class="p">(</span><span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">sample_weights</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_samples</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Subclasses can override this method to format the samples and labels before fit and predict.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">labels</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_fit_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -903,6 +910,7 @@
                     <span class="s2">&quot;`sample_weight` was ignored since underlying regression model&#39;s &quot;</span>
                     <span class="s2">&quot;`fit()` method does not support it.&quot;</span>
                 <span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
             <span class="n">training_samples</span><span class="p">,</span> <span class="n">training_labels</span><span class="p">,</span> <span class="o">**</span><span class="n">sample_weight_kwargs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
         <span class="p">)</span>
@@ -1314,10 +1322,11 @@
             <span class="n">covariate_matrices</span><span class="p">[</span><span class="n">cov_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
         <span class="c1"># for concatenating target with predictions (or quantile parameters)</span>
-        <span class="k">if</span> <span class="n">predict_likelihood_parameters</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span>
+        <span class="k">if</span> <span class="n">predict_likelihood_parameters</span> <span class="ow">and</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># with `multi_models=False`, the predictions are concatenated with the past target, even if `n&lt;=ocl`</span>
             <span class="c1"># to make things work, we just append the first predicted parameter (it will never be accessed)</span>
-            <span class="n">sample_slice</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_parameters</span><span class="p">)</span>
+            <span class="n">sample_slice</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">sample_slice</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
 
@@ -1355,7 +1364,7 @@
             <span class="p">)</span>
 
             <span class="c1"># X has shape (n_series * n_samples, n_regression_features)</span>
-            <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_and_sample</span><span class="p">(</span>
+            <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span>
                 <span class="n">X</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
             <span class="p">)</span>
             <span class="c1"># prediction shape (n_series * n_samples, output_chunk_length, n_components)</span>
@@ -1376,7 +1385,7 @@
                 <span class="n">points_preds</span><span class="o">=</span><span class="n">row</span><span class="p">,</span>
                 <span class="n">input_series</span><span class="o">=</span><span class="n">input_tgt</span><span class="p">,</span>
                 <span class="n">custom_components</span><span class="o">=</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_components_names</span><span class="p">(</span><span class="n">input_tgt</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">component_names</span><span class="p">(</span><span class="n">input_tgt</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">predict_likelihood_parameters</span>
                     <span class="k">else</span> <span class="kc">None</span>
                 <span class="p">),</span>
@@ -1390,14 +1399,29 @@
 
         <span class="k">return</span> <span class="n">predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">predictions</span></div>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_predict_and_sample</span><span class="p">(</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;By default, the regression model returns a single sample.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate predictions.</span>
+
+<span class="sd">        Generates deterministic predictions if no `Likelihood` was used.</span>
+<span class="sd">        Otherwise, generates probabilistic predictions. Either sampled from the predicted distribution,</span>
+<span class="sd">        or the predicted distribution parameters directly.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_samples</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+                <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="n">k</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">prediction</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
@@ -1435,7 +1459,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SKLearnLikelihood</span><span class="p">]:</span>
         <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_likelihood&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
     <span class="nd">@property</span>
@@ -1449,6 +1473,10 @@
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">supports_val_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -1574,321 +1602,21 @@
         <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">__sklearn_tags__</span><span class="p">()</span><span class="o">.</span><span class="n">target_tags</span><span class="o">.</span><span class="n">multi_output</span></div>
 
 
-<span class="k">class</span><span class="w"> </span><span class="nc">_LikelihoodMixin</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    A class containing functions supporting quantile, poisson and gaussian regression, to be used as a mixin for some</span>
-<span class="sd">    `RegressionModel` subclasses.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">available_likelihoods</span><span class="p">):</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">likelihood</span> <span class="ow">in</span> <span class="n">available_likelihoods</span><span class="p">,</span>
-            <span class="sa">f</span><span class="s2">&quot;If likelihood is specified it must be one of </span><span class="si">{</span><span class="n">available_likelihoods</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_model_container</span><span class="p">():</span>
-        <span class="k">return</span> <span class="n">_QuantileModelContainer</span><span class="p">()</span>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_prepare_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">):</span>
-        <span class="k">if</span> <span class="n">quantiles</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">quantiles</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="mf">0.01</span><span class="p">,</span>
-                <span class="mf">0.05</span><span class="p">,</span>
-                <span class="mf">0.1</span><span class="p">,</span>
-                <span class="mf">0.25</span><span class="p">,</span>
-                <span class="mf">0.5</span><span class="p">,</span>
-                <span class="mf">0.75</span><span class="p">,</span>
-                <span class="mf">0.9</span><span class="p">,</span>
-                <span class="mf">0.95</span><span class="p">,</span>
-                <span class="mf">0.99</span><span class="p">,</span>
-            <span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">quantiles</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
-            <span class="n">_check_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
-        <span class="n">median_idx</span> <span class="o">=</span> <span class="n">quantiles</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">quantiles</span><span class="p">,</span> <span class="n">median_idx</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_likelihood_components_names</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quantiles_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;poisson&quot;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">])</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_predict_quantile</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        X is of shape (n_series * n_samples, n_regression_features)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">k</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-        <span class="c1"># if predict_likelihood_parameters is True, all the quantiles must be predicted</span>
-        <span class="k">if</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">predict_likelihood_parameters</span><span class="p">:</span>
-            <span class="c1"># return median</span>
-            <span class="n">fitted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="p">[</span><span class="mf">0.5</span><span class="p">]</span>
-            <span class="k">return</span> <span class="n">fitted</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="n">model_outputs</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">quantile</span><span class="p">,</span> <span class="n">fitted</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">fitted</span>
-            <span class="c1"># model output has shape (n_series * n_samples, output_chunk_length, n_components)</span>
-            <span class="n">model_output</span> <span class="o">=</span> <span class="n">fitted</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-            <span class="n">model_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
-        <span class="n">model_outputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">model_outputs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)</span>
-        <span class="k">return</span> <span class="n">model_outputs</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_predict_poisson</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        X is of shape (n_series * n_samples, n_regression_features)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">k</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_predict_normal</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Method intended for CatBoost&#39;s RMSEWithUncertainty loss. Returns samples</span>
-<span class="sd">        computed from double-valued inputs [mean, variance].</span>
-<span class="sd">        X is of shape (n_series * n_samples, n_regression_features)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">k</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-        <span class="c1"># model_output shape:</span>
-        <span class="c1"># if univariate &amp; output_chunk_length = 1: (num_samples, 2)</span>
-        <span class="c1"># else: (2, num_samples, n_components * output_chunk_length)</span>
-        <span class="c1"># where the axis with 2 dims is mu, sigma</span>
-        <span class="n">model_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="n">output_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-        <span class="c1"># deterministic case: we return the mean only</span>
-        <span class="k">if</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">predict_likelihood_parameters</span><span class="p">:</span>
-            <span class="c1"># univariate &amp; single-chunk output</span>
-            <span class="k">if</span> <span class="n">output_dim</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="n">output_slice</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">output_slice</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
-            <span class="k">return</span> <span class="n">output_slice</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="c1"># probabilistic case</span>
-        <span class="c1"># univariate &amp; single-chunk output</span>
-        <span class="k">if</span> <span class="n">output_dim</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="c1"># embedding well shaped 2D output into 3D</span>
-            <span class="n">model_output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># we transpose to get mu, sigma couples on last axis</span>
-            <span class="c1"># shape becomes: (n_components * output_chunk_length, num_samples, 2)</span>
-            <span class="n">model_output</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
-
-        <span class="c1"># shape (n_components * output_chunk_length, num_samples, 2)</span>
-        <span class="k">return</span> <span class="n">model_output</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_sampling_quantile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted</span>
-<span class="sd">        quantiles closest to the sampled value.</span>
-
-<span class="sd">        model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">k</span><span class="p">,</span> <span class="n">n_timesteps</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">n_quantiles</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
-
-        <span class="c1"># obtain samples</span>
-        <span class="n">probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
-            <span class="n">size</span><span class="o">=</span><span class="p">(</span>
-                <span class="n">k</span><span class="p">,</span>
-                <span class="n">n_timesteps</span><span class="p">,</span>
-                <span class="n">n_components</span><span class="p">,</span>
-                <span class="mi">1</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-
-        <span class="c1"># add dummy dim</span>
-        <span class="n">probas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
-
-        <span class="c1"># tile and transpose</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">probas</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_quantiles</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-
-        <span class="c1"># prepare quantiles</span>
-        <span class="n">tquantiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-
-        <span class="c1"># calculate index of the largest quantile smaller than the sampled value</span>
-        <span class="n">left_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span> <span class="o">&gt;</span> <span class="n">tquantiles</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="c1"># obtain index of the smallest quantile larger than the sampled value</span>
-        <span class="n">right_idx</span> <span class="o">=</span> <span class="n">left_idx</span> <span class="o">+</span> <span class="mi">1</span>
-
-        <span class="c1"># repeat the model output on the edges</span>
-        <span class="n">repeat_count</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_quantiles</span>
-        <span class="n">repeat_count</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-        <span class="n">repeat_count</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-        <span class="n">repeat_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">repeat_count</span><span class="p">)</span>
-        <span class="n">shifted_output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">repeat_count</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="c1"># obtain model output values corresponding to the quantiles left and right of the sampled value</span>
-        <span class="n">left_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">shifted_output</span><span class="p">,</span> <span class="n">left_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">right_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">shifted_output</span><span class="p">,</span> <span class="n">right_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="c1"># add 0 and 1 to quantiles</span>
-        <span class="n">ext_quantiles</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">+</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
-        <span class="n">expanded_q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ext_quantiles</span><span class="p">),</span> <span class="n">left_idx</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-
-        <span class="c1"># calculate closest quantiles to the sampled value</span>
-        <span class="n">left_q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">expanded_q</span><span class="p">,</span> <span class="n">left_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">right_q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">expanded_q</span><span class="p">,</span> <span class="n">right_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="c1"># linear interpolation</span>
-        <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">probs</span> <span class="o">-</span> <span class="n">left_q</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">right_q</span> <span class="o">-</span> <span class="n">left_q</span><span class="p">)</span>
-        <span class="n">inter</span> <span class="o">=</span> <span class="n">left_value</span> <span class="o">+</span> <span class="n">weights</span> <span class="o">*</span> <span class="p">(</span><span class="n">right_value</span> <span class="o">-</span> <span class="n">left_value</span><span class="p">)</span>
-
-        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)</span>
-        <span class="k">return</span> <span class="n">inter</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_sampling_poisson</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        model_output is of shape (n_series * n_samples, output_chunk_length, n_components)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">lam</span><span class="o">=</span><span class="n">model_output</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_sampling_normal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sampling method for CatBoost&#39;s [mean, variance] output.</span>
-<span class="sd">        model_output is of shape (n_components * output_chunk_length, n_samples, 2) where the last dimension</span>
-<span class="sd">        contain mu and sigma.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">n_entries</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_params</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
-
-        <span class="c1"># treating each component separately</span>
-        <span class="n">mu_sigma_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">model_output</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_entries</span><span class="p">)]</span>
-
-        <span class="n">list_of_samples</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
-                <span class="n">mu_sigma</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span>  <span class="c1"># mean vector</span>
-                <span class="n">mu_sigma</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>  <span class="c1"># diagonal covariance matrix</span>
-            <span class="p">)</span>
-            <span class="k">for</span> <span class="n">mu_sigma</span> <span class="ow">in</span> <span class="n">mu_sigma_list</span>
-        <span class="p">]</span>
-
-        <span class="n">samples_transposed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">list_of_samples</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
-        <span class="n">samples_reshaped</span> <span class="o">=</span> <span class="n">samples_transposed</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">samples_reshaped</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_params_quantile</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Quantiles on the last dimension, grouped by component&quot;&quot;&quot;</span>
-        <span class="n">k</span><span class="p">,</span> <span class="n">n_timesteps</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">n_quantiles</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
-        <span class="c1"># last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]</span>
-        <span class="k">return</span> <span class="n">model_output</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">n_timesteps</span><span class="p">,</span> <span class="n">n_components</span> <span class="o">*</span> <span class="n">n_quantiles</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_params_poisson</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Lambdas on the last dimension, grouped by component&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">model_output</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_params_normal</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;[mu, sigma] on the last dimension, grouped by component&quot;&quot;&quot;</span>
-        <span class="n">shape</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
-        <span class="n">n_samples</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-
-        <span class="c1"># extract mu and sigma for each component</span>
-        <span class="n">mu_sigma_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">model_output</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])]</span>
-
-        <span class="c1"># reshape to (n_samples, output_chunk_length, 2)</span>
-        <span class="n">params_transposed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">mu_sigma_list</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
-        <span class="n">params_reshaped</span> <span class="o">=</span> <span class="n">params_transposed</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">pred_dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">params_reshaped</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_predict_and_sample_likelihood</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">likelihood</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-        <span class="n">model_output</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_predict_</span><span class="si">{</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)(</span>
-            <span class="n">x</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">predict_likelihood_parameters</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_params_</span><span class="si">{</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)(</span><span class="n">model_output</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">return</span> <span class="n">model_output</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_sampling_</span><span class="si">{</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)(</span><span class="n">model_output</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_num_parameters_quantile</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_num_parameters_poisson</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">1</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_num_parameters_normal</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Mimic function of Likelihood class&quot;&quot;&quot;</span>
-        <span class="n">likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span>
-        <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">return</span> <span class="mi">0</span>
-        <span class="k">elif</span> <span class="n">likelihood</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;gaussian&quot;</span><span class="p">,</span> <span class="s2">&quot;RMSEWithUncertainty&quot;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_num_parameters_normal</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;_num_parameters_</span><span class="si">{</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)()</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_quantiles_generate_components_names</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span>
-            <span class="n">input_series</span><span class="p">,</span>
-            <span class="n">quantile_names</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
-        <span class="p">)</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_likelihood_generate_components_names</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="n">likelihood_component_names</span><span class="p">(</span>
-            <span class="n">components</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="n">parameter_names</span>
-        <span class="p">)</span>
-
-
 <span class="k">class</span><span class="w"> </span><span class="nc">_QuantileModelContainer</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="RegressionModelWithCategoricalCovariates"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RegressionModelWithCategoricalCovariates</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">):</span>
+<div class="viewcode-block" id="RegressionModelWithCategoricalCovariates"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RegressionModelWithCategoricalCovariates</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">multi_models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">categorical_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1900,6 +1628,10 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
+<span class="sd">        model</span>
+<span class="sd">            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn&#39;t</span>
+<span class="sd">            support multi-output regression for multivariate timeseries, in which case one regressor</span>
+<span class="sd">            will be used per component in the multivariate series.</span>
 <span class="sd">        lags</span>
 <span class="sd">            Lagged target `series` values used to predict the next time step/s.</span>
 <span class="sd">            If an integer, must be &gt; 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`</span>
@@ -1971,11 +1703,6 @@
 <span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
-<span class="sd">        model</span>
-<span class="sd">            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn&#39;t</span>
-<span class="sd">            support multi-output regression for multivariate timeseries, in which case one regressor</span>
-<span class="sd">            will be used per component in the multivariate series.</span>
-<span class="sd">            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.</span>
 <span class="sd">        multi_models</span>
 <span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model is</span>
 <span class="sd">            trained to predict at step &#39;output_chunk_length&#39; in the future. Default: True.</span>
@@ -2004,6 +1731,29 @@
             <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">categorical_static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">use_static_covariates</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`categorical_static_covariates` is declared but `use_static_covariates` is set to False.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">categorical_past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lags_past_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`categorical_past_covariates` is declared but `lags_past_covariates` is not set.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">categorical_future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lags_future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;`categorical_future_covariates` is declared but `lags_future_covariates` is not set.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">categorical_past_covariates</span> <span class="o">=</span> <span class="p">(</span>
             <span class="p">[</span><span class="n">categorical_past_covariates</span><span class="p">]</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">categorical_past_covariates</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
@@ -2019,103 +1769,14 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">categorical_static_covariates</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
             <span class="k">else</span> <span class="n">categorical_static_covariates</span>
         <span class="p">)</span>
-
-<div class="viewcode-block" id="RegressionModelWithCategoricalCovariates.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">n_jobs_multioutput_wrapper</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_categorical_covariates</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-            <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
-            <span class="n">n_jobs_multioutput_wrapper</span><span class="o">=</span><span class="n">n_jobs_multioutput_wrapper</span><span class="p">,</span>
-            <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_indices</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># Indices are set on fit</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_categorical_fit_param</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_categorical_fit_param</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns the name, and default value of the categorical features parameter from model&#39;s `fit` method .</span>
-<span class="sd">        Can be overridden in subclasses.</span>
+<span class="sd">        Returns the name of the categorical features parameter from model&#39;s `fit` method .</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="s2">&quot;categorical_feature&quot;</span><span class="p">,</span> <span class="s2">&quot;auto&quot;</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_categorical_covariates</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Checks that the categorical covariates are valid. Specifically, checks that the categorical covariates</span>
-<span class="sd">        of the model are a subset of all covariates.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        series</span>
-<span class="sd">            TimeSeries or Sequence[TimeSeries] object containing the target values.</span>
-<span class="sd">        past_covariates</span>
-<span class="sd">            Optionally, a series or sequence of series specifying past-observed covariates</span>
-<span class="sd">        future_covariates</span>
-<span class="sd">            Optionally, a series or sequence of series specifying future-known covariates</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">for</span> <span class="n">categorical_covariates</span><span class="p">,</span> <span class="n">covariates</span><span class="p">,</span> <span class="n">cov_type</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
-            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">categorical_past_covariates</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_future_covariates</span><span class="p">],</span>
-            <span class="p">[</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">],</span>
-            <span class="p">[</span><span class="s2">&quot;past_covariates&quot;</span><span class="p">,</span> <span class="s2">&quot;future_covariates&quot;</span><span class="p">],</span>
-        <span class="p">):</span>
-            <span class="k">if</span> <span class="n">categorical_covariates</span><span class="p">:</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">covariates</span><span class="p">:</span>
-                    <span class="n">raise_log</span><span class="p">(</span>
-                        <span class="ne">ValueError</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;`categorical_</span><span class="si">{</span><span class="n">cov_type</span><span class="si">}</span><span class="s2">` were declared at model creation but no &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">cov_type</span><span class="si">}</span><span class="s2">` are passed to the `fit()` call.&quot;</span>
-                        <span class="p">),</span>
-                    <span class="p">)</span>
-                <span class="n">s</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">covariates</span><span class="p">)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="n">categorical_covariates</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">components</span><span class="p">)):</span>
-                    <span class="n">raise_log</span><span class="p">(</span>
-                        <span class="ne">ValueError</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;Some `categorical_</span><span class="si">{</span><span class="n">cov_type</span><span class="si">}</span><span class="s2">` components &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="n">categorical_covariates</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">components</span><span class="p">)</span><span class="si">}</span><span class="s2">) &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;declared at model creation are not present in the `</span><span class="si">{</span><span class="n">cov_type</span><span class="si">}</span><span class="s2">` &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;passed to the `fit()` call.&quot;</span>
-                        <span class="p">)</span>
-                    <span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_covariates</span><span class="p">:</span>
-            <span class="n">s</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-            <span class="n">covariates</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">static_covariates</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="o">.</span><span class="n">has_static_covariates</span><span class="p">:</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;`categorical_static_covariates` were declared at model creation but `series`&quot;</span>
-                        <span class="s2">&quot;passed to the `fit()` call does not contain `static_covariates`.&quot;</span>
-                    <span class="p">),</span>
-                <span class="p">)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_covariates</span><span class="p">)</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span>
-                <span class="nb">set</span><span class="p">(</span><span class="n">covariates</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-            <span class="p">):</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Some `categorical_static_covariates` components &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_covariates</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="nb">set</span><span class="p">(</span><span class="n">covariates</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span><span class="si">}</span><span class="s2">) &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;declared at model creation are not present in the series&#39; `static_covariates` &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;passed to the `fit()` call.&quot;</span>
-                    <span class="p">)</span>
-                <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_categorical_features</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -2131,66 +1792,90 @@
 <span class="sd">            in create_lagged_data.</span>
 <span class="sd">        2. Get the indices of the categorical features in the list of features.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">categorical_covariates</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[],</span>  <span class="c1"># currently no categorical target components allowed</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">categorical_past_covariates</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_past_covariates</span>
+            <span class="k">else</span> <span class="p">[],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">categorical_future_covariates</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_future_covariates</span>
+            <span class="k">else</span> <span class="p">[],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_covariates</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_covariates</span>
+            <span class="k">else</span> <span class="p">[],</span>
+        <span class="p">]</span>
 
-        <span class="n">categorical_covariates</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">categorical_past_covariates</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_past_covariates</span>
-                <span class="k">else</span> <span class="p">[]</span>
-            <span class="p">)</span>
-            <span class="o">+</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">categorical_future_covariates</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_future_covariates</span>
-                <span class="k">else</span> <span class="p">[]</span>
-            <span class="p">)</span>
-            <span class="o">+</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_covariates</span>
-                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">categorical_static_covariates</span>
-                <span class="k">else</span> <span class="p">[]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">categorical_covariates</span><span class="p">:</span>
+        <span class="c1"># if no categorical covariates are declared, return empty lists</span>
+        <span class="k">if</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cat_cov</span><span class="p">)</span> <span class="k">for</span> <span class="n">cat_cov</span> <span class="ow">in</span> <span class="n">categorical_covariates</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
             <span class="k">return</span> <span class="p">[],</span> <span class="p">[]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">target_ts</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-            <span class="n">past_covs_ts</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">)</span>
-            <span class="n">fut_covs_ts</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">)</span>
 
-            <span class="c1"># We keep the creation order of the different lags/features in create_lagged_data</span>
-            <span class="n">feature_list</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">target_ts</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="n">past_covs_ts</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">)</span>
+        <span class="n">fut_covs_ts</span> <span class="o">=</span> <span class="n">get_single_series</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">)</span>
+
+        <span class="n">feature_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">[</span>
+                <span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">lag</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">target_ts</span><span class="o">.</span><span class="n">components</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="p">(</span><span class="s2">&quot;past_cov&quot;</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">lag</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;past&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">past_covs_ts</span><span class="o">.</span><span class="n">components</span>
+            <span class="p">],</span>
+            <span class="p">[</span>
+                <span class="p">(</span><span class="s2">&quot;fut_cov&quot;</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">lag</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;future&quot;</span><span class="p">,</span> <span class="p">[])</span>
+                <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">fut_covs_ts</span><span class="o">.</span><span class="n">components</span>
+            <span class="p">],</span>
+            <span class="p">(</span>
                 <span class="p">[</span>
-                    <span class="sa">f</span><span class="s2">&quot;target_</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">,</span> <span class="p">[])</span>
-                    <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">target_ts</span><span class="o">.</span><span class="n">components</span>
+                    <span class="p">(</span><span class="s2">&quot;static_cov&quot;</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">target_ts</span><span class="o">.</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
                 <span class="p">]</span>
-                <span class="o">+</span> <span class="p">[</span>
-                    <span class="sa">f</span><span class="s2">&quot;past_cov_</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;past&quot;</span><span class="p">,</span> <span class="p">[])</span>
-                    <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">past_covs_ts</span><span class="o">.</span><span class="n">components</span>
-                <span class="p">]</span>
-                <span class="o">+</span> <span class="p">[</span>
-                    <span class="sa">f</span><span class="s2">&quot;fut_cov_</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="k">for</span> <span class="n">lag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;future&quot;</span><span class="p">,</span> <span class="p">[])</span>
-                    <span class="k">for</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">fut_covs_ts</span><span class="o">.</span><span class="n">components</span>
-                <span class="p">]</span>
-                <span class="o">+</span> <span class="p">(</span>
-                    <span class="nb">list</span><span class="p">(</span><span class="n">target_ts</span><span class="o">.</span><span class="n">static_covariates</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">target_ts</span><span class="o">.</span><span class="n">has_static_covariates</span>
-                    <span class="c1"># if isinstance(target_ts.static_covariates, pd.DataFrame)</span>
-                    <span class="k">else</span> <span class="p">[]</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
+                <span class="k">if</span> <span class="n">target_ts</span><span class="o">.</span><span class="n">has_static_covariates</span>
+                <span class="k">else</span> <span class="p">[]</span>
+            <span class="p">),</span>
+        <span class="p">]</span>
 
-            <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">i</span>
-                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">feature_list</span><span class="p">)</span>
-                <span class="k">for</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">categorical_covariates</span>
-                <span class="k">if</span> <span class="n">cat</span> <span class="ow">and</span> <span class="n">cat</span> <span class="ow">in</span> <span class="n">col</span>
+        <span class="c1"># keep track of feature list index to refer to the columns indices</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">indices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">col_names</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">series_type</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;series&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;past_covariates&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;future_covariates&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;static_covariates&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">cat_covs</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">s_type</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">categorical_covariates</span><span class="p">,</span> <span class="n">feature_list</span><span class="p">,</span> <span class="n">series_type</span>
+        <span class="p">):</span>
+            <span class="c1"># extract all categorical feature indices</span>
+            <span class="n">extracted_categorical_features</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">component</span><span class="p">,</span> <span class="n">lag</span> <span class="ow">in</span> <span class="n">features</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">component</span> <span class="ow">in</span> <span class="n">cat_covs</span><span class="p">:</span>
+                    <span class="n">indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">index</span><span class="p">)</span>
+                    <span class="n">col_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">component</span><span class="si">}</span><span class="s2">_lag</span><span class="si">{</span><span class="n">lag</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">extracted_categorical_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">component</span><span class="p">)</span>
+                <span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+
+            <span class="c1"># check that all cat components were extracted</span>
+            <span class="n">missing_comps</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">comp</span> <span class="k">for</span> <span class="n">comp</span> <span class="ow">in</span> <span class="n">cat_covs</span> <span class="k">if</span> <span class="n">comp</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">extracted_categorical_features</span>
             <span class="p">]</span>
-            <span class="n">col_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">feature_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">]</span>
-
-            <span class="k">return</span> <span class="n">indices</span><span class="p">,</span> <span class="n">col_names</span>
+            <span class="k">if</span> <span class="n">missing_comps</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Some `categorical_</span><span class="si">{</span><span class="n">s_type</span><span class="si">}</span><span class="s2">` components &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">missing_comps</span><span class="si">}</span><span class="s2">) declared at model creation are &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;not present in the `</span><span class="si">{</span><span class="n">s_type</span><span class="si">}</span><span class="s2">` passed to the `fit()` call. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Available feature(s) are: </span><span class="si">{</span><span class="nb">set</span><span class="p">([</span><span class="n">comp</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">_</span><span class="p">,</span><span class="w"> </span><span class="n">comp</span><span class="p">,</span><span class="w"> </span><span class="n">_</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">features</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">indices</span><span class="p">,</span> <span class="n">col_names</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_fit_model</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -2210,11 +1895,15 @@
             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
             <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
         <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_indices</span> <span class="o">=</span> <span class="n">cat_col_indices</span>
 
-        <span class="n">cat_param_name</span><span class="p">,</span> <span class="n">cat_param_default</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_fit_param</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="n">cat_param_name</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">cat_col_indices</span> <span class="k">if</span> <span class="n">cat_col_indices</span> <span class="k">else</span> <span class="n">cat_param_default</span>
-        <span class="p">)</span>
+        <span class="c1"># cat_param_name is None if model has no attribute to specify categorical features in `fit()`</span>
+        <span class="n">cat_param_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_fit_param</span>
+
+        <span class="c1"># Add attributes in kwargs if applicable for model&#39;s `fit()` method</span>
+        <span class="k">if</span> <span class="n">cat_param_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">cat_col_indices</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="n">cat_param_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">cat_col_indices</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_fit_model</span><span class="p">(</span>
             <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -2222,7 +1911,28 @@
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_validate_categorical_components</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Check if categorical features are integer-encoded&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">samples</span><span class="p">[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_categorical_indices</span><span class="p">]</span> <span class="o">%</span> <span class="mi">1</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Categorical features must be integer-encoded, decimal values found instead.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_format_samples</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Validate and format the categorical columns listed in self._categorical_indices accordingly to the model&#39;s</span>
+<span class="sd">        requirements.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_categorical_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_validate_categorical_components</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">labels</span></div>
 </pre></div>
 
               </div>

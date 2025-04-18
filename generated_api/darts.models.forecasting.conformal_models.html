@@ -39,7 +39,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Croston method" href="darts.models.forecasting.croston.html" />
+    <link rel="next" title="D-Linear" href="darts.models.forecasting.dlinear.html" />
     <link rel="prev" title="CatBoost model" href="darts.models.forecasting.catboost_model.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -557,11 +557,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.baselines.html">
        Baseline Models
       </a>
@@ -579,11 +574,6 @@
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
        Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.croston.html">
-       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -663,32 +653,47 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       StatsForecastAutoARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       StatsForecastAutoCES
+       AutoCES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       StatsForecastAutoETS
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       StatsForecastAutoTBATS
+       AutoTBATS
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       StatsForecastAutoTheta
+       AutoTheta
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
-       BATS and TBATS
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
       </a>
      </li>
      <li class="toctree-l3">
@@ -782,10 +787,42 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2">
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        RegressionModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.losses.html">
@@ -946,49 +983,52 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.extreme_lags" title="darts.models.forecasting.conformal_models.ConformalModel.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
 <td><p>A 8-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag, output shift, max target lag train (only for RNNModel)).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.min_train_samples" title="darts.models.forecasting.conformal_models.ConformalModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.likelihood" title="darts.models.forecasting.conformal_models.ConformalModel.likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood</span></code></a></p></td>
+<td><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.min_train_samples" title="darts.models.forecasting.conformal_models.ConformalModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.output_chunk_length" title="darts.models.forecasting.conformal_models.ConformalModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.output_chunk_length" title="darts.models.forecasting.conformal_models.ConformalModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.output_chunk_shift" title="darts.models.forecasting.conformal_models.ConformalModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.output_chunk_shift" title="darts.models.forecasting.conformal_models.ConformalModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_future_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_future_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.conformal_models.ConformalModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.conformal_models.ConformalModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
 <td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_multivariate" title="darts.models.forecasting.conformal_models.ConformalModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_multivariate" title="darts.models.forecasting.conformal_models.ConformalModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.conformal_models.ConformalModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.conformal_models.ConformalModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_past_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_past_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_probabilistic_prediction" title="darts.models.forecasting.conformal_models.ConformalModel.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_probabilistic_prediction" title="darts.models.forecasting.conformal_models.ConformalModel.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
 <td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_sample_weight" title="darts.models.forecasting.conformal_models.ConformalModel.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_sample_weight" title="darts.models.forecasting.conformal_models.ConformalModel.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_static_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_static_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_transferrable_series_prediction" title="darts.models.forecasting.conformal_models.ConformalModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_transferable_series_prediction" title="darts.models.forecasting.conformal_models.ConformalModel.supports_transferable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferable_series_prediction</span></code></a></p></td>
 <td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.uses_future_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.uses_future_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.uses_past_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.uses_past_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.uses_static_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalModel.uses_static_covariates" title="darts.models.forecasting.conformal_models.ConformalModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -999,10 +1039,7 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <col style="width: 38%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><strong>likelihood</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><strong>model_params</strong></p></td>
+<tr class="row-odd"><td><p><strong>model_params</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -1623,10 +1660,11 @@ each series.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalModel.likelihood">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalModel.likelihood" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood" title="darts.utils.likelihood_models.base.Likelihood"><span class="pre">Likelihood</span></a></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalModel.likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+<dd class="field-odd"><p><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood" title="darts.utils.likelihood_models.base.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2034,8 +2072,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalModel.supports_transferrable_series_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalModel.supports_transferable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalModel.supports_transferable_series_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2181,49 +2219,52 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.extreme_lags" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
 <td><p>A 8-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag, output shift, max target lag train (only for RNNModel)).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.min_train_samples" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.likelihood" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood</span></code></a></p></td>
+<td><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.min_train_samples" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.output_chunk_length" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.output_chunk_length" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.output_chunk_shift" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.output_chunk_shift" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_future_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_future_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
 <td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_multivariate" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_multivariate" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_past_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_past_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_probabilistic_prediction" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_probabilistic_prediction" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
 <td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_sample_weight" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_sample_weight" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_static_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_static_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_transferrable_series_prediction" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_transferable_series_prediction" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_transferable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferable_series_prediction</span></code></a></p></td>
 <td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_future_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_future_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_past_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_past_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_static_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_static_covariates" title="darts.models.forecasting.conformal_models.ConformalNaiveModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -2234,10 +2275,7 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <col style="width: 38%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><strong>likelihood</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><strong>model_params</strong></p></td>
+<tr class="row-odd"><td><p><strong>model_params</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -2858,10 +2896,11 @@ each series.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalNaiveModel.likelihood">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.likelihood" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood" title="darts.utils.likelihood_models.base.Likelihood"><span class="pre">Likelihood</span></a></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+<dd class="field-odd"><p><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood" title="darts.utils.likelihood_models.base.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -3271,8 +3310,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_transferrable_series_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_transferable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalNaiveModel.supports_transferable_series_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -3422,49 +3461,52 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.extreme_lags" title="darts.models.forecasting.conformal_models.ConformalQRModel.extreme_lags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">extreme_lags</span></code></a></p></td>
 <td><p>A 8-tuple containing in order: (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate lag, max future covariate lag, output shift, max target lag train (only for RNNModel)).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.min_train_samples" title="darts.models.forecasting.conformal_models.ConformalQRModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.likelihood" title="darts.models.forecasting.conformal_models.ConformalQRModel.likelihood"><code class="xref py py-obj docutils literal notranslate"><span class="pre">likelihood</span></code></a></p></td>
+<td><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.min_train_samples" title="darts.models.forecasting.conformal_models.ConformalQRModel.min_train_samples"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_train_samples</span></code></a></p></td>
 <td><p>The minimum number of samples for training the model.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.output_chunk_length" title="darts.models.forecasting.conformal_models.ConformalQRModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.output_chunk_length" title="darts.models.forecasting.conformal_models.ConformalQRModel.output_chunk_length"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_length</span></code></a></p></td>
 <td><p>Number of time steps predicted at once by the model, not defined for statistical models.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.output_chunk_shift" title="darts.models.forecasting.conformal_models.ConformalQRModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.output_chunk_shift" title="darts.models.forecasting.conformal_models.ConformalQRModel.output_chunk_shift"><code class="xref py py-obj docutils literal notranslate"><span class="pre">output_chunk_shift</span></code></a></p></td>
 <td><p>Number of time steps that the output/prediction starts after the end of the input.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_future_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_future_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_future_covariates</span></code></a></p></td>
 <td><p>Whether model supports future covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_likelihood_parameter_prediction" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_likelihood_parameter_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_likelihood_parameter_prediction</span></code></a></p></td>
 <td><p>Whether model instance supports direct prediction of likelihood parameters</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_multivariate" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_multivariate" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_multivariate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_multivariate</span></code></a></p></td>
 <td><p>Whether the model considers more than one variate in the time series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_optimized_historical_forecasts" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_optimized_historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_optimized_historical_forecasts</span></code></a></p></td>
 <td><p>Whether the model supports optimized historical forecasts</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_past_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_past_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_past_covariates</span></code></a></p></td>
 <td><p>Whether model supports past covariates</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_probabilistic_prediction" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_probabilistic_prediction" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_probabilistic_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_probabilistic_prediction</span></code></a></p></td>
 <td><p>Checks if the forecasting model with this configuration supports probabilistic predictions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_sample_weight" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_sample_weight" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_sample_weight"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_sample_weight</span></code></a></p></td>
 <td><p>Whether model supports sample weight for training.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_static_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_static_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_static_covariates</span></code></a></p></td>
 <td><p>Whether model supports static covariates</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_transferrable_series_prediction" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_transferrable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferrable_series_prediction</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_transferable_series_prediction" title="darts.models.forecasting.conformal_models.ConformalQRModel.supports_transferable_series_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">supports_transferable_series_prediction</span></code></a></p></td>
 <td><p>Whether the model supports prediction for any input <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.uses_future_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.uses_future_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.uses_future_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_future_covariates</span></code></a></p></td>
 <td><p>Whether the model uses future covariates, once fitted.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.uses_past_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.uses_past_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.uses_past_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_past_covariates</span></code></a></p></td>
 <td><p>Whether the model uses past covariates, once fitted.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.uses_static_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.conformal_models.ConformalQRModel.uses_static_covariates" title="darts.models.forecasting.conformal_models.ConformalQRModel.uses_static_covariates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">uses_static_covariates</span></code></a></p></td>
 <td><p>Whether the model uses static covariates, once fitted.</p></td>
 </tr>
 </tbody>
@@ -3475,10 +3517,7 @@ of samples given with parameter <cite>num_samples</cite> in downstream tasks (e.
 <col style="width: 38%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><strong>likelihood</strong></p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><strong>model_params</strong></p></td>
+<tr class="row-odd"><td><p><strong>model_params</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -4099,10 +4138,11 @@ each series.</p></li>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalQRModel.likelihood">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalQRModel.likelihood" title="Permalink to this definition">¶</a></dt>
-<dd><dl class="field-list simple">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood" title="darts.utils.likelihood_models.base.Likelihood"><span class="pre">Likelihood</span></a></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalQRModel.likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood (if any) that the model uses for probabilistic forecasts.</p>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+<dd class="field-odd"><p><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood" title="darts.utils.likelihood_models.base.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -4512,8 +4552,8 @@ probabilistic predictions.</p>
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalQRModel.supports_transferrable_series_prediction">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferrable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_transferrable_series_prediction" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.conformal_models.ConformalQRModel.supports_transferable_series_prediction">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">supports_transferable_series_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.conformal_models.ConformalQRModel.supports_transferable_series_prediction" title="Permalink to this definition">¶</a></dt>
 <dd><p>Whether the model supports prediction for any input <cite>series</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -4578,10 +4618,10 @@ probabilistic predictions.</p>
             <p class="prev-next-title">CatBoost model</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.models.forecasting.croston.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.models.forecasting.dlinear.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Croston method</p>
+        <p class="prev-next-title">D-Linear</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

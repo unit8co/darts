@@ -39,8 +39,8 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Utils" href="darts.utils.html" />
-    <link rel="prev" title="XGBoost Model" href="darts.models.forecasting.xgboost.html" />
+    <link rel="next" title="Likelihoods for RegressionModel" href="darts.utils.likelihood_models.sklearn.html" />
+    <link rel="prev" title="Likelihood Models" href="darts.utils.likelihood_models.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -557,11 +557,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.baselines.html">
        Baseline Models
       </a>
@@ -579,11 +574,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
        Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.croston.html">
-       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -663,32 +653,47 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       StatsForecastAutoARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       StatsForecastAutoCES
+       AutoCES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       StatsForecastAutoETS
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       StatsForecastAutoTBATS
+       AutoTBATS
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       StatsForecastAutoTheta
+       AutoTheta
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
-       BATS and TBATS
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
       </a>
      </li>
      <li class="toctree-l3">
@@ -782,10 +787,42 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2">
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        RegressionModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.losses.html">
@@ -875,11 +912,41 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.utils"></span><dl class="py class">
-<dt class="sig sig-object py" id="darts.models.utils.NotImportedModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.utils.</span></span><span class="sig-name descname"><span class="pre">NotImportedModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">module_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">warn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/utils.html#NotImportedModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.utils.NotImportedModule" title="Permalink to this definition">¶</a></dt>
+  <span class="target" id="module-darts.utils.likelihood_models.base"></span><dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.Likelihood">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.base.</span></span><span class="sig-name descname"><span class="pre">Likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">likelihood_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/base.html#Likelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.base.Likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Helper class for handling import errors of optional dependencies.</p>
+<p>Base class for all likelihoods.</p>
+<ul class="simple">
+<li><p>likelihoods for torch models</p></li>
+<li><p>likelihoods for sklearn-like models (e.g. RegressionModel subclasses)</p></li>
+</ul>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>likelihood_type</strong> (<a class="reference internal" href="#darts.utils.likelihood_models.base.LikelihoodType" title="darts.utils.likelihood_models.base.LikelihoodType"><code class="xref py py-class docutils literal notranslate"><span class="pre">LikelihoodType</span></code></a>) – A pre-defined <cite>LikelihoodType</cite>.</p></li>
+<li><p><strong>parameter_names</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The likelihood (distribution) parameter names.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.base.Likelihood.num_parameters" title="darts.utils.likelihood_models.base.Likelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of distribution parameters for a single target value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.base.Likelihood.parameter_names" title="darts.utils.likelihood_models.base.Likelihood.parameter_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameter_names</span></code></a></p></td>
+<td><p>Returns the likelihood parameter names.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.base.Likelihood.type" title="darts.utils.likelihood_models.base.Likelihood.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a></p></td>
+<td><p>Returns the likelihood type.</p></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>
@@ -887,16 +954,190 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">__call__</span></code>(*args, **kwargs)</p></td>
-<td><p>Call self as a function.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.base.Likelihood.component_names" title="darts.utils.likelihood_models.base.Likelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 </tbody>
 </table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.Likelihood.component_names">
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/base.html#Likelihood.component_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.base.Likelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates names for the parameters of the Likelihood.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.Likelihood.num_parameters">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.Likelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of distribution parameters for a single target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.Likelihood.parameter_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parameter_names</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.Likelihood.parameter_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood parameter names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.Likelihood.type">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#darts.utils.likelihood_models.base.LikelihoodType" title="darts.utils.likelihood_models.base.LikelihoodType"><span class="pre">LikelihoodType</span></a></em><a class="headerlink" href="#darts.utils.likelihood_models.base.Likelihood.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.utils.likelihood_models.base.LikelihoodType" title="darts.utils.likelihood_models.base.LikelihoodType"><code class="xref py py-class docutils literal notranslate"><span class="pre">LikelihoodType</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.base.</span></span><span class="sig-name descname"><span class="pre">LikelihoodType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/base.html#LikelihoodType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
+<p>An enumeration.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="darts.models.utils.NotImportedModule.usable">
-<span class="sig-name descname"><span class="pre">usable</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#darts.models.utils.NotImportedModule.usable" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Bernoulli">
+<span class="sig-name descname"><span class="pre">Bernoulli</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'bernoulli'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Bernoulli" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Beta">
+<span class="sig-name descname"><span class="pre">Beta</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'beta'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Beta" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Cauchy">
+<span class="sig-name descname"><span class="pre">Cauchy</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'cauchy'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Cauchy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.ContinuousBernoulli">
+<span class="sig-name descname"><span class="pre">ContinuousBernoulli</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'continuousbernoulli'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.ContinuousBernoulli" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Dirichlet">
+<span class="sig-name descname"><span class="pre">Dirichlet</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'dirichlet'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Dirichlet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Exponential">
+<span class="sig-name descname"><span class="pre">Exponential</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'exponential'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Exponential" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Gamma">
+<span class="sig-name descname"><span class="pre">Gamma</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'gamma'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Gamma" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Gaussian">
+<span class="sig-name descname"><span class="pre">Gaussian</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'gaussian'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Gaussian" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Geometric">
+<span class="sig-name descname"><span class="pre">Geometric</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'geometric'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Geometric" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Gumbel">
+<span class="sig-name descname"><span class="pre">Gumbel</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'gumbel'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Gumbel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.HalfNormal">
+<span class="sig-name descname"><span class="pre">HalfNormal</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'halfnormal'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.HalfNormal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Laplace">
+<span class="sig-name descname"><span class="pre">Laplace</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'laplace'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Laplace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.LogNormal">
+<span class="sig-name descname"><span class="pre">LogNormal</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'lognormal'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.LogNormal" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.NegativeBinomial">
+<span class="sig-name descname"><span class="pre">NegativeBinomial</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'negativebinomial'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.NegativeBinomial" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Poisson">
+<span class="sig-name descname"><span class="pre">Poisson</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'poisson'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Poisson" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Quantile">
+<span class="sig-name descname"><span class="pre">Quantile</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'quantile'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Quantile" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.LikelihoodType.Weibull">
+<span class="sig-name descname"><span class="pre">Weibull</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'weibull'</span></em><a class="headerlink" href="#darts.utils.likelihood_models.base.LikelihoodType.Weibull" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.likelihood_component_names">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.base.</span></span><span class="sig-name descname"><span class="pre">likelihood_component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">components</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter_names</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/base.html#likelihood_component_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.base.likelihood_component_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates formatted likelihood parameter names for components and parameter names.</p>
+<p>The order of the returned names is: <cite>[comp1_param_1, … comp1_param_n, …, comp_n_param_n]</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>components</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]) – A sequence of component names to add to the beginning of the returned names.</p></li>
+<li><p><strong>parameter_names</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – A sequence of likelihood parameter names to add to the end of the returned names.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.quantile_interval_names">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.base.</span></span><span class="sig-name descname"><span class="pre">quantile_interval_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q_interval</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/base.html#quantile_interval_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.base.quantile_interval_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates formatted quantile interval names, optionally added to a component name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>q_interval</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]]) – A tuple or multiple tuples with the (lower bound, upper bound) of the quantile intervals.</p></li>
+<li><p><strong>component</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a component name to add to the beginning of the quantile names.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.base.quantile_names">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.base.</span></span><span class="sig-name descname"><span class="pre">quantile_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/base.html#quantile_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.base.quantile_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates formatted quantile names, optionally added to a component name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>q</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – A float or list of floats with the quantiles to generate the names for.</p></li>
+<li><p><strong>component</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a component name to add to the beginning of the quantile names.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 
@@ -906,17 +1147,17 @@
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.models.forecasting.xgboost.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.utils.likelihood_models.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">XGBoost Model</p>
+            <p class="prev-next-title">Likelihood Models</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.utils.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.utils.likelihood_models.sklearn.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Utils</p>
+        <p class="prev-next-title">Likelihoods for <cite>RegressionModel</cite></p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

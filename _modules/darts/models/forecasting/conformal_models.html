@@ -188,6 +188,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Likelihood</span><span class="p">,</span>
+    <span class="n">LikelihoodType</span><span class="p">,</span>
+    <span class="n">quantile_names</span><span class="p">,</span>
+<span class="p">)</span>
+
 <span class="k">try</span><span class="p">:</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
 <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
@@ -207,7 +213,6 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">METRIC_TYPE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TORCH_AVAILABLE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_with_sanity_checks</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.historical_forecasts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_adjust_historical_forecasts_time_index</span><span class="p">,</span>
@@ -219,11 +224,10 @@
     <span class="n">series2seq</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TORCH_AVAILABLE</span><span class="p">,</span>
     <span class="n">_check_quantiles</span><span class="p">,</span>
     <span class="n">generate_index</span><span class="p">,</span>
-    <span class="n">likelihood_component_names</span><span class="p">,</span>
     <span class="n">n_steps_between</span><span class="p">,</span>
-    <span class="n">quantile_names</span><span class="p">,</span>
     <span class="n">random_method</span><span class="p">,</span>
     <span class="n">sample_from_quantiles</span><span class="p">,</span>
 <span class="p">)</span>
@@ -355,7 +359,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">cal_num_samples</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">cal_num_samples</span> <span class="k">if</span> <span class="n">model</span><span class="o">.</span><span class="n">supports_probabilistic_prediction</span> <span class="k">else</span> <span class="mi">1</span>
         <span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="s2">&quot;quantile&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">Likelihood</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="n">quantile_names</span><span class="p">(</span><span class="n">quantiles</span><span class="p">),</span>
+        <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
 
 <div class="viewcode-block" id="ConformalModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalModel.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
@@ -1426,7 +1433,7 @@
                 <span class="n">inner_iterator</span> <span class="o">=</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">s_hfcs</span><span class="p">[</span><span class="n">first_fc_idx</span><span class="p">:</span><span class="n">last_fc_idx</span><span class="p">:</span><span class="n">rel_stride</span><span class="p">])</span>
 
             <span class="n">comp_names_out</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_cp_component_names</span><span class="p">(</span><span class="n">series_</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">component_names</span><span class="p">(</span><span class="n">series_</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">predict_likelihood_parameters</span>
                 <span class="k">else</span> <span class="kc">None</span>
             <span class="p">)</span>
@@ -1601,12 +1608,6 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Gives the &quot;per time step&quot; metric and optional metric kwargs used to compute residuals /</span>
 <span class="sd">        non-conformity scores.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_cp_component_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gives the component names for generated forecasts.&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">likelihood_component_names</span><span class="p">(</span>
-            <span class="n">input_series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span> <span class="n">quantile_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span>
-        <span class="p">)</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_historical_forecasts_sanity_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_historical_forecasts_sanity_checks</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">is_conformal</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
@@ -1691,7 +1692,7 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">considers_static_covariates</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Likelihood</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span></div>
 
 

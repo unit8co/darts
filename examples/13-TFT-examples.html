@@ -751,7 +751,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">IceCreamHeaterDataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mape</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TFTModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
 
@@ -954,7 +954,7 @@ model.predict(*args, **kwargs, num_samples=1)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-TFTModel(hidden_size=64, lstm_layers=1, num_attention_heads=4, full_attention=False, feed_forward=GatedResidualNetwork, dropout=0.1, hidden_continuous_size=8, categorical_embedding_sizes=None, add_relative_index=False, loss_fn=None, likelihood=&lt;darts.utils.likelihood_models.QuantileRegression object at 0x7f92e0d64c70&gt;, norm_type=LayerNorm, use_static_covariates=True, input_chunk_length=24, output_chunk_length=12, batch_size=16, n_epochs=300, add_encoders=None, random_state=42)
+TFTModel(hidden_size=64, lstm_layers=1, num_attention_heads=4, full_attention=False, feed_forward=GatedResidualNetwork, dropout=0.1, hidden_continuous_size=8, categorical_embedding_sizes=None, add_relative_index=False, loss_fn=None, likelihood=&lt;darts.utils.likelihood_models.torch.QuantileRegression object at 0x7f92e0d64c70&gt;, norm_type=LayerNorm, use_static_covariates=True, input_chunk_length=24, output_chunk_length=12, batch_size=16, n_epochs=300, add_encoders=None, random_state=42)
 </pre></div></div>
 </div>
 </section>

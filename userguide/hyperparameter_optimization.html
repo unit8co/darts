@@ -282,7 +282,7 @@ for a more complete example.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">smape</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TCNModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianLikelihood</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianLikelihood</span>
 
 <span class="c1"># load data</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
@@ -296,16 +296,18 @@ for a more complete example.</p>
 <span class="n">train</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
 <span class="n">val</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
 
+
 <span class="c1">#  workaround found in https://github.com/Lightning-AI/pytorch-lightning/issues/17485</span>
 <span class="c1"># to avoid import of both lightning and pytorch_lightning</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">PatchedPruningCallback</span><span class="p">(</span><span class="n">optuna</span><span class="o">.</span><span class="n">integration</span><span class="o">.</span><span class="n">PyTorchLightningPruningCallback</span><span class="p">,</span> <span class="n">Callback</span><span class="p">):</span>
     <span class="k">pass</span>
 
+
 <span class="c1"># define objective function</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">objective</span><span class="p">(</span><span class="n">trial</span><span class="p">):</span>
     <span class="c1"># select input and output chunk lengths</span>
     <span class="n">in_len</span> <span class="o">=</span> <span class="n">trial</span><span class="o">.</span><span class="n">suggest_int</span><span class="p">(</span><span class="s2">&quot;in_len&quot;</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">36</span><span class="p">)</span>
-    <span class="n">out_len</span> <span class="o">=</span> <span class="n">trial</span><span class="o">.</span><span class="n">suggest_int</span><span class="p">(</span><span class="s2">&quot;out_len&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">in_len</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">out_len</span> <span class="o">=</span> <span class="n">trial</span><span class="o">.</span><span class="n">suggest_int</span><span class="p">(</span><span class="s2">&quot;out_len&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">in_len</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="c1"># Other hyperparameters</span>
     <span class="n">kernel_size</span> <span class="o">=</span> <span class="n">trial</span><span class="o">.</span><span class="n">suggest_int</span><span class="p">(</span><span class="s2">&quot;kernel_size&quot;</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
@@ -363,10 +365,9 @@ for a more complete example.</p>
         <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="p">)</span>
 
-
     <span class="c1"># when validating during training, we can use a slightly longer validation</span>
     <span class="c1"># set which also contains the first input_chunk_length time steps</span>
-    <span class="n">model_val_set</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">VAL_LEN</span> <span class="o">+</span> <span class="n">in_len</span><span class="p">)</span> <span class="p">:])</span>
+    <span class="n">model_val_set</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">VAL_LEN</span> <span class="o">+</span> <span class="n">in_len</span><span class="p">):])</span>
 
     <span class="c1"># train the model</span>
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>

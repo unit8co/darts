@@ -718,7 +718,8 @@
 <span class="sd">            prediction time).</span>
 <span class="sd">        activation</span>
 <span class="sd">            The activation function of encoder/decoder intermediate layer (default=&#39;ReLU&#39;).</span>
-<span class="sd">            Supported activations: [&#39;ReLU&#39;,&#39;RReLU&#39;, &#39;PReLU&#39;, &#39;Softplus&#39;, &#39;Tanh&#39;, &#39;SELU&#39;, &#39;LeakyReLU&#39;,  &#39;Sigmoid&#39;]</span>
+<span class="sd">            Supported activations: [&#39;ReLU&#39;, &#39;RReLU&#39;, &#39;PReLU&#39;, &#39;ELU&#39;, &#39;Softplus&#39;, &#39;Tanh&#39;, &#39;SELU&#39;, &#39;LeakyReLU&#39;, &#39;Sigmoid&#39;,</span>
+<span class="sd">            &#39;GELU&#39;]</span>
 <span class="sd">        MaxPool1d</span>
 <span class="sd">            Use MaxPool1d pooling. False uses AvgPool1d</span>
 <span class="sd">        **kwargs</span>
@@ -730,7 +731,7 @@
 <span class="sd">            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.</span>
 <span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
 <span class="sd">        likelihood</span>
-<span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.Likelihood&gt;` models to be used for</span>
+<span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.torch.TorchLikelihood&gt;` models to be used for</span>
 <span class="sd">            probabilistic forecasts. Default: ``None``.</span>
 <span class="sd">        torch_metrics</span>
 <span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>

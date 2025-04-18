@@ -5,39 +5,39 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>darts.utils.likelihood_models &#8212; darts  documentation</title>
+    <title>darts.utils.likelihood_models.torch &#8212; darts  documentation</title>
     
-  <link href="../../../_static/css/theme.css" rel="stylesheet">
-  <link href="../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
 
     
   <link rel="stylesheet"
-    href="../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
   <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
   <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
 
     
       
 
     
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../../../_static/doctools.js"></script>
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -56,8 +56,8 @@
     
     
 
-<a class="navbar-brand" href="../../../index.html">
-  <img src="../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo">
 </a>
 
 
@@ -75,37 +75,37 @@
       <div class="navbar-center-item">
         <ul id="navbar-main-elements" class="navbar-nav">
     <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../../../README.html">
+ <a class="reference internal nav-link" href="../../../../README.html">
   Home
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../../../quickstart/00-quickstart.html">
+ <a class="reference internal nav-link" href="../../../../quickstart/00-quickstart.html">
   Quickstart
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../../../userguide.html">
+ <a class="reference internal nav-link" href="../../../../userguide.html">
   User Guide
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../../../generated_api/darts.html">
+ <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
   API Reference
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../../../examples.html">
+ <a class="reference internal nav-link" href="../../../../examples.html">
   Examples
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../../../release_notes/RELEASE_NOTES.html">
+ <a class="reference internal nav-link" href="../../../../release_notes/RELEASE_NOTES.html">
   Release Notes
  </a>
 </li>
@@ -146,7 +146,7 @@
           
             
             <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../search.html" method="get">
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
   <i class="icon fas fa-search"></i>
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
@@ -172,10 +172,10 @@
               
               <div>
                 
-  <h1>Source code for darts.utils.likelihood_models</h1><div class="highlight"><pre>
+  <h1>Source code for darts.utils.likelihood_models.torch</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Likelihood Models</span>
-<span class="sd">-----------------</span>
+<span class="sd">Likelihoods for `TorchForecastingModel`</span>
+<span class="sd">---------------------------------------</span>
 
 <span class="sd">The likelihood models contain all the logic needed to train and use Darts&#39; neural network models in</span>
 <span class="sd">a probabilistic way. This essentially means computing an appropriate training loss and sample from the</span>
@@ -185,7 +185,7 @@
 <span class="sd">(hence performing maximum likelihood estimation when training the model).</span>
 <span class="sd">However, most likelihoods also optionally support specifying time-independent &quot;prior&quot;</span>
 <span class="sd">beliefs about the distribution parameters.</span>
-<span class="sd">In such cases, the a KL-divergence term is added to the loss in order to regularise it in the</span>
+<span class="sd">In such cases, the KL-divergence term is added to the loss in order to regularise it in the</span>
 <span class="sd">direction of the specified prior distribution. (Note that this is technically not purely</span>
 <span class="sd">a Bayesian approach as the priors are actual parameters values, and not distributions).</span>
 <span class="sd">The parameter `prior_strength` controls the strength of the &quot;prior&quot; regularisation on the loss.</span>
@@ -206,7 +206,6 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections.abc</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
@@ -231,14 +230,16 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributions</span><span class="w"> </span><span class="kn">import</span> <span class="n">Weibull</span> <span class="k">as</span> <span class="n">_Weibull</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torch.distributions.kl</span><span class="w"> </span><span class="kn">import</span> <span class="n">kl_divergence</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Likelihood</span><span class="p">,</span>
+    <span class="n">LikelihoodType</span><span class="p">,</span>
+    <span class="n">quantile_names</span><span class="p">,</span>
+<span class="p">)</span>
 
 <span class="c1"># TODO: Table on README listing distribution, possible priors and wiki article</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_check_quantiles</span><span class="p">,</span>
-    <span class="n">likelihood_component_names</span><span class="p">,</span>
-    <span class="n">quantile_names</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">MIN_CAUCHY_GAMMA_SAMPLING</span> <span class="o">=</span> <span class="mf">1e-100</span>
@@ -268,16 +269,31 @@
     <span class="n">_check</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">p</span><span class="p">:</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">p</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span> <span class="n">param_name</span><span class="p">,</span> <span class="s2">&quot;in the open interval (0, 1)&quot;</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="Likelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Likelihood</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Abstract class for a likelihood model.</span>
+<div class="viewcode-block" id="TorchLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">TorchLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">likelihood_type</span><span class="p">:</span> <span class="n">LikelihoodType</span><span class="p">,</span>
+        <span class="n">parameter_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Abstract class for torch likelihood models.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        likelihood_type</span>
+<span class="sd">            A pre-defined `LikelihoodType`.</span>
+<span class="sd">        parameter_names</span>
+<span class="sd">            The likelihood (distribution) parameter names.</span>
+<span class="sd">        prior_strength</span>
+<span class="sd">            strength of the loss regularisation induced by the prior</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_strength</span> <span class="o">=</span> <span class="n">prior_strength</span>
-        <span class="c1"># used for equality operator between likelihood objects</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_attrs_equality</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">likelihood_type</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="n">parameter_names</span><span class="p">,</span>
+        <span class="p">)</span>
 
-<div class="viewcode-block" id="Likelihood.compute_loss"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.compute_loss">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_loss</span><span class="p">(</span>
+<div class="viewcode-block" id="TorchLikelihood.compute_loss"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood.compute_loss">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_loss</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
         <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
@@ -339,7 +355,6 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a torch distribution built with the specified params</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span>
@@ -349,17 +364,14 @@
 <span class="sd">        Returns the distribution parameters, obtained from the raw model outputs</span>
 <span class="sd">        (e.g. applies softplus or sigmoids to get parameters in the expected domains).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span>
 
-<div class="viewcode-block" id="Likelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.sample">[docs]</a>    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="TorchLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood.sample">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Samples a prediction from the probability distributions defined by the specific likelihood model</span>
-<span class="sd">        and the parameters given in `model_output`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
+<span class="sd">        Samples a prediction from the likelihood distribution and the predicted parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
 
-<div class="viewcode-block" id="Likelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="TorchLikelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.TorchLikelihood.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -375,70 +387,17 @@
                 <span class="n">n_components</span> <span class="o">*</span> <span class="n">n_params</span><span class="p">,</span>
             <span class="p">))</span></div>
 
-<div class="viewcode-block" id="Likelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.likelihood_components_names">[docs]</a>    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Generates names for the parameters of the Likelihood.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
-
-    <span class="k">def</span><span class="w"> </span><span class="nf">_likelihood_generate_components_names</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">parameter_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="p">[</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tgt_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">param_n</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="k">for</span> <span class="n">tgt_name</span> <span class="ow">in</span> <span class="n">input_series</span><span class="o">.</span><span class="n">components</span>
-            <span class="k">for</span> <span class="n">param_n</span> <span class="ow">in</span> <span class="n">parameter_names</span>
-        <span class="p">]</span>
-
-    <span class="nd">@property</span>
-    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Returns the number of parameters that define the probability distribution for one single</span>
-<span class="sd">        target value.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">pass</span>
-
-<div class="viewcode-block" id="Likelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood.simplified_name">[docs]</a>    <span class="nd">@abstractmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a simplified name, used to compare Likelihood and LikelihoodMixin_ instances&quot;&quot;&quot;</span>
-        <span class="k">pass</span></div>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Defines (in)equality between two likelihood objects, ignore the attributes listed in</span>
-<span class="sd">        self.ignore_attrs_equality or inheriting from torch.nn.Module.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-            <span class="n">other_state</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
-                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">other</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_attrs_equality</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span>
-            <span class="p">}</span>
-            <span class="n">self_state</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
-                <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-                <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ignore_attrs_equality</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span>
-            <span class="p">}</span>
-            <span class="k">return</span> <span class="n">other_state</span> <span class="o">==</span> <span class="n">self_state</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">False</span>
-
-    <span class="k">def</span><span class="w"> </span><span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the class and parameters of the instance in a nice format&quot;&quot;&quot;</span>
-        <span class="n">cls_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
-        <span class="c1"># only display the constructor parameters as user cannot change the other attributes</span>
-        <span class="n">init_signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="fm">__init__</span><span class="p">)</span>
-        <span class="n">params_string</span> <span class="o">=</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
-            <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">init_signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
-            <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;self&quot;</span>
-        <span class="p">])</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">cls_name</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="n">params_string</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_equality_attrs</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">ignore_attrs</span><span class="p">):</span>
+        <span class="c1"># ignore the attributes listed in `ignore_attrs_equality` or inheriting from torch.nn.Module</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="n">k</span><span class="p">:</span> <span class="n">v</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">likelihood</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ignore_attrs</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">)</span>
+        <span class="p">}</span></div>
 
 
-<div class="viewcode-block" id="GaussianLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GaussianLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GaussianLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="GaussianLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.GaussianLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GaussianLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">beta_nll</span><span class="o">=</span><span class="mf">0.0</span>
     <span class="p">):</span>
@@ -483,7 +442,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">GaussianNLLLoss</span><span class="p">(</span><span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">):</span>
         <span class="n">means_out</span><span class="p">,</span> <span class="n">sigmas_out</span> <span class="o">=</span> <span class="n">params_out</span>
@@ -506,27 +469,17 @@
         <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">params</span>
         <span class="k">return</span> <span class="n">_Normal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
 
-<div class="viewcode-block" id="GaussianLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GaussianLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="GaussianLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.GaussianLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span></div>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
         <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
         <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span>
-
-<div class="viewcode-block" id="GaussianLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GaussianLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="GaussianLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GaussianLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;gaussian&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span></div>
 
 
-<div class="viewcode-block" id="PoissonLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.PoissonLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PoissonLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="PoissonLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.PoissonLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PoissonLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_lambda</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Poisson distribution. Can typically be used to model event counts during time intervals, when the events</span>
@@ -550,7 +503,11 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">nllloss</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">PoissonNLLLoss</span><span class="p">(</span><span class="n">log_input</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">full</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="s2">&quot;none&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Poisson</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_nllloss</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params_out</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">):</span>
         <span class="n">lambda_out</span> <span class="o">=</span> <span class="n">params_out</span>
@@ -567,26 +524,16 @@
         <span class="n">lmbda</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">_Poisson</span><span class="p">(</span><span class="n">lmbda</span><span class="p">)</span>
 
-<div class="viewcode-block" id="PoissonLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.PoissonLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="PoissonLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.PoissonLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">model_lambda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">model_lambda</span><span class="p">)</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">1</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
         <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">lmbda</span>
-
-<div class="viewcode-block" id="PoissonLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.PoissonLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="PoissonLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.PoissonLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;poisson&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">lmbda</span></div>
 
 
-<div class="viewcode-block" id="NegativeBinomialLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.NegativeBinomialLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">NegativeBinomialLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="NegativeBinomialLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">NegativeBinomialLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Negative Binomial distribution.</span>
@@ -603,7 +550,11 @@
 <span class="sd">        network are in terms of the mean :math:`\\mu` and shape :math:`\\alpha`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">NegativeBinomial</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -621,13 +572,13 @@
         <span class="n">r</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">NegativeBinomialLikelihood</span><span class="o">.</span><span class="n">_get_r_and_p_from_mu_and_alpha</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">_NegativeBinomial</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
 
-<div class="viewcode-block" id="NegativeBinomialLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.NegativeBinomialLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="NegativeBinomialLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">mu</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">r</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">NegativeBinomialLikelihood</span><span class="o">.</span><span class="n">_get_r_and_p_from_mu_and_alpha</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_NegativeBinomial</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">p</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="NegativeBinomialLikelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.NegativeBinomialLikelihood.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="NegativeBinomialLikelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Overwrite the parent since the parameters are extracted in two steps.&quot;&quot;&quot;</span>
         <span class="n">mu</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">r</span><span class="p">,</span> <span class="n">p</span> <span class="o">=</span> <span class="n">NegativeBinomialLikelihood</span><span class="o">.</span><span class="n">_get_r_and_p_from_mu_and_alpha</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
@@ -636,20 +587,10 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
         <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
         <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">alpha</span>
-
-<div class="viewcode-block" id="NegativeBinomialLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.NegativeBinomialLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">])</span></div>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
-
-<div class="viewcode-block" id="NegativeBinomialLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.NegativeBinomialLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;negativebinomial&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">alpha</span></div>
 
 
-<div class="viewcode-block" id="BernoulliLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BernoulliLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">BernoulliLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="BernoulliLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.BernoulliLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">BernoulliLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Bernoulli distribution.</span>
@@ -671,7 +612,11 @@
         <span class="n">_check_in_open_0_1_intvl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_p</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Bernoulli</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -681,26 +626,16 @@
         <span class="n">p</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">_Bernoulli</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
 
-<div class="viewcode-block" id="BernoulliLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BernoulliLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="BernoulliLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.BernoulliLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">model_p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">bernoulli</span><span class="p">(</span><span class="n">model_p</span><span class="p">)</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">1</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">p</span>
-
-<div class="viewcode-block" id="BernoulliLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BernoulliLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="BernoulliLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BernoulliLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;bernoulli&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">p</span></div>
 
 
-<div class="viewcode-block" id="BetaLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BetaLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">BetaLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="BetaLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.BetaLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">BetaLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_beta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Beta distribution.</span>
@@ -726,7 +661,11 @@
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_beta</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Beta</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -736,30 +675,18 @@
         <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">params</span>
         <span class="k">return</span> <span class="n">_Beta</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">)</span>
 
-<div class="viewcode-block" id="BetaLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BetaLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="BetaLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.BetaLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_Beta</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
         <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
         <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span>
-
-<div class="viewcode-block" id="BetaLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BetaLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span>
-            <span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">]</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="BetaLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.BetaLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;beta&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span></div>
 
 
-<div class="viewcode-block" id="CauchyLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.CauchyLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CauchyLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="CauchyLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.CauchyLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CauchyLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_xzero</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_gamma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Cauchy Distribution.</span>
@@ -788,7 +715,11 @@
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_gamma</span><span class="p">,</span> <span class="s2">&quot;gamma&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Cauchy</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;xzero&quot;</span><span class="p">,</span> <span class="s2">&quot;gamma&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -798,32 +729,20 @@
         <span class="n">xzero</span><span class="p">,</span> <span class="n">gamma</span> <span class="o">=</span> <span class="n">params</span>
         <span class="k">return</span> <span class="n">_Cauchy</span><span class="p">(</span><span class="n">xzero</span><span class="p">,</span> <span class="n">gamma</span><span class="p">)</span>
 
-<div class="viewcode-block" id="CauchyLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.CauchyLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="CauchyLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.CauchyLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">xzero</span><span class="p">,</span> <span class="n">gamma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_Cauchy</span><span class="p">(</span><span class="n">xzero</span><span class="p">,</span> <span class="n">gamma</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
         <span class="n">xzero</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
         <span class="n">gamma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="c1"># We need this hack as sometimes the output of the softplus is 0 in practice for Cauchy...</span>
         <span class="n">gamma</span><span class="p">[</span><span class="n">gamma</span> <span class="o">&lt;</span> <span class="n">MIN_CAUCHY_GAMMA_SAMPLING</span><span class="p">]</span> <span class="o">=</span> <span class="n">MIN_CAUCHY_GAMMA_SAMPLING</span>
-        <span class="k">return</span> <span class="n">xzero</span><span class="p">,</span> <span class="n">gamma</span>
-
-<div class="viewcode-block" id="CauchyLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.CauchyLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span>
-            <span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;xzero&quot;</span><span class="p">,</span> <span class="s2">&quot;gamma&quot;</span><span class="p">]</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="CauchyLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.CauchyLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;cauchy&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">xzero</span><span class="p">,</span> <span class="n">gamma</span></div>
 
 
-<div class="viewcode-block" id="ContinuousBernoulliLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ContinuousBernoulliLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ContinuousBernoulliLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="ContinuousBernoulliLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ContinuousBernoulliLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_lambda</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Continuous Bernoulli distribution.</span>
@@ -845,7 +764,11 @@
         <span class="n">_check_in_open_0_1_intvl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_lambda</span><span class="p">,</span> <span class="s2">&quot;lambda&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">ContinuousBernoulli</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -855,27 +778,17 @@
         <span class="n">lmbda</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">_ContinuousBernoulli</span><span class="p">(</span><span class="n">lmbda</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ContinuousBernoulliLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="ContinuousBernoulliLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">model_lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_ContinuousBernoulli</span><span class="p">(</span><span class="n">model_lmbda</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">1</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">lmbda</span>
-
-<div class="viewcode-block" id="ContinuousBernoulliLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="ContinuousBernoulliLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;continuousbernoulli&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">lmbda</span></div>
 
 
-<div class="viewcode-block" id="DirichletLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.DirichletLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">DirichletLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="DirichletLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.DirichletLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">DirichletLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_alphas</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Dirichlet distribution.</span>
@@ -897,7 +810,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_alphas</span> <span class="o">=</span> <span class="n">prior_alphas</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_alphas</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softmax</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softmax</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Dirichlet</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -907,34 +824,23 @@
         <span class="n">alphas</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">_Dirichlet</span><span class="p">(</span><span class="n">alphas</span><span class="p">)</span>
 
-<div class="viewcode-block" id="DirichletLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.DirichletLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="DirichletLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.DirichletLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">alphas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_Dirichlet</span><span class="p">(</span><span class="n">alphas</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="DirichletLikelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.DirichletLikelihood.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="DirichletLikelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.DirichletLikelihood.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">alphas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">alphas</span></div>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">1</span>  <span class="c1"># 1 parameter per component</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
         <span class="n">alphas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span>
             <span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
         <span class="p">)</span>  <span class="c1"># take softmax over components</span>
-        <span class="k">return</span> <span class="n">alphas</span>
-
-<div class="viewcode-block" id="DirichletLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.DirichletLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="c1"># one alpha per component</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="DirichletLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.DirichletLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;dirichlet&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">alphas</span></div>
 
 
-<div class="viewcode-block" id="ExponentialLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ExponentialLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ExponentialLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="ExponentialLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.ExponentialLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ExponentialLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_lambda</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Exponential distribution.</span>
@@ -955,7 +861,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_lambda</span> <span class="o">=</span> <span class="n">prior_lambda</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_lambda</span><span class="p">,</span> <span class="s2">&quot;lambda&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Exponential</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -965,27 +875,17 @@
         <span class="n">lmbda</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">_Exponential</span><span class="p">(</span><span class="n">lmbda</span><span class="p">)</span>
 
-<div class="viewcode-block" id="ExponentialLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ExponentialLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="ExponentialLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.ExponentialLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_Exponential</span><span class="p">(</span><span class="n">lmbda</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">1</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">lmbda</span>
-
-<div class="viewcode-block" id="ExponentialLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ExponentialLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="ExponentialLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.ExponentialLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;exponential&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">lmbda</span></div>
 
 
-<div class="viewcode-block" id="GammaLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GammaLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GammaLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="GammaLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.GammaLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GammaLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_alpha</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_beta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Gamma distribution.</span>
@@ -1010,7 +910,11 @@
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_alpha</span><span class="p">,</span> <span class="s2">&quot;alpha&quot;</span><span class="p">)</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_beta</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Gamma</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1020,30 +924,18 @@
         <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">params</span>
         <span class="k">return</span> <span class="n">_Gamma</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">)</span>
 
-<div class="viewcode-block" id="GammaLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GammaLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="GammaLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.GammaLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_Gamma</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
         <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span>
-
-<div class="viewcode-block" id="GammaLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GammaLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span>
-            <span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">]</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="GammaLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GammaLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;gamma&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span></div>
 
 
-<div class="viewcode-block" id="GeometricLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GeometricLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GeometricLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="GeometricLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.GeometricLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GeometricLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_p</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Geometric distribution.</span>
@@ -1064,7 +956,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_p</span> <span class="o">=</span> <span class="n">prior_p</span>
         <span class="n">_check_in_open_0_1_intvl</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_p</span><span class="p">,</span> <span class="s2">&quot;p&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sigmoid</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Geometric</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1074,27 +970,17 @@
         <span class="n">p</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">_Geometric</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
 
-<div class="viewcode-block" id="GeometricLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GeometricLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="GeometricLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.GeometricLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_Geometric</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">1</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">p</span>
-
-<div class="viewcode-block" id="GeometricLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GeometricLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;p&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="GeometricLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GeometricLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;geometric&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">p</span></div>
 
 
-<div class="viewcode-block" id="GumbelLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GumbelLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GumbelLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="GumbelLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.GumbelLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GumbelLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_beta</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Gumbel distribution.</span>
@@ -1118,7 +1004,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_beta</span> <span class="o">=</span> <span class="n">prior_beta</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_beta</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Gumbel</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1128,28 +1018,18 @@
         <span class="n">mu</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="n">params</span>
         <span class="k">return</span> <span class="n">_Gumbel</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">beta</span><span class="p">)</span>
 
-<div class="viewcode-block" id="GumbelLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GumbelLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="GumbelLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.GumbelLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">mu</span><span class="p">,</span> <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_Gumbel</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">beta</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
         <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">beta</span>
-
-<div class="viewcode-block" id="GumbelLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GumbelLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;beta&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="GumbelLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.GumbelLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;gumbel&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">beta</span></div>
 
 
-<div class="viewcode-block" id="HalfNormalLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.HalfNormalLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">HalfNormalLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="HalfNormalLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.HalfNormalLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">HalfNormalLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Half-normal distribution.</span>
@@ -1170,7 +1050,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_sigma</span> <span class="o">=</span> <span class="n">prior_sigma</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_sigma</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">HalfNormal</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;sigma&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1180,27 +1064,17 @@
         <span class="n">sigma</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">_HalfNormal</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
 
-<div class="viewcode-block" id="HalfNormalLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.HalfNormalLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="HalfNormalLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.HalfNormalLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_HalfNormal</span><span class="p">(</span><span class="n">sigma</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">1</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">sigma</span>
-
-<div class="viewcode-block" id="HalfNormalLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.HalfNormalLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;sigma&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="HalfNormalLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.HalfNormalLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;halfnormal&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">sigma</span></div>
 
 
-<div class="viewcode-block" id="LaplaceLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LaplaceLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LaplaceLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="LaplaceLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.LaplaceLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LaplaceLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_b</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Laplace distribution.</span>
@@ -1224,7 +1098,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_b</span> <span class="o">=</span> <span class="n">prior_b</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_b</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Laplace</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1234,28 +1112,18 @@
         <span class="n">mu</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="n">params</span>
         <span class="k">return</span> <span class="n">_Laplace</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
 
-<div class="viewcode-block" id="LaplaceLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LaplaceLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="LaplaceLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.LaplaceLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">mu</span><span class="p">,</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_Laplace</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
         <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">b</span>
-
-<div class="viewcode-block" id="LaplaceLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LaplaceLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="LaplaceLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LaplaceLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;laplace&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">b</span></div>
 
 
-<div class="viewcode-block" id="LogNormalLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LogNormalLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LogNormalLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="LogNormalLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.LogNormalLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LogNormalLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_sigma</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Log-normal distribution.</span>
@@ -1279,7 +1147,11 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">prior_sigma</span> <span class="o">=</span> <span class="n">prior_sigma</span>
         <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_sigma</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">LogNormal</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1289,28 +1161,18 @@
         <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="n">params</span>
         <span class="k">return</span> <span class="n">_LogNormal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
 
-<div class="viewcode-block" id="LogNormalLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LogNormalLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="LogNormalLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.LogNormalLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_LogNormal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
         <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
         <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span>
-
-<div class="viewcode-block" id="LogNormalLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LogNormalLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="LogNormalLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.LogNormalLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;lognormal&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span></div>
 
 
-<div class="viewcode-block" id="WeibullLikelihood"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.WeibullLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">WeibullLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="WeibullLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.WeibullLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">WeibullLikelihood</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Weibull distribution.</span>
@@ -1329,7 +1191,11 @@
 <span class="sd">            strength of the loss regularisation induced by the prior</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Weibull</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">],</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="n">prior_strength</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -1339,28 +1205,18 @@
         <span class="n">lmba</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="n">params</span>
         <span class="k">return</span> <span class="n">_Weibull</span><span class="p">(</span><span class="n">lmba</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
 
-<div class="viewcode-block" id="WeibullLikelihood.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.WeibullLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="WeibullLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.WeibullLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="n">lmbda</span><span class="p">,</span> <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
         <span class="n">distr</span> <span class="o">=</span> <span class="n">_Weibull</span><span class="p">(</span><span class="n">lmbda</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">2</span>
-
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
         <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
         <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="k">return</span> <span class="n">lmbda</span><span class="p">,</span> <span class="n">k</span>
-
-<div class="viewcode-block" id="WeibullLikelihood.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.WeibullLikelihood.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood_generate_components_names</span><span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">,</span> <span class="s2">&quot;k&quot;</span><span class="p">])</span></div>
-
-<div class="viewcode-block" id="WeibullLikelihood.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.WeibullLikelihood.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;weibull&quot;</span></div></div>
+        <span class="k">return</span> <span class="n">lmbda</span><span class="p">,</span> <span class="n">k</span></div>
 
 
-<div class="viewcode-block" id="QuantileRegression"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QuantileRegression</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
+<div class="viewcode-block" id="QuantileRegression"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QuantileRegression</span><span class="p">(</span><span class="n">TorchLikelihood</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        The &quot;likelihood&quot; corresponding to quantile regression.</span>
@@ -1374,8 +1230,6 @@
 <span class="sd">        quantiles</span>
 <span class="sd">            list of quantiles</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">quantiles</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="mf">0.01</span><span class="p">,</span>
@@ -1403,10 +1257,15 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">first</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">quantiles_tensor</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># overwrite the attributes of Likelihood parent class</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_attrs_equality</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;first&quot;</span><span class="p">,</span> <span class="s2">&quot;quantiles_tensor&quot;</span><span class="p">]</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="n">quantile_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">),</span>
+            <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># ignore additional attributes</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_attrs_equality</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;_median_idx&quot;</span><span class="p">,</span> <span class="s2">&quot;first&quot;</span><span class="p">,</span> <span class="s2">&quot;quantiles_tensor&quot;</span><span class="p">]</span>
 
-<div class="viewcode-block" id="QuantileRegression.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="QuantileRegression.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted</span>
 <span class="sd">        quantiles closest to the sampled value.</span>
@@ -1465,7 +1324,7 @@
 
         <span class="k">return</span> <span class="n">inter</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="QuantileRegression.predict_likelihood_parameters"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+<div class="viewcode-block" id="QuantileRegression.predict_likelihood_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Overwrite parent method since QuantileRegression is not a Likelihood per-se and</span>
 <span class="sd">        parameters must be extracted differently.&quot;&quot;&quot;</span>
         <span class="n">num_samples</span><span class="p">,</span> <span class="n">n_timesteps</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">n_quantiles</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
@@ -1474,11 +1333,7 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">params</span></div>
 
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span>
-
-<div class="viewcode-block" id="QuantileRegression.compute_loss"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.compute_loss">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_loss</span><span class="p">(</span>
+<div class="viewcode-block" id="QuantileRegression.compute_loss"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression.compute_loss">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">compute_loss</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
         <span class="n">target</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span>
@@ -1529,17 +1384,7 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># This should not be called in this class (we are abusing Likelihood)</span>
-        <span class="k">return</span> <span class="kc">None</span>
-
-<div class="viewcode-block" id="QuantileRegression.likelihood_components_names"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.likelihood_components_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">likelihood_components_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Each component have their own quantiles&quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">likelihood_component_names</span><span class="p">(</span>
-            <span class="n">components</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
-            <span class="n">parameter_names</span><span class="o">=</span><span class="n">quantile_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">),</span>
-        <span class="p">)</span></div>
-
-<div class="viewcode-block" id="QuantileRegression.simplified_name"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.simplified_name">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">simplified_name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s2">&quot;quantile&quot;</span></div></div>
+        <span class="k">return</span> <span class="kc">None</span></div>
 
 
 <span class="sd">&quot;&quot;&quot; TODO</span>
@@ -1621,7 +1466,7 @@
       </div>
     </div>
   
-  <script src="../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
 <footer class="footer mt-5 mt-md-0">
   <div class="container">
     

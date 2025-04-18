@@ -1,0 +1,3 @@
+.. automodule:: darts.utils.likelihood_models.torch
+   :members:
+   :undoc-members:

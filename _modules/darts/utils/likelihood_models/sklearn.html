@@ -1,0 +1,680 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.utils.likelihood_models.sklearn &#8212; darts  documentation</title>
+    
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../examples.html">
+  Examples
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.utils.likelihood_models.sklearn</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Likelihoods for `RegressionModel`</span>
+<span class="sd">---------------------------------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Likelihood</span><span class="p">,</span>
+    <span class="n">LikelihoodType</span><span class="p">,</span>
+    <span class="n">quantile_names</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_check_quantiles</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="SKLearnLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.SKLearnLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">SKLearnLikelihood</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">likelihood_type</span><span class="p">:</span> <span class="n">LikelihoodType</span><span class="p">,</span>
+        <span class="n">parameter_names</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Base class for sklearn wrapper (e.g. `RegressionModel`) likelihoods.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        likelihood_type</span>
+<span class="sd">            A pre-defined `LikelihoodType`.</span>
+<span class="sd">        parameter_names</span>
+<span class="sd">            The likelihood (distribution) parameter names.</span>
+<span class="sd">        n_outputs</span>
+<span class="sd">            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise</span>
+<span class="sd">            `output_chunk_length`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Optionally, control the randomness of the sampling.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span> <span class="o">=</span> <span class="n">n_outputs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">likelihood_type</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="n">parameter_names</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="c1"># ignore additional attrs for equality tests</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_attrs_equality</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;_n_outputs&quot;</span><span class="p">,</span> <span class="s2">&quot;_rng&quot;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="SKLearnLikelihood.predict"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates sampled or direct likelihood parameter predictions.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model</span>
+<span class="sd">            The Darts `RegressionModel`.</span>
+<span class="sd">        x</span>
+<span class="sd">            The input feature array passed to the underlying estimator&#39;s `predict()` method.</span>
+<span class="sd">        num_samples</span>
+<span class="sd">            Number of times a prediction is sampled from the likelihood model / distribution.</span>
+<span class="sd">            If `1` and `predict_likelihood_parameters=False`, returns median / mean predictions.</span>
+<span class="sd">        predict_likelihood_parameters</span>
+<span class="sd">            If set to `True`, generates likelihood parameter predictions instead of sampling from the</span>
+<span class="sd">            likelihood model / distribution. Only supported with `num_samples = 1` and</span>
+<span class="sd">            `n&lt;=output_chunk_length`.</span>
+<span class="sd">        kwargs</span>
+<span class="sd">            Some kwargs passed to the underlying estimator&#39;s `predict()` method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">model_output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_estimator_predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">predict_likelihood_parameters</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_likelihood_parameters</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_median_prediction</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SKLearnLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.sample">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Samples a prediction from the likelihood distribution and the predicted parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="SKLearnLikelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict_likelihood_parameters">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the distribution parameters as a array, extracted from the raw model outputs.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_estimator_predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes the model output.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model</span>
+<span class="sd">            The Darts `RegressionModel`.</span>
+<span class="sd">        x</span>
+<span class="sd">            The input feature array passed to the underlying estimator&#39;s `predict()` method.</span>
+<span class="sd">        kwargs</span>
+<span class="sd">            Some kwargs passed to the underlying estimator&#39;s `predict()` method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_median_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the median prediction per component extracted from the model output.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="GaussianLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.GaussianLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GaussianLikelihood</span><span class="p">(</span><span class="n">SKLearnLikelihood</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gaussian distribution [1]_.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_outputs</span>
+<span class="sd">            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise</span>
+<span class="sd">            `output_chunk_length`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Optionally, control the randomness of the sampling.</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] https://en.wikipedia.org/wiki/Normal_distribution</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Gaussian</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;mu&quot;</span><span class="p">,</span> <span class="s2">&quot;sigma&quot;</span><span class="p">],</span>
+            <span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="GaussianLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.GaussianLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># shape (n_components * output_chunk_length, n_series * n_samples, 2)</span>
+        <span class="c1"># [mu, sigma] on the last dimension, grouped by component</span>
+        <span class="n">n_entries</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_params</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="c1"># get samples (n_components * output_chunk_length, n_series * n_samples)</span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span>
+            <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span>  <span class="c1"># mean</span>
+            <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">],</span>  <span class="c1"># variance</span>
+        <span class="p">)</span>
+        <span class="c1"># reshape to (n_series * n_samples, n_components * output_chunk_length)</span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+        <span class="c1"># reshape to (n_series * n_samples, output_chunk_length, n_components)</span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="n">samples</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">samples</span></div>
+
+<div class="viewcode-block" id="GaussianLikelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># shape (n_components * output_chunk_length, n_series * n_samples, 2)</span>
+        <span class="c1"># [mu, sigma] on the last dimension, grouped by component</span>
+        <span class="n">n_samples</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># reshape to (n_series * n_samples, output_chunk_length, n_components)</span>
+        <span class="n">params_reshaped</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+            <span class="n">n_samples</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">params_reshaped</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_estimator_predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># returns samples computed from double-valued inputs [mean, variance].</span>
+        <span class="c1"># `x` is of shape (n_series * n_samples, n_regression_features)</span>
+        <span class="c1"># `model_output` is of shape:</span>
+        <span class="c1">#  - (n_series * n_samples, 2): if univariate &amp; output_chunk_length == 1</span>
+        <span class="c1">#  - (2, n_series * n_samples, n_components * output_chunk_length): otherwise</span>
+        <span class="c1"># where the axis with 2 dims is mu, sigma</span>
+        <span class="n">model_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">output_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># univariate &amp; single-chunk output</span>
+        <span class="k">if</span> <span class="n">output_dim</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="c1"># embedding well shaped 2D output into 3D</span>
+            <span class="n">model_output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># we transpose to get mu, sigma couples on last axis</span>
+            <span class="c1"># shape becomes: (n_components * output_chunk_length, n_series * n_samples, 2)</span>
+            <span class="n">model_output</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+
+        <span class="c1"># shape (n_components * output_chunk_length, n_series * n_samples, 2)</span>
+        <span class="k">return</span> <span class="n">model_output</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_median_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># shape (n_components * output_chunk_length, n_series * n_samples, 2)</span>
+        <span class="c1"># [mu, sigma] on the last dimension, grouped by component</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># extract mu (mean) per component</span>
+        <span class="n">component_medians</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_parameters</span><span class="p">)</span>
+        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components)</span>
+        <span class="k">return</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">component_medians</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="PoissonLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.PoissonLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PoissonLikelihood</span><span class="p">(</span><span class="n">SKLearnLikelihood</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Poisson distribution [1]_.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_outputs</span>
+<span class="sd">            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise</span>
+<span class="sd">            `output_chunk_length`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Optionally, control the randomness of the sampling.</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] https://en.wikipedia.org/wiki/Poisson_distribution</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Poisson</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;lambda&quot;</span><span class="p">],</span>
+            <span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="PoissonLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.PoissonLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="n">lam</span><span class="o">=</span><span class="n">model_output</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="PoissonLikelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.PoissonLikelihood.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># lambdas on the last dimension, grouped by component</span>
+        <span class="k">return</span> <span class="n">model_output</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_estimator_predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="c1"># returns shape (n_series * n_samples, output_chunk_length, n_components)</span>
+        <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_median_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components)</span>
+        <span class="c1"># lambda is already the median prediction</span>
+        <span class="k">return</span> <span class="n">model_output</span></div>
+
+
+<div class="viewcode-block" id="QuantileRegression"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.QuantileRegression">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">QuantileRegression</span><span class="p">(</span><span class="n">SKLearnLikelihood</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Quantile Regression [1]_.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_outputs</span>
+<span class="sd">            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise</span>
+<span class="sd">            `output_chunk_length`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Optionally, control the randomness of the sampling.</span>
+<span class="sd">        quantiles</span>
+<span class="sd">            A list of quantiles. Default: `[0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]`.</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] https://en.wikipedia.org/wiki/Quantile_regression</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">quantiles</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">quantiles</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="mf">0.01</span><span class="p">,</span>
+                <span class="mf">0.05</span><span class="p">,</span>
+                <span class="mf">0.1</span><span class="p">,</span>
+                <span class="mf">0.25</span><span class="p">,</span>
+                <span class="mf">0.5</span><span class="p">,</span>
+                <span class="mf">0.75</span><span class="p">,</span>
+                <span class="mf">0.9</span><span class="p">,</span>
+                <span class="mf">0.95</span><span class="p">,</span>
+                <span class="mf">0.99</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">quantiles</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
+            <span class="n">_check_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">=</span> <span class="n">quantiles</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="n">quantiles</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="n">quantile_names</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">),</span>
+            <span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ignore_attrs_equality</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;_median_idx&quot;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="QuantileRegression.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.QuantileRegression.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)</span>
+        <span class="c1"># sample uniformly between [0, 1] (for each batch example) and return the</span>
+        <span class="c1"># linear interpolation between the fitted quantiles closest to the sampled value.</span>
+        <span class="n">k</span><span class="p">,</span> <span class="n">n_times</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">n_quantiles</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="c1"># obtain samples</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span>
+            <span class="n">size</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">k</span><span class="p">,</span>
+                <span class="n">n_times</span><span class="p">,</span>
+                <span class="n">n_components</span><span class="p">,</span>
+                <span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># add dummy dim</span>
+        <span class="n">probas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># tile and transpose</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">probas</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_quantiles</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
+
+        <span class="c1"># prepare quantiles</span>
+        <span class="n">tquantiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+
+        <span class="c1"># calculate index of the largest quantile smaller than the sampled value</span>
+        <span class="n">left_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span> <span class="o">&gt;</span> <span class="n">tquantiles</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># obtain index of the smallest quantile larger than the sampled value</span>
+        <span class="n">right_idx</span> <span class="o">=</span> <span class="n">left_idx</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># repeat the model output on the edges</span>
+        <span class="n">repeat_count</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_quantiles</span>
+        <span class="n">repeat_count</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">repeat_count</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">repeat_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">repeat_count</span><span class="p">)</span>
+        <span class="n">shifted_output</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">repeat_count</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># obtain model output values corresponding to the quantiles left and right of the sampled value</span>
+        <span class="n">left_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">shifted_output</span><span class="p">,</span> <span class="n">left_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">right_value</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">shifted_output</span><span class="p">,</span> <span class="n">right_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># add 0 and 1 to quantiles</span>
+        <span class="n">ext_quantiles</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">+</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
+        <span class="n">expanded_q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">ext_quantiles</span><span class="p">),</span> <span class="n">left_idx</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+        <span class="c1"># calculate closest quantiles to the sampled value</span>
+        <span class="n">left_q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">expanded_q</span><span class="p">,</span> <span class="n">left_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">right_q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">expanded_q</span><span class="p">,</span> <span class="n">right_idx</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># linear interpolation</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">probs</span> <span class="o">-</span> <span class="n">left_q</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">right_q</span> <span class="o">-</span> <span class="n">left_q</span><span class="p">)</span>
+        <span class="n">inter</span> <span class="o">=</span> <span class="n">left_value</span> <span class="o">+</span> <span class="n">weights</span> <span class="o">*</span> <span class="p">(</span><span class="n">right_value</span> <span class="o">-</span> <span class="n">left_value</span><span class="p">)</span>
+
+        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)</span>
+        <span class="k">return</span> <span class="n">inter</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="QuantileRegression.predict_likelihood_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.QuantileRegression.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)</span>
+        <span class="c1"># quantiles on the last dimension, grouped by component</span>
+        <span class="n">k</span><span class="p">,</span> <span class="n">n_times</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">n_quantiles</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
+        <span class="c1"># last dim : [comp_1_q_1, ..., comp_1_q_n, ..., comp_n_q_1, ..., comp_n_q_n]</span>
+        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components * n_quantiles)</span>
+        <span class="k">return</span> <span class="n">model_output</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">n_times</span><span class="p">,</span> <span class="n">n_components</span> <span class="o">*</span> <span class="n">n_quantiles</span><span class="p">)</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_estimator_predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># `x` is of shape (n_series * n_samples, n_regression_features)</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">model_outputs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">quantile</span><span class="p">,</span> <span class="n">fitted</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">model</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">fitted</span>
+            <span class="c1"># model output has shape (n_series * n_samples, output_chunk_length, n_components)</span>
+            <span class="n">model_output</span> <span class="o">=</span> <span class="n">fitted</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">model_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
+        <span class="n">model_outputs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">model_outputs</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)</span>
+        <span class="k">return</span> <span class="n">model_outputs</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_median_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)</span>
+        <span class="n">k</span><span class="p">,</span> <span class="n">n_times</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">n_quantiles</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
+        <span class="c1"># extract the median quantiles per component</span>
+        <span class="n">component_medians</span> <span class="o">=</span> <span class="nb">slice</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">n_quantiles</span><span class="p">)</span>
+        <span class="c1"># shape (n_series * n_samples, output_chunk_length, n_components)</span>
+        <span class="k">return</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">component_medians</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+            <span class="n">k</span><span class="p">,</span> <span class="n">n_times</span><span class="p">,</span> <span class="n">n_components</span>
+        <span class="p">)</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">available_likelihoods</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether the likelihood is supported.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    likelihood</span>
+<span class="sd">        The likelihood name. Must be one of (&#39;gaussian&#39;, &#39;poisson&#39;, &#39;quantile&#39;).</span>
+<span class="sd">    available_likelihoods</span>
+<span class="sd">        A list of supported likelihood names.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">available_likelihoods</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid `likelihood=&#39;</span><span class="si">{</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">&#39;`. Must be one of </span><span class="si">{</span><span class="n">available_likelihoods</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_likelihood</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+    <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SKLearnLikelihood</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the `Likelihood` object for `RegressionModel`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    likelihood</span>
+<span class="sd">        The likelihood name. Must be one of (&#39;gaussian&#39;, &#39;poisson&#39;, &#39;quantile&#39;).</span>
+<span class="sd">    n_outputs</span>
+<span class="sd">        The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise</span>
+<span class="sd">        `output_chunk_length`.</span>
+<span class="sd">    random_state</span>
+<span class="sd">        Optionally, control the randomness of the sampling.</span>
+<span class="sd">    quantiles</span>
+<span class="sd">        Optionally, a list of quantiles. Only effective for `likelihood=&#39;quantile&#39;`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">GaussianLikelihood</span><span class="p">(</span><span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;poisson&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">PoissonLikelihood</span><span class="p">(</span><span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">QuantileRegression</span><span class="p">(</span>
+            <span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid `likelihood=&#39;</span><span class="si">{</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">&#39;`. Must be one of (&#39;gaussian&#39;, &#39;poisson&#39;, &#39;quantile&#39;)&quot;</span>
+            <span class="p">),</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

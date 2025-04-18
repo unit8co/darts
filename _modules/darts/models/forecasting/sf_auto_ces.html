@@ -174,91 +174,123 @@
                 
   <h1>Source code for darts.models.forecasting.sf_auto_ces</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">StatsForecastAutoCES</span>
-<span class="sd">-----------</span>
+<span class="sd">AutoCES</span>
+<span class="sd">-------</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">statsforecast.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoCES</span> <span class="k">as</span> <span class="n">SFAutoCES</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalForecastingModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.sf_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatsForecastModel</span>
 
 
-<div class="viewcode-block" id="StatsForecastAutoCES"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">StatsForecastAutoCES</span><span class="p">(</span><span class="n">LocalForecastingModel</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">autoces_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoces_kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Auto-CES based on `Statsforecasts package</span>
-<span class="sd">        &lt;https://github.com/Nixtla/statsforecast&gt;`_.</span>
+<div class="viewcode-block" id="AutoCES"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.AutoCES">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">AutoCES</span><span class="p">(</span><span class="n">StatsForecastModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Auto-CES based on the `Statsforecasts package &lt;https://github.com/Nixtla/statsforecast&gt;`_.</span>
 
-<span class="sd">        Automatically selects the best Complex Exponential Smoothing model using an information criterion.</span>
-<span class="sd">        &lt;https://onlinelibrary.wiley.com/doi/full/10.1002/nav.22074&gt;</span>
+<span class="sd">        Automatically selects the best Complex Exponential Smoothing (CES) model using an information criterion.</span>
+<span class="sd">        We refer to the `StatsForecast documentation</span>
+<span class="sd">        &lt;https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoces&gt;`_ for the exhaustive documentation</span>
+<span class="sd">        of the arguments.</span>
 
-<span class="sd">        We refer to the `statsforecast AutoCES documentation</span>
-<span class="sd">        &lt;https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoces&gt;`_</span>
-<span class="sd">        for the exhaustive documentation of the arguments.</span>
+<span class="sd">        In addition to univariate deterministic forecasting, it comes with additional support:</span>
+
+<span class="sd">        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.</span>
+<span class="sd">          Darts adds support by first regressing the series against the future covariates using a</span>
+<span class="sd">          :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the</span>
+<span class="sd">          StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by</span>
+<span class="sd">          `this post of Stephan Kolassa &lt;https://stats.stackexchange.com/q/220885&gt;`_.</span>
+
+<span class="sd">        - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following</span>
+<span class="sd">          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:</span>
+
+<span class="sd">          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.</span>
+
+<span class="sd">          - Generate sampled forecasts from these quantiles by setting `num_samples &gt;&gt; 1`.</span>
+
+<span class="sd">        - **Conformal prediction:** In addition to the native probabilistic support, you can perform conformal</span>
+<span class="sd">          prediction / forecasting by setting `prediction_intervals` at model creation. Then predict the in the same</span>
+<span class="sd">          way as described above.</span>
+
+<span class="sd">        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Future covariates are not supported when the input series contain missing values.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            The first model call might take more time than all subsequent calls as the model relies on Numba and jit</span>
+<span class="sd">            compilation.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        autoces_args</span>
+<span class="sd">        args</span>
 <span class="sd">            Positional arguments for ``statsforecasts.models.AutoCES``.</span>
-<span class="sd">        autoces_kwargs</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.dataprocessing.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [encode_year]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
+<span class="sd">        quantiles</span>
+<span class="sd">            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting</span>
+<span class="sd">            with `num_samples &gt; 1` or `predict_likelihood_parameters=True`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.</span>
+<span class="sd">        kwargs</span>
 <span class="sd">            Keyword arguments for ``statsforecasts.models.AutoCES``.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
-<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoCES</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import AutoCES</span>
+<span class="sd">        &gt;&gt;&gt; from darts.utils.timeseries_generation import datetime_attribute_timeseries</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
-<span class="sd">        &gt;&gt;&gt; # define StatsForecastAutoCES parameters</span>
-<span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoCES(season_length=12, model=&quot;Z&quot;)</span>
-<span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
-<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = datetime_attribute_timeseries(series, &quot;month&quot;, cyclic=True, add_length=6)</span>
+<span class="sd">        &gt;&gt;&gt; # define AutoCES parameters</span>
+<span class="sd">        &gt;&gt;&gt; model = AutoCES(season_length=12, model=&quot;Z&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(series, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6, future_covariates=future_cov)</span>
 <span class="sd">        &gt;&gt;&gt; pred.values()</span>
-<span class="sd">        array([[453.03417969],</span>
-<span class="sd">               [429.34039307],</span>
-<span class="sd">               [488.64471436],</span>
-<span class="sd">               [500.28955078],</span>
-<span class="sd">               [519.79962158],</span>
-<span class="sd">               [586.47503662]])</span>
+<span class="sd">        array([[437.52763596],</span>
+<span class="sd">               [412.76187406],</span>
+<span class="sd">               [445.26244666],</span>
+<span class="sd">               [498.15901335],</span>
+<span class="sd">               [492.5184186 ],</span>
+<span class="sd">               [550.25118939]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoCES</span><span class="p">(</span><span class="o">*</span><span class="n">autoces_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoces_kwargs</span><span class="p">)</span>
-
-<div class="viewcode-block" id="StatsForecastAutoCES.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span></div>
-
-<div class="viewcode-block" id="StatsForecastAutoCES.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.StatsForecastAutoCES.predict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
-        <span class="n">forecast_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-            <span class="n">h</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">mu</span> <span class="o">=</span> <span class="n">forecast_dict</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">mu</span><span class="p">)</span></div>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">10</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_range_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">SFAutoCES</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
+            <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

@@ -8,7 +8,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 `Unreleased <https://github.com/unit8co/darts/tree/master>`_
 ----------------------------------------------------------------
 
-`Full Changelog <https://github.com/unit8co/darts/compare/0.34.0...master>`_
+`Full Changelog <https://github.com/unit8co/darts/compare/0.35.0...master>`_
 
 For users of the library:
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -21,6 +21,66 @@ For users of the library:
 
 For developers of the library:
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+`0.35.0 <https://github.com/unit8co/darts/tree/0.35.0>`_ (2025-04-18)
+-------------------------------------------------------------------------
+
+For users of the library:
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+**Improved**
+
+
+* 🚀🚀 Added **new forecasting models**\ :
+
+  * ``AutoMFLES`` : a simple time series method based on gradient boosting time series decomposition as proposed by Tyler Blume in `this repository <https://github.com/tblume1992/MFLES>`_. Our implementation is based on `AutoMFLES <https://nixtlaverse.nixtla.io/statsforecast/docs/models/mfles.html>`_ from Nixtla's ``statsforecast`` library. `#2747 <https://github.com/unit8co/darts/pull/2747>`_ by `Che Hang Ng <https://github.com/CheHangNg>`_.
+  * ``StatsForecastModel`` : allows to use **any forecasting model from StatsForecast** (see `here <https://nixtlaverse.nixtla.io/statsforecast/index.html#models>`_\ ) in Darts with support for future covariates, probabilistic forecasting (sampled, direct quantile, and / or conformal predictions), and transferable series forecasting. `#2770 <https://github.com/unit8co/darts/pull/2770>`_ by `Dennis Bader <https://github.com/dennisbader>`_.
+
+* Improvements to forecasting models:
+
+  * 🚀 Added **support for categorical covariates** to  ``CatBoostModel``. You can now define categorical components at model creation with parameters ``categorical_*_covariates: List[str]`` for past, future, and static covariates. `#2733 <https://github.com/unit8co/darts/pull/2750>`_ by `Jonas Blanc <https://github.com/jonasblanc>`_.
+  * 🚀🔴 Extended the functionalities of and renamed several existing models. All models below now support **future covariates**\ , **probabilistic forecasting** (sampled, direct quantile, and / or conformal predictions), and **transferable series forecasting**\ : `#2762 <https://github.com/unit8co/darts/pull/2762>`_ and `#2770 <https://github.com/unit8co/darts/pull/2770>`_ by `Dennis Bader <https://github.com/dennisbader>`_.
+
+    * ``AutoARIMA`` (old name ``StatsForecastAutoARIMA``\ )
+    * ``AutoETS`` (old name ``StatsForecastAutoETS``\ )
+    * ``AutoCES`` (old name ``StatsForecastAutoCES``\ )
+    * ``AutoTBATS`` (old name ``StatsForecastAutoTBATS``\ )
+    * ``AutoTheta`` (old name ``StatsForecastAutoTheta``\ )
+    * ``TBATS``
+    * ``Croston``
+
+* Changes to ``TimeSeries`` : `#2733 <https://github.com/unit8co/darts/pull/2733>`_ by `Dennis Bader <https://github.com/dennisbader>`_.
+
+  * 🟠 Removed deprecated method ``TimeSeries.pd_dataframe()``. Use ``TimeSeries.to_dataframe()`` instead.
+  * 🟠 Removed deprecated method ``TimeSeries.pd_serise()``. Use ``TimeSeries.to_series()`` instead.
+
+**Fixed**
+
+
+* Fixed a bug in ``CatBoostModel`` with ``likelihood="gaussian"``\ , where predicting with ``predict_likelihood_parameters=True`` resulted in wrong ordering of the predicted parameters. `#2742 <https://github.com/unit8co/darts/pull/2742>`_ by `Dennis Bader <https://github.com/dennisbader>`_.
+
+**Dependencies**
+
+
+* 🚀🚀 Added **support for NumPy 2.0 and higher**. To achieve this, we had to make the following adjustments to our dependencies. `#2771 <https://github.com/unit8co/darts/pull/2771>`_ by `Dennis Bader <https://github.com/dennisbader>`_.
+
+  * 🔴 Changed ``AutoARIMA`` model backend from ``pmdarima`` to ``statsforecast``. The model creation parameters are almost identical. For reference, see the `pmdarima docs <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_ and `statsforecast docs <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima>`_. Additionally, the new implementation is more efficient and has improved probabilistic forecasting support, including conformal prediction. `#2734 <https://github.com/unit8co/darts/pull/2734>`_ by `Dennis Bader <https://github.com/dennisbader>`_.
+  * 🔴 Changed ``TBATS`` model backend from ``tbats`` to ``statsforecast``. The model creation parameters are almost identical. For reference, see the `tbats docs <https://github.com/intive-DataScience/tbats/blob/master/tbats/tbats/TBATS.py>`_ and `statsforecast docs <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tbats>`_. Additionally, the new implementation is more efficient, comes with future covariates support and has improved probabilistic forecasting support. `#2781 <https://github.com/unit8co/darts/pull/2781>`_ by `Dennis Bader <https://github.com/dennisbader>`_.
+  * 🔴 Removed ``BATS`` model. Use ``TBATS`` instead. `#2781 <https://github.com/unit8co/darts/pull/2781>`_ by `Dennis Bader <https://github.com/dennisbader>`_.
+
+For developers of the library:
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+
+* Refactored likelihoods: `#2742 <https://github.com/unit8co/darts/pull/2742>`_ by `Dennis Bader <https://github.com/dennisbader>`_.
+
+  * Moved all likelihood related files into ``darts/utils/likelihood_models/``.
+  * Added ``BaseLikelihood`` as a base class for all likelihood models to ``darts.utils.likelihood_models.base``.
+  * Added ``RegressionModel`` likelihoods to ``darts.utils.likelihood_models.sklearn``.
+  * Moved ``TorchForecastingModel`` likelihoods to ``darts.utils.likelihood_models.torch``. They can still be imported through ``darts.utils.likelihood_models``.
+  * Removed ``darts.models.forecasting.regression_model._LikelihoodMixin``. Use dedicated Likelihood models instead.
+
+* Made  ``RegressionModelWithCategoricalCovariates`` abstract, rewrote logic for categorical component names matching and refactored categorical covariate logic to make it easier to add categorical cov support to a model. `#2733 <https://github.com/unit8co/darts/pull/2750>`_ by `Jonas Blanc <https://github.com/jonasblanc>`_.
 
 `0.34.0 <https://github.com/unit8co/darts/tree/0.34.0>`_ (2025-03-09)
 -------------------------------------------------------------------------

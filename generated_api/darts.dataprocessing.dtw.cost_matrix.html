@@ -557,11 +557,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.baselines.html">
        Baseline Models
       </a>
@@ -579,11 +574,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
        Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.croston.html">
-       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -663,32 +653,47 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       StatsForecastAutoARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       StatsForecastAutoCES
+       AutoCES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       StatsForecastAutoETS
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       StatsForecastAutoTBATS
+       AutoTBATS
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       StatsForecastAutoTheta
+       AutoTheta
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats_model.html">
-       BATS and TBATS
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
       </a>
      </li>
      <li class="toctree-l3">
@@ -782,10 +787,42 @@
      </li>
     </ul>
    </li>
-   <li class="toctree-l2">
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
     </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        RegressionModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.losses.html">
@@ -975,23 +1012,46 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemsize" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemsize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">itemsize</span></code></a></p></td>
 <td><p>Length of one array element in bytes.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nbytes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nbytes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nbytes</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mT" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mT"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mT</span></code></a></p></td>
+<td><p>View of the matrix transposed array.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nbytes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nbytes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nbytes</span></code></a></p></td>
 <td><p>Total bytes consumed by the elements of the array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ndim" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ndim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndim</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ndim" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ndim"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndim</span></code></a></p></td>
 <td><p>Number of array dimensions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.real" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.real"><code class="xref py py-obj docutils literal notranslate"><span class="pre">real</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.real" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.real"><code class="xref py py-obj docutils literal notranslate"><span class="pre">real</span></code></a></p></td>
 <td><p>The real part of the array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.shape" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.shape" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.shape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">shape</span></code></a></p></td>
 <td><p>Tuple of array dimensions.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.size" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">size</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.size" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.size"><code class="xref py py-obj docutils literal notranslate"><span class="pre">size</span></code></a></p></td>
 <td><p>Number of elements in the array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.strides" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.strides"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strides</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.strides" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.strides"><code class="xref py py-obj docutils literal notranslate"><span class="pre">strides</span></code></a></p></td>
 <td><p>Tuple of bytes to step in each dimension when traversing an array.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 62%" />
+<col style="width: 38%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>device</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>itemset</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>newbyteorder</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>ptp</strong></p></td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -1071,79 +1131,70 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item"><code class="xref py py-obj docutils literal notranslate"><span class="pre">item</span></code></a>(*args)</p></td>
 <td><p>Copy an element of an array to a standard Python scalar and return it.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">itemset</span></code></a>(*args)</p></td>
-<td><p>Insert scalar into an array (scalar is cast to array's dtype, if possible)</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code></a>([axis, out, keepdims, initial, where])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code></a>([axis, out, keepdims, initial, where])</p></td>
 <td><p>Return the maximum along a given axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean</span></code></a>([axis, dtype, out, keepdims, where])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean</span></code></a>([axis, dtype, out, keepdims, where])</p></td>
 <td><p>Returns the average of the array elements along given axis.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min</span></code></a>([axis, out, keepdims, initial, where])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min</span></code></a>([axis, out, keepdims, initial, where])</p></td>
 <td><p>Return the minimum along a given axis.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">newbyteorder</span></code></a>([new_order])</p></td>
-<td><p>Return the array with the same data viewed with a different byte order.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nonzero</span></code></a>()</p></td>
 <td><p>Return the indices of the elements that are non-zero.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition</span></code></a>(kth[, axis, kind, order])</p></td>
-<td><p>Rearranges the elements in the array in such a way that the value of the element in kth position is in the position it would be in a sorted array.</p></td>
+<td><p>Partially sorts the elements in the array in such a way that the value of the element in k-th position is in the position it would be in a sorted array.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prod</span></code></a>([axis, dtype, out, keepdims, initial, ...])</p></td>
 <td><p>Return the product of the array elements over the given axis</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ptp</span></code></a>([axis, out, keepdims])</p></td>
-<td><p>Peak to peak (maximum - minimum) value along a given axis.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put"><code class="xref py py-obj docutils literal notranslate"><span class="pre">put</span></code></a>(indices, values[, mode])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put"><code class="xref py py-obj docutils literal notranslate"><span class="pre">put</span></code></a>(indices, values[, mode])</p></td>
 <td><p>Set <code class="docutils literal notranslate"><span class="pre">a.flat[n]</span> <span class="pre">=</span> <span class="pre">values[n]</span></code> for all <cite>n</cite> in indices.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ravel</span></code></a>([order])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ravel</span></code></a>([order])</p></td>
 <td><p>Return a flattened array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">repeat</span></code></a>(repeats[, axis])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">repeat</span></code></a>(repeats[, axis])</p></td>
 <td><p>Repeat elements of an array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape</span></code></a>(shape[, order])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape</span></code></a>(shape, /, *[, order, copy])</p></td>
 <td><p>Returns an array containing the same data with a new shape.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resize</span></code></a>(new_shape[, refcheck])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resize</span></code></a>(new_shape[, refcheck])</p></td>
 <td><p>Change shape and size of array in-place.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round"><code class="xref py py-obj docutils literal notranslate"><span class="pre">round</span></code></a>([decimals, out])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round"><code class="xref py py-obj docutils literal notranslate"><span class="pre">round</span></code></a>([decimals, out])</p></td>
 <td><p>Return <cite>a</cite> with each element rounded to the given number of decimals.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">searchsorted</span></code></a>(v[, side, sorter])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">searchsorted</span></code></a>(v[, side, sorter])</p></td>
 <td><p>Find indices where elements of v should be inserted in a to maintain order.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setfield</span></code></a>(val, dtype[, offset])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setfield</span></code></a>(val, dtype[, offset])</p></td>
 <td><p>Put a value into a specified place in a field defined by a data-type.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setflags</span></code></a>([write, align, uic])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setflags</span></code></a>([write, align, uic])</p></td>
 <td><p>Set array flags WRITEABLE, ALIGNED, WRITEBACKIFCOPY, respectively.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort</span></code></a>([axis, kind, order])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort</span></code></a>([axis, kind, order])</p></td>
 <td><p>Sort an array in-place.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze"><code class="xref py py-obj docutils literal notranslate"><span class="pre">squeeze</span></code></a>([axis])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze"><code class="xref py py-obj docutils literal notranslate"><span class="pre">squeeze</span></code></a>([axis])</p></td>
 <td><p>Remove axes of length one from <cite>a</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std"><code class="xref py py-obj docutils literal notranslate"><span class="pre">std</span></code></a>([axis, dtype, out, ddof, keepdims, where])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std"><code class="xref py py-obj docutils literal notranslate"><span class="pre">std</span></code></a>([axis, dtype, out, ddof, keepdims, where])</p></td>
 <td><p>Returns the standard deviation of the array elements along given axis.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum</span></code></a>([axis, dtype, out, keepdims, initial, where])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum</span></code></a>([axis, dtype, out, keepdims, initial, where])</p></td>
 <td><p>Return the sum of the array elements over the given axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">swapaxes</span></code></a>(axis1, axis2)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">swapaxes</span></code></a>(axis1, axis2)</p></td>
 <td><p>Return a view of the array with <cite>axis1</cite> and <cite>axis2</cite> interchanged.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take"><code class="xref py py-obj docutils literal notranslate"><span class="pre">take</span></code></a>(indices[, axis, out, mode])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take"><code class="xref py py-obj docutils literal notranslate"><span class="pre">take</span></code></a>(indices[, axis, out, mode])</p></td>
 <td><p>Return an array formed from the elements of <cite>a</cite> at the given indices.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dense</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dense</span></code></a>()</p></td>
 <td><p><dl class="field-list simple">
 <dt class="field-odd">rtype</dt>
 <dd class="field-odd"><p>Dense n x m numpy array, where empty cells are set to np.inf</p>
@@ -1151,39 +1202,42 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 </dl>
 </p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tobytes</span></code></a>([order])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tobytes</span></code></a>([order])</p></td>
 <td><p>Construct Python bytes containing the raw data bytes in the array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tofile</span></code></a>(fid[, sep, format])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tofile</span></code></a>(fid[, sep, format])</p></td>
 <td><p>Write array to a file as text or binary (default).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tolist</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tolist</span></code></a>()</p></td>
 <td><p>Return the array as an <code class="docutils literal notranslate"><span class="pre">a.ndim</span></code>-levels deep nested list of Python scalars.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tostring</span></code></a>([order])</p></td>
-<td><p>A compatibility alias for <cite>tobytes</cite>, with exactly the same behavior.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tostring</span></code></a>([order])</p></td>
+<td><p>A compatibility alias for <cite>~ndarray.tobytes</cite>, with exactly the same behavior.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trace</span></code></a>([offset, axis1, axis2, dtype, out])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trace</span></code></a>([offset, axis1, axis2, dtype, out])</p></td>
 <td><p>Return the sum along diagonals of the array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transpose</span></code></a>(*axes)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transpose</span></code></a>(*axes)</p></td>
 <td><p>Returns a view of the array with axes transposed.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">var</span></code></a>([axis, dtype, out, ddof, keepdims, where])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">var</span></code></a>([axis, dtype, out, ddof, keepdims, where])</p></td>
 <td><p>Returns the variance of the array elements, along given axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span></code></a>([dtype][, type])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span></code></a>([dtype][, type])</p></td>
 <td><p>New view of array with the same data.</p></td>
 </tr>
 </tbody>
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 41%" />
-<col style="width: 59%" />
+<col style="width: 57%" />
+<col style="width: 43%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>dot</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>to_device</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -1194,7 +1248,8 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 <dd><p>View of the transposed array.</p>
 <p>Same as <code class="docutils literal notranslate"><span class="pre">self.transpose()</span></code>.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
 <span class="go">array([[1, 2],</span>
 <span class="go">       [3, 4]])</span>
@@ -1277,9 +1332,6 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 <span class="sig-name descname"><span class="pre">argpartition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'introselect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argpartition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the indices that would partition this array.</p>
 <p>Refer to <cite>numpy.argpartition</cite> for full documentation.</p>
-<div class="versionadded">
-<p><span class="versionmodified added">New in version 1.8.0.</span></p>
-</div>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
@@ -1319,8 +1371,7 @@ order the array elements appear in memory as possible.
 Default is ‘K’.</p></li>
 <li><p><strong>casting</strong> (<em>{'no'</em><em>, </em><em>'equiv'</em><em>, </em><em>'safe'</em><em>, </em><em>'same_kind'</em><em>, </em><em>'unsafe'}</em><em>, </em><em>optional</em>) – <p>Controls what kind of data casting may occur. Defaults to ‘unsafe’
 for backwards compatibility.</p>
-<blockquote>
-<div><ul>
+<ul>
 <li><p>’no’ means the data types should not be cast at all.</p></li>
 <li><p>’equiv’ means only byte-order changes are allowed.</p></li>
 <li><p>’safe’ means only casts which can preserve values are allowed.</p></li>
@@ -1328,7 +1379,6 @@ for backwards compatibility.</p>
 like float64 to float32, are allowed.</p></li>
 <li><p>’unsafe’ means any data conversions may be done.</p></li>
 </ul>
-</div></blockquote>
 </p></li>
 <li><p><strong>subok</strong> (<em>bool</em><em>, </em><em>optional</em>) – If True, then sub-classes will be passed-through (default), otherwise
 the returned array will be forced to be a base-class array.</p></li>
@@ -1347,26 +1397,14 @@ given by <cite>dtype</cite>, <cite>order</cite>.</p>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>ndarray</p>
 </dd>
-</dl>
-<p class="rubric">Notes</p>
-<div class="versionchanged">
-<p><span class="versionmodified changed">Changed in version 1.17.0: </span>Casting between a simple data type and a structured one is possible only
-for “unsafe” casting.  Casting to multiple fields is allowed, but
-casting from multiple fields is not.</p>
-</div>
-<div class="versionchanged">
-<p><span class="versionmodified changed">Changed in version 1.9.0: </span>Casting from numeric to string types in ‘safe’ casting mode requires
-that the string dtype length is long enough to store the max
-integer/float value converted.</p>
-</div>
-<dl class="field-list simple">
-<dt class="field-odd">Raises</dt>
-<dd class="field-odd"><p><strong>ComplexWarning</strong> – When casting from complex to float or int. To avoid this,
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ComplexWarning</strong> – When casting from complex to float or int. To avoid this,
 one should use <code class="docutils literal notranslate"><span class="pre">a.real.astype(t)</span></code>.</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
 <span class="go">array([1. ,  2. ,  2.5])</span>
 </pre></div>
@@ -1383,7 +1421,8 @@ one should use <code class="docutils literal notranslate"><span class="pre">a.re
 <dd><p>Base object if memory is from some other object.</p>
 <p class="rubric">Examples</p>
 <p>The base of an array that owns its memory is None:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">base</span> <span class="ow">is</span> <span class="kc">None</span>
 <span class="go">True</span>
 </pre></div>
@@ -1417,7 +1456,8 @@ a view to self.</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">8755</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">256</span><span class="p">,</span> <span class="mi">8755</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">hex</span><span class="p">,</span> <span class="n">A</span><span class="p">))</span>
 <span class="go">[&#39;0x1&#39;, &#39;0x100&#39;, &#39;0x2233&#39;]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="o">.</span><span class="n">byteswap</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
@@ -1432,16 +1472,14 @@ a view to self.</p>
 <span class="go">array([b&#39;ceg&#39;, b&#39;fac&#39;], dtype=&#39;|S3&#39;)</span>
 </pre></div>
 </div>
-<dl class="simple">
-<dt><code class="docutils literal notranslate"><span class="pre">A.newbyteorder().byteswap()</span></code> produces an array with the same values</dt><dd><p>but different representation in memory</p>
-</dd>
-</dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<p><code class="docutils literal notranslate"><span class="pre">A.view(A.dtype.newbyteorder()).byteswap()</span></code> produces an array with
+the same values but different representation in memory</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
 <span class="go">array([1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0,</span>
 <span class="go">       0, 0], dtype=uint8)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="o">.</span><span class="n">newbyteorder</span><span class="p">()</span><span class="o">.</span><span class="n">byteswap</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="go">array([1, 2, 3])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">A</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">newbyteorder</span><span class="p">())</span><span class="o">.</span><span class="n">byteswap</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="go">array([1, 2, 3], dtype=&#39;&gt;i8&#39;)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">A</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
 <span class="go">array([0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0,</span>
 <span class="go">       0, 3], dtype=uint8)</span>
@@ -1547,7 +1585,8 @@ arguments, and this function always passes sub-classes through.)</p>
 function <code class="xref py py-func docutils literal notranslate"><span class="pre">numpy.copy()</span></code> is similar, but it defaults to using order ‘K’,
 and will not pass sub-classes through by default.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">]],</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],[</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">]],</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -1568,6 +1607,29 @@ and will not pass sub-classes through by default.</p>
 </div>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">y</span><span class="o">.</span><span class="n">flags</span><span class="p">[</span><span class="s1">&#39;C_CONTIGUOUS&#39;</span><span class="p">]</span>
 <span class="go">True</span>
+</pre></div>
+</div>
+<p>For arrays containing Python objects (e.g. dtype=object),
+the copy is a shallow one. The new array will contain the
+same object which may lead to surprises if that object can
+be modified (is mutable):</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">array([1, &#39;m&#39;, list([10, 3, 4])], dtype=object)</span>
+</pre></div>
+</div>
+<p>To ensure all elements within an <code class="docutils literal notranslate"><span class="pre">object</span></code> array are copied,
+use <cite>copy.deepcopy</cite>:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;m&#39;</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span><span class="p">[</span><span class="mi">2</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">c</span>
+<span class="go">array([1, &#39;m&#39;, list([10, 3, 4])], dtype=object)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">array([1, &#39;m&#39;, list([2, 3, 4])], dtype=object)</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -1605,13 +1667,14 @@ as well as documented private attributes):</p>
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">data</span></span></dt>
 <dd><p>A pointer to the memory area of the array as a Python integer.
-This memory area may contain data that is not aligned, or not in correct
-byte-order. The memory area may not even be writeable. The array
-flags and data-type of this array should be respected when passing this
-attribute to arbitrary C-code to avoid trouble that can include Python
-crashing. User Beware! The value of this attribute is exactly the same
-as <code class="docutils literal notranslate"><span class="pre">self._array_interface_['data'][0]</span></code>.</p>
-<p>Note that unlike <code class="docutils literal notranslate"><span class="pre">data_as</span></code>, a reference will not be kept to the array:
+This memory area may contain data that is not aligned, or not in
+correct byte-order. The memory area may not even be writeable.
+The array flags and data-type of this array should be respected
+when passing this attribute to arbitrary C-code to avoid trouble
+that can include Python crashing. User Beware! The value of this
+attribute is exactly the same as:
+<code class="docutils literal notranslate"><span class="pre">self._array_interface_['data'][0]</span></code>.</p>
+<p>Note that unlike <code class="docutils literal notranslate"><span class="pre">data_as</span></code>, a reference won’t be kept to the array:
 code like <code class="docutils literal notranslate"><span class="pre">ctypes.c_void_p((a</span> <span class="pre">+</span> <span class="pre">b).ctypes.data)</span></code> will result in a
 pointer to a deallocated array, and should be spelt
 <code class="docutils literal notranslate"><span class="pre">(a</span> <span class="pre">+</span> <span class="pre">b).ctypes.data_as(ctypes.c_void_p)</span></code></p>
@@ -1637,10 +1700,10 @@ the underlying array.</p>
 <dt class="sig sig-object py">
 <span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">strides</span></span></dt>
 <dd><p>A ctypes array of length self.ndim where
-the basetype is the same as for the shape attribute. This ctypes array
-contains the strides information from the underlying array. This strides
-information is important for showing how many bytes must be jumped to
-get to the next element in the array.</p>
+the basetype is the same as for the shape attribute. This ctypes
+array contains the strides information from the underlying array.
+This strides information is important for showing how many bytes
+must be jumped to get to the next element in the array.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>(c_intp*self.ndim)</p>
@@ -1653,8 +1716,8 @@ get to the next element in the array.</p>
 <span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">data_as</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Return the data pointer cast to a particular c-types object.
 For example, calling <code class="docutils literal notranslate"><span class="pre">self._as_parameter_</span></code> is equivalent to
-<code class="docutils literal notranslate"><span class="pre">self.data_as(ctypes.c_void_p)</span></code>. Perhaps you want to use the data as a
-pointer to a ctypes array of floating-point data:
+<code class="docutils literal notranslate"><span class="pre">self.data_as(ctypes.c_void_p)</span></code>. Perhaps you want to use
+the data as a pointer to a ctypes array of floating-point data:
 <code class="docutils literal notranslate"><span class="pre">self.data_as(ctypes.POINTER(ctypes.c_double))</span></code>.</p>
 <p>The returned pointer will keep a reference to the array.</p>
 </dd></dl>
@@ -1679,7 +1742,8 @@ are not returned and errors may be raised instead. In particular,
 the object will still have the <code class="docutils literal notranslate"><span class="pre">as_parameter</span></code> attribute which will
 return an integer equal to the data attribute.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">ctypes</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
 <span class="go">array([[0, 1],</span>
@@ -1693,9 +1757,9 @@ return an integer equal to the data attribute.</p>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">data_as</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">POINTER</span><span class="p">(</span><span class="n">ctypes</span><span class="o">.</span><span class="n">c_uint64</span><span class="p">))</span><span class="o">.</span><span class="n">contents</span>
 <span class="go">c_ulong(4294967296)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">shape</span>
-<span class="go">&lt;numpy.core._internal.c_long_Array_2 object at 0x7ff2fc1fce60&gt; # may vary</span>
+<span class="go">&lt;numpy._core._internal.c_long_Array_2 object at 0x7ff2fc1fce60&gt; # may vary</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">ctypes</span><span class="o">.</span><span class="n">strides</span>
-<span class="go">&lt;numpy.core._internal.c_long_Array_2 object at 0x7ff2fc1ff320&gt; # may vary</span>
+<span class="go">&lt;numpy._core._internal.c_long_Array_2 object at 0x7ff2fc1ff320&gt; # may vary</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -1733,6 +1797,11 @@ return an integer equal to the data attribute.</p>
 <span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Python buffer object pointing to the start of the array’s data.</p>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.device">
+<span class="sig-name descname"><span class="pre">device</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.device" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.diagonal">
@@ -1805,11 +1874,7 @@ memory (see also <cite>ndarray.view</cite> and <cite>ndarray.astype</cite>).</p>
 The array can be read back with pickle.load or numpy.load.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>file</strong> (<em>str</em><em> or </em><em>Path</em>) – <p>A string naming the dump file.</p>
-<div class="versionchanged">
-<p><span class="versionmodified changed">Changed in version 1.17.0: </span><cite>pathlib.Path</cite> objects are now accepted.</p>
-</div>
-</p>
+<dd class="field-odd"><p><strong>file</strong> (<em>str</em><em> or </em><em>Path</em>) – A string naming the dump file.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1836,7 +1901,8 @@ pickle.loads will convert the string back to an array.</p>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
 <span class="go">array([0, 0])</span>
@@ -1988,7 +2054,8 @@ a subclass of, Python’s built-in iterator object.</p>
 <p><code class="xref py py-obj docutils literal notranslate"><span class="pre">flatiter</span></code></p>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
 <span class="go">array([[1, 2, 3],</span>
 <span class="go">       [4, 5, 6]])</span>
@@ -2046,7 +2113,8 @@ The default is ‘C’.</p>
 </dl>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">]])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
 <span class="go">array([1, 2, 3, 4])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
@@ -2075,7 +2143,8 @@ than that of the array itself.</p></li>
 </dd>
 </dl>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="mf">1.</span><span class="o">+</span><span class="mf">1.</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="mf">1.</span><span class="o">+</span><span class="mf">1.</span><span class="n">j</span><span class="p">]</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">+</span> <span class="mf">4.</span><span class="n">j</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
 <span class="go">array([[1.+1.j,  0.+0.j],</span>
@@ -2099,7 +2168,8 @@ array for our view:</p>
 <span class="sig-name descname"><span class="pre">imag</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.imag" title="Permalink to this definition">¶</a></dt>
 <dd><p>The imaginary part of the array.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">([</span><span class="mi">1</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span><span class="mi">1</span><span class="n">j</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">([</span><span class="mi">1</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span><span class="mi">1</span><span class="n">j</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">imag</span>
 <span class="go">array([ 0.        ,  0.70710678])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">imag</span><span class="o">.</span><span class="n">dtype</span>
@@ -2144,7 +2214,8 @@ a standard Python scalar is returned. This can be useful for speeding up
 access to elements of the array and doing arithmetic on elements of the
 array using Python’s optimized math.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
 <span class="go">array([[2, 2, 6],</span>
@@ -2160,55 +2231,26 @@ array using Python’s optimized math.</p>
 <span class="go">1</span>
 </pre></div>
 </div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset">
-<span class="sig-name descname"><span class="pre">itemset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Insert scalar into an array (scalar is cast to array’s dtype, if possible)</p>
-<p>There must be at least 1 argument, and define the last argument
-as <em>item</em>.  Then, <code class="docutils literal notranslate"><span class="pre">a.itemset(*args)</span></code> is equivalent to but faster
-than <code class="docutils literal notranslate"><span class="pre">a[args]</span> <span class="pre">=</span> <span class="pre">item</span></code>.  The item should be a scalar value and <cite>args</cite>
-must select a single item in the array <cite>a</cite>.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>*args</strong> (<em>Arguments</em>) – If one argument: a scalar, only used in case <cite>a</cite> is of size 1.
-If two arguments: the last argument is the value to be set
-and must be a scalar, the first argument specifies a single array
-element location. It is either an int or a tuple.</p>
-</dd>
-</dl>
-<p class="rubric">Notes</p>
-<p>Compared to indexing syntax, <cite>itemset</cite> provides some speed increase
-for placing a scalar into a particular location in an <cite>ndarray</cite>,
-if you must do this.  However, generally this is discouraged:
-among other problems, it complicates the appearance of the code.
-Also, when using <cite>itemset</cite> (and <cite>item</cite>) inside a loop, be sure
-to assign the methods to a local variable to avoid the attribute
-look-up at each loop iteration.</p>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">123</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
-<span class="go">array([[2, 2, 6],</span>
-<span class="go">       [1, 3, 6],</span>
-<span class="go">       [1, 0, 1]])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">itemset</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">itemset</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="mi">9</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span>
-<span class="go">array([[2, 2, 6],</span>
-<span class="go">       [1, 0, 6],</span>
-<span class="go">       [1, 0, 9]])</span>
+<p>For an array with object dtype, elements are returned as-is.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">(</span><span class="mi">1</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="c1">#return np.int64</span>
+<span class="go">np.int64(1)</span>
 </pre></div>
 </div>
 </dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset">
+<span class="sig-name descname"><span class="pre">itemset</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemsize">
 <span class="sig-name descname"><span class="pre">itemsize</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemsize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Length of one array element in bytes.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">itemsize</span>
 <span class="go">8</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
@@ -2222,6 +2264,48 @@ look-up at each loop iteration.</p>
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.m">
 <span class="sig-name descname"><span class="pre">m</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.m" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mT">
+<span class="sig-name descname"><span class="pre">mT</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mT" title="Permalink to this definition">¶</a></dt>
+<dd><p>View of the matrix transposed array.</p>
+<p>The matrix transpose is the transpose of the last two dimensions, even
+if the array is of higher dimension.</p>
+<div class="versionadded">
+<p><span class="versionmodified added">New in version 2.0.</span></p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If the array is of dimension less than 2.</p>
+</dd>
+</dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">array([[1, 2],</span>
+<span class="go">       [3, 4]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">mT</span>
+<span class="go">array([[1, 3],</span>
+<span class="go">       [2, 4]])</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
+<span class="go">array([[[0, 1],</span>
+<span class="go">        [2, 3]],</span>
+
+<span class="go">       [[4, 5],</span>
+<span class="go">        [6, 7]]])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">mT</span>
+<span class="go">array([[[0, 2],</span>
+<span class="go">        [1, 3]],</span>
+
+<span class="go">       [[4, 6],</span>
+<span class="go">        [5, 7]]])</span>
+</pre></div>
+</div>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max">
@@ -2285,7 +2369,8 @@ array object.</p>
 </dl>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">nbytes</span>
 <span class="go">480</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">x</span><span class="o">.</span><span class="n">itemsize</span>
@@ -2299,7 +2384,8 @@ array object.</p>
 <span class="sig-name descname"><span class="pre">ndim</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ndim" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of array dimensions.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">ndim</span>
 <span class="go">1</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
@@ -2309,40 +2395,10 @@ array object.</p>
 </div>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder">
-<span class="sig-name descname"><span class="pre">newbyteorder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'S'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the array with the same data viewed with a different byte order.</p>
-<p>Equivalent to:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">arr</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">newbytorder</span><span class="p">(</span><span class="n">new_order</span><span class="p">))</span>
-</pre></div>
-</div>
-<p>Changes are also made in all fields and sub-arrays of the array data
-type.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>new_order</strong> (<em>string</em><em>, </em><em>optional</em>) – <p>Byte order to force; a value from the byte order specifications
-below. <cite>new_order</cite> codes can be any of:</p>
-<ul class="simple">
-<li><p>’S’ - swap dtype from current to opposite endian</p></li>
-<li><p>{‘&lt;’, ‘little’} - little endian</p></li>
-<li><p>{‘&gt;’, ‘big’} - big endian</p></li>
-<li><p>{‘=’, ‘native’} - native order, equivalent to <cite>sys.byteorder</cite></p></li>
-<li><p>{‘|’, ‘I’} - ignore (no change to byte order)</p></li>
-</ul>
-<p>The default value (‘S’) results in swapping the current
-byte order.</p>
-</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>new_arr</strong> – New array object with the dtype reflecting given change to the
-byte order.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>array</p>
-</dd>
-</dl>
-</dd></dl>
+<span class="sig-name descname"><span class="pre">newbyteorder</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero">
@@ -2361,14 +2417,12 @@ byte order.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition">
 <span class="sig-name descname"><span class="pre">partition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'introselect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition" title="Permalink to this definition">¶</a></dt>
-<dd><p>Rearranges the elements in the array in such a way that the value of the
-element in kth position is in the position it would be in a sorted array.
-All elements smaller than the kth element are moved before this element and
-all equal or greater are moved behind it. The ordering of the elements in
-the two partitions is undefined.</p>
-<div class="versionadded">
-<p><span class="versionmodified added">New in version 1.8.0.</span></p>
-</div>
+<dd><p>Partially sorts the elements in the array in such a way that the value of
+the element in k-th position is in the position it would be in a sorted
+array. In the output array, all elements smaller than the k-th element
+are located to the left of this element and all equal or greater are
+located to its right. The ordering of the elements in the two partitions
+on the either side of the k-th element in the output array is undefined.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -2407,10 +2461,11 @@ they come up in the dtype, to break ties.</p></li>
 <p class="rubric">Notes</p>
 <p>See <code class="docutils literal notranslate"><span class="pre">np.partition</span></code> for notes on the different algorithms.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
-<span class="go">array([2, 1, 3, 4])</span>
+<span class="go">array([2, 1, 3, 4]) # may vary</span>
 </pre></div>
 </div>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">partition</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">))</span>
@@ -2434,19 +2489,10 @@ they come up in the dtype, to break ties.</p></li>
 </div>
 </dd></dl>
 
-<dl class="py method">
+<dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp">
-<span class="sig-name descname"><span class="pre">ptp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp" title="Permalink to this definition">¶</a></dt>
-<dd><p>Peak to peak (maximum - minimum) value along a given axis.</p>
-<p>Refer to <cite>numpy.ptp</cite> for full documentation.</p>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ptp</span></code></dt><dd><p>equivalent function</p>
-</dd>
-</dl>
-</div>
-</dd></dl>
+<span class="sig-name descname"><span class="pre">ptp</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put">
@@ -2483,7 +2529,8 @@ they come up in the dtype, to break ties.</p></li>
 <span class="sig-name descname"><span class="pre">real</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.real" title="Permalink to this definition">¶</a></dt>
 <dd><p>The real part of the array.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">([</span><span class="mi">1</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span><span class="mi">1</span><span class="n">j</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">([</span><span class="mi">1</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span><span class="mi">1</span><span class="n">j</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">real</span>
 <span class="go">array([ 1.        ,  0.70710678])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">real</span><span class="o">.</span><span class="n">dtype</span>
@@ -2515,7 +2562,7 @@ they come up in the dtype, to break ties.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape">
-<span class="sig-name descname"><span class="pre">reshape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">reshape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an array containing the same data with a new shape.</p>
 <p>Refer to <cite>numpy.reshape</cite> for full documentation.</p>
 <div class="admonition seealso">
@@ -2578,6 +2625,9 @@ for this array with another Python object, then you may safely set
 <p class="rubric">Examples</p>
 <p>Shrinking an array: array is flattened (in the order that the data are
 stored in memory), resized, and reshaped:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</pre></div>
+</div>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]],</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;C&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">resize</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
@@ -2669,7 +2719,8 @@ bytes into the field.</p>
 <p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getfield</span></code></a></p>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">getfield</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
 <span class="go">array([[1.,  0.,  0.],</span>
 <span class="go">       [0.,  1.,  0.],</span>
@@ -2700,7 +2751,7 @@ respectively.</p>
 <p>These Boolean-valued flags affect how numpy interprets the memory
 area used by <cite>a</cite> (see Notes below). The ALIGNED flag can only
 be set to True if the data is actually aligned according to the type.
-The WRITEBACKIFCOPY and flag can never be set
+The WRITEBACKIFCOPY flag can never be set
 to True. The flag WRITEABLE can only be set to True if the array owns its
 own memory, or the ultimate owner of the memory exposes a writeable buffer
 interface, or is a string. (The exception for string is made so that
@@ -2717,7 +2768,7 @@ unpickling can be done without copying memory.)</p>
 <p class="rubric">Notes</p>
 <p>Array flags provide information about how the memory area used
 for the array is to be interpreted. There are 7 Boolean flags
-in use, only four of which can be changed by the user:
+in use, only three of which can be changed by the user:
 WRITEBACKIFCOPY, WRITEABLE, and ALIGNED.</p>
 <p>WRITEABLE (W) the data area can be written to;</p>
 <p>ALIGNED (A) the data and strides are aligned appropriately for the hardware
@@ -2728,7 +2779,8 @@ called, the base array will be updated with the contents of this array.</p>
 <p>All flags can be accessed using the single (upper case) letter as well
 as the full name.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">],</span>
 <span class="gp">... </span>              <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
 <span class="gp">... </span>              <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">9</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">y</span>
@@ -2774,7 +2826,8 @@ fail if a copy is required.</p>
 future.  Using <cite>ndarray.reshape</cite> is the preferred approach.</p>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">shape</span>
 <span class="go">(4,)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
@@ -2822,7 +2875,8 @@ may not be the case with other methods of obtaining the same value
 of <code class="docutils literal notranslate"><span class="pre">np.int_</span></code>), and may be relevant if the value is used further in
 calculations that may overflow a fixed size integer type.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">size</span>
 <span class="go">30</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">np</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
@@ -2840,14 +2894,10 @@ calculations that may overflow a fixed size integer type.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>axis</strong> (<em>int</em><em>, </em><em>optional</em>) – Axis along which to sort. Default is -1, which means sort along the
 last axis.</p></li>
-<li><p><strong>kind</strong> (<em>{'quicksort'</em><em>, </em><em>'mergesort'</em><em>, </em><em>'heapsort'</em><em>, </em><em>'stable'}</em><em>, </em><em>optional</em>) – <p>Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’
+<li><p><strong>kind</strong> (<em>{'quicksort'</em><em>, </em><em>'mergesort'</em><em>, </em><em>'heapsort'</em><em>, </em><em>'stable'}</em><em>, </em><em>optional</em>) – Sorting algorithm. The default is ‘quicksort’. Note that both ‘stable’
 and ‘mergesort’ use timsort under the covers and, in general, the
 actual implementation will vary with datatype. The ‘mergesort’ option
-is retained for backwards compatibility.</p>
-<div class="versionchanged">
-<p><span class="versionmodified changed">Changed in version 1.15.0: </span>The ‘stable’ option was added.</p>
-</div>
-</p></li>
+is retained for backwards compatibility.</p></li>
 <li><p><strong>order</strong> (<em>str</em><em> or </em><em>list of str</em><em>, </em><em>optional</em>) – When <cite>a</cite> is an array with fields defined, this argument specifies
 which fields to compare first, second, etc.  A single field can
 be specified as a string, and not all fields need be specified,
@@ -2874,7 +2924,8 @@ they come up in the dtype, to break ties.</p></li>
 <p class="rubric">Notes</p>
 <p>See <cite>numpy.sort</cite> for notes on the different sorting algorithms.</p>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span><span class="mi">4</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
 <span class="go">array([[1, 4],</span>
@@ -2933,8 +2984,8 @@ is:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">offset</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">*</span> <span class="n">a</span><span class="o">.</span><span class="n">strides</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>A more detailed explanation of strides can be found in the
-“ndarray.rst” file in the NumPy reference guide.</p>
+<p>A more detailed explanation of strides can be found in
+<span class="xref std std-ref">arrays.ndarray</span>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Setting <code class="docutils literal notranslate"><span class="pre">arr.strides</span></code> is discouraged and may be deprecated in the
@@ -2959,7 +3010,8 @@ position in the next row.  As such, the strides for the array <cite>x</cite> wil
 <p><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.lib.stride_tricks.as_strided</span></code></p>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="mi">3</span><span class="o">*</span><span class="mi">4</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2</span><span class="o">*</span><span class="mi">3</span><span class="o">*</span><span class="mi">4</span><span class="p">),</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">))</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">y</span>
 <span class="go">array([[[ 0,  1,  2,  3],</span>
 <span class="go">        [ 4,  5,  6,  7],</span>
@@ -3042,15 +3094,17 @@ position in the next row.  As such, the strides for the array <cite>x</cite> wil
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_device">
+<span class="sig-name descname"><span class="pre">to_device</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_device" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes">
 <span class="sig-name descname"><span class="pre">tobytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Construct Python bytes containing the raw data bytes in the array.</p>
 <p>Constructs Python bytes showing a copy of the raw contents of
 data memory. The bytes object is produced in C-order by default.
 This behavior is controlled by the <code class="docutils literal notranslate"><span class="pre">order</span></code> parameter.</p>
-<div class="versionadded">
-<p><span class="versionmodified added">New in version 1.9.0.</span></p>
-</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>order</strong> (<em>{'C'</em><em>, </em><em>'F'</em><em>, </em><em>'A'}</em><em>, </em><em>optional</em>) – Controls the memory layout of the bytes object. ‘C’ means C-order,
@@ -3072,7 +3126,8 @@ Fortran contiguous, ‘C’ otherwise. Default is ‘C’.</p>
 </dl>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;&lt;u2&#39;</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]],</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;&lt;u2&#39;</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()</span>
 <span class="go">b&#39;\x00\x00\x01\x00\x02\x00\x03\x00&#39;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="o">.</span><span class="n">tobytes</span><span class="p">(</span><span class="s1">&#39;C&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="n">x</span><span class="o">.</span><span class="n">tobytes</span><span class="p">()</span>
@@ -3093,11 +3148,7 @@ fromfile().</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fid</strong> (<em>file</em><em> or </em><em>str</em><em> or </em><em>Path</em>) – <p>An open file object, or a string containing a filename.</p>
-<div class="versionchanged">
-<p><span class="versionmodified changed">Changed in version 1.17.0: </span><cite>pathlib.Path</cite> objects are now accepted.</p>
-</div>
-</p></li>
+<li><p><strong>fid</strong> (<em>file</em><em> or </em><em>str</em><em> or </em><em>Path</em>) – An open file object, or a string containing a filename.</p></li>
 <li><p><strong>sep</strong> (<em>str</em>) – Separator between array items for text output.
 If “” (empty), a binary file is written, equivalent to
 <code class="docutils literal notranslate"><span class="pre">file.write(a.tobytes())</span></code>.</p></li>
@@ -3146,10 +3197,11 @@ may sometimes lose precision.</p>
 <p class="rubric">Examples</p>
 <p>For a 1D array, <code class="docutils literal notranslate"><span class="pre">a.tolist()</span></code> is almost the same as <code class="docutils literal notranslate"><span class="pre">list(a)</span></code>,
 except that <code class="docutils literal notranslate"><span class="pre">tolist</span></code> changes numpy scalars to Python scalars:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint32</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint32</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a_list</span>
-<span class="go">[1, 2]</span>
+<span class="go">[np.uint32(1), np.uint32(2)]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">type</span><span class="p">(</span><span class="n">a_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 <span class="go">&lt;class &#39;numpy.uint32&#39;&gt;</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a_tolist</span> <span class="o">=</span> <span class="n">a</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
@@ -3182,8 +3234,9 @@ except that <code class="docutils literal notranslate"><span class="pre">tolist<
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring">
 <span class="sig-name descname"><span class="pre">tostring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring" title="Permalink to this definition">¶</a></dt>
-<dd><p>A compatibility alias for <cite>tobytes</cite>, with exactly the same behavior.</p>
-<p>Despite its name, it returns <cite>bytes</cite> not <cite>str</cite>s.</p>
+<dd><p>A compatibility alias for <cite>~ndarray.tobytes</cite>, with exactly the same
+behavior.</p>
+<p>Despite its name, it returns <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code> not <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>s.</p>
 <div class="deprecated">
 <p><span class="versionmodified deprecated">Deprecated since version 1.19.0.</span></p>
 </div>
@@ -3238,7 +3291,8 @@ intended simply as a “convenience” alternative to the tuple form).</p></li>
 </dl>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">]])</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">a</span>
 <span class="go">array([[1, 2],</span>
 <span class="go">       [3, 4]])</span>
@@ -3284,7 +3338,7 @@ intended simply as a “convenience” alternative to the tuple form).</p></li>
 <p class="admonition-title">Note</p>
 <p>Passing None for <code class="docutils literal notranslate"><span class="pre">dtype</span></code> is different from omitting the parameter,
 since the former invokes <code class="docutils literal notranslate"><span class="pre">dtype(None)</span></code> which is an alias for
-<code class="docutils literal notranslate"><span class="pre">dtype('float_')</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">dtype('float64')</span></code>.</p>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -3317,15 +3371,17 @@ contiguous. This axis will be resized in the result.</p>
 had to be C-contiguous.</p>
 </div>
 <p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)])</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)],</span> <span class="n">dtype</span><span class="o">=</span><span class="p">[(</span><span class="s1">&#39;a&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;b&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int8</span><span class="p">)])</span>
 </pre></div>
 </div>
 <p>Viewing array data using a different type and dtype:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">matrix</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span>
-<span class="go">matrix([[513]], dtype=int16)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>
-<span class="go">&lt;class &#39;numpy.matrix&#39;&gt;</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">nonneg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">([(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">dtype</span><span class="o">=</span><span class="n">nonneg</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">recarray</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]</span>
+<span class="go">array([-1], dtype=int8)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">y</span><span class="o">.</span><span class="n">a</span>
+<span class="go">array([255], dtype=uint8)</span>
 </pre></div>
 </div>
 <p>Creating a view on a structured array so it can be used in calculations</p>
@@ -3353,7 +3409,7 @@ had to be C-contiguous.</p>
 <p>Views share data:</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">z</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-<span class="go">(9, 10)</span>
+<span class="go">np.record((9, 10), dtype=[(&#39;a&#39;, &#39;i1&#39;), (&#39;b&#39;, &#39;i1&#39;)])</span>
 </pre></div>
 </div>
 <p>Views that change the dtype size (bytes per entry) should normally be

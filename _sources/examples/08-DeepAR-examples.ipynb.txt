@@ -53,7 +53,7 @@
     "from darts.models import RNNModel\n",
     "from darts.timeseries import concatenate\n",
     "from darts.utils.callbacks import TFMProgressBar\n",
-    "from darts.utils.likelihood_models import GaussianLikelihood\n",
+    "from darts.utils.likelihood_models.torch import GaussianLikelihood\n",
     "from darts.utils.missing_values import fill_missing_values\n",
     "from darts.utils.timeseries_generation import datetime_attribute_timeseries\n",
     "\n",
@@ -261,7 +261,7 @@
     }
    ],
    "source": [
-    "df3 = EnergyDataset().load().pd_dataframe()\n",
+    "df3 = EnergyDataset().load().to_dataframe()\n",
     "df3_day_avg = (\n",
     "    df3.groupby(df3.index.astype(str).str.split(\" \").str[0]).mean().reset_index()\n",
     ")\n",

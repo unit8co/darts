@@ -174,51 +174,104 @@
                 
   <h1>Source code for darts.models.forecasting.sf_auto_tbats</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">StatsForecastAutoTBATS</span>
-<span class="sd">-----------</span>
+<span class="sd">AutoTBATS</span>
+<span class="sd">---------</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">statsforecast.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoTBATS</span> <span class="k">as</span> <span class="n">SFAutoTBATS</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.components.statsforecast_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">create_normal_samples</span><span class="p">,</span>
-    <span class="n">one_sigma_rule</span><span class="p">,</span>
-    <span class="n">unpack_sf_dict</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalForecastingModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.sf_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">StatsForecastModel</span>
 
 
-<div class="viewcode-block" id="StatsForecastAutoTBATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">StatsForecastAutoTBATS</span><span class="p">(</span><span class="n">LocalForecastingModel</span><span class="p">):</span>
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">autoTBATS_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoTBATS_kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Auto-TBATS based on `Statsforecasts package</span>
-<span class="sd">        &lt;https://github.com/Nixtla/statsforecast&gt;`_.</span>
+<div class="viewcode-block" id="AutoTBATS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.AutoTBATS">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">AutoTBATS</span><span class="p">(</span><span class="n">StatsForecastModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Auto-TBATS based on the `Statsforecasts package &lt;https://github.com/Nixtla/statsforecast&gt;`_.</span>
 
 <span class="sd">        Automatically selects the best TBATS model from all feasible combinations of the parameters `use_boxcox`,</span>
 <span class="sd">        `use_trend`, `use_damped_trend`, and `use_arma_errors`. Selection is made using the AIC.</span>
-<span class="sd">        Default value for `use_arma_errors` is True since this enables the evaluation of models with</span>
-<span class="sd">        and without ARMA errors.</span>
-<span class="sd">        &lt;https://citeseerx.ist.psu.edu/document?repid=rep1&amp;type=pdf&amp;doi=f3de25596ab60ef0e886366826bf58a02b35a44f&gt;</span>
-<span class="sd">        &lt;https://doi.org/10.4225/03/589299681de3d&gt;</span>
+<span class="sd">        Default value for `use_arma_errors` is `True` since this enables the evaluation of models with</span>
+<span class="sd">        and without ARMA errors. We refer to the `StatsForecast documentation</span>
+<span class="sd">        &lt;https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotbats&gt;`_ for the exhaustive documentation</span>
+<span class="sd">        of the arguments.</span>
 
-<span class="sd">        We refer to the `statsforecast AutoTBATS documentation</span>
-<span class="sd">        &lt;https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotbats&gt;`_</span>
-<span class="sd">        for the exhaustive documentation of the arguments.</span>
+<span class="sd">        In addition to univariate deterministic forecasting, it comes with additional support:</span>
+
+<span class="sd">        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.</span>
+<span class="sd">          Darts adds support by first regressing the series against the future covariates using a</span>
+<span class="sd">          :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the</span>
+<span class="sd">          StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by</span>
+<span class="sd">          `this post of Stephan Kolassa &lt;https://stats.stackexchange.com/q/220885&gt;`_.</span>
+
+<span class="sd">        - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following</span>
+<span class="sd">          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:</span>
+
+<span class="sd">          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.</span>
+
+<span class="sd">          - Generate sampled forecasts from these quantiles by setting `num_samples &gt;&gt; 1`.</span>
+
+<span class="sd">        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.</span>
+<span class="sd">          Darts adds support by first fitting a copy of the model on the new series, and then using that model to</span>
+<span class="sd">          generate the corresponding forecast.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Future covariates are not supported when the input series contain missing values.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            The first model call might take more time than all subsequent calls as the model relies on Numba and jit</span>
+<span class="sd">            compilation.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        autoTBATS_args</span>
+<span class="sd">        args</span>
 <span class="sd">            Positional arguments for ``statsforecasts.models.AutoTBATS``.</span>
-<span class="sd">        autoTBATS_kwargs</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.dataprocessing.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;future&#39;: [encode_year]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
+<span class="sd">        quantiles</span>
+<span class="sd">            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting</span>
+<span class="sd">            with `num_samples &gt; 1` or `predict_likelihood_parameters=True`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.</span>
+<span class="sd">        kwargs</span>
 <span class="sd">            Keyword arguments for ``statsforecasts.models.AutoTBATS``.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
-<span class="sd">        &gt;&gt;&gt; from darts.models import StatsForecastAutoTBATS</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import AutoTBATS</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
-<span class="sd">        &gt;&gt;&gt; # define StatsForecastAutoTBATS parameters</span>
-<span class="sd">        &gt;&gt;&gt; model = StatsForecastAutoTBATS(season_length=12)</span>
+<span class="sd">        &gt;&gt;&gt; # define AutoTBATS parameters</span>
+<span class="sd">        &gt;&gt;&gt; model = AutoTBATS(season_length=12)</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(series)</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
 <span class="sd">        &gt;&gt;&gt; pred.values()</span>
@@ -229,54 +282,12 @@
 <span class="sd">               [520.92224557],</span>
 <span class="sd">               [570.33881522]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">SFAutoTBATS</span><span class="p">(</span><span class="o">*</span><span class="n">autoTBATS_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoTBATS_kwargs</span><span class="p">)</span>
-
-<div class="viewcode-block" id="StatsForecastAutoTBATS.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
-        <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
-            <span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span></div>
-
-<div class="viewcode-block" id="StatsForecastAutoTBATS.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.StatsForecastAutoTBATS.predict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
-        <span class="n">forecast_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
-            <span class="n">h</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-            <span class="n">level</span><span class="o">=</span><span class="p">(</span><span class="n">one_sigma_rule</span><span class="p">,),</span>  <span class="c1"># ask one std for the confidence interval.</span>
-        <span class="p">)</span>
-
-        <span class="n">mu</span><span class="p">,</span> <span class="n">std</span> <span class="o">=</span> <span class="n">unpack_sf_dict</span><span class="p">(</span><span class="n">forecast_dict</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">samples</span> <span class="o">=</span> <span class="n">create_normal_samples</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">samples</span> <span class="o">=</span> <span class="n">mu</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span></div>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">False</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">10</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_range_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">supports_probabilistic_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">True</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">SFAutoTBATS</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
+            <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>
