@@ -57,6 +57,11 @@ jobs:
             pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/optional.txt -r requirements/dev.txt
           fi
 
+      - name: "Install libomp (for LightGBM)"
+        run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
       - name: "Run tests"
         run: |
           if [ "${{ matrix.flavour }}" == "all" ]; then
@@ -109,6 +114,11 @@ jobs:
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
+      - name: "Install libomp (for LightGBM)"
+        run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
       - name: "Install Locally"
         run: |
           pip install .
@@ -155,6 +165,11 @@ jobs:
         run: |
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+
+      - name: "Install libomp (for LightGBM)"
+        run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
+          ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Install Locally"
         run: |
