@@ -94,18 +94,21 @@ class AutoTheta(StatsForecastModel):
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import AutoTheta
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
-        >>> # define AutoTheta parameters
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define AutoMFLES parameters
         >>> model = AutoTheta(season_length=12)
-        >>> model.fit(series)
-        >>> pred = model.predict(6)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[442.94078295],
-               [432.22936898],
-               [495.30609727],
-               [482.30625563],
-               [487.49312172],
-               [555.57902659]])
+        array([[438.05257224],
+               [428.93751019],
+               [465.20881177],
+               [461.73768912],
+               [467.59232404],
+               [509.82574683]])
         """
         super().__init__(
             model=SFAutoTheta(*args, **kwargs),

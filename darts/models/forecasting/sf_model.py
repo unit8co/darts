@@ -117,14 +117,17 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[450.55179949],
-               [415.00597806],
-               [454.61353249],
-               [486.51218795],
-               [504.09229632],
-               [555.06463942]])
+        array([[445.4276575 ],
+               [420.04912881],
+               [448.7142377 ],
+               [491.23406559],
+               [502.67834069],
+               [566.04774778]])
         """
-
+        if not isinstance(model, _TS):
+            raise ValueError(
+                "`model` must be a StatsForecast model imported from `statsforecast.models`."
+            )
         self.model: _SFModel = model
         self._likelihood = QuantilePrediction(quantiles=quantiles)
 

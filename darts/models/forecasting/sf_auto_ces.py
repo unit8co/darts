@@ -94,18 +94,21 @@ class AutoCES(StatsForecastModel):
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import AutoCES
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
-        >>> # define AutoCES parameters
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define AutoETS parameters
         >>> model = AutoCES(season_length=12, model="Z")
-        >>> model.fit(series)
-        >>> pred = model.predict(6)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[453.03417969],
-               [429.34039307],
-               [488.64471436],
-               [500.28955078],
-               [519.79962158],
-               [586.47503662]])
+        array([[437.52763596],
+               [412.76187406],
+               [445.26244666],
+               [498.15901335],
+               [492.5184186 ],
+               [550.25118939]])
         """
         super().__init__(
             model=SFAutoCES(*args, **kwargs),

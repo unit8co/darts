@@ -123,18 +123,21 @@ class Croston(StatsForecastModel):
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import Croston
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
-        >>> # use the optimized version to automatically select best alpha parameter
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define AutoMFLES parameters
         >>> model = Croston(version="optimized")
-        >>> model.fit(series)
-        >>> pred = model.predict(6)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[461.7666],
-               [461.7666],
-               [461.7666],
-               [461.7666],
-               [461.7666],
-               [461.7666]])
+        array([[419.84565922],
+               [424.06484452],
+               [440.05509455],
+               [463.53183473],
+               [488.20449148],
+               [507.46204636]])
         """
         if version.lower() not in ["classic", "optimized", "sba", "tsb"]:
             raise_log(
