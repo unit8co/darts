@@ -3596,6 +3596,10 @@ class TestRegressionModels:
             future_covariates,
         ) = self.inputs_for_tests_categorical_covariates()
 
+        series_train, series_val = series.split_after(0.6)
+        past_cov_train, past_cov_val = past_covariates.split_after(0.6)
+        future_cov_train, future_cov_val = future_covariates.split_after(0.6)
+
         original_fit = model.model.fit
         intercepted_args = {}
 
@@ -3610,17 +3614,31 @@ class TestRegressionModels:
             side_effect=intercept_fit_args,
         ):
             model.fit(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
+                series=series_train,
+                past_covariates=past_cov_train,
+                future_covariates=future_cov_train,
+                val_series=series_val,
+                val_past_covariates=past_cov_val,
+                val_future_covariates=future_cov_val,
             )
 
             expected_cat_indices = [2, 3, 5]
             cat_param_name = model._categorical_fit_param
+            eval_set_param_name, _ = model.val_set_params
             if model_cls == CatBoostModel:
                 model_cat_indices = model.model.get_cat_feature_indices()
                 kwargs_cat_indices = intercepted_args["kwargs"][cat_param_name]
+
                 assert model_cat_indices == kwargs_cat_indices == expected_cat_indices
+
+                # all evals set have correct cat feature indices
+                eval_set_indices = [
+                    pool.get_cat_feature_indices()
+                    for pool in intercepted_args["kwargs"][eval_set_param_name]
+                ]
+                assert np.array([
+                    indices == model_cat_indices for indices in eval_set_indices
+                ]).all()
 
                 # catboost requires pd.DataFrame with categorical features
                 X, y = intercepted_args["args"]
@@ -3628,6 +3646,7 @@ class TestRegressionModels:
                 # all categorical features should be encoded as integers
                 for col in X[model_cat_indices].columns:
                     assert X[col].dtype == int
+
             elif model_cls == LightGBMModel:
                 assert (
                     intercepted_args["kwargs"][cat_param_name] == expected_cat_indices
