@@ -42,6 +42,10 @@ jobs:
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt
 
+      - name: "Install libomp (for LightGBM)"
+        run: |
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
       - name: "Install Locally"
         run: |
           pip install .
