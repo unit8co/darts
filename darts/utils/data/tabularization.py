@@ -17,6 +17,9 @@ from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
+NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
+
 ArrayOrArraySequence = Union[np.ndarray, Sequence[np.ndarray]]
 
 
@@ -882,7 +885,7 @@ def create_lagged_component_names(
             # combine all the lags and sort them in ascending order across all the components
             comp_lags_reordered = np.concatenate([
                 np.array(variate_lags[comp_name], dtype=int) for comp_name in components
-            ]).argsort()
+            ]).argsort(**STABLE_SORT_KWARGS)
             tmp_lagged_feats_names = []
             for name in components:
                 tmp_lagged_feats_names += [
@@ -949,7 +952,7 @@ def _get_lagged_indices(
             # Lags are grouped by component, extracted from the same window
             lags_extract_i = [np.array(c_lags, dtype=int) for c_lags in lags_i.values()]
             # Sort the lags across the components in ascending order
-            lags_order_i = np.concatenate(lags_extract_i).argsort()
+            lags_order_i = np.concatenate(lags_extract_i).argsort(**STABLE_SORT_KWARGS)
         lags_extract.append(lags_extract_i)
         lags_order.append(lags_order_i)
     return lags_extract, lags_order
@@ -1428,7 +1431,7 @@ def _extract_component_lags_autoregression(
     # prepare index to reorder features by lags across components
     comp_lags_reordered = np.concatenate([
         comp_lags for comp_lags in component_lags[series_type].values()
-    ]).argsort()
+    ]).argsort(**STABLE_SORT_KWARGS)
 
     # convert relative lags to absolute
     if series_type == "target":

@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-latest]
+        os: [macos-14, ubuntu-latest]
         python-version: ['3.9', '3.11']
         flavour: ['core', 'torch', 'all']
 
@@ -56,10 +56,6 @@ jobs:
           elif [ "${{ matrix.flavour }}" == "all" ]; then
             pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/optional.txt -r requirements/dev.txt
           fi
-
-      - name: "Install libomp (for LightGBM)"
-        run: |
-          ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Run tests"
         run: |
@@ -113,10 +109,6 @@ jobs:
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
-      - name: "Install libomp (for LightGBM)"
-        run: |
-          ./.github/scripts/libomp-${{ runner.os }}.sh
-
       - name: "Install Locally"
         run: |
           pip install .
@@ -163,10 +155,6 @@ jobs:
         run: |
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
-
-      - name: "Install libomp (for LightGBM)"
-        run: |
-          ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Install Locally"
         run: |

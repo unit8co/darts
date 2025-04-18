@@ -1092,7 +1092,11 @@ class TestConformalModel:
             hfc_conf_lpo = concatenate(
                 [hfc[-1::cal_stride] for hfc in hfc_conf], axis=0
             )
-            assert hfc_lpo == hfc_conf_lpo
+            assert hfc_lpo.time_index.equals(hfc_conf_lpo.time_index)
+            assert hfc_lpo.columns.equals(hfc_conf_lpo.columns)
+            np.testing.assert_array_almost_equal(
+                hfc_lpo.all_values(), hfc_conf_lpo.all_values()
+            )
 
         # checking that predict gives the same results as last historical forecast
         preds = model.predict(
@@ -1112,7 +1116,11 @@ class TestConformalModel:
         )
         hfcs_conf_end = [hfc[-1] for hfc in hfcs_conf_end]
         for pred, last_hfc in zip(preds, hfcs_conf_end):
-            assert pred == last_hfc
+            assert pred.time_index.equals(last_hfc.time_index)
+            assert pred.columns.equals(last_hfc.columns)
+            np.testing.assert_array_almost_equal(
+                pred.all_values(), last_hfc.all_values()
+            )
 
     def test_probabilistic_historical_forecast(self):
         """Checks correctness of naive conformal historical forecast from probabilistic fc model compared to
