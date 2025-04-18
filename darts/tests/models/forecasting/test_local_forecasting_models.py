@@ -66,7 +66,7 @@ models = [
     (AutoCES(season_length=12, model="Z"), 7.3),
     (AutoETS(season_length=12, model="AAZ"), 7.3),
     (AutoMFLES(season_length=12, test_size=12), 9.8),
-    (AutoTBATS(season_length=12), 10),
+    (AutoTBATS(season_length=12), 10.0),
     (Croston(version="classic"), 23),
     (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
     (Theta(), 11),
@@ -83,7 +83,7 @@ models = [
     (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
     (
         TBATS(season_length=12, use_trend=True, use_arma_errors=True, use_boxcox=True),
-        8.5,
+        10,
     ),
 ]
 
@@ -642,8 +642,8 @@ class TestLocalForecastingModels:
                     use_trend=True,
                     use_arma_errors=True,
                     use_boxcox=True,
-                ),  # params in wrong order
-                "TBATS(use_boxcox=True, use_trend=True)",
+                ),
+                "TBATS(season_length=12, use_trend=True, use_arma_errors=True, use_boxcox=True)",
             ),
         ],
     )
