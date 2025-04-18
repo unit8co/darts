@@ -3,101 +3,116 @@ AutoTheta
 -----------
 """
 
+from typing import Optional
+
 from statsforecast.models import AutoTheta as SFAutoTheta
 
-from darts import TimeSeries
-from darts.models.components.statsforecast_utils import (
-    create_normal_samples,
-    one_sigma_rule,
-    unpack_sf_dict,
-)
-from darts.models.forecasting.forecasting_model import LocalForecastingModel
+from darts.models.forecasting.sf_model import StatsForecastModel
 
 
-class AutoTheta(LocalForecastingModel):
-    def __init__(self, *autotheta_args, **autotheta_kwargs):
-        """Auto-Theta based on `Statsforecasts package
-        <https://github.com/Nixtla/statsforecast>`_.
+class AutoTheta(StatsForecastModel):
+    def __init__(
+        self,
+        *args,
+        add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
+        random_state: Optional[int] = None,
+        **kwargs,
+    ):
+        """Auto-Theta based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
 
-        Automatically selects the best Theta (Standard Theta Model (‘STM’), Optimized Theta Model (‘OTM’),
-        Dynamic Standard Theta Model (‘DSTM’), Dynamic Optimized Theta Model (‘DOTM’)) model using mse.
-        <https://www.sciencedirect.com/science/article/pii/S0169207016300243>
+        Automatically selects the best Theta model using an information criterion.
+        We refer to the `StatsForecast documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotheta>`_ for the exhaustive documentation
+        of the arguments.
 
-        It is probabilistic, whereas :class:`FourTheta` is not.
+        In addition to univariate deterministic forecasting, it comes with additional support:
 
-        We refer to the `statsforecast AutoTheta documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotheta>`_
-        for the exhaustive documentation of the arguments.
+        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
+          Darts adds support by first regressing the series against the future covariates using a
+          :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
+          StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+
+        - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
+          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
+
+          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
+
+          - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
+
+        - **Conformal prediction:** In addition to the native probabilistic support, you can perform conformal
+          prediction / forecasting by setting `prediction_intervals` at model creation. Then predict the in the same
+          way as described above.
+
+        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
+
+        .. note::
+            Future covariates are not supported when the input series contain missing values.
+
+        .. note::
+            The first model call might take more time than all subsequent calls as the model relies on Numba and jit
+            compilation.
 
         Parameters
         ----------
-        autotheta_args
+        args
             Positional arguments for ``statsforecasts.models.AutoTheta``.
-        autotheta_kwargs
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
+                }
+            ..
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+        kwargs
             Keyword arguments for ``statsforecasts.models.AutoTheta``.
 
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import AutoTheta
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
-        >>> # define AutoTheta parameters
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define AutoMFLES parameters
         >>> model = AutoTheta(season_length=12)
-        >>> model.fit(series)
-        >>> pred = model.predict(6)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[442.94078295],
-               [432.22936898],
-               [495.30609727],
-               [482.30625563],
-               [487.49312172],
-               [555.57902659]])
+        array([[438.05257224],
+               [428.93751019],
+               [465.20881177],
+               [461.73768912],
+               [467.59232404],
+               [509.82574683]])
         """
-        super().__init__()
-        self.model = SFAutoTheta(*autotheta_args, **autotheta_kwargs)
-
-    def fit(self, series: TimeSeries):
-        super().fit(series)
-        self._assert_univariate(series)
-        series = self.training_series
-        self.model.fit(
-            series.values(copy=False).flatten(),
+        super().__init__(
+            model=SFAutoTheta(*args, **kwargs),
+            quantiles=quantiles,
+            add_encoders=add_encoders,
+            random_state=random_state,
         )
-        return self
-
-    def predict(
-        self,
-        n: int,
-        num_samples: int = 1,
-        verbose: bool = False,
-        show_warnings: bool = True,
-    ):
-        super().predict(n, num_samples)
-        forecast_dict = self.model.predict(
-            h=n,
-            level=(one_sigma_rule,),  # ask one std for the confidence interval.
-        )
-
-        mu, std = unpack_sf_dict(forecast_dict)
-        if num_samples > 1:
-            samples = create_normal_samples(mu, std, num_samples, n)
-        else:
-            samples = mu
-
-        return self._build_forecast_series(samples)
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return False
-
-    @property
-    def min_train_series_length(self) -> int:
-        return 10
-
-    @property
-    def _supports_range_index(self) -> bool:
-        return True
-
-    @property
-    def supports_probabilistic_prediction(self) -> bool:
-        return True

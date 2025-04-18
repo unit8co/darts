@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pandas as pd
 import pytest
+from statsforecast.models import AutoARIMA as SFAutoARIMA
 
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
 from darts.logging import get_logger
@@ -36,6 +37,7 @@ from darts.models import (
     Prophet,
     RandomForest,
     RegressionModel,
+    StatsForecastModel,
     Theta,
 )
 from darts.models.forecasting.forecasting_model import (
@@ -60,6 +62,7 @@ models = [
     (ARIMA(12, 2, 1), 5.2),
     (ARIMA(1, 1, 1), 24),
     (AutoARIMA(season_length=12), 4.6),
+    (StatsForecastModel(SFAutoARIMA(season_length=12)), 4.6),
     (AutoTheta(season_length=12), 5.5),
     (AutoCES(season_length=12, model="Z"), 7.3),
     (AutoETS(season_length=12, model="AAZ"), 7.3),
@@ -143,7 +146,12 @@ class TestLocalForecastingModels:
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
-            assert model._model_params == model.untrained_model()._model_params
+            # take string values since StatsForecastModel has `model` as input which does not have `__eq__`
+            model_orig_params = {k: str(v) for k, v in model._model_params.items()}
+            model_fresh_params = {
+                k: str(v) for k, v in model.untrained_model()._model_params.items()
+            }
+            assert model_fresh_params == model_orig_params
 
     @pytest.mark.parametrize("model", [ARIMA(1, 1, 1)])
     def test_save_load_model(self, tmpdir_module, model):

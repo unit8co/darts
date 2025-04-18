@@ -1,38 +1,47 @@
 """
-AutoMFLES
------------
+Croston method
+--------------
 """
 
+import copy
 from typing import Optional
 
-from statsforecast.models import AutoMFLES as SFAutoMFLES
+from statsforecast.models import TSB as CrostonTSB
+from statsforecast.models import CrostonClassic, CrostonOptimized, CrostonSBA
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sf_model import StatsForecastModel
 
 logger = get_logger(__name__)
 
 
-class AutoMFLES(StatsForecastModel):
+class Croston(StatsForecastModel):
     def __init__(
         self,
-        *args,
+        version: str = "classic",
+        alpha_d: float = None,
+        alpha_p: float = None,
         add_encoders: Optional[dict] = None,
         quantiles: Optional[list[float]] = None,
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-MFLES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """Croston method as presented `in this paper <https://otexts.com/fpp3/counts.html>`_ and based on the
+        `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
 
-        Automatically selects the best MFLES model from all feasible combinations of the parameters
-        `seasonality_weights`, `smoother`, `ma`, and `seasonal_period`. Selection is made using the sMAPE metric by
-        default. We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#automfles>`_ for the exhaustive documentation
-        of the arguments.
+        We refer to the StatsForecast documentation of
+        `CrostonClassic <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonclassic>`_,
+        `CrostonOptimized <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonoptimized>`_,
+        `CrostonSBA <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonsba>`_, and
+        `Teunter-Syntetos-Babai <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tsb>`_.
 
         In addition to univariate deterministic forecasting, it comes with additional support:
 
         - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
+          Darts adds support by first regressing the series against the future covariates using a
+          :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
+          StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
 
         - **Probabilstic / Conformal forecasting:** Probabilstic forecasting can be performed using conformal
           prediction. To activate it, simply set `prediction_intervals` at model creation. To generate probabilistic
@@ -56,8 +65,20 @@ class AutoMFLES(StatsForecastModel):
 
         Parameters
         ----------
-        args
-            Positional arguments for ``statsforecasts.models.AutoMFLES``.
+        version
+            - "classic" corresponds to classic Croston.
+            - "optimized" corresponds to optimized classic Croston, which searches
+              for the optimal ``alpha`` smoothing parameter and can take longer
+              to run. Otherwise, a fixed value of ``alpha=0.1`` is used.
+            - "sba" corresponds to the adjustment of the Croston method known as
+              the Syntetos-Boylan Approximation [1]_.
+            - "tsb" corresponds to the adjustment of the Croston method proposed by
+              Teunter, Syntetos and Babai [2]_. In this case, `alpha_d` and `alpha_p` must
+              be set.
+        alpha_d
+            For the "tsb" version, the alpha smoothing parameter to apply on demand.
+        alpha_p
+            For the "tsb" version, the alpha smoothing parameter to apply on probability.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -88,36 +109,67 @@ class AutoMFLES(StatsForecastModel):
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         kwargs
-            Keyword arguments for ``statsforecasts.models.AutoMFLES``.
+            Keyword arguments for ``statsforecasts.models.Croston*``.
+
+        References
+        ----------
+        .. [1] Aris A. Syntetos and John E. Boylan. The accuracy of intermittent demand estimates.
+               International Journal of Forecasting, 21(2):303 – 314, 2005.
+        .. [2] Ruud H. Teunter, Aris A. Syntetos, and M. Zied Babai.
+               Intermittent demand: Linking forecasting to inventory obsolescence.
+               European Journal of Operational Research, 214(3):606 – 615, 2011.
 
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import AutoMFLES
+        >>> from darts.models import Croston
         >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
         >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
         >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
         >>> # define AutoMFLES parameters
-        >>> model = AutoMFLES(season_length=12, test_size=12)
+        >>> model = Croston(version="optimized")
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[466.03298745],
-               [450.76192105],
-               [517.6342497 ],
-               [511.62988828],
-               [520.15305998],
-               [593.38690019]])
+        array([[419.84565922],
+               [424.06484452],
+               [440.05509455],
+               [463.53183473],
+               [488.20449148],
+               [507.46204636]])
         """
+        if version.lower() not in ["classic", "optimized", "sba", "tsb"]:
+            raise_log(
+                ValueError(
+                    'The provided "version" parameter must be set to "classic", "optimized", "sba" or "tsb".'
+                ),
+                logger=logger,
+            )
+
+        kwargs = copy.deepcopy(kwargs)
+        if version == "classic":
+            model_cls = CrostonClassic
+        elif version == "optimized":
+            model_cls = CrostonOptimized
+        elif version == "sba":
+            model_cls = CrostonSBA
+        else:
+            if alpha_d is None or alpha_p is None:
+                raise_log(
+                    ValueError(
+                        'alpha_d and alpha_p must be specified when using "tsb".'
+                    ),
+                    logger=logger,
+                )
+            kwargs["alpha_d"] = alpha_d
+            kwargs["alpha_p"] = alpha_p
+            model_cls = CrostonTSB
+
+        model = model_cls(**kwargs)
         super().__init__(
-            model=SFAutoMFLES(*args, **kwargs),
+            model=model,
             quantiles=quantiles,
             add_encoders=add_encoders,
             random_state=random_state,
         )
-
-    @property
-    def _supports_native_future_covariates(self) -> bool:
-        # StatsForecast didn't set the `use_exog=True` flag for AutoMFLES even though it supports it.
-        return True
