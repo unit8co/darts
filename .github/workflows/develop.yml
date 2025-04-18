@@ -66,11 +66,9 @@ jobs:
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
-      - name: "Make libomp script executable"
-        run: chmod +x /.github/scripts/libomp-${{ runner.os }}.sh
-
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Run tests"
