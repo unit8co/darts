@@ -53,8 +53,8 @@ class Croston(StatsForecastModel):
           - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
 
         - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
-          Darts adds support by re-fitting a copy of the model on the new series and then generating the forecast for it
-          using the StatsForecast model's `forecast()` method.
+          Darts adds support by first fitting a copy of the model on the new series, and then using that model to
+          generate the corresponding forecast.
 
         .. note::
             Future covariates are not supported when the input series contain missing values.
@@ -127,7 +127,7 @@ class Croston(StatsForecastModel):
         >>> series = AirPassengersDataset().load()
         >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
         >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
-        >>> # define AutoMFLES parameters
+        >>> # define Croston parameters
         >>> model = Croston(version="optimized")
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)

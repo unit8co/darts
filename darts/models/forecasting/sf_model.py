@@ -63,8 +63,8 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
           - It either uses the base model's native transferrable series support (StatsForecast models that support the
             `forward()` method), or
 
-          - It adds support by re-fitting a copy of the model on the new series and then generating the forecast for it
-            using the StatsForecast model's `forecast()` method.
+          - It adds support by first fitting a copy of the model on the new series, and then using that model to
+            generate the corresponding forecast.
 
         .. note::
             Future covariates are not supported when the input series contain missing values.
