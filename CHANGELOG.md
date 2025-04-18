@@ -13,6 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Added support for categorical covariate to  `CatBoostModel`. You can now define categorical components at model construction with parameters `categorical_*_covariates: List[str]` for past, future, and static covariates. [#2733](https://github.com/unit8co/darts/pull/2750) by [Jonas Blanc](https://github.com/jonasblanc).
 - Added new forecasting model: `AutoMFLES`, a simple time series method based on gradient boosting time series decomposition as proposed in [this repository](https://github.com/tblume1992/MFLES). This implementation is based on [AutoMFLES](https://nixtlaverse.nixtla.io/statsforecast/docs/models/mfles.html) from Nixtla's `statsforecasts` library. [#2747](https://github.com/unit8co/darts/pull/2747) by [Che Hang Ng](https://github.com/CheHangNg).
+- Added new forecasting model: `StatsForecastModel`, that allows to use any forecasting model from StatsForecast (see [here](https://nixtlaverse.nixtla.io/statsforecast/index.html#models)) in Darts with support for future covariates, probabilistic forecasting, and transferable series forecasting. [#2770](https://github.com/unit8co/darts/pull/2770) by [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Simplified all `StatsForecast*` model names by removing the `StatsForecast` part. [#2762](https://github.com/unit8co/darts/pull/2762) by [Dennis Bader](https://github.com/dennisbader).
   - Renamed `StatsForecastAutoARIMA` to `AutoARIMA`
   - Renamed `StatsForecastAutoCES` to `AutoCES`
