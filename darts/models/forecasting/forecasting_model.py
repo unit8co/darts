@@ -280,7 +280,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     @abstractmethod
-    def supports_transferrable_series_prediction(self) -> bool:
+    def supports_transferable_series_prediction(self) -> bool:
         """
         Whether the model supports prediction for any input `series`.
         """
@@ -425,7 +425,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         add_kwargs = {}
         # not all models supports input `series` at inference
-        if self.supports_transferrable_series_prediction:
+        if self.supports_transferable_series_prediction:
             add_kwargs["series"] = series
 
         # even if predict() accepts covariates, the model might not support them at inference
@@ -2828,6 +2828,39 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         )
         return []
 
+    def _sanity_check_predict_likelihood_parameters(
+        self, n: int, output_chunk_length: Union[int, None], num_samples: int
+    ):
+        """Verify that the assumptions for likelihood parameters prediction are verified:
+        - Probabilistic models fitted with a likelihood
+        - `num_samples=1`
+        - `n <= output_chunk_length`
+        """
+        if not self.supports_likelihood_parameter_prediction:
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is only supported for probabilistic models fitted with "
+                    "a likelihood."
+                ),
+                logger,
+            )
+        if num_samples != 1:
+            raise_log(
+                ValueError(
+                    f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
+                    f"received {num_samples}."
+                ),
+                logger,
+            )
+        if output_chunk_length is not None and n > output_chunk_length:
+            raise_log(
+                ValueError(
+                    "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
+                    "`output_chunk_length`."
+                ),
+                logger,
+            )
+
 
 class LocalForecastingModel(ForecastingModel, ABC):
     """The base class for "local" forecasting models, handling only single univariate time series.
@@ -2881,7 +2914,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
         return -self.min_train_series_length, -1, None, None, None, None, 0, None
 
     @property
-    def supports_transferrable_series_prediction(self) -> bool:
+    def supports_transferable_series_prediction(self) -> bool:
         """
         Whether the model supports prediction for any input `series`.
         """
@@ -3055,15 +3088,15 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if self.uses_past_covariates and past_covariates is None:
             raise_log(
                 ValueError(
-                    "The model has been trained with past covariates. Some matching past_covariates "
-                    "have to be provided to `predict()`."
+                    "The model was trained with past covariates. Some matching past_covariates "
+                    "must be passed to `predict()`."
                 )
             )
         if self.uses_future_covariates and future_covariates is None:
             raise_log(
                 ValueError(
-                    "The model has been trained with future covariates. Some matching future_covariates "
-                    "have to be provided to `predict()`."
+                    "The model was trained with future covariates. Some matching future_covariates "
+                    "must be passed to `predict()`."
                 )
             )
         if (
@@ -3072,7 +3105,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         ):
             raise_log(
                 ValueError(
-                    "The model has been trained with static covariates. Some matching static covariates "
+                    "The model was trained with static covariates. Some matching static covariates "
                     "must be embedded in the target `series` passed to `predict()`."
                 )
             )
@@ -3113,7 +3146,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         return True
 
     @property
-    def supports_transferrable_series_prediction(self) -> bool:
+    def supports_transferable_series_prediction(self) -> bool:
         """
         Whether the model supports prediction for any input `series`.
         """
@@ -3125,39 +3158,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         Whether model supports sample weight for training.
         """
         return True
-
-    def _sanity_check_predict_likelihood_parameters(
-        self, n: int, output_chunk_length: Union[int, None], num_samples: int
-    ):
-        """Verify that the assumptions for likelihood parameters prediction are verified:
-        - Probabilistic models fitted with a likelihood
-        - `num_samples=1`
-        - `n <= output_chunk_length`
-        """
-        if not self.supports_likelihood_parameter_prediction:
-            raise_log(
-                ValueError(
-                    "`predict_likelihood_parameters=True` is only supported for probabilistic models fitted with "
-                    "a likelihood."
-                ),
-                logger,
-            )
-        if num_samples != 1:
-            raise_log(
-                ValueError(
-                    f"`predict_likelihood_parameters=True` is only supported for `num_samples=1`, "
-                    f"received {num_samples}."
-                ),
-                logger,
-            )
-        if output_chunk_length is not None and n > output_chunk_length:
-            raise_log(
-                ValueError(
-                    "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
-                    "`output_chunk_length`."
-                ),
-                logger,
-            )
 
 
 class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
@@ -3194,20 +3194,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             Fitted model.
         """
 
-        if future_covariates is not None:
-            if not series.has_same_time_as(future_covariates):
-                # fit() expects future_covariates to have same time as the target, so we intersect it here
-                future_covariates = future_covariates.slice_intersect(series)
-
-            raise_if_not(
-                series.has_same_time_as(future_covariates),
-                "The provided `future_covariates` series must contain at least the same time steps/"
-                "indices as the target `series`.",
-                logger=logger,
-            )
-            self._expect_future_covariates = True
-            self._uses_future_covariates = True
-
         self.encoders = self.initialize_encoders()
         if self.encoders.encoding_available:
             _, future_covariates = self.generate_fit_encodings(
@@ -3216,8 +3202,24 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 future_covariates=future_covariates,
             )
 
-        super().fit(series)
+        if future_covariates is not None:
+            future_covariates_copy = future_covariates
+            if not series.has_same_time_as(future_covariates):
+                # fit() expects future_covariates to have same time as the target, so we intersect it here
+                future_covariates = future_covariates.slice_intersect(series)
 
+            if len(future_covariates) != len(series):
+                raise_log(
+                    ValueError(
+                        "The provided `future_covariates` series must contain at least the same time steps/"
+                        "indices as the target `series`."
+                    ),
+                    logger=logger,
+                )
+            self.future_covariate_series = future_covariates_copy
+            self._uses_future_covariates = True
+
+        super().fit(series)
         return self._fit(series, future_covariates=future_covariates)
 
     @abstractmethod
@@ -3231,6 +3233,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
         **kwargs,
@@ -3249,6 +3252,10 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             contain at least the next `n` time steps/indices after the end of the training target series.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``.
         verbose
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
@@ -3258,12 +3265,17 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
-
         super().predict(n, num_samples)
+        if predict_likelihood_parameters:
+            self._sanity_check_predict_likelihood_parameters(
+                n, self.output_chunk_length, num_samples
+            )
 
         # avoid generating encodings again if subclass has already generated them
+        future_covariates = future_covariates or self.future_covariate_series
         if not self._supress_generate_predict_encoding:
-            self._verify_passed_predict_covariates(future_covariates)
+            # stored future covariates already contain the encodings: this is not a problem as the
+            # encoders regenerate the encodings
             if self.encoders is not None and self.encoders.encoding_available:
                 _, future_covariates = self.generate_predict_encodings(
                     n=n,
@@ -3271,38 +3283,30 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                     past_covariates=None,
                     future_covariates=future_covariates,
                 )
+        self._verify_passed_predict_covariates(future_covariates)
 
         if future_covariates is not None:
             start = self.training_series.end_time() + self.training_series.freq
-
-            invalid_time_span_error = (
-                f"For the given forecasting horizon `n={n}`, the provided `future_covariates` "
-                f"series must contain at least the next `n={n}` time steps/indices after the "
-                f"end of the target `series` that was used to train the model."
-            )
-
-            # we raise an error here already to avoid getting error from empty TimeSeries creation
-            raise_if_not(
-                future_covariates.end_time() >= start, invalid_time_span_error, logger
-            )
-
-            offset = (
-                n - 1
-                if isinstance(future_covariates.time_index, pd.DatetimeIndex)
-                else n
-            )
-            future_covariates = future_covariates.slice(
-                start, start + offset * self.training_series.freq
-            )
-
-            raise_if_not(
-                len(future_covariates) == n,
-                invalid_time_span_error,
-                logger,
-            )
+            offset = n - 1 if future_covariates.has_datetime_index else n
+            future_covariates = future_covariates[
+                start : start + offset * self.training_series.freq
+            ]
+            if len(future_covariates) != n:
+                raise_log(
+                    ValueError(
+                        f"For the given forecasting horizon `n={n}`, the provided `future_covariates` "
+                        f"series must contain at least the next `n={n}` time steps/indices after the "
+                        f"end of the target `series` that was used to train the model."
+                    ),
+                    logger=logger,
+                )
 
         return self._predict(
-            n, future_covariates=future_covariates, num_samples=num_samples, **kwargs
+            n,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            **kwargs,
         )
 
     @abstractmethod
@@ -3311,6 +3315,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         **kwargs,
     ) -> TimeSeries:
@@ -3331,20 +3336,33 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     ]:
         return None, None, False, True, None, None
 
-    def _verify_passed_predict_covariates(self, future_covariates):
+    def _verify_passed_predict_covariates(self, future_covariates: TimeSeries):
         """Simple check if user supplied/did not supply covariates as done at fitting time."""
-        if self._expect_future_covariates and future_covariates is None:
-            raise_log(
-                ValueError(
-                    "The model has been trained with `future_covariates` variable. Some matching "
-                    "`future_covariates` variables have to be provided to `predict()`."
+        if self.uses_future_covariates:
+            # at this point future covariates are available, either passed from user or retrieved from
+            # covariates used during training
+            if (
+                future_covariates.n_components
+                != self.future_covariate_series.n_components
+            ):
+                n_expected = self.future_covariate_series.n_components
+                n_actual = future_covariates.n_components
+                if self.encoders is not None and self.encoders.encoding_available:
+                    n_encodings = self.encoders.encoding_n_components[1]
+                    n_expected -= n_encodings
+                    n_actual -= n_encodings
+                raise_log(
+                    ValueError(
+                        f"The `future_covariates` passed to `predict()` must have the same number "
+                        f"of components / columns as the `future_covariates` used to train the model. "
+                        f"Received number of components `{n_actual}`, excepted {n_expected}."
+                    )
                 )
-            )
-        if not self._expect_future_covariates and future_covariates is not None:
+        elif future_covariates is not None:
             raise_log(
                 ValueError(
-                    "The model has been trained without `future_covariates` variable, but the "
-                    "`future_covariates` parameter provided to `predict()` is not None.",
+                    "The model was trained without future covariates, but future `future_covariates` "
+                    "were provided to `predict()`."
                 )
             )
 
@@ -3397,6 +3415,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         series: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
         **kwargs,
@@ -3423,6 +3442,10 @@ class TransferableFutureCovariatesLocalForecastingModel(
             to the new target series (historic future covariates), plus the next `n` time steps/indices after the end.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``.
         verbose
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
@@ -3432,7 +3455,9 @@ class TransferableFutureCovariatesLocalForecastingModel(
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
-        self._verify_passed_predict_covariates(future_covariates)
+        future_covariates = future_covariates or self.future_covariate_series
+        # stored future covariates already contain the encodings: this is not a problem as the
+        # encoders regenerate the encodings
         if self.encoders is not None and self.encoders.encoding_available:
             _, future_covariates = self.generate_predict_encodings(
                 n=n,
@@ -3440,28 +3465,24 @@ class TransferableFutureCovariatesLocalForecastingModel(
                 past_covariates=None,
                 future_covariates=future_covariates,
             )
+        self._verify_passed_predict_covariates(future_covariates)
 
         historic_future_covariates = None
 
-        if series is not None and future_covariates:
-            raise_if_not(
-                future_covariates.start_time() <= series.start_time()
-                and future_covariates.end_time() >= series.end_time() + n * series.freq,
-                "The provided `future_covariates` related to the new target series must contain at least the same time"
-                "steps/indices as the target `series` + `n`.",
-                logger,
-            )
-            # splitting the future covariates
-            (
-                historic_future_covariates,
-                future_covariates,
-            ) = future_covariates.split_after(series.end_time())
-
-            # in case future covariates have more values on the left end side that we don't need
-            if not series.has_same_time_as(historic_future_covariates):
-                historic_future_covariates = historic_future_covariates.slice_intersect(
-                    series
+        if future_covariates is not None:
+            series_ = series or self.training_series
+            if (
+                future_covariates.start_time() > series_.start_time()
+                or future_covariates.end_time() < series_.end_time() + n * series_.freq
+            ):
+                raise_log(
+                    ValueError(
+                        "The provided `future_covariates` related to the new target series must contain at "
+                        "least the same timesteps/indices as the target `series` + `n`."
+                    ),
+                    logger=logger,
                 )
+            historic_future_covariates = future_covariates.slice_intersect(series_)
 
         # FutureCovariatesLocalForecastingModel performs some checks on self.training_series. We temporary replace
         # that with the new ts
@@ -3475,6 +3496,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
             historic_future_covariates=historic_future_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
             **kwargs,
         )
 
@@ -3514,6 +3536,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
@@ -3521,7 +3544,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         """
 
     @property
-    def supports_transferrable_series_prediction(self) -> bool:
+    def supports_transferable_series_prediction(self) -> bool:
         """
         Whether the model supports prediction for any input `series`.
         """

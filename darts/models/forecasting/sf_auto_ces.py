@@ -1,86 +1,118 @@
 """
 AutoCES
------------
+-------
 """
+
+from typing import Optional
 
 from statsforecast.models import AutoCES as SFAutoCES
 
-from darts import TimeSeries
-from darts.models.forecasting.forecasting_model import LocalForecastingModel
+from darts.models.forecasting.sf_model import StatsForecastModel
 
 
-class AutoCES(LocalForecastingModel):
-    def __init__(self, *autoces_args, **autoces_kwargs):
-        """Auto-CES based on `Statsforecasts package
-        <https://github.com/Nixtla/statsforecast>`_.
+class AutoCES(StatsForecastModel):
+    def __init__(
+        self,
+        *args,
+        add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
+        random_state: Optional[int] = None,
+        **kwargs,
+    ):
+        """Auto-CES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
 
-        Automatically selects the best Complex Exponential Smoothing model using an information criterion.
-        <https://onlinelibrary.wiley.com/doi/full/10.1002/nav.22074>
+        Automatically selects the best Complex Exponential Smoothing (CES) model using an information criterion.
+        We refer to the `StatsForecast documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoces>`_ for the exhaustive documentation
+        of the arguments.
 
-        We refer to the `statsforecast AutoCES documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoces>`_
-        for the exhaustive documentation of the arguments.
+        In addition to univariate deterministic forecasting, it comes with additional support:
+
+        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
+          Darts adds support by first regressing the series against the future covariates using a
+          :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
+          StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+
+        - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
+          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
+
+          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
+
+          - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
+
+        - **Conformal prediction:** In addition to the native probabilistic support, you can perform conformal
+          prediction / forecasting by setting `prediction_intervals` at model creation. Then predict the in the same
+          way as described above.
+
+        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
+
+        .. note::
+            Future covariates are not supported when the input series contain missing values.
+
+        .. note::
+            The first model call might take more time than all subsequent calls as the model relies on Numba and jit
+            compilation.
 
         Parameters
         ----------
-        autoces_args
+        args
             Positional arguments for ``statsforecasts.models.AutoCES``.
-        autoces_kwargs
+        add_encoders
+            A large number of future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'future': ['relative']},
+                    'custom': {'future': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
+                }
+            ..
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+        kwargs
             Keyword arguments for ``statsforecasts.models.AutoCES``.
 
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
         >>> from darts.models import AutoCES
+        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
         >>> series = AirPassengersDataset().load()
-        >>> # define AutoCES parameters
+        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
+        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
+        >>> # define AutoETS parameters
         >>> model = AutoCES(season_length=12, model="Z")
-        >>> model.fit(series)
-        >>> pred = model.predict(6)
+        >>> model.fit(series, future_covariates=future_cov)
+        >>> pred = model.predict(6, future_covariates=future_cov)
         >>> pred.values()
-        array([[453.03417969],
-               [429.34039307],
-               [488.64471436],
-               [500.28955078],
-               [519.79962158],
-               [586.47503662]])
+        array([[437.52763596],
+               [412.76187406],
+               [445.26244666],
+               [498.15901335],
+               [492.5184186 ],
+               [550.25118939]])
         """
-        super().__init__()
-        self.model = SFAutoCES(*autoces_args, **autoces_kwargs)
-
-    def fit(self, series: TimeSeries):
-        super().fit(series)
-        self._assert_univariate(series)
-        series = self.training_series
-        self.model.fit(
-            series.values(copy=False).flatten(),
+        super().__init__(
+            model=SFAutoCES(*args, **kwargs),
+            quantiles=quantiles,
+            add_encoders=add_encoders,
+            random_state=random_state,
         )
-        return self
-
-    def predict(
-        self,
-        n: int,
-        num_samples: int = 1,
-        verbose: bool = False,
-        show_warnings: bool = True,
-    ):
-        super().predict(n, num_samples)
-        forecast_dict = self.model.predict(
-            h=n,
-        )
-
-        mu = forecast_dict["mean"]
-
-        return self._build_forecast_series(mu)
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return False
-
-    @property
-    def min_train_series_length(self) -> int:
-        return 10
-
-    @property
-    def _supports_range_index(self) -> bool:
-        return True

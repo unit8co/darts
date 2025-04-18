@@ -11,18 +11,21 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added support for categorical covariate to  `CatBoostModel`. You can now define categorical components at model construction with parameters `categorical_*_covariates: List[str]` for past, future, and static covariates. [#2733](https://github.com/unit8co/darts/pull/2750) by [Jonas Blanc](https://github.com/jonasblanc).
+- Added support for categorical covariates to  `CatBoostModel`. You can now define categorical components at model creation with parameters `categorical_*_covariates: List[str]` for past, future, and static covariates. [#2733](https://github.com/unit8co/darts/pull/2750) by [Jonas Blanc](https://github.com/jonasblanc).
 - Added new forecasting model: `AutoMFLES`, a simple time series method based on gradient boosting time series decomposition as proposed in [this repository](https://github.com/tblume1992/MFLES). This implementation is based on [AutoMFLES](https://nixtlaverse.nixtla.io/statsforecast/docs/models/mfles.html) from Nixtla's `statsforecasts` library. [#2747](https://github.com/unit8co/darts/pull/2747) by [Che Hang Ng](https://github.com/CheHangNg).
+- Added new forecasting model: `StatsForecastModel`, that allows to use any forecasting model from StatsForecast (see [here](https://nixtlaverse.nixtla.io/statsforecast/index.html#models)) in Darts with support for future covariates, probabilistic forecasting, and transferable series forecasting. [#2770](https://github.com/unit8co/darts/pull/2770) by [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Simplified all `StatsForecast*` model names by removing the `StatsForecast` part. [#2762](https://github.com/unit8co/darts/pull/2762) by [Dennis Bader](https://github.com/dennisbader).
   - Renamed `StatsForecastAutoARIMA` to `AutoARIMA`
   - Renamed `StatsForecastAutoCES` to `AutoCES`
   - Renamed `StatsForecastAutoETS` to `AutoETS`
   - Renamed `StatsForecastAutoTBATS` to `AutoTBATS`
   - Renamed `StatsForecastAutoTheta` to `AutoTheta`
+- 🔴 Changed `AutoARIMA` model backend from `pmdarima` to `statsforecast` to support `numpy>=2.0.0`. The model creation parameters are almost identical. For reference, see the [pmdarima docs](https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html) and [statsforecast docs](https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima). Additionally, the new implementation is more efficient and has improved probabilistic forecasting support, including conformal prediction. [#2734](https://github.com/unit8co/darts/pull/2734) by [Dennis Bader](https://github.com/dennisbader).
+- 🔴 Changed `TBATS` model backend from `tbats` to `statsforecast` to support `numpy>=2.0.0`. The model creation parameters are almost identical. For reference, see the [tbats docs](https://github.com/intive-DataScience/tbats/blob/master/tbats/tbats/TBATS.py) and [statsforecast docs](https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tbats). Additionally, the new implementation is more efficient, comes with future covariates support and has improved probabilistic forecasting support. [#2781](https://github.com/unit8co/darts/pull/2781) by [Dennis Bader](https://github.com/dennisbader).
 
-**Removed / moved**
+**Removed**
 
-- 🔴 Removed model `AutoARIMA`. To support `numpy>=2.0.0`, we unfortunately had to remove the `pmdarima` dependency. Use `StatsForecastAutoARIMA` instead. [#2734](https://github.com/unit8co/darts/pull/2734) by [Dennis Bader](https://github.com/dennisbader).
+- 🔴 Removed `BATS` model to support `numpy>=2.0.0`. Use `TBATS` instead. [#2781](https://github.com/unit8co/darts/pull/2781) by [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Removed deprecated method `TimeSeries.pd_dataframe()`. Use `TimeSeries.to_dataframe()` instead. [#2733](https://github.com/unit8co/darts/pull/2733) by [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Removed deprecated method `TimeSeries.pd_serise()`. Use `TimeSeries.to_series()` instead. [#2733](https://github.com/unit8co/darts/pull/2733) by [Dennis Bader](https://github.com/dennisbader).
 

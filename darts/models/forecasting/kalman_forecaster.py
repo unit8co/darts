@@ -123,6 +123,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         series: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
         **kwargs,
@@ -139,6 +140,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
     ) -> TimeSeries:
         super()._predict(

@@ -9,8 +9,7 @@ from darts.logging import get_logger
 from darts.metrics import mae
 from darts.models import (
     ARIMA,
-    # BATS,
-    # TBATS,
+    TBATS,
     CatBoostModel,
     ConformalNaiveModel,
     ExponentialSmoothing,
@@ -72,30 +71,19 @@ conformal_forecaster._fit_called = True
 models_cls_kwargs_errs = [
     (ExponentialSmoothing, {}, 0.3, None),
     (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03, None),
-    # (
-    #     BATS,
-    #     {
-    #         "use_trend": False,
-    #         "use_damped_trend": False,
-    #         "use_box_cox": True,
-    #         "use_arma_errors": False,
-    #         "random_state": 42,
-    #     },
-    #     0.04,
-    #     None,
-    # ),
-    # (
-    #     TBATS,
-    #     {
-    #         "use_trend": False,
-    #         "use_damped_trend": False,
-    #         "use_box_cox": True,
-    #         "use_arma_errors": False,
-    #         "random_state": 42,
-    #     },
-    #     0.04,
-    #     0.04,
-    # ),
+    (
+        TBATS,
+        {
+            "season_length": 12,
+            "use_trend": False,
+            "use_damped_trend": False,
+            "use_boxcox": True,
+            "use_arma_errors": False,
+            "random_state": 42,
+        },
+        0.04,
+        0.04,
+    ),
     (
         ConformalNaiveModel,
         {
