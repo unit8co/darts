@@ -67,7 +67,7 @@ jobs:
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Make libomp script executable"
-        run: chmod +x. /.github/scripts/libomp-${{ runner.os }}.sh
+        run: chmod +x /.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Install libomp (for LightGBM)"
         run: |
