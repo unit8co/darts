@@ -9,7 +9,7 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
-from darts.utils.likelihood_models import (
+from darts.utils.likelihood_models.torch import (
     BetaLikelihood,
     CauchyLikelihood,
     ExponentialLikelihood,
@@ -19,6 +19,7 @@ from darts.utils.likelihood_models import (
     WeibullLikelihood,
 )
 
+# equality between likelihoods is only dependent on the main distribution parameters
 likelihood_models = {
     "quantile": [QuantileRegression(), QuantileRegression([0.25, 0.5, 0.75])],
     "gaussian": [

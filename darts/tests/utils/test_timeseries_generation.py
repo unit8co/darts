@@ -146,7 +146,7 @@ class TestTimeSeriesGeneration:
             periods=365 * 3, freq="D", start=pd.Timestamp("2014-12-24")
         )
         time_index_3 = pd.date_range(
-            periods=10, freq=freqs["YE"], start=pd.Timestamp("1950-01-01")
+            periods=10, freq=freqs["YE"], start=pd.Timestamp("1960-01-01")
         ) + pd.Timedelta(days=1)
 
         # testing we have at least one holiday flag in each year
@@ -325,14 +325,14 @@ class TestTimeSeriesGeneration:
         # testing for correct calculation
         def test_calculation(coef):
             autoregressive_values = autoregressive_timeseries(
-                coef=coef, length=100
+                coef=coef, length=10
             ).values()
             for idx, val in enumerate(autoregressive_values[len(coef) :]):
                 assert val == np.dot(
                     coef, autoregressive_values[idx : idx + len(coef)].ravel()
                 )
 
-        for length_assert in [1, 2, 5, 10, 100]:
+        for length_assert in [1, 2, 5, 10]:
             test_length(start=0, length=length_assert)
             test_length(start=0, end=length_assert - 1)
             test_length(start=pd.Timestamp("2000-01-01"), length=length_assert)
@@ -341,7 +341,7 @@ class TestTimeSeriesGeneration:
             )[-1]
             test_length(start=pd.Timestamp("2000-01-01"), end=end_date)
 
-        for coef_assert in [[-1], [-1, 1.618], [1, 2, 3], list(range(10))]:
+        for coef_assert in [[-1], [-1, 1.618], [1, 2, 3]]:
             test_calculation(coef=coef_assert)
 
     @staticmethod

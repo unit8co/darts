@@ -27,8 +27,7 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
-    NotImportedModule,
-    StatsForecastAutoARIMA,
+    Prophet,
 )
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
@@ -36,8 +35,12 @@ from darts.models.forecasting.forecasting_model import (
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
+from darts.utils.likelihood_models.base import (
+    likelihood_component_names,
+    quantile_names,
+)
 from darts.utils.ts_utils import SeriesType, get_series_seq_type
-from darts.utils.utils import likelihood_component_names, quantile_names
+from darts.utils.utils import NotImportedModule
 
 if TORCH_AVAILABLE:
     import torch
@@ -56,7 +59,10 @@ if TORCH_AVAILABLE:
         TransformerModel,
         TSMixerModel,
     )
-    from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
+    from darts.utils.likelihood_models.torch import (
+        GaussianLikelihood,
+        QuantileRegression,
+    )
 
 models = [LinearRegressionModel, NaiveDrift]
 models_reg_no_cov_cls_kwargs = [
@@ -313,6 +319,8 @@ if TORCH_AVAILABLE:
     ]
 else:
     models_torch_cls_kwargs = []
+
+PROPHET_AVAILABLE = not isinstance(Prophet, NotImportedModule)
 
 
 class TestHistoricalforecast:
@@ -572,14 +580,14 @@ class TestHistoricalforecast:
             "Model prediction does not support `past_covariates`"
         )
 
+    @pytest.mark.skipif(not PROPHET_AVAILABLE, reason="requires prophet")
     def test_historical_forecasts_future_cov_local_models(self):
-        model = StatsForecastAutoARIMA()
-        assert model.min_train_series_length == 10
-        series = tg.sine_timeseries(length=11)
+        model = Prophet()
+        series = tg.sine_timeseries(length=model.min_train_series_length + 1)
         res = model.historical_forecasts(
             series, future_covariates=series, retrain=True, forecast_horizon=1
         )
-        # AutoARIMA has a minimum train length of 10, with horizon=1, we expect one forecast at last point
+        # series is one longer than min train series length, we expect one forecast at last point with horizon = 1
         # (series has length 11)
         assert len(res) == 1
         assert series.end_time() == res.time_index[0]

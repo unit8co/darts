@@ -85,7 +85,7 @@ from darts.utils.historical_forecasts import (
 from darts.utils.historical_forecasts.optimized_historical_forecasts_torch import (
     _optimized_historical_forecasts,
 )
-from darts.utils.likelihood_models import Likelihood
+from darts.utils.likelihood_models.torch import TorchLikelihood
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 
@@ -2206,7 +2206,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return self.model.epochs_trained if self.model_created else 0
 
     @property
-    def likelihood(self) -> Optional[Likelihood]:
+    def likelihood(self) -> Optional[TorchLikelihood]:
         return (
             self.model.likelihood
             if self.model_created

@@ -9,13 +9,13 @@ import pytest
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import (
+    AutoARIMA,
     ExponentialSmoothing,
     LinearRegressionModel,
     NaiveDrift,
     NaiveEnsembleModel,
     NaiveSeasonal,
     RegressionEnsembleModel,
-    StatsForecastAutoARIMA,
     Theta,
 )
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
@@ -31,7 +31,7 @@ logger = get_logger(__name__)
 
 if TORCH_AVAILABLE:
     from darts.models import DLinearModel, NBEATSModel, RNNModel, TCNModel
-    from darts.utils.likelihood_models import QuantileRegression
+    from darts.utils.likelihood_models.torch import QuantileRegression
 
 
 def _make_ts(start_value=0, n=100):
@@ -456,7 +456,7 @@ class TestEnsembleModels:
         # AutoARIMA support future covariates only
         local_ensemble_one_covs = NaiveEnsembleModel([
             NaiveDrift(),
-            StatsForecastAutoARIMA(),
+            AutoARIMA(),
         ])
         with pytest.raises(ValueError):
             local_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
@@ -473,14 +473,14 @@ class TestEnsembleModels:
 
         # both models support future covariates only
         mixed_ensemble_future_covs = NaiveEnsembleModel([
-            StatsForecastAutoARIMA(),
+            AutoARIMA(),
             RNNModel(12, n_epochs=1, **tfm_kwargs),
         ])
         mixed_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
         with pytest.raises(ValueError):
             mixed_ensemble_future_covs.fit(self.series1, past_covariates=self.series2)
 
-        # RegressionModels with different covariates
+        # SKLearnModels with different covariates
         global_ensemble_both_covs = NaiveEnsembleModel([
             LinearRegressionModel(lags=1, lags_past_covariates=[-1]),
             LinearRegressionModel(lags=1, lags_future_covariates=[1]),
