@@ -59,7 +59,7 @@ class CovariatesIndexGenerator(ABC):
         B   in combination with :class:`SKLearnModel`:
                 Set `input_chunk_length`, `output_chunk_length`, and `lags_covariates`.
                 `input_chunk_length` is the absolute value of the minimum target lag `abs(min(lags))` used with the
-                regression model.
+                `SKLearnModel`.
                 Set `output_chunk_length`, and `lags_covariates` with the identical values used at forecasting model
                 creation. For the covariates lags, use `lags_past_covariates` for class:`PastCovariatesIndexGenerator`,
                 and `lags_future_covariates` for class:`PastCovariatesIndexGenerator`.

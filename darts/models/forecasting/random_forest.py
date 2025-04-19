@@ -202,9 +202,7 @@ class RandomForest(RandomForestModel):
         """Random Forest Model
 
         Note: `RandomForest` is deprecated and will be removed in a future version.
-        Use `RandomForestModel` instead
-        (see `RandomForestModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel>`_).
-
+        Use :class:`~darts.models.forecasting.random_forest.RandomForestModel` instead.
 
         Parameters
         ----------
@@ -298,7 +296,7 @@ class RandomForest(RandomForestModel):
         Examples
         --------
         >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import RandomForestModel
+        >>> from darts.models import RandomForest
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
@@ -307,7 +305,7 @@ class RandomForest(RandomForestModel):
         >>> # optionally, use future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
         >>> # random forest with 200 trees trained with MAE
-        >>> model = RandomForestModel(
+        >>> model = RandomForest(
         >>>     lags=12,
         >>>     lags_past_covariates=12,
         >>>     lags_future_covariates=[0,1,2,3,4,5],

@@ -15,10 +15,17 @@ A `SKLearnModel` forecasts future values of a target series based on
 The regression models are learned in a supervised way, and they can wrap around any "scikit-learn like" regression model
 acting on tabular data having ``fit()`` and ``predict()`` methods.
 
-Darts also provides :class:`LinearRegressionModel` and :class:`RandomForestModel`, which are regression models
-wrapping around scikit-learn linear regression and random forest regression, respectively.
+Darts also provides the following models:
 
-Behind the scenes this model is tabularizing the time series data to make it work with regression models.
+- :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` : wrapping around scikit-learn's
+  `LinearRegression`
+- :class:`~darts.models.forecasting.random_forest.RandomForestModel` : wrapping around scikit-learn's
+  `RandomForestRegressor`
+- :class:`~darts.models.forecasting.xgboost.XGBModel` : wrapping around XGBoost's `XGBRegressor`
+- :class:`~darts.models.forecasting.lgbm.LightGBMModel` : wrapping around LightGBM's `LGBMRegressor`
+- :class:`~darts.models.forecasting.catboost_model.CatBoostModel` : wrapping around CatBoost's `CatBoostRegressor`
+
+Behind the scenes this model tabularizes the time series data to make it work with regression models.
 
 The lags can be specified either using an integer - in which case it represents the _number_ of (past or future) lags
 to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values
@@ -1782,8 +1789,8 @@ class RegressionModel(SKLearnModel):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
 
-        Note: `RegressionModel` is deprecated and will be removed in a future version. Use `SKLearnModel` instead
-        (see `SKLearnModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel>`_).
+        Note: `RegressionModel` is deprecated and will be removed in a future version. Use
+        :class:`~darts.models.forecasting.sklearn_model.SKLearnModel` instead.
 
         Parameters
         ----------
@@ -1875,7 +1882,7 @@ class RegressionModel(SKLearnModel):
         Examples
         --------
         >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import SKLearnModel
+        >>> from darts.models import RegressionModel
         >>> from sklearn.linear_model import Ridge
         >>> series = WeatherDataset().load()
         >>> # predicting atmospheric pressure
@@ -1885,7 +1892,7 @@ class RegressionModel(SKLearnModel):
         >>> # optionally, use future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
         >>> # wrap around the sklearn Ridge model
-        >>> model = SKLearnModel(
+        >>> model = RegressionModel(
         >>>     model=Ridge(),
         >>>     lags=12,
         >>>     lags_past_covariates=4,

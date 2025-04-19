@@ -252,7 +252,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
         and one future covariate with default component name ``"0"``.
         Also, ``horizons = [1, 2]``.
-        The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
+        The model is a `SKLearnModel`, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
         ``lags_future_covariates = [0]``.
 
         We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
