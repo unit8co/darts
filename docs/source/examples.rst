@@ -84,7 +84,7 @@ Regression models example notebook:
 .. toctree::
    :maxdepth: 1
 
-   examples/20-RegressionModel-examples.ipynb
+   examples/20-SKLearnModel-examples.ipynb
 
 Conformal Prediction
 =================

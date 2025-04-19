@@ -34,8 +34,8 @@ from darts.models import (
     NaiveMovingAverage,
     NaiveSeasonal,
     Prophet,
-    RandomForest,
-    RegressionModel,
+    RandomForestModel,
+    SKLearnModel,
     StatsForecastModel,
     Theta,
 )
@@ -80,7 +80,7 @@ models = [
     (FFT(trend="poly"), 13),
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
-    (RandomForest(lags=12, n_estimators=5, max_depth=3), 14),
+    (RandomForestModel(lags=12, n_estimators=5, max_depth=3), 14),
     (
         TBATS(season_length=12, use_trend=True, use_arma_errors=True, use_boxcox=True),
         10,
@@ -218,7 +218,7 @@ class TestLocalForecastingModels:
     @pytest.mark.parametrize("config", models)
     def test_models_runnability(self, config):
         model, _ = config
-        if not isinstance(model, RegressionModel):
+        if not isinstance(model, SKLearnModel):
             assert isinstance(model, LocalForecastingModel)
         prediction = model.fit(self.ts_gaussian).predict(self.forecasting_horizon)
         assert len(prediction) == self.forecasting_horizon

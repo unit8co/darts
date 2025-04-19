@@ -15,8 +15,8 @@ import pandas as pd
 from catboost import CatBoostRegressor, Pool
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import (
-    RegressionModelWithCategoricalCovariates,
+from darts.models.forecasting.sklearn_model import (
+    SKLearnModelWithCategoricalCovariates,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -29,7 +29,7 @@ from darts.utils.likelihood_models.sklearn import (
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModelWithCategoricalCovariates):
+class CatBoostModel(SKLearnModelWithCategoricalCovariates):
     def __init__(
         self,
         lags: Union[int, list] = None,
