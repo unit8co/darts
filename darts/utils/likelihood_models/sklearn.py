@@ -77,7 +77,7 @@ class SKLearnLikelihood(Likelihood, ABC):
         kwargs
             Some kwargs passed to the underlying estimator's `predict()` method.
         """
-        model_output = self._estimator_predict(model, x, **kwargs)
+        model_output = self._estimator_predict(model, x=x, **kwargs)
         if predict_likelihood_parameters:
             return self.predict_likelihood_parameters(model_output)
         elif num_samples == 1:

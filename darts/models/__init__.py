@@ -36,7 +36,6 @@ from darts.models.forecasting.linear_regression_model import LinearRegressionMod
 from darts.models.forecasting.random_forest import RandomForest, RandomForestModel
 from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
 from darts.models.forecasting.sklearn_model import RegressionModel, SKLearnModel
-from darts.models.forecasting.tbats_model import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
 
@@ -89,13 +88,15 @@ except ModuleNotFoundError:
     CatBoostModel = NotImportedModule(module_name="CatBoost", warn=False)
 
 try:
-    from darts.models.forecasting.croston import Croston
     from darts.models.forecasting.sf_auto_arima import AutoARIMA
     from darts.models.forecasting.sf_auto_ces import AutoCES
     from darts.models.forecasting.sf_auto_ets import AutoETS
     from darts.models.forecasting.sf_auto_mfles import AutoMFLES
     from darts.models.forecasting.sf_auto_tbats import AutoTBATS
     from darts.models.forecasting.sf_auto_theta import AutoTheta
+    from darts.models.forecasting.sf_croston import Croston
+    from darts.models.forecasting.sf_model import StatsForecastModel
+    from darts.models.forecasting.sf_tbats import TBATS
 
 except ImportError:
     logger.warning(
@@ -104,7 +105,9 @@ except ImportError:
         "AutoETS and Croston models, please consider "
         "installing it."
     )
+    StatsForecastModel = NotImportedModule(module_name="StatsForecast", warn=False)
     Croston = NotImportedModule(module_name="StatsForecast", warn=False)
+    TBATS = NotImportedModule(module_name="StatsForecast", warn=False)
     AutoARIMA = NotImportedModule(module_name="StatsForecast", warn=False)
     AutoCES = NotImportedModule(module_name="StatsForecast", warn=False)
     AutoETS = NotImportedModule(module_name="StatsForecast", warn=False)
@@ -138,7 +141,6 @@ __all__ = [
     "RegressionEnsembleModel",
     "SKLearnModel",
     "RegressionModel",
-    "BATS",
     "TBATS",
     "FourTheta",
     "Theta",
@@ -166,6 +168,7 @@ __all__ = [
     "AutoMFLES",
     "AutoTheta",
     "AutoTBATS",
+    "StatsForecastModel",
     "XGBModel",
     "GaussianProcessFilter",
     "KalmanFilter",

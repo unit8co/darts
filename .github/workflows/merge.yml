@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-latest]
+        os: [macos-14, ubuntu-latest]
         python-version: ['3.9', '3.11']
         flavour: ['core', 'torch', 'all']
 
@@ -59,6 +59,7 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Run tests"
@@ -115,6 +116,7 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Install Locally"
@@ -166,6 +168,7 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Install Locally"

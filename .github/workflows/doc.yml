@@ -44,6 +44,7 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
       - name: "Install Locally"
