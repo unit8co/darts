@@ -110,7 +110,8 @@ class TestOnnx:
         model.save(ckpt_filename, clean=clean)
 
         # load the entire checkpoint
-        model_loaded = model_cls.load(ckpt_filename)
+        load_kwargs = tfm_kwargs_dev if clean else {}
+        model_loaded = model_cls.load(ckpt_filename, **load_kwargs)
         pred = model_loaded.predict(
             n=2,
             series=self.ts_tg_with_static

@@ -17,6 +17,7 @@ from ray.tune.tuner import Tuner
 
 if TORCH_AVAILABLE:
     from pytorch_lightning.callbacks import Callback, EarlyStopping
+    from pytorch_lightning.loggers import CSVLogger
     from ray.tune.integration.pytorch_lightning import TuneReportCheckpointCallback
     from torchmetrics import (
         MeanAbsoluteError,
@@ -56,6 +57,8 @@ class TestRay:
                 torch_metrics=torch_metrics,
                 pl_trainer_kwargs={
                     **tfm_kwargs["pl_trainer_kwargs"],
+                    "logger": CSVLogger("ray_logs", name="my_ray_logs"),
+                    "log_every_n_steps": 2,
                     "callbacks": callbacks,
                 },
                 **model_args,

@@ -18,7 +18,7 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
-    RandomForest,
+    RandomForestModel,
     Theta,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
@@ -781,7 +781,7 @@ class TestBacktesting:
         assert score > 0.9
 
         # Using an int or float value for start
-        score = RandomForest(
+        score = RandomForestModel(
             lags=12, lags_future_covariates=[0], random_state=0
         ).backtest(
             series=target,
@@ -792,7 +792,7 @@ class TestBacktesting:
         )
         assert score > 0.9
 
-        score = RandomForest(
+        score = RandomForestModel(
             lags=12, lags_future_covariates=[0], random_state=0
         ).backtest(
             series=target,
@@ -812,27 +812,27 @@ class TestBacktesting:
         )
         caplog.clear()
         with caplog.at_level(logging.WARNING):
-            _ = RandomForest(lags=12).backtest(
+            _ = RandomForestModel(lags=12).backtest(
                 series=target, start=0, forecast_horizon=3
             )
             assert warning_expected.format(0, target.start_time()) in caplog.text
         caplog.clear()
 
         with caplog.at_level(logging.WARNING):
-            _ = RandomForest(lags=12).backtest(
+            _ = RandomForestModel(lags=12).backtest(
                 series=target, start=0.01, forecast_horizon=3
             )
             assert warning_expected.format(0.01, target.start_time()) in caplog.text
         caplog.clear()
 
-        # Using RandomForest's start default value
-        score = RandomForest(lags=12, random_state=0).backtest(
+        # Using RandomForestModel's start default value
+        score = RandomForestModel(lags=12, random_state=0).backtest(
             series=target, forecast_horizon=3, start=0.5, metric=metrics.r2_score
         )
         assert score > 0.95
 
         # multivariate feature test
-        score = RandomForest(
+        score = RandomForestModel(
             lags=12, lags_future_covariates=[0, -1], random_state=0
         ).backtest(
             series=target,
@@ -844,7 +844,7 @@ class TestBacktesting:
         assert score > 0.94
 
         # multivariate feature test with train window 35
-        score_35 = RandomForest(
+        score_35 = RandomForestModel(
             lags=12, lags_future_covariates=[0, -1], random_state=0
         ).backtest(
             series=target,
@@ -860,7 +860,7 @@ class TestBacktesting:
         assert score_35 > 0.92
 
         # multivariate feature test with train window 45
-        score_45 = RandomForest(
+        score_45 = RandomForestModel(
             lags=12, lags_future_covariates=[0, -1], random_state=0
         ).backtest(
             series=target,
@@ -877,7 +877,7 @@ class TestBacktesting:
         assert score_45 > score_35
 
         # multivariate with stride
-        score = RandomForest(
+        score = RandomForestModel(
             lags=12, lags_future_covariates=[0], random_state=0
         ).backtest(
             series=target,
@@ -960,12 +960,12 @@ class TestBacktesting:
         param_range = list(range(10, 20))
         params = {"lags": param_range}
 
-        model = RandomForest(lags=1)
+        model = RandomForestModel(lags=1)
         result = model.gridsearch(
             params, dummy_series, forecast_horizon=1, n_random_samples=5
         )
 
-        assert isinstance(result[0], RandomForest)
+        assert isinstance(result[0], RandomForestModel)
         assert isinstance(result[1]["lags"], int)
         assert isinstance(result[2], float)
         assert min(param_range) <= result[1]["lags"] <= max(param_range)
@@ -976,19 +976,19 @@ class TestBacktesting:
         params = {"lags": list(range(1, 11)), "past_covariates": list(range(1, 11))}
 
         with pytest.raises(ValueError):
-            RandomForest.gridsearch(
+            RandomForestModel.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=-5
             )
         with pytest.raises(ValueError):
-            RandomForest.gridsearch(
+            RandomForestModel.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=105
             )
         with pytest.raises(ValueError):
-            RandomForest.gridsearch(
+            RandomForestModel.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=-24.56
             )
         with pytest.raises(ValueError):
-            RandomForest.gridsearch(
+            RandomForestModel.gridsearch(
                 params, dummy_series, forecast_horizon=1, n_random_samples=1.5
             )
 
@@ -1000,11 +1000,13 @@ class TestBacktesting:
         params_cross_product = list(product(*params.values()))
 
         # Test absolute sample
-        absolute_sampled_result = RandomForest._sample_params(params_cross_product, 10)
+        absolute_sampled_result = RandomForestModel._sample_params(
+            params_cross_product, 10
+        )
         assert len(absolute_sampled_result) == 10
 
         # Test percentage sample
-        percentage_sampled_result = RandomForest._sample_params(
+        percentage_sampled_result = RandomForestModel._sample_params(
             params_cross_product, 0.37
         )
         assert len(percentage_sampled_result) == 37

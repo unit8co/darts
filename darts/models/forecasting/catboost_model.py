@@ -18,8 +18,8 @@ from darts.logging import get_logger, raise_log
 from darts.models.forecasting.classifier_model import (
     _ForecastingClassifierMixin,
 )
-from darts.models.forecasting.regression_model import (
-    RegressionModelWithCategoricalFeatures,
+from darts.models.forecasting.sklearn_model import (
+    SKLearnModelWithCategoricalFeatures,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -35,7 +35,7 @@ from darts.utils.likelihood_models.sklearn import (
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModelWithCategoricalFeatures):
+class CatBoostModel(SKLearnModelWithCategoricalFeatures):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -404,6 +404,7 @@ class CatBoostModel(RegressionModelWithCategoricalFeatures):
                     data=val_set[0],
                     label=val_set[1],
                     weight=val_weights[i] if val_weights is not None else None,
+                    cat_features=self._categorical_indices,
                 )
             )
         kwargs[val_set_name] = val_pools
