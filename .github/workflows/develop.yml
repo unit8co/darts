@@ -71,6 +71,10 @@ jobs:
           chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
+      - name: "Install Darts Locally"
+        run: |
+          pip install .
+
       - name: "Run tests"
         run: |
           pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
@@ -125,7 +129,7 @@ jobs:
           chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Locally"
+      - name: "Install Darts Locally"
         run: |
           pip install .
 
@@ -175,7 +179,7 @@ jobs:
           chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Locally"
+      - name: "Install Darts Locally"
         run: |
           pip install .
 

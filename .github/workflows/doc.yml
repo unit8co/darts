@@ -47,7 +47,7 @@ jobs:
           chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Locally"
+      - name: "Install Darts Locally"
         run: |
           pip install .
 
