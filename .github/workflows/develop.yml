@@ -65,6 +65,8 @@ jobs:
         run: |
           # install latest dependencies (potentially updating cached dependencies)
           pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          # install darts in development mode
+          pip install -e .
 
       - name: "Install libomp (for LightGBM)"
         run: |
