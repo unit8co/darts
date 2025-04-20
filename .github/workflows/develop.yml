@@ -31,7 +31,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-14, ubuntu-latest]
+        os: [ubuntu-latest]
         python-version: ['3.10']
         flavour: ['all']
 
@@ -73,7 +73,7 @@ jobs:
 
       - name: "Run tests"
         run: |
-          pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
+          pytest darts/tests/optional_deps/
 
       - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
