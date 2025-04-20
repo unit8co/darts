@@ -14,7 +14,6 @@ from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegresso
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 
-import darts
 import darts.utils.utils
 from darts import TimeSeries
 from darts.dataprocessing.encoders import (

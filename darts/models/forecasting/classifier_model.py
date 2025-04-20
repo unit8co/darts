@@ -8,9 +8,9 @@ from darts.logging import (
     get_logger,
     raise_log,
 )
-from darts.models.forecasting.regression_model import (
-    RegressionModel,
-    RegressionModelWithCategoricalFeatures,
+from darts.models.forecasting.sklearn_model import (
+    SKLearnModel,
+    SKLearnModelWithCategoricalFeatures,
 )
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
@@ -41,7 +41,7 @@ class _ForecastingClassifierMixin:
         )
 
         if lags is not None and not isinstance(
-            self, RegressionModelWithCategoricalFeatures
+            self, SKLearnModelWithCategoricalFeatures
         ):
             logger.warning(
                 "This model will treat the target `series` data/label "
@@ -53,7 +53,7 @@ class _ForecastingClassifierMixin:
         return ModelType.FORECASTING_CLASSIFIER
 
 
-class SKLearnClassifierModel(_ForecastingClassifierMixin, RegressionModel):
+class SKLearnClassifierModel(_ForecastingClassifierMixin, SKLearnModel):
     def __init__(
         self,
         model=None,
