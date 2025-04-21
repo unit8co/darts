@@ -409,9 +409,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
             pred = output.squeeze(dim=-1)
 
         # torch metrics require 2D targets of shape (batch size * ocl, num targets)
-        if self.n_targets > 1:
-            target = target.reshape(-1, self.n_targets)
-            pred = pred.reshape(-1, self.n_targets)
+        target = target.reshape(-1, self.n_targets)
+        pred = pred.reshape(-1, self.n_targets)
 
         metrics.update(pred, target)
 
