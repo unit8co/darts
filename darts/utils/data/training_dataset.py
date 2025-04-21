@@ -11,11 +11,29 @@ from torch.utils.data import Dataset
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.utils import CovariateType
+from darts.utils.data.utils import FeatureType
 
 logger = get_logger(__name__)
-SampleIndexType = tuple[
-    int, int, int, int, Optional[int], Optional[int], Optional[int], Optional[int]
+
+_SampleIndexType = dict[FeatureType, tuple[Optional[int], Optional[int]]]
+
+DatasetOutputType = tuple[
+    np.ndarray,
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    np.ndarray,
+]
+
+_SERIES_TYPES = [
+    FeatureType.PAST_TARGET,
+    FeatureType.FUTURE_TARGET,
+    FeatureType.PAST_COVARIATES,
+    FeatureType.HISTORIC_FUTURE_COVARIATES,
+    FeatureType.FUTURE_COVARIATES,
+    FeatureType.SAMPLE_WEIGHT,
 ]
 
 
@@ -72,7 +90,7 @@ class TrainingDataset(ABC, Dataset):
         pass
 
     @abstractmethod
-    def __getitem__(self, idx: int):
+    def __getitem__(self, idx: int) -> DatasetOutputType:
         pass
 
     def _memory_indexer(
@@ -83,10 +101,10 @@ class TrainingDataset(ABC, Dataset):
         input_chunk_length: int,
         output_chunk_length: int,
         end_of_output_idx: int,
-        covariate_series: Optional[TimeSeries] = None,
-        covariate_type: CovariateType = CovariateType.NONE,
-        sample_weight_series: Optional[TimeSeries] = None,
-    ) -> SampleIndexType:
+        past_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        sample_weight: Optional[TimeSeries] = None,
+    ) -> _SampleIndexType:
         """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
         sample `i` from `target_idx`.
 
@@ -111,17 +129,15 @@ class TrainingDataset(ABC, Dataset):
             The length of the emitted future output series.
         end_of_output_idx
             the index where the output chunk of the current sample ends in `target_series`.
-        covariate_series
-            current covariate TimeSeries.
-        covariate_type
-            the type of covariate to extract. Instance of `CovariateType`: One of (`CovariateType.PAST`,
-            `CovariateType.FUTURE`, `CovariateType.NONE`).
-        sample_weight_series
+        past_covariates
+            current `past_covariates` TimeSeries.
+        future_covariates
+            current `future_covariates` TimeSeries.
+        sample_weight
             current sample weight TimeSeries.
         """
-
-        covariate_start, covariate_end = None, None
-        sample_weight_start, sample_weight_end = None, None
+        # store the start and end index (positions) for series and covariates
+        idx_bounds = {}
 
         # the first time target_idx is observed
         if target_idx not in self._index_memory:
@@ -139,46 +155,51 @@ class TrainingDataset(ABC, Dataset):
                 start_of_input_idx,
                 start_of_input_idx + input_chunk_length,
             )
+            idx_bounds[FeatureType.PAST_TARGET] = (past_start, past_end)
+            idx_bounds[FeatureType.FUTURE_TARGET] = (future_start, future_end)
 
-            if covariate_type is not CovariateType.NONE:
-                # not CovariateType.FUTURE -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
-                start = (
-                    future_start
-                    if covariate_type is CovariateType.FUTURE
-                    else past_start
-                )
-                end = future_end if covariate_type is CovariateType.FUTURE else past_end
+            for cov, cov_type, start, end in zip(
+                [past_covariates, future_covariates, future_covariates],
+                [
+                    FeatureType.PAST_COVARIATES,
+                    FeatureType.HISTORIC_FUTURE_COVARIATES,
+                    FeatureType.FUTURE_COVARIATES,
+                ],
+                [past_start, past_start, future_start],
+                [past_end, past_end, future_end],
+            ):
+                if cov is None:
+                    idx_bounds[cov_type] = (None, None)
+                    continue
 
                 # we need to be careful with getting ranges and indexes:
                 # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
                 # extract actual index value (respects datetime- and integer-based indexes; also from non-zero
                 # start)
-                target_time_index = target_series._time_index
-                covariate_time_index = covariate_series._time_index
-                start_time = target_time_index[start]
-                end_time = target_time_index[end - 1]
+                target_times = target_series._time_index
+                cog_times = cov._time_index
+                start_time = target_times[start]
+                end_time = target_times[end - 1]
 
-                if (
-                    start_time not in covariate_time_index
-                    or end_time not in covariate_time_index
-                ):
+                if start_time not in cog_times or end_time not in cog_times:
                     raise_log(
                         ValueError(
-                            f"Missing covariates; could not find {covariate_type.value} covariates in index "
+                            f"Missing covariates; could not find `{cov_type.value}` in index "
                             f"value range: {start_time} - {end_time}."
                         ),
                         logger=logger,
                     )
 
                 # extract the index position (index) from index value
-                covariate_start = covariate_time_index.get_loc(start_time)
-                covariate_end = covariate_time_index.get_loc(end_time) + 1
+                cov_start = cog_times.get_loc(start_time)
+                cov_end = cog_times.get_loc(end_time) + 1
+                idx_bounds[cov_type] = (cov_start, cov_end)
 
             # sample weight
-            if sample_weight_series is not None:
+            if sample_weight is not None:
                 # extract the index position (index) from index value
                 target_time_index = target_series._time_index
-                sample_weight_time_index = sample_weight_series._time_index
+                sample_weight_time_index = sample_weight._time_index
 
                 start_time = target_time_index[future_start]
                 end_time = target_time_index[future_end - 1]
@@ -189,176 +210,39 @@ class TrainingDataset(ABC, Dataset):
                 ):
                     raise_log(
                         ValueError(
-                            f"Missing sample weights; could not find sample weights in index "
-                            f"value range: {start_time} - {end_time}."
+                            f"Invalid `{FeatureType.SAMPLE_WEIGHT.value}`; could not find "
+                            f"sample weights in index value range: {start_time} - {end_time}."
                         ),
                         logger=logger,
                     )
 
                 sample_weight_start = sample_weight_time_index.get_loc(start_time)
                 sample_weight_end = sample_weight_time_index.get_loc(end_time) + 1
+                idx_bounds[FeatureType.SAMPLE_WEIGHT] = (
+                    sample_weight_start,
+                    sample_weight_end,
+                )
+            else:
+                idx_bounds[FeatureType.SAMPLE_WEIGHT] = (None, None)
 
             # store position of initial sample and all relevant sub set indices
             self._index_memory[target_idx] = {
                 "end_of_output_idx": end_of_output_idx,
-                "past_target": (past_start, past_end),
-                "future_target": (future_start, future_end),
-                "covariate": (covariate_start, covariate_end),
-                "sample_weight": (sample_weight_start, sample_weight_end),
+                **idx_bounds,
             }
         else:
             # load position of initial sample and its sub set indices
             end_of_output_idx_last = self._index_memory[target_idx]["end_of_output_idx"]
-            past_start, past_end = self._index_memory[target_idx]["past_target"]
-            future_start, future_end = self._index_memory[target_idx]["future_target"]
-            covariate_start, covariate_end = self._index_memory[target_idx]["covariate"]
-            sample_weight_start, sample_weight_end = self._index_memory[target_idx][
-                "sample_weight"
-            ]
-
             # evaluate how much the new sample needs to be shifted, and shift all indexes
             idx_shift = end_of_output_idx - end_of_output_idx_last
-            past_start += idx_shift
-            past_end += idx_shift
-            future_start += idx_shift
-            future_end += idx_shift
-            covariate_start = (
-                covariate_start + idx_shift if covariate_start is not None else None
-            )
-            covariate_end = (
-                covariate_end + idx_shift if covariate_end is not None else None
-            )
-            sample_weight_start = (
-                sample_weight_start + idx_shift
-                if sample_weight_start is not None
-                else None
-            )
-            sample_weight_end = (
-                sample_weight_end + idx_shift if sample_weight_end is not None else None
-            )
 
-        return (
-            past_start,
-            past_end,
-            future_start,
-            future_end,
-            covariate_start,
-            covariate_end,
-            sample_weight_start,
-            sample_weight_end,
-        )
+            for series_type in _SERIES_TYPES:
+                start, end = self._index_memory[target_idx][series_type]
+                if start is not None:
+                    start += idx_shift
+                if end is not None:
+                    end += idx_shift
 
+                idx_bounds[series_type] = (start, end)
 
-class PastCovariatesTrainingDataset(TrainingDataset, ABC):
-    def __init__(self):
-        """
-        Abstract class for a PastCovariatesTorchModel training dataset. It contains 3-tuples of
-        `(past_target, past_covariate, static_covariates, future_target)` `np.ndarray`.
-        The covariates are optional and can be `None`.
-        """
-        super().__init__()
-
-    @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        pass
-
-
-class FutureCovariatesTrainingDataset(TrainingDataset, ABC):
-    def __init__(self):
-        """
-        Abstract class for a FutureCovariatesTorchModel training dataset. It contains 3-tuples of
-        `(past_target, future_covariate, static_covariates, future_target)` `np.ndarray`.
-        The covariates are optional and can be `None`.
-        """
-        super().__init__()
-
-    @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        pass
-
-
-class DualCovariatesTrainingDataset(TrainingDataset, ABC):
-    def __init__(self):
-        """
-        Abstract class for a DualCovariatesTorchModel training dataset. It contains 4-tuples of
-        `(past_target, historic_future_covariates, future_covariates, static_covariates, future_target)` `np.ndarray`.
-        The covariates are optional and can be `None`.
-        """
-        super().__init__()
-
-    @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        pass
-
-
-class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
-    def __init__(self):
-        """
-        Abstract class for a MixedCovariatesTorchModel training dataset. It contains 5-tuples of
-        `(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
-        future_target)` `np.ndarray`.
-        The covariates are optional and can be `None`.
-        """
-        super().__init__()
-
-    @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        pass
-
-
-class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
-    def __init__(self):
-        """
-        Abstract class for a SplitCovariatesTorchModel training dataset. It contains 4-tuples of
-        `(past_target, past_covariates, future_covariates, static_covariates, future_target)` `np.ndarray`.
-        The covariates are optional and can be `None`.
-        """
-        super().__init__()
-
-    @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        pass
+        return idx_bounds

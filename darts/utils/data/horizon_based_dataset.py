@@ -6,22 +6,20 @@ Horizon-Based Training Dataset
 from collections.abc import Sequence
 from typing import Optional, Union
 
-import numpy as np
-
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.training_dataset import PastCovariatesTrainingDataset
-from darts.utils.data.utils import CovariateType, _process_sample_weight
+from darts.utils.data.training_dataset import DatasetOutputType, TrainingDataset
+from darts.utils.data.utils import FeatureType, _process_sample_weight
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
 
-class HorizonBasedDataset(PastCovariatesTrainingDataset):
+class HorizonBasedDataset(TrainingDataset):
     def __init__(
         self,
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
-        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         output_chunk_length: int = 12,
         lh: tuple[int, int] = (1, 3),
         lookback: int = 3,
@@ -39,7 +37,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
         Given the horizon `output_chunk_length` of a model, this dataset will compute some "past/future"
         splits as follows:
-        First a "forecast point" is selected in the the range of the last
+        First a "forecast point" is selected in the range of the last
         `(min_lh * output_chunk_length, max_lh * output_chunk_length)` points before the end of the time series.
         The "future" then consists in the following `output_chunk_length` points, and the "past" will be the preceding
         `lookback * output_chunk_length` points.
@@ -47,7 +45,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         All the series in the provided sequence must be long enough; i.e. have length at least
         `(lookback + max_lh) * output_chunk_length`, and `min_lh` must be at least 1
         (to have targets of length exactly `1 * output_chunk_length`).
-        The target and covariates time series are sliced together using their time indexes for alignment.
+        The target and past_covariates time series are sliced together using their time indexes for alignment.
 
         The sampling is uniform both over the number of time series and the number of samples per series;
         i.e. the i-th sample of this dataset has 1/(N*M) chance of coming from any of the M samples in any of the N
@@ -57,7 +55,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         ----------
         target_series
             One or a sequence of target `TimeSeries`.
-        covariates
+        past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
@@ -87,18 +85,21 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         """
         super().__init__()
 
-        self.target_series = series2seq(target_series)
-        self.covariates = series2seq(covariates)
-        self.covariate_type = CovariateType.PAST
+        # setup target and sequence
+        target_series = series2seq(target_series)
+        past_covariates = series2seq(past_covariates)
 
-        if covariates is not None and len(self.target_series) != len(self.covariates):
+        if past_covariates is not None and len(target_series) != len(past_covariates):
             raise_log(
                 ValueError(
-                    "The provided sequence of target series must have the same length as "
-                    "the provided sequence of covariate series."
+                    "The provided sequence of target `series` must have the same length as "
+                    f"the provided sequence of `{FeatureType.PAST_COVARIATES.value}`."
                 ),
                 logger=logger,
             )
+
+        self.target_series = target_series
+        self.past_covariates = past_covariates
         self.sample_weight = _process_sample_weight(sample_weight, self.target_series)
 
         self.output_chunk_length = output_chunk_length
@@ -124,15 +125,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         """
         return self.total_nr_samples
 
-    def __getitem__(
-        self, idx: int
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
+    def __getitem__(self, idx: int) -> DatasetOutputType:
         # determine the index of the time series.
         target_idx = idx // self.nr_samples_per_ts
         target_series = self.target_series[target_idx]
@@ -157,98 +150,100 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         )
 
         # optionally, load covariates
-        covariate_series = (
-            self.covariates[target_idx] if self.covariates is not None else None
-        )
-        main_covariate_type = (
-            CovariateType.NONE if self.covariates is None else CovariateType.PAST
+        past_covariates = (
+            self.past_covariates[target_idx]
+            if self.past_covariates is not None
+            else None
         )
 
         # optionally, load sample weight
-        sample_weight_series = (
+        sample_weight = (
             self.sample_weight[target_idx] if self.sample_weight is not None else None
         )
 
         shift = self.lookback * self.output_chunk_length
         input_chunk_length = shift
 
-        # get all indices for the current sample
-        (
-            past_start,
-            past_end,
-            future_start,
-            future_end,
-            cov_start,
-            cov_end,
-            sample_weight_start,
-            sample_weight_end,
-        ) = self._memory_indexer(
+        # get start and end indices (positions) of all feature types for the current sample
+        idx_bounds = self._memory_indexer(
             target_idx=target_idx,
             target_series=target_series,
             shift=shift,
             input_chunk_length=input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             end_of_output_idx=end_of_output_idx,
-            covariate_series=covariate_series,
-            covariate_type=main_covariate_type,
-            sample_weight_series=sample_weight_series,
+            past_covariates=past_covariates,
+            future_covariates=None,
+            sample_weight=sample_weight,
         )
 
-        # extract sample target
-        future_target = target_vals[future_start:future_end]
-        past_target = target_vals[past_start:past_end]
+        # extract past target
+        start, end = idx_bounds[FeatureType.PAST_TARGET]
+        pt = target_vals[start:end]
+
+        # extract future target
+        start, end = idx_bounds[FeatureType.FUTURE_TARGET]
+        ft = target_vals[start:end]
+
+        # past cov, historic future cov, future cov, static cov, sample weight
+        pc, hfc, fc, sc, sw = None, None, None, None, None
 
         # extract sample covariates
-        covariate = None
-        if self.covariates is not None:
-            if cov_end > len(covariate_series):
+        if self.past_covariates is not None:
+            start, end = idx_bounds[FeatureType.PAST_COVARIATES]
+            if end > len(past_covariates):
                 raise_log(
                     ValueError(
-                        f"The dataset contains past covariates that don't extend far enough into the future. "
-                        f"({idx}-th sample)"
+                        f"The dataset contains `{FeatureType.PAST_COVARIATES.value}` that "
+                        f"don't extend far enough into the future ({idx}-th sample)."
                     ),
                     logger=logger,
                 )
-            covariate = covariate_series.random_component_values(copy=False)[
-                cov_start:cov_end
-            ]
-            if len(covariate) != len(past_target):
+            pc = past_covariates.random_component_values(copy=False)[start:end]
+            if len(pc) != len(pt):
                 raise_log(
                     ValueError(
-                        "The dataset contains past covariates whose time axis doesn't allow to obtain the "
-                        "input (or output) chunk relative to the target series."
+                        f"The dataset contains `{FeatureType.PAST_COVARIATES.value}` whose "
+                        f"time axis doesn't allow to obtain the input (or output) chunk "
+                        f"relative to the target series."
                     ),
                     logger=logger,
                 )
 
         # extract sample weights
-        sample_weight = None
         if self.sample_weight is not None:
-            if sample_weight_end > len(sample_weight_series):
+            start, end = idx_bounds[FeatureType.SAMPLE_WEIGHT]
+            if end > len(sample_weight):
                 raise_log(
                     ValueError(
-                        f"The dataset contains sample weights "
+                        f"The dataset contains `{FeatureType.SAMPLE_WEIGHT.value}` series "
                         f"that don't extend far enough into the future. ({idx}-th sample)"
                     ),
                     logger=logger,
                 )
 
-            sample_weight = sample_weight_series.random_component_values(copy=False)[
-                sample_weight_start:sample_weight_end
-            ]
+            sw = sample_weight.random_component_values(copy=False)[start:end]
 
-            if len(sample_weight) != self.output_chunk_length:
+            if len(sw) != self.output_chunk_length:
                 raise_log(
                     ValueError(
-                        "The dataset contains sample weights whose time axis doesn't allow to obtain "
-                        "the input (or output) chunk relative to the target series."
+                        f"The dataset contains `{FeatureType.SAMPLE_WEIGHT.value}` series "
+                        f"whose time axis don't allow to obtain the input (or output) "
+                        f"chunk relative to the target series."
                     ),
                     logger=logger,
                 )
 
         # extract sample static covariates
         if self.use_static_covariates:
-            static_covariate = target_series.static_covariates_values(copy=False)
-        else:
-            static_covariate = None
-        return past_target, covariate, static_covariate, sample_weight, future_target
+            sc = target_series.static_covariates_values(copy=False)
+
+        return (
+            pt,
+            pc,
+            hfc,
+            fc,
+            sc,
+            sw,
+            ft,
+        )

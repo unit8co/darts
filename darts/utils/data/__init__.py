@@ -35,14 +35,7 @@ try:
         PastCovariatesShiftedDataset,
         SplitCovariatesShiftedDataset,
     )
-    from darts.utils.data.training_dataset import (
-        DualCovariatesTrainingDataset,
-        FutureCovariatesTrainingDataset,
-        MixedCovariatesTrainingDataset,
-        PastCovariatesTrainingDataset,
-        SplitCovariatesTrainingDataset,
-        TrainingDataset,
-    )
+    from darts.utils.data.training_dataset import TrainingDataset
 except ImportError:  # Torch is not available
     from darts.utils.utils import NotImportedModule
 
@@ -93,21 +86,6 @@ except ImportError:  # Torch is not available
     SplitCovariatesShiftedDataset = NotImportedModule(
         module_name="(Py)Torch", warn=False
     )
-    DualCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    FutureCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    MixedCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    PastCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
-    SplitCovariatesTrainingDataset = NotImportedModule(
-        module_name="(Py)Torch", warn=False
-    )
     TrainingDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 __all__ = [
@@ -128,10 +106,5 @@ __all__ = [
     "MixedCovariatesShiftedDataset",
     "PastCovariatesShiftedDataset",
     "SplitCovariatesShiftedDataset",
-    "DualCovariatesTrainingDataset",
-    "FutureCovariatesTrainingDataset",
-    "MixedCovariatesTrainingDataset",
-    "PastCovariatesTrainingDataset",
-    "SplitCovariatesTrainingDataset",
     "TrainingDataset",
 ]

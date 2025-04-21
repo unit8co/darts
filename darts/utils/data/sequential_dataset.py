@@ -6,25 +6,15 @@ Sequential Training Dataset
 from collections.abc import Sequence
 from typing import Optional, Union
 
-import numpy as np
-
 from darts import TimeSeries
 from darts.utils.data.shifted_dataset import GenericShiftedDataset
-from darts.utils.data.training_dataset import (
-    DualCovariatesTrainingDataset,
-    FutureCovariatesTrainingDataset,
-    MixedCovariatesTrainingDataset,
-    PastCovariatesTrainingDataset,
-    SplitCovariatesTrainingDataset,
-)
-from darts.utils.data.utils import CovariateType
 
 
-class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
+class PastCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
-        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
@@ -53,7 +43,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
         ----------
         target_series
             One or a sequence of target `TimeSeries`.
-        covariates
+        past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
@@ -84,42 +74,25 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
-
-        super().__init__()
         shift = input_chunk_length + output_chunk_shift
-        self.ds = GenericShiftedDataset(
+        super().__init__(
             target_series=target_series,
-            covariates=covariates,
+            past_covariates=past_covariates,
+            future_covariates=None,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             shift=shift,
-            shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
-            covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
         )
 
-    def __len__(self):
-        return len(self.ds)
 
-    def __getitem__(
-        self, idx
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        return self.ds[idx]
-
-
-class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
+class FutureCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
-        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
@@ -148,7 +121,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
         ----------
         target_series
             One or a sequence of target `TimeSeries`.
-        covariates
+        future_covariates
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
@@ -179,42 +152,25 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
-
-        super().__init__()
         shift = input_chunk_length + output_chunk_shift
-        self.ds = GenericShiftedDataset(
+        super().__init__(
             target_series=target_series,
-            covariates=covariates,
+            past_covariates=None,
+            future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             shift=shift,
-            shift_covariates=True,
             max_samples_per_ts=max_samples_per_ts,
-            covariate_type=CovariateType.FUTURE,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
         )
 
-    def __len__(self):
-        return len(self.ds)
 
-    def __getitem__(
-        self, idx
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        return self.ds[idx]
-
-
-class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
+class DualCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
-        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
@@ -244,7 +200,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         ----------
         target_series
             One or a sequence of target `TimeSeries`.
-        covariates
+        future_covariates
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,
             the provided sequence must have the same length as that of `target_series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
@@ -275,64 +231,21 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
-
-        super().__init__()
         shift = input_chunk_length + output_chunk_shift
-        # This dataset is in charge of historical future covariates
-        self.ds_past = GenericShiftedDataset(
+        super().__init__(
             target_series=target_series,
-            covariates=covariates,
+            past_covariates=None,
+            future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             shift=shift,
-            shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
-            covariate_type=CovariateType.HISTORIC_FUTURE,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
         )
 
-        # This dataset is in charge of serving future covariates
-        self.ds_future = GenericShiftedDataset(
-            target_series=target_series,
-            covariates=covariates,
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            shift=shift,
-            shift_covariates=True,
-            max_samples_per_ts=max_samples_per_ts,
-            covariate_type=CovariateType.FUTURE,
-            use_static_covariates=use_static_covariates,
-        )
 
-    def __len__(self):
-        return len(self.ds_past)
-
-    def __getitem__(
-        self, idx
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        past_target, past_covariate, static_covariate, sample_weight, future_target = (
-            self.ds_past[idx]
-        )
-        _, future_covariate, _, _, _ = self.ds_future[idx]
-        return (
-            past_target,
-            past_covariate,
-            future_covariate,
-            static_covariate,
-            sample_weight,
-            future_target,
-        )
-
-
-class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
+class MixedCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -401,64 +314,21 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
-
-        super().__init__()
         shift = input_chunk_length + output_chunk_shift
-        # This dataset is in charge of serving past covariates
-        self.ds_past = GenericShiftedDataset(
+        super().__init__(
             target_series=target_series,
-            covariates=past_covariates,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             shift=shift,
-            shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
-            covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
         )
 
-        # This dataset is in charge of serving historical and future future covariates
-        self.ds_dual = DualCovariatesSequentialDataset(
-            target_series=target_series,
-            covariates=future_covariates,
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            output_chunk_shift=output_chunk_shift,
-            max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=use_static_covariates,
-        )
 
-    def __len__(self):
-        return len(self.ds_past)
-
-    def __getitem__(
-        self, idx
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        past_target, past_covariate, static_covariate, sample_weight, future_target = (
-            self.ds_past[idx]
-        )
-        _, historic_future_covariate, future_covariate, _, _, _ = self.ds_dual[idx]
-        return (
-            past_target,
-            past_covariate,
-            historic_future_covariate,
-            future_covariate,
-            static_covariate,
-            sample_weight,
-            future_target,
-        )
-
-
-class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
+class SplitCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
         target_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -526,57 +396,15 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
-        super().__init__()
         shift = input_chunk_length + output_chunk_shift
-        # This dataset is in charge of serving past covariates
-        self.ds_past = GenericShiftedDataset(
+        super().__init__(
             target_series=target_series,
-            covariates=past_covariates,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             shift=shift,
-            shift_covariates=False,
             max_samples_per_ts=max_samples_per_ts,
-            covariate_type=CovariateType.PAST,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
-        )
-
-        # This dataset is in charge of serving future covariates
-        self.ds_future = GenericShiftedDataset(
-            target_series=target_series,
-            covariates=future_covariates,
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            shift=shift,
-            shift_covariates=True,
-            max_samples_per_ts=max_samples_per_ts,
-            covariate_type=CovariateType.FUTURE,
-            use_static_covariates=use_static_covariates,
-        )
-
-    def __len__(self):
-        return len(self.ds_past)
-
-    def __getitem__(
-        self, idx
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
-        past_target, past_covariate, static_covariate, sample_weight, future_target = (
-            self.ds_past[idx]
-        )
-        _, future_covariate, _, _, _ = self.ds_future[idx]
-        return (
-            past_target,
-            past_covariate,
-            future_covariate,
-            static_covariate,
-            sample_weight,
-            future_target,
         )
