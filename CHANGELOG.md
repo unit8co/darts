@@ -16,6 +16,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🟠 Renamed `RandomForest` to `RandomForestModel`. Using `RandomForest` will raise a depraction warning.
   - 🔴 Renamed `RegressionModelWithCategoricalCovariates` to `SKLearnModelWithCategoricalCovariates`. Removed `RegressionModelWithCategoricalCovariates`
 
+- Added `project_after_n_blocks` hyperparam to `TSMixerModel`, allowing some or all of the backbone to operate in the lookback rather than forecasted space.
+
 **Fixed**
 
 **Dependencies**
