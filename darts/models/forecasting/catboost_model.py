@@ -27,8 +27,6 @@ from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     SKLearnLikelihood,
-    _check_likelihood,
-    _get_classification_likelihood,
     _get_likelihood,
 )
 
@@ -201,15 +199,13 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         self.kwargs = kwargs
         self._model_container = None
 
-        likelihood_kwargs = {}
-        if quantiles is not None:
-            likelihood_kwargs["quantiles"] = quantiles
+        self._likelihood: Optional[SKLearnLikelihood] = None
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
             random_state=random_state,
             multi_models=multi_models,
-            **likelihood_kwargs,
+            quantiles=quantiles,
         )
 
         # suppress writing catboost info files when user does not specifically ask to
@@ -240,37 +236,41 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
 
     def _set_likelihood(
         self,
-        likelihood,
-        output_chunk_length,
-        random_state,
-        multi_models,
-        quantiles=None,
+        likelihood: Optional[str],
+        output_chunk_length: int,
+        random_state: Optional[int],
+        multi_models: bool,
+        quantiles: Optional[list[float]] = None,
     ):
-        # parse likelihood
-        if likelihood is not None:
-            likelihood_map = {
-                "quantile": None,
-                "poisson": "Poisson",
-                "gaussian": "RMSEWithUncertainty",
-                "RMSEWithUncertainty": "RMSEWithUncertainty",
-            }
-            _check_likelihood(likelihood, list(likelihood_map.keys()))
-            if likelihood == "RMSEWithUncertainty":
-                # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
-                likelihood = "gaussian"
+        if likelihood is None:
+            return
 
-            if likelihood == "quantile":
-                self._model_container = _QuantileModelContainer()
-            else:
-                self.kwargs["loss_function"] = likelihood_map[likelihood]
+        if likelihood == "RMSEWithUncertainty":
+            # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
+            likelihood = "gaussian"
 
-        self._likelihood: Optional[SKLearnLikelihood] = None
+        likelihood_map = {
+            "quantile": None,
+            "poisson": "Poisson",
+            "gaussian": "RMSEWithUncertainty",
+        }
+
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             random_state=random_state,
             quantiles=quantiles,
+            available_likelihoods=[
+                LikelihoodType.Gaussian,
+                LikelihoodType.Poisson,
+                LikelihoodType.Quantile,
+            ],
         )
+
+        if likelihood == LikelihoodType.Quantile.value:
+            self._model_container = _QuantileModelContainer()
+        else:
+            self.kwargs["loss_function"] = likelihood_map[likelihood]
 
     def fit(
         self,
@@ -647,25 +647,23 @@ class CatBoostClassifierModel(_ForecastingClassifierMixin, CatBoostModel):
 
     def _set_likelihood(
         self,
-        likelihood,
-        output_chunk_length,
-        random_state,
-        multi_models,
-        quantiles=None,
+        likelihood: Optional[str],
+        output_chunk_length: int,
+        random_state: Optional[int],
+        multi_models: bool,
+        quantiles: Optional[list[float]] = None,
     ):
         """
         Check and set the likelihood.
         Only ClassProbability is supported for CatBoostClassifierModel.
         """
-        if likelihood is not None:
-            _check_likelihood(likelihood, [LikelihoodType.ClassProbability])
 
-            # CatBoostModel only support regression likelihood
-            self._likelihood = _get_classification_likelihood(
-                likelihood=likelihood,
-                n_outputs=output_chunk_length if multi_models else 1,
-                random_state=random_state,
-            )
+        self._likelihood = _get_likelihood(
+            likelihood=likelihood,
+            n_outputs=output_chunk_length if multi_models else 1,
+            random_state=random_state,
+            available_likelihoods=[LikelihoodType.ClassProbability],
+        )
 
     def _format_samples(self, samples, labels=None):
         """

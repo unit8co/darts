@@ -28,7 +28,8 @@ from darts.models.forecasting.sklearn_model import (
 from darts.models.forecasting.xgboost import XGBClassifierModel
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
-from darts.utils.likelihood_models.sklearn import _get_classification_likelihood
+from darts.utils.likelihood_models.base import LikelihoodType
+from darts.utils.likelihood_models.sklearn import _get_likelihood
 from darts.utils.multioutput import MultiOutputClassifier
 from darts.utils.utils import NotImportedModule
 
@@ -711,18 +712,19 @@ class TestProbabilisticClassifierModels:
             _ = clf(lags=1, likelihood="does_not_exist", **kwargs)
         assert (
             str(exc.value)
-            == "Invalid `likelihood='does_not_exist'`. Must be 'classprobability' or ``None``."
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ['classprobability']"
         )
 
         with pytest.raises(ValueError) as exc:
-            _ = _get_classification_likelihood(
+            _ = _get_likelihood(
                 likelihood="does_not_exist",
                 n_outputs=1,
                 random_state=None,
+                available_likelihoods=[LikelihoodType.ClassProbability],
             )
         assert (
             str(exc.value)
-            == "Invalid `likelihood='does_not_exist'`. Must be 'classprobability' or ``None``."
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ['classprobability']"
         )
 
     @pytest.mark.parametrize(

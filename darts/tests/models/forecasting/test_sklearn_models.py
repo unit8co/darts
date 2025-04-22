@@ -3925,10 +3925,15 @@ class TestProbabilisticSKLearnModels:
                 n_outputs=1,
                 random_state=None,
                 quantiles=None,
+                available_likelihoods=[
+                    LikelihoodType.Gaussian,
+                    LikelihoodType.Poisson,
+                    LikelihoodType.Quantile,
+                ],
             )
         assert (
             str(exc.value)
-            == "Invalid `likelihood='does_not_exist'`. Must be one of ('gaussian', 'poisson', 'quantile')"
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ['gaussian', 'poisson', 'quantile']"
         )
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))

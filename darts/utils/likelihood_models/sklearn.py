@@ -4,7 +4,7 @@ Likelihoods for `SKLearnModel`
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
 
@@ -412,22 +412,40 @@ class QuantileRegression(SKLearnLikelihood):
         )
 
 
-def _check_likelihood(
-    likelihood: str, available_likelihoods: list[Union[str, LikelihoodType]]
-) -> None:
-    """Check whether the likelihood is supported.
+def _get_likelihood(
+    likelihood: Optional[str],
+    n_outputs: int,
+    available_likelihoods: list[LikelihoodType],
+    random_state: Optional[int] = None,
+    quantiles: Optional[list[float]] = None,
+) -> Optional[SKLearnLikelihood]:
+    """Get the `Likelihood` object for `SKLearnModel`.
 
     Parameters
     ----------
     likelihood
-        The likelihood name. Must be one of `available_likelihoods`.
+        The likelihood name. Must be one of `available_likelihoods` type value or `None`.
+    n_outputs
+        The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
+        `output_chunk_length`.
     available_likelihoods
-        A list of supported likelihood types or names.
+        The list of available likelihood types for the model.
+    random_state
+        Optionally, control the randomness of the sampling.
+    quantiles
+        Optionally, a list of quantiles. Only effective for `likelihood='quantile'`.
+
     """
+
+    if likelihood is None:
+        return None
+
+    # Convert LikelihoodType to string
     available_likelihoods = [
         likelihood.value if isinstance(likelihood, LikelihoodType) else likelihood
         for likelihood in available_likelihoods
     ]
+
     if likelihood not in available_likelihoods:
         raise_log(
             ValueError(
@@ -436,30 +454,7 @@ def _check_likelihood(
             logger=logger,
         )
 
-
-def _get_likelihood(
-    likelihood: Optional[str],
-    n_outputs: int,
-    random_state: Optional[int],
-    quantiles: Optional[list[float]],
-) -> Optional[SKLearnLikelihood]:
-    """Get the `Likelihood` object for `SKLearnModel`.
-
-    Parameters
-    ----------
-    likelihood
-        The likelihood name. Must be one of ('gaussian', 'poisson', 'quantile').
-    n_outputs
-        The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
-        `output_chunk_length`.
-    random_state
-        Optionally, control the randomness of the sampling.
-    quantiles
-        Optionally, a list of quantiles. Only effective for `likelihood='quantile'`.
-    """
-    if likelihood is None:
-        return None
-    elif likelihood == "gaussian":
+    if likelihood == "gaussian":
         return GaussianLikelihood(n_outputs=n_outputs, random_state=random_state)
     elif likelihood == "poisson":
         return PoissonLikelihood(n_outputs=n_outputs, random_state=random_state)
@@ -467,12 +462,9 @@ def _get_likelihood(
         return QuantileRegression(
             n_outputs=n_outputs, random_state=random_state, quantiles=quantiles
         )
-    else:
-        raise_log(
-            ValueError(
-                f"Invalid `likelihood='{likelihood}'`. Must be one of ('gaussian', 'poisson', 'quantile')"
-            ),
-            logger=logger,
+    elif likelihood == LikelihoodType.ClassProbability.value:
+        return ClassProbabilityLikelihood(
+            n_outputs=n_outputs, random_state=random_state
         )
 
 
@@ -592,35 +584,3 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
 
         # reshape to (n_series * n_samples, output_chunk_length, n_components)
         return preds.reshape(model_output.shape[1], self._n_outputs, -1)
-
-
-def _get_classification_likelihood(
-    likelihood: Optional[str],
-    n_outputs: int,
-    random_state: Optional[int],
-) -> Optional[SKLearnLikelihood]:
-    """Get the `Likelihood` object for classification forecasting task.
-
-    Parameters
-    ----------
-    likelihood
-        The likelihood name. Must be one of ('classprobability').
-    n_outputs
-        The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
-        `output_chunk_length`.
-    random_state
-        Optionally, control the randomness of the sampling.
-    """
-    if likelihood is None:
-        return None
-    elif likelihood == LikelihoodType.ClassProbability.value:
-        return ClassProbabilityLikelihood(
-            n_outputs=n_outputs, random_state=random_state
-        )
-    else:
-        raise_log(
-            ValueError(
-                f"Invalid `likelihood='{likelihood}'`. Must be '{LikelihoodType.ClassProbability.value}' or ``None``."
-            ),
-            logger=logger,
-        )

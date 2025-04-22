@@ -13,9 +13,7 @@ from darts.models.forecasting.sklearn_model import (
     SKLearnModelWithCategoricalFeatures,
 )
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import (
-    _get_classification_likelihood,
-)
+from darts.utils.likelihood_models.sklearn import _get_likelihood
 from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
@@ -216,10 +214,11 @@ class SKLearnClassifierModel(_ForecastingClassifierMixin, SKLearnModel):
                 " this model won't be able to predict class probabilities"
             )
 
-        self._likelihood = _get_classification_likelihood(
+        self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             random_state=random_state,
+            available_likelihoods=[LikelihoodType.ClassProbability],
         )
 
         super().__init__(
