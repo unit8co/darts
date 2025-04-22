@@ -28,6 +28,7 @@ from darts.models.forecasting.regression_model import (
 from darts.models.forecasting.xgboost import XGBClassifierModel
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
+from darts.utils.likelihood_models.sklearn import _get_classification_likelihood
 from darts.utils.multioutput import MultiOutputClassifier
 from darts.utils.utils import NotImportedModule
 
@@ -704,6 +705,30 @@ class TestProbabilisticClassifierModels:
         "clf_params",
         process_model_list(probabilistic_classifiers),
     )
+    def test_wrong_likelihood(self, clf_params):
+        clf, kwargs = clf_params
+        with pytest.raises(ValueError) as exc:
+            _ = clf(lags=1, likelihood="does_not_exist", **kwargs)
+        assert (
+            str(exc.value)
+            == "Invalid `likelihood='does_not_exist'`. Must be 'classprobability' or ``None``."
+        )
+
+        with pytest.raises(ValueError) as exc:
+            _ = _get_classification_likelihood(
+                likelihood="does_not_exist",
+                n_outputs=1,
+                random_state=None,
+            )
+        assert (
+            str(exc.value)
+            == "Invalid `likelihood='does_not_exist'`. Must be 'classprobability' or ``None``."
+        )
+
+    @pytest.mark.parametrize(
+        "clf_params",
+        process_model_list(probabilistic_classifiers),
+    )
     def test_class_proba_likelihood_median_pred_is_same_than_no_likelihood(
         self, clf_params
     ):
@@ -718,7 +743,6 @@ class TestProbabilisticClassifierModels:
         # model has no likelihood
         with pytest.raises(ValueError) as err:
             model.predict(2, predict_likelihood_parameters=True)
-        print(err.value)
         assert (
             str(err.value) == "`predict_likelihood_parameters=True` is only"
             " supported for probabilistic models fitted with a likelihood."

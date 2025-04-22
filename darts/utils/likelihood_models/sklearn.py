@@ -484,7 +484,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
     ):
         """
         Classes probability likelihood.
-        This likelihood is used for classification tasks where the model predicts classes probability.
+        Likelihood to predict the probability of each class for a forecasting classification task.
 
         Parameters
         ----------
@@ -518,12 +518,15 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
                 logger,
             )
 
+        # single-labels and single-model tasks should return a array of classes
+        # multi-labels or multi-models tasks should return a list of arraya of classes
+        # unify `classes_` to a list of arrays of classes for simplicity
         classes = model.classes_
         if not isinstance(classes, list):
             classes = [classes]
         self._classes = classes
 
-        unique_classes = {label for classes in classes for label in classes}
+        unique_classes = {label for comp_classes in classes for label in comp_classes}
         self._parameter_names = [f"p_{int(label)}" for label in unique_classes]
         return self
 
@@ -617,7 +620,7 @@ def _get_classification_likelihood(
     else:
         raise_log(
             ValueError(
-                f"Invalid `likelihood='{likelihood}'`. Must be one of ('{LikelihoodType.ClassProbability.value}')"
+                f"Invalid `likelihood='{likelihood}'`. Must be '{LikelihoodType.ClassProbability.value}' or ``None``."
             ),
             logger=logger,
         )
