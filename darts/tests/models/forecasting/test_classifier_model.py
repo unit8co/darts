@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from sklearn.base import BaseEstimator
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
 from sklearn.ensemble import AdaBoostClassifier, RandomForestClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
@@ -130,7 +129,6 @@ class TestClassifierModel:
         1,  # MLPClassifier
         1,  # AdaBoostClassifier
         1,  # GaussianNB
-        1,  # QuadraticDiscriminantAnalysis
         1,  # XGBClassifierModel
     ]
 
@@ -144,7 +142,6 @@ class TestClassifierModel:
         False,  # MLPClassifier
         False,  # AdaBoostClassifier
         False,  # GaussianNB
-        False,  # QuadraticDiscriminantAnalysis
         False,  # XGBClassifierModel
     ]
 
@@ -186,27 +183,27 @@ class TestClassifierModel:
             SKLearnClassifierModel(model=LinearRegression())
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
-    def test_classes_labels(self, clf_params):
+    def test_class_labels(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
 
         # accessing classes_ before training return None
-        assert model.classes_ is None
+        assert model.class_labels is None
 
         # training the model
         model.fit(
             series=self.sine_univariate1_cat, past_covariates=self.sine_univariate1
         )
         # classes_ is a numpy array
-        assert isinstance(model.classes_, np.ndarray)
-        assert ([0, 1, 2] == model.classes_).all()
+        assert isinstance(model.class_labels, np.ndarray)
+        assert ([0, 1, 2] == model.class_labels).all()
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
-    def test_multiclass_classes(self, clf_params):
+    def test_multiclass_class_labels(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
 
-        if clf == XGBClassifierModel:
+        if issubclass(clf, XGBClassifierModel):
             # XGB requires class labels to be consecutive from 0
             multivariate_cat_diff_labels = self.sine_univariate1_cat.stack(
                 self.sine_univariate1_cat
@@ -223,13 +220,15 @@ class TestClassifierModel:
         )
         # check that classes are stored as list of np.ndarrays
         # for both MultiOutputClassifier and native multi-class classifiers
-        assert isinstance(model.classes_, list)
-        assert isinstance(model.classes_[0], np.ndarray)
+        assert isinstance(model.class_labels, list)
+        assert isinstance(model.class_labels[0], np.ndarray)
         # check that classes correspond to the classes in the series
-        assert len(model.classes_) == len(expected_classes)
+        assert len(model.class_labels) == len(expected_classes)
         assert np.array([
             (model_classes == series_classes).all()
-            for model_classes, series_classes in zip(model.classes_, expected_classes)
+            for model_classes, series_classes in zip(
+                model.class_labels, expected_classes
+            )
         ]).all()
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
@@ -530,32 +529,36 @@ class TestClassifierModel:
         model = clf(lags_past_covariates=2, **kwargs)
 
         # Classification forecasting models do not accept continuous labels
+        # (different error messages depending on the classifier)
         with pytest.raises(ValueError):
             model.fit(
                 series=self.sine_univariate1, past_covariates=self.sine_univariate1
             )
 
         # XGBClassifierModel require labels to be integers between 0 and n_classes
-        if type(clf) is XGBClassifierModel:
+        if issubclass(clf, XGBClassifierModel):
             # negative labels
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError) as err:
                 model.fit(
                     series=self.sine_univariate1_cat - 5,
                     past_covariates=self.sine_univariate1,
                 )
+            assert str(err.value).endswith("Expected: [0 1 2], got [-5. -4. -3.]")
 
             # labels not between 0 and n_classes
-            with pytest.raises(ValueError):
+            with pytest.raises(ValueError) as err:
                 model.fit(
-                    series=self.sine_univariate1_cat + 1,
+                    series=self.sine_univariate1_cat.map(
+                        lambda x: np.where(x > 0, x + 1, x)
+                    ),
                     past_covariates=self.sine_univariate1,
                 )
+            assert str(err.value).endswith("Expected: [0 1 2], got [0. 2. 3.]")
 
         # Single label
         if type(clf) in [
             SVC,
             GaussianProcessClassifier,
-            QuadraticDiscriminantAnalysis,
         ] or type(model.model) in [LogisticRegression]:
             with pytest.raises(ValueError):
                 model.fit(
@@ -615,7 +618,7 @@ class TestClassifierModel:
             # check that the categorical index is passed to the fit method and that it is correct
             assert intercepted_args["kwargs"][cat_param_name] == expected_cat_indices
 
-            if clf == CatBoostClassifierModel:
+            if issubclass(clf, CatBoostClassifierModel):
                 # check model has the correct categorical features
                 assert model.model.get_cat_feature_indices() == expected_cat_indices
 
@@ -624,7 +627,7 @@ class TestClassifierModel:
                 assert isinstance(X, pd.DataFrame)
                 for i, col in enumerate(X.columns):
                     assert X[col].dtype == (int if i in expected_cat_indices else float)
-            elif clf == LightGBMClassifierModel:
+            elif issubclass(clf, LightGBMClassifierModel):
                 X, y = intercepted_args["args"]
                 assert isinstance(X, np.ndarray)
             else:

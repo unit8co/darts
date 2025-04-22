@@ -1970,7 +1970,7 @@ class _ClassifierMixin:
     """
 
     @property
-    def classes_(self):
+    def class_labels(self):
         """Returns the classes of the classifier model if the model was previously trained."""
         classes = getattr(self.model, "classes_", None)
         if classes is None:

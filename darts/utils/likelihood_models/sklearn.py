@@ -500,20 +500,20 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         Parameters
         ----------
         model
-            The model to fit the likelihood to. The model is expected to be fitted and have a `classes_` attribute.
+            The model to fit the likelihood to. The model is expected to be fitted and have a `class_labels` attribute.
         """
-        if not hasattr(model, "classes_"):
+        if not hasattr(model, "class_labels"):
             raise_log(
                 ValueError(
-                    "The model must have a `classes_` attribute to fit the likelihood."
+                    "The model must have a `class_labels` attribute to fit the likelihood."
                 ),
                 logger,
             )
 
         # single-labels and single-model tasks should return a array of classes
         # multi-labels or multi-models tasks should return a list of arraya of classes
-        # unify `classes_` to a list of arrays of classes for simplicity
-        classes = model.classes_
+        # unify `class_labels` to a list of arrays of classes for simplicity
+        classes = model.class_labels
         if not isinstance(classes, list):
             classes = [classes]
         self._classes = classes
