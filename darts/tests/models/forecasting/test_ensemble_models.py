@@ -480,7 +480,7 @@ class TestEnsembleModels:
         with pytest.raises(ValueError):
             mixed_ensemble_future_covs.fit(self.series1, past_covariates=self.series2)
 
-        # RegressionModels with different covariates
+        # SKLearnModels with different covariates
         global_ensemble_both_covs = NaiveEnsembleModel([
             LinearRegressionModel(lags=1, lags_past_covariates=[-1]),
             LinearRegressionModel(lags=1, lags_future_covariates=[1]),

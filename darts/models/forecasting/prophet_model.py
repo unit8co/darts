@@ -262,7 +262,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        **kwargs,
     ) -> TimeSeries:
         _ = self._check_seasonality_conditions(future_covariates=future_covariates)
 

@@ -22,8 +22,8 @@ from darts.logging import get_logger
 from darts.models.forecasting.catboost_model import CatBoostClassifierModel
 from darts.models.forecasting.classifier_model import SKLearnClassifierModel
 from darts.models.forecasting.lgbm import LightGBMClassifierModel
-from darts.models.forecasting.regression_model import (
-    RegressionModelWithCategoricalFeatures,
+from darts.models.forecasting.sklearn_model import (
+    SKLearnModelWithCategoricalFeatures,
 )
 from darts.models.forecasting.xgboost import XGBClassifierModel
 from darts.timeseries import TimeSeries
@@ -568,7 +568,7 @@ class TestClassifierModel:
         clf, kwargs = clf_params
         with caplog.at_level(logging.WARNING):
             model = clf(lags=2, **kwargs)
-            if isinstance(model, RegressionModelWithCategoricalFeatures):
+            if isinstance(model, SKLearnModelWithCategoricalFeatures):
                 assert not any(
                     record.levelname == "WARNING" for record in caplog.records
                 )
@@ -586,7 +586,7 @@ class TestClassifierModel:
         [
             (model, config)
             for model, config in process_model_list(classifiers)
-            if issubclass(model, RegressionModelWithCategoricalFeatures)
+            if issubclass(model, SKLearnModelWithCategoricalFeatures)
         ],
     )
     def test_categorical_target_passed_to_fit_correctly(self, clf_params):
