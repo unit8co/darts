@@ -95,8 +95,8 @@ class TrainingDataset(ABC, Dataset):
 
     def _memory_indexer(
         self,
-        target_idx: int,
-        target_series: TimeSeries,
+        series_idx: int,
+        series: TimeSeries,
         shift: int,
         input_chunk_length: int,
         output_chunk_length: int,
@@ -106,20 +106,20 @@ class TrainingDataset(ABC, Dataset):
         sample_weight: Optional[TimeSeries] = None,
     ) -> _SampleIndexType:
         """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
-        sample `i` from `target_idx`.
+        sample `i` from `series_idx`.
 
         Works for all TimeSeries index types: pd.DatetimeIndex, pd.RangeIndex (and the deprecated Int64Index)
 
-        When `target_idx` is observed for the first time, it stores the position of the sample `0` within the full
+        When `series_idx` is observed for the first time, it stores the position of the sample `0` within the full
         target time series and the (start, end) indices of all sub sets.
         This allows to calculate the sub set indices for all future samples `i` by simply adjusting for the difference
         between the positions of sample `i` and sample `0`.
 
         Parameters
         ----------
-        target_idx
+        series_idx
             index of the current target TimeSeries.
-        target_series
+        series
             current target TimeSeries.
         shift
             The number of time steps by which to shift the output chunks relative to the input chunks.
@@ -128,7 +128,7 @@ class TrainingDataset(ABC, Dataset):
         output_chunk_length
             The length of the emitted future output series.
         end_of_output_idx
-            the index where the output chunk of the current sample ends in `target_series`.
+            the index where the output chunk of the current sample ends in `series`.
         past_covariates
             current `past_covariates` TimeSeries.
         future_covariates
@@ -139,8 +139,8 @@ class TrainingDataset(ABC, Dataset):
         # store the start and end index (positions) for series and covariates
         idx_bounds = {}
 
-        # the first time target_idx is observed
-        if target_idx not in self._index_memory:
+        # the first time series_idx is observed
+        if series_idx not in self._index_memory:
             start_of_output_idx = end_of_output_idx - output_chunk_length
             start_of_input_idx = start_of_output_idx - shift
 
@@ -176,12 +176,12 @@ class TrainingDataset(ABC, Dataset):
                 # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
                 # extract actual index value (respects datetime- and integer-based indexes; also from non-zero
                 # start)
-                target_times = target_series._time_index
-                cog_times = cov._time_index
-                start_time = target_times[start]
-                end_time = target_times[end - 1]
+                series_times = series._time_index
+                cov_times = cov._time_index
+                start_time = series_times[start]
+                end_time = series_times[end - 1]
 
-                if start_time not in cog_times or end_time not in cog_times:
+                if start_time not in cov_times or end_time not in cov_times:
                     raise_log(
                         ValueError(
                             f"Missing covariates; could not find `{cov_type.value}` in index "
@@ -191,18 +191,18 @@ class TrainingDataset(ABC, Dataset):
                     )
 
                 # extract the index position (index) from index value
-                cov_start = cog_times.get_loc(start_time)
-                cov_end = cog_times.get_loc(end_time) + 1
+                cov_start = cov_times.get_loc(start_time)
+                cov_end = cov_times.get_loc(end_time) + 1
                 idx_bounds[cov_type] = (cov_start, cov_end)
 
             # sample weight
             if sample_weight is not None:
                 # extract the index position (index) from index value
-                target_time_index = target_series._time_index
+                series_time_index = series._time_index
                 sample_weight_time_index = sample_weight._time_index
 
-                start_time = target_time_index[future_start]
-                end_time = target_time_index[future_end - 1]
+                start_time = series_time_index[future_start]
+                end_time = series_time_index[future_end - 1]
 
                 if (
                     start_time not in sample_weight_time_index
@@ -226,18 +226,18 @@ class TrainingDataset(ABC, Dataset):
                 idx_bounds[FeatureType.SAMPLE_WEIGHT] = (None, None)
 
             # store position of initial sample and all relevant sub set indices
-            self._index_memory[target_idx] = {
+            self._index_memory[series_idx] = {
                 "end_of_output_idx": end_of_output_idx,
                 **idx_bounds,
             }
         else:
             # load position of initial sample and its sub set indices
-            end_of_output_idx_last = self._index_memory[target_idx]["end_of_output_idx"]
+            end_of_output_idx_last = self._index_memory[series_idx]["end_of_output_idx"]
             # evaluate how much the new sample needs to be shifted, and shift all indexes
             idx_shift = end_of_output_idx - end_of_output_idx_last
 
             for series_type in _SERIES_TYPES:
-                start, end = self._index_memory[target_idx][series_type]
+                start, end = self._index_memory[series_idx][series_type]
                 if start is not None:
                     start += idx_shift
                 if end is not None:

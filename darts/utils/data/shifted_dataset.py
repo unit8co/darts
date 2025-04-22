@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 class GenericShiftedDataset(TrainingDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
@@ -30,18 +30,30 @@ class GenericShiftedDataset(TrainingDataset):
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
-        """
-        Contains (past_target, <X>_covariates, static_covariates, sample weights, future_target), where "<X>" is past
-        if `shift_covariates = False` and future otherwise.
-        The past chunks have length `input_chunk_length` and the future chunks have length `output_chunk_length`.
-        The future chunks start `shift` after the past chunks' start.
+        """Generic Shifted Dataset
 
-        This is meant to be a "generic" dataset that can be used to build ShiftedDataset's
-        (when `input_chunk_length = output_chunk_length`), or SequenceDataset's (when `shift = input_chunk_length`).
+        Each sample drawn from this dataset is a eight-element tuple extracted from a specific time window and
+        set of single input `TimeSeries`. The elements are:
+
+        - past_target: target `series` values in the input chunk
+        - past_covariates: `past_covariates` values in the input chunk
+        - historic_future_covariates: `future_covariates` values in the input chunk
+        - future_covariates: `future_covariates` values in the output chunk
+        - static_covariates: `static_covariates` values of the `series`
+        - sample weights: `sample_weight` values in the output chunk
+        - future_target: `series` values in the output chunk
+
+        The output chunk starts `shift` after the input chunk's start.
+
+        The sample index determines:
+
+        - the position / time of the extracted chunks relative to the end of a single target `series`
+        - the index (which series and covariates) to use in case `series` (and covariates) are
+          passed as a sequence of series.
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past covariates.
@@ -54,14 +66,13 @@ class GenericShiftedDataset(TrainingDataset):
         shift
             The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         max_samples_per_ts
-            This is an upper bound on the number of (input, output, input_covariates) tuples that can be produced
-            per time series. It can be used in order to have an upper bound on the total size of the dataset and
-            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
-            creation) to know their sizes, which might be expensive on big datasets.
-            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
-            most recent `max_samples_per_ts` samples will be considered.
+            This is an upper bound on the number of samples that can be produced per time series. It can be used to
+            limit the total size of the dataset and ensure proper sampling. If `None`, will read all individual time
+            series in advance (at dataset creation) to check their sizes. This might be expensive on big datasets.
+            If not `None`, will only keep a maximum of `max_samples_per_ts` samples per series, extracted from the most
+            recent past.
         use_static_covariates
-            Whether to use/include static covariate data from input series.
+            Whether to use/include static covariate data from `series`.
         sample_weight
             Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
             per label (each step in `output_chunk_length`), and per component.
@@ -76,18 +87,18 @@ class GenericShiftedDataset(TrainingDataset):
         super().__init__()
 
         # setup target and sequence
-        target_series = series2seq(target_series)
+        series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
         static_covariates = (
-            target_series[0].static_covariates if use_static_covariates else None
+            series[0].static_covariates if use_static_covariates else None
         )
 
         for cov, cov_type in zip(
             [past_covariates, future_covariates],
             [FeatureType.PAST_COVARIATES, FeatureType.FUTURE_COVARIATES],
         ):
-            if cov is not None and len(target_series) != len(cov):
+            if cov is not None and len(series) != len(cov):
                 name = cov_type.value
                 raise_log(
                     ValueError(
@@ -97,7 +108,7 @@ class GenericShiftedDataset(TrainingDataset):
                     logger=logger,
                 )
 
-        self.target_series = target_series
+        self.series = series
         self.past_covariates = past_covariates
         self.future_covariates = future_covariates
 
@@ -117,9 +128,7 @@ class GenericShiftedDataset(TrainingDataset):
         self.sample_weight = None
         if sample_weight is not None:
             if output_chunk_length > 0:
-                self.sample_weight = _process_sample_weight(
-                    sample_weight, self.target_series
-                )
+                self.sample_weight = _process_sample_weight(sample_weight, self.series)
             else:
                 self.sample_weight = None
 
@@ -127,9 +136,9 @@ class GenericShiftedDataset(TrainingDataset):
         if self.max_samples_per_ts is None:
             # read all time series to get the maximum size
             self.max_samples_per_ts = (
-                max(len(ts) for ts in self.target_series) - self.size_of_both_chunks + 1
+                max(len(ts) for ts in self.series) - self.size_of_both_chunks + 1
             )
-        self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
+        self.ideal_nr_samples = len(self.series) * self.max_samples_per_ts
 
     def __len__(self):
         return self.ideal_nr_samples
@@ -146,19 +155,19 @@ class GenericShiftedDataset(TrainingDataset):
         np.ndarray,
     ]:
         # determine the index of the time series.
-        target_idx = idx // self.max_samples_per_ts
-        target_series = self.target_series[target_idx]
-        target_vals = target_series.random_component_values(copy=False)
+        series_idx = idx // self.max_samples_per_ts
+        series = self.series[series_idx]
+        series_vals = series.random_component_values(copy=False)
 
         # determine the actual number of possible samples in this time series
-        n_samples_in_ts = len(target_vals) - self.size_of_both_chunks + 1
+        n_samples_in_ts = len(series_vals) - self.size_of_both_chunks + 1
 
         if n_samples_in_ts < 1:
             raise_log(
                 ValueError(
                     "The dataset contains some target `series` that are too short to contain "
                     "`max(self.input_chunk_length, self.shift + self.output_chunk_length)` "
-                    f"({target_idx}-th series)"
+                    f"({series_idx}-th series)"
                 ),
                 logger=logger,
             )
@@ -166,38 +175,38 @@ class GenericShiftedDataset(TrainingDataset):
         # determine the index at the end of the output chunk
         # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
         end_of_output_idx = (
-            len(target_series)
-            - (idx - (target_idx * self.max_samples_per_ts)) % n_samples_in_ts
+            len(series)
+            - (idx - (series_idx * self.max_samples_per_ts)) % n_samples_in_ts
         )
 
         # load covariates
         # load covariates
         past_covariates = (
-            self.past_covariates[target_idx] if self.uses_past_covariates else None
+            self.past_covariates[series_idx] if self.uses_past_covariates else None
         )
         future_covariates = (
-            self.future_covariates[target_idx] if self.uses_future_covariates else None
+            self.future_covariates[series_idx] if self.uses_future_covariates else None
         )
 
         # optionally, load sample weight
         sample_weight = None
         if self.sample_weight is not None:
-            sample_weight = self.sample_weight[target_idx]
+            sample_weight = self.sample_weight[series_idx]
             weight_n_comp = sample_weight.n_components
-            if weight_n_comp > 1 and weight_n_comp != target_series.n_components:
+            if weight_n_comp > 1 and weight_n_comp != series.n_components:
                 raise_log(
                     ValueError(
                         f"The number of components in `{FeatureType.SAMPLE_WEIGHT.value}` must "
                         f"either be `1` or match the number of target series components "
-                        f"`{target_series.n_components}` ({target_idx}-th series)."
+                        f"`{series.n_components}` ({series_idx}-th series)."
                     ),
                     logger=logger,
                 )
 
         # get start and end indices (positions) of all feature types for the current sample
         idx_bounds = self._memory_indexer(
-            target_idx=target_idx,
-            target_series=target_series,
+            series_idx=series_idx,
+            series=series,
             shift=self.shift,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
@@ -207,13 +216,13 @@ class GenericShiftedDataset(TrainingDataset):
             sample_weight=sample_weight,
         )
 
-        # extract past target
+        # extract past target series
         start, end = idx_bounds[FeatureType.PAST_TARGET]
-        pt = target_vals[start:end]
+        pt = series_vals[start:end]
 
-        # extract future target
+        # extract future target series
         start, end = idx_bounds[FeatureType.FUTURE_TARGET]
-        ft = target_vals[start:end]
+        ft = series_vals[start:end]
 
         # past cov, historic future cov, future cov, static cov, sample weight
         pc, hfc, fc, sc, sw = None, None, None, None, None
@@ -237,7 +246,7 @@ class GenericShiftedDataset(TrainingDataset):
                     ValueError(
                         f"The dataset contains `{FeatureType.PAST_COVARIATES.value}` "
                         f"whose time axis doesn't allow to obtain the input (and / or output) chunk relative to the "
-                        f"target series."
+                        f"target `series`."
                     ),
                     logger=logger,
                 )
@@ -269,7 +278,7 @@ class GenericShiftedDataset(TrainingDataset):
                     ValueError(
                         f"The dataset contains `{FeatureType.FUTURE_COVARIATES.value}` "
                         "whose time axis doesn't allow to obtain the input (and / or output) chunk relative to the "
-                        "target series."
+                        "target `series`."
                     ),
                     logger=logger,
                 )
@@ -293,14 +302,14 @@ class GenericShiftedDataset(TrainingDataset):
                     ValueError(
                         f"The dataset contains `{FeatureType.SAMPLE_WEIGHT.value}` series "
                         f"whose time axis don't allow to obtain the input (or output) "
-                        f"chunk relative to the target series."
+                        f"chunk relative to the target `series`."
                     ),
                     logger=logger,
                 )
 
         # extract static covariates
         if self.uses_static_covariates_covariates:
-            sc = target_series.static_covariates_values(copy=False)
+            sc = series.static_covariates_values(copy=False)
 
         # (past target, past cov, historic future cov, future cov, static cov, sample weight, future target)
         return pt, pc, hfc, fc, sc, sw, ft
@@ -309,7 +318,7 @@ class GenericShiftedDataset(TrainingDataset):
 class PastCovariatesShiftedDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
@@ -337,11 +346,11 @@ class PastCovariatesShiftedDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         covariates
             Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         length
@@ -369,7 +378,7 @@ class PastCovariatesShiftedDataset(GenericShiftedDataset):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=None,
             input_chunk_length=input_chunk_length,
@@ -384,7 +393,7 @@ class PastCovariatesShiftedDataset(GenericShiftedDataset):
 class FutureCovariatesShiftedDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
@@ -414,11 +423,11 @@ class FutureCovariatesShiftedDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         covariates
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         length
@@ -446,7 +455,7 @@ class FutureCovariatesShiftedDataset(GenericShiftedDataset):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=None,
             future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
@@ -461,7 +470,7 @@ class FutureCovariatesShiftedDataset(GenericShiftedDataset):
 class DualCovariatesShiftedDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
@@ -493,11 +502,11 @@ class DualCovariatesShiftedDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         covariates
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         length
@@ -525,7 +534,7 @@ class DualCovariatesShiftedDataset(GenericShiftedDataset):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=None,
             future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
@@ -540,7 +549,7 @@ class DualCovariatesShiftedDataset(GenericShiftedDataset):
 class MixedCovariatesShiftedDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
@@ -570,11 +579,11 @@ class MixedCovariatesShiftedDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         future_covariates
@@ -605,7 +614,7 @@ class MixedCovariatesShiftedDataset(GenericShiftedDataset):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
@@ -620,7 +629,7 @@ class MixedCovariatesShiftedDataset(GenericShiftedDataset):
 class SplitCovariatesShiftedDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
@@ -650,11 +659,11 @@ class SplitCovariatesShiftedDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         future_covariates
@@ -683,7 +692,7 @@ class SplitCovariatesShiftedDataset(GenericShiftedDataset):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,

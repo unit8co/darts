@@ -13,7 +13,7 @@ from darts.utils.data.shifted_dataset import GenericShiftedDataset
 class PastCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
@@ -41,11 +41,11 @@ class PastCovariatesSequentialDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         input_chunk_length
@@ -76,7 +76,7 @@ class PastCovariatesSequentialDataset(GenericShiftedDataset):
         """
         shift = input_chunk_length + output_chunk_shift
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=None,
             input_chunk_length=input_chunk_length,
@@ -91,7 +91,7 @@ class PastCovariatesSequentialDataset(GenericShiftedDataset):
 class FutureCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
@@ -119,11 +119,11 @@ class FutureCovariatesSequentialDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         future_covariates
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         input_chunk_length
@@ -154,7 +154,7 @@ class FutureCovariatesSequentialDataset(GenericShiftedDataset):
         """
         shift = input_chunk_length + output_chunk_shift
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=None,
             future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
@@ -169,7 +169,7 @@ class FutureCovariatesSequentialDataset(GenericShiftedDataset):
 class DualCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
@@ -198,11 +198,11 @@ class DualCovariatesSequentialDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         future_covariates
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         input_chunk_length
@@ -233,7 +233,7 @@ class DualCovariatesSequentialDataset(GenericShiftedDataset):
         """
         shift = input_chunk_length + output_chunk_shift
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=None,
             future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
@@ -248,7 +248,7 @@ class DualCovariatesSequentialDataset(GenericShiftedDataset):
 class MixedCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
@@ -278,11 +278,11 @@ class MixedCovariatesSequentialDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         future_covariates
@@ -316,7 +316,7 @@ class MixedCovariatesSequentialDataset(GenericShiftedDataset):
         """
         shift = input_chunk_length + output_chunk_shift
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,
@@ -331,7 +331,7 @@ class MixedCovariatesSequentialDataset(GenericShiftedDataset):
 class SplitCovariatesSequentialDataset(GenericShiftedDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         input_chunk_length: int = 12,
@@ -360,11 +360,11 @@ class SplitCovariatesSequentialDataset(GenericShiftedDataset):
 
         Parameters
         ----------
-        target_series
+        series
             One or a sequence of target `TimeSeries`.
         past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `target_series`. Moreover, all
+            the provided sequence must have the same length as that of `series`. Moreover, all
             covariates in the sequence must have a time span large enough to contain all the required slices.
             The joint slicing of the target and covariates is relying on the time axes of both series.
         future_covariates
@@ -398,7 +398,7 @@ class SplitCovariatesSequentialDataset(GenericShiftedDataset):
         """
         shift = input_chunk_length + output_chunk_shift
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             input_chunk_length=input_chunk_length,

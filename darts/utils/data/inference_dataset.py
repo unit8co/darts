@@ -55,7 +55,7 @@ class InferenceDataset(ABC, Dataset):
 
     @staticmethod
     def _covariate_indexer(
-        target_idx: int,
+        series_idx: int,
         past_start: Union[pd.Timestamp, int],
         past_end: Union[pd.Timestamp, int],
         past_covariates: Optional[TimeSeries],
@@ -84,14 +84,18 @@ class InferenceDataset(ABC, Dataset):
                 cov_end = past_end + max(0, n - output_chunk_length) * cov.freq
             else:
                 # future part of future covariates; up until the end of the forecast including `output_chunk_shift`
-                cov_end = past_end + future_covariates.freq * (n + output_chunk_shift)
+                cov_end = (
+                    past_end
+                    + (max(n, output_chunk_length) + output_chunk_shift)
+                    * future_covariates.freq
+                )
 
             # check start requirements for past covariates and historic part of future covariates
             if cov.start_time() > cov_start:
                 raise_log(
                     ValueError(
                         f"For the given forecasting case, the provided `{cov_type.value}_covariates` at "
-                        f"dataset index `{target_idx}` do not extend far enough into the past. The "
+                        f"dataset index `{series_idx}` do not extend far enough into the past. The "
                         f"`{cov_type.value}_covariates` must start at or before time step `{cov_start}`, whereas now "
                         f"they start at time step `{cov.start_time()}`."
                     ),
@@ -102,7 +106,7 @@ class InferenceDataset(ABC, Dataset):
                 raise_log(
                     ValueError(
                         f"For the given forecasting horizon `n={n}`, the provided `{cov_type.value}_covariates` "
-                        f"at dataset index `{target_idx}` do not extend far enough into the future. As `"
+                        f"at dataset index `{series_idx}` do not extend far enough into the future. As `"
                         f"{'n > output_chunk_length' if n > output_chunk_length else 'n <= output_chunk_length'}"
                         f"` the `{cov_type.value}_covariates` must end at or after time step `{cov_end}`, "
                         f"whereas now they end at time step `{cov.end_time()}`."
@@ -120,7 +124,7 @@ class InferenceDataset(ABC, Dataset):
 class GenericInferenceDataset(InferenceDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
@@ -143,7 +147,7 @@ class GenericInferenceDataset(InferenceDataset):
 
         Parameters
         ----------
-        target_series
+        series
             The target series that are to be predicted into the future.
         past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past covariates. If past covariates
@@ -172,11 +176,11 @@ class GenericInferenceDataset(InferenceDataset):
         super().__init__()
 
         # setup target and sequence
-        target_series = series2seq(target_series)
+        series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
         static_covariates = (
-            target_series[0].static_covariates if use_static_covariates else None
+            series[0].static_covariates if use_static_covariates else None
         )
 
         for cov, cov_type in zip(
@@ -184,7 +188,7 @@ class GenericInferenceDataset(InferenceDataset):
             [FeatureType.PAST_COVARIATES, FeatureType.FUTURE_COVARIATES],
         ):
             name = cov_type.value
-            if cov is not None and len(target_series) != len(cov):
+            if cov is not None and len(series) != len(cov):
                 raise_log(
                     ValueError(
                         f"The sequence of `{name}_covariates` must have the same length as "
@@ -210,7 +214,7 @@ class GenericInferenceDataset(InferenceDataset):
                 logger=logger,
             )
 
-        self.target_series = target_series
+        self.series = series
         self.past_covariates = past_covariates
         self.future_covariates = future_covariates
 
@@ -228,10 +232,10 @@ class GenericInferenceDataset(InferenceDataset):
         if bounds is None:
             self.bounds = bounds
             self.cum_lengths = None
-            self.len_preds = len(self.target_series)
+            self.len_preds = len(self.series)
         else:
             self.bounds, self.cum_lengths = _process_predict_start_points_bounds(
-                series=target_series,
+                series=series,
                 bounds=bounds,
                 stride=stride,
             )
@@ -252,44 +256,42 @@ class GenericInferenceDataset(InferenceDataset):
 
     def __getitem__(self, idx: int) -> DatasetOutputType:
         if self.bounds is None:
-            target_idx, target_start_idx, target_end_idx = (
+            series_idx, series_start_idx, series_end_idx = (
                 idx,
                 -self.input_chunk_length,
                 None,
             )
         else:
-            target_idx, target_end_idx = self.find_list_index(
+            series_idx, series_end_idx = self.find_list_index(
                 idx,
                 self.cum_lengths,
                 self.bounds,
                 self.stride,
             )
-            target_start_idx = target_end_idx - self.input_chunk_length
+            series_start_idx = series_end_idx - self.input_chunk_length
 
-        target_series = self.target_series[target_idx]
-        if not len(target_series) >= self.input_chunk_length:
+        series = self.series[series_idx]
+        if not len(series) >= self.input_chunk_length:
             raise_log(
                 ValueError(
                     f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length})."
                 ),
                 logger=logger,
             )
-        past_end = target_series._time_index[
-            target_end_idx - 1 if target_end_idx is not None else -1
+        past_end = series._time_index[
+            series_end_idx - 1 if series_end_idx is not None else -1
         ]
 
         # load covariates
         past_covariates = (
-            self.past_covariates[target_idx] if self.uses_past_covariates else None
+            self.past_covariates[series_idx] if self.uses_past_covariates else None
         )
         future_covariates = (
-            self.future_covariates[target_idx] if self.uses_future_covariates else None
+            self.future_covariates[series_idx] if self.uses_future_covariates else None
         )
 
-        # extract past target
-        pt = target_series.random_component_values(copy=False)[
-            target_start_idx:target_end_idx
-        ]
+        # extract past target series
+        pt = series.random_component_values(copy=False)[series_start_idx:series_end_idx]
 
         # past cov, future past cov, historic future cov, future cov, static cov
         pc, fpc, hfc, fc, sc = None, None, None, None, None
@@ -297,8 +299,8 @@ class GenericInferenceDataset(InferenceDataset):
         if self.uses_past_covariates or self.uses_future_covariates:
             # get start and end indices (integer) of the covariates including historic and future parts
             cov_times = self._covariate_indexer(
-                target_idx=target_idx,
-                past_start=target_series.time_index[target_start_idx],
+                series_idx=series_idx,
+                past_start=series.time_index[series_start_idx],
                 past_end=past_end,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
@@ -339,7 +341,7 @@ class GenericInferenceDataset(InferenceDataset):
 
         # extract static covariates
         if self.use_static_covariates:
-            sc = target_series.static_covariates_values(copy=False)
+            sc = series.static_covariates_values(copy=False)
 
         return (
             pt,
@@ -348,15 +350,15 @@ class GenericInferenceDataset(InferenceDataset):
             hfc,
             fc,
             sc,
-            target_series,
-            past_end + target_series.freq * (1 + self.output_chunk_shift),
+            series,
+            past_end + series.freq * (1 + self.output_chunk_shift),
         )
 
 
 class PastCovariatesInferenceDataset(GenericInferenceDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
         stride: int = 0,
@@ -376,7 +378,7 @@ class PastCovariatesInferenceDataset(GenericInferenceDataset):
 
         Parameters
         ----------
-        target_series
+        series
             The target series that are to be predicted into the future.
         past_covariates
             Optionally, some past-observed covariates that are used for predictions. This argument is required
@@ -401,7 +403,7 @@ class PastCovariatesInferenceDataset(GenericInferenceDataset):
         """
 
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=None,
             n=n,
@@ -417,7 +419,7 @@ class PastCovariatesInferenceDataset(GenericInferenceDataset):
 class FutureCovariatesInferenceDataset(GenericInferenceDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
         stride: int = 0,
@@ -432,7 +434,7 @@ class FutureCovariatesInferenceDataset(GenericInferenceDataset):
 
         Parameters
         ----------
-        target_series
+        series
             The target series that are to be predicted into the future.
         future_covariates
             Optionally, some future-known covariates that are used for predictions. This argument is required
@@ -457,7 +459,7 @@ class FutureCovariatesInferenceDataset(GenericInferenceDataset):
             Whether to use/include static covariate data from input series.
         """
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=None,
             future_covariates=future_covariates,
             n=n,
@@ -473,7 +475,7 @@ class FutureCovariatesInferenceDataset(GenericInferenceDataset):
 class DualCovariatesInferenceDataset(GenericInferenceDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
         stride: int = 0,
@@ -488,7 +490,7 @@ class DualCovariatesInferenceDataset(GenericInferenceDataset):
 
         Parameters
         ----------
-        target_series
+        series
             The target series that are to be predicted into the future.
         future_covariates
             Optionally, some future-known covariates that are used for predictions. This argument is required
@@ -512,7 +514,7 @@ class DualCovariatesInferenceDataset(GenericInferenceDataset):
             Whether to use/include static covariate data from input series.
         """
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=None,
             future_covariates=future_covariates,
             n=n,
@@ -528,7 +530,7 @@ class DualCovariatesInferenceDataset(GenericInferenceDataset):
 class MixedCovariatesInferenceDataset(GenericInferenceDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
@@ -547,7 +549,7 @@ class MixedCovariatesInferenceDataset(GenericInferenceDataset):
 
         Parameters
         ----------
-        target_series
+        series
             The target series that are to be predicted into the future.
         past_covariates
             Optionally, some past-observed covariates that are used for predictions. This argument is required
@@ -574,7 +576,7 @@ class MixedCovariatesInferenceDataset(GenericInferenceDataset):
             Whether to use/include static covariate data from input series.
         """
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             n=n,
@@ -590,7 +592,7 @@ class MixedCovariatesInferenceDataset(GenericInferenceDataset):
 class SplitCovariatesInferenceDataset(GenericInferenceDataset):
     def __init__(
         self,
-        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         n: int = 1,
@@ -608,7 +610,7 @@ class SplitCovariatesInferenceDataset(GenericInferenceDataset):
 
         Parameters
         ----------
-        target_series
+        series
             The target series that are to be predicted into the future.
         past_covariates
             Optionally, some past-observed covariates that are used for predictions. This argument is required
@@ -635,7 +637,7 @@ class SplitCovariatesInferenceDataset(GenericInferenceDataset):
             Whether to use/include static covariate data from input series.
         """
         super().__init__(
-            target_series=target_series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             n=n,
