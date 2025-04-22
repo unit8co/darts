@@ -24,7 +24,6 @@ from darts.models.forecasting.baselines import (
     NaiveMovingAverage,
     NaiveSeasonal,
 )
-from darts.models.forecasting.classifier_model import SKLearnClassifierModel
 from darts.models.forecasting.conformal_models import (
     ConformalNaiveModel,
     ConformalQRModel,
@@ -36,7 +35,11 @@ from darts.models.forecasting.kalman_forecaster import KalmanForecaster
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.random_forest import RandomForest, RandomForestModel
 from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
-from darts.models.forecasting.sklearn_model import RegressionModel, SKLearnModel
+from darts.models.forecasting.sklearn_model import (
+    RegressionModel,
+    SKLearnClassifierModel,
+    SKLearnModel,
+)
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
 

@@ -15,11 +15,9 @@ import pandas as pd
 from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 
 from darts.logging import get_logger, raise_log
-from darts.models.forecasting.classifier_model import (
-    _ForecastingClassifierMixin,
-)
 from darts.models.forecasting.sklearn_model import (
     SKLearnModelWithCategoricalFeatures,
+    _ClassifierMixin,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -432,7 +430,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         )
 
     @property
-    def _supports_native_multioutput(self):
+    def _supports_native_multioutput(self) -> bool:
         # CatBoostRegressor supports multi-output natively, but only with selected loss functions
         # ("MultiRMSE", "MultiRMSEWithMissingValues", ...)
         return CatBoostRegressor._is_multiregression_objective(
@@ -462,7 +460,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         return samples, labels
 
 
-class CatBoostClassifierModel(_ForecastingClassifierMixin, CatBoostModel):
+class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -682,5 +680,5 @@ class CatBoostClassifierModel(_ForecastingClassifierMixin, CatBoostModel):
         return super()._format_samples(samples=samples, labels=labels)
 
     @property
-    def _supports_native_multioutput(self):
+    def _supports_native_multioutput(self) -> bool:
         return False

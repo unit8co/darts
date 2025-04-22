@@ -14,11 +14,11 @@ import numpy as np
 import xgboost as xgb
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.classifier_model import _ForecastingClassifierMixin
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
     SKLearnModel,
+    _ClassifierMixin,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -364,12 +364,12 @@ class XGBModel(SKLearnModel):
         )
 
     @property
-    def _supports_native_multioutput(self):
+    def _supports_native_multioutput(self) -> bool:
         # since xgboost==2.1.0, likelihoods do not support native multi output regression
         return super()._supports_native_multioutput and self.likelihood is None
 
 
-class XGBClassifierModel(_ForecastingClassifierMixin, XGBModel):
+class XGBClassifierModel(_ClassifierMixin, XGBModel):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -549,5 +549,5 @@ class XGBClassifierModel(_ForecastingClassifierMixin, XGBModel):
         )
 
     @property
-    def _supports_native_multioutput(self):
+    def _supports_native_multioutput(self) -> bool:
         return False

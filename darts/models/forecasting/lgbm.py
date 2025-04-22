@@ -16,11 +16,11 @@ from typing import Optional, Union
 import lightgbm as lgb
 
 from darts.logging import get_logger
-from darts.models.forecasting.classifier_model import _ForecastingClassifierMixin
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
     SKLearnModelWithCategoricalFeatures,
+    _ClassifierMixin,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -370,7 +370,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         return "categorical_feature"
 
 
-class LightGBMClassifierModel(_ForecastingClassifierMixin, LightGBMModel):
+class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -574,6 +574,6 @@ class LightGBMClassifierModel(_ForecastingClassifierMixin, LightGBMModel):
         )
 
     @property
-    def _supports_native_multioutput(self):
+    def _supports_native_multioutput(self) -> bool:
         # LightGBM does not support multiclass natively currently (4.6.0)
         return False

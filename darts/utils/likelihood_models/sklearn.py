@@ -475,7 +475,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         random_state: Optional[int] = None,
     ):
         """
-        Classes probability likelihood.
+        Class probability likelihood.
         Likelihood to predict the probability of each class for a forecasting classification task.
 
         Parameters

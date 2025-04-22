@@ -20,9 +20,9 @@ from sklearn.tree import DecisionTreeClassifier
 
 from darts.logging import get_logger
 from darts.models.forecasting.catboost_model import CatBoostClassifierModel
-from darts.models.forecasting.classifier_model import SKLearnClassifierModel
 from darts.models.forecasting.lgbm import LightGBMClassifierModel
 from darts.models.forecasting.sklearn_model import (
+    SKLearnClassifierModel,
     SKLearnModelWithCategoricalFeatures,
 )
 from darts.models.forecasting.xgboost import XGBClassifierModel
@@ -190,9 +190,8 @@ class TestClassifierModel:
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
 
-        # accessing classes_ before training raises an error
-        with pytest.raises(AttributeError):
-            model.classes_
+        # accessing classes_ before training return None
+        assert model.classes_ is None
 
         # training the model
         model.fit(
@@ -577,7 +576,8 @@ class TestClassifierModel:
                 assert any(record.levelname == "WARNING" for record in caplog.records)
                 assert any([
                     message.startswith(
-                        "This model will treat the target `series` data/label as a numerical feature"
+                        "This model will treat target `series` lagged values as "
+                        "numeric input features (and not categorical)."
                     )
                     for message in caplog.messages
                 ])
