@@ -267,7 +267,9 @@ class EnsembleModel(GlobalForecastingModel):
         predictions = [
             model._predict_wrapper(
                 n=n,
-                series=series,
+                series=series[: -model.output_chunk_shift]
+                if model.output_chunk_shift
+                else series,
                 past_covariates=(
                     past_covariates if model.supports_past_covariates else None
                 ),

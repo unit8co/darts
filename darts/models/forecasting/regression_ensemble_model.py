@@ -318,12 +318,36 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # spare train_n_points points to serve as regression target
         is_single_series = isinstance(series, TimeSeries)
+
+        # check if the any forecasting model has output_chunk_shift > 0
+        has_output_chunk_shift = any([
+            model.output_chunk_shift > 0 for model in self.forecasting_models
+        ])
+
+        if has_output_chunk_shift:
+            # get the minimum output_chunk_length of the forecasting models
+            min_forecasting_model_output_chunk_length = min([
+                model.output_chunk_length for model in self.forecasting_models
+            ])
+
+        # ensure every train_n_points not greater than the output_chunk_length when has_output_chunk_shift
         if self.train_n_points == -1:
             if is_single_series:
-                train_n_points = [len(series)]
+                train_n_points = (
+                    [min(len(series), min_forecasting_model_output_chunk_length)]
+                    if has_output_chunk_shift
+                    else [len(series)]
+                )
             else:
                 # maximize each series usage
-                train_n_points = [len(ts) for ts in series]
+                train_n_points = (
+                    [
+                        min(len(ts), min_forecasting_model_output_chunk_length)
+                        for ts in series
+                    ]
+                    if has_output_chunk_shift
+                    else [len(ts) for ts in series]
+                )
 
             # shift by the forecasting models' largest input length
             all_shifts = []
@@ -373,6 +397,19 @@ class RegressionEnsembleModel(EnsembleModel):
             logger,
         )
 
+        raise_if(
+            has_output_chunk_shift
+            and self.regression_model.output_chunk_length
+            > min_forecasting_model_output_chunk_length - input_shift,
+            f"the `output_chunk_length` of the regression model {self.regression_model.output_chunk_length} is too big "
+            "when `output_chunk_shift` > 0 in the forecasting models "
+            "(must be strictly smaller than or equal to the min `output_chunk_length` of "
+            f"the forecasting models {min_forecasting_model_output_chunk_length} minus the max lag of "
+            f"the forecasting models {input_shift} which equals to "
+            f"{min_forecasting_model_output_chunk_length - input_shift})",
+            logger,
+        )
+
         if is_single_series:
             forecast_training = series[: -self.train_n_points]
             regression_target = series[-self.train_n_points :]
@@ -407,7 +444,7 @@ class RegressionEnsembleModel(EnsembleModel):
             num_samples=self.train_num_samples,
         )
 
-        if self.train_using_historical_forecasts:
+        if self.train_using_historical_forecasts and not has_output_chunk_shift:
             predictions = self._make_multiple_historical_forecasts(
                 train_n_points=self.train_n_points,
                 series=series,
