@@ -9,11 +9,13 @@ from typing import Optional
 import numpy as np
 
 from darts.logging import get_logger, raise_log
+from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models.base import (
     Likelihood,
     LikelihoodType,
     quantile_names,
 )
+from darts.utils.multioutput import MultiOutputClassifier
 from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
@@ -412,6 +414,189 @@ class QuantileRegression(SKLearnLikelihood):
         )
 
 
+class ClassProbabilityLikelihood(SKLearnLikelihood):
+    def __init__(
+        self,
+        n_outputs: int,
+        random_state: Optional[int] = None,
+    ):
+        """
+        Class probability likelihood.
+        Likelihood to predict the probability of each class for a forecasting classification task.
+
+        Parameters
+        ----------
+        n_outputs
+            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
+            `output_chunk_length`.
+        random_state
+            Optionally, control the randomness of the sampling.
+        """
+        super().__init__(
+            likelihood_type=LikelihoodType.ClassProbability,
+            n_outputs=n_outputs,
+            random_state=random_state,
+            parameter_names=[],
+        )
+        self._index_first_param_per_component: Optional[np.ndarray] = None
+
+    def fit(self, model):
+        """
+        Fits the likelihood to the model.
+
+        Parameters
+        ----------
+        model
+            The model to fit the likelihood to. The model is expected to be fitted and have a `class_labels` attribute.
+        """
+        if not hasattr(model, "class_labels"):
+            raise_log(
+                ValueError(
+                    "The model must have a `class_labels` attribute to fit the likelihood."
+                ),
+                logger,
+            )
+
+        # single-labels and single-model tasks should return a array of classes
+        # multi-labels or multi-models tasks should return a list of arraya of classes
+        # unify `class_labels` to a list of arrays of classes for simplicity
+        classes = model.class_labels
+        if not isinstance(classes, list):
+            classes = [classes]
+        # check that the classes are consistent across estimators for same component
+        MultiOutputClassifier.check_classes_across_estimators(self._n_outputs, classes)
+        self._classes = classes
+
+        # estimators/classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ...]
+        # Since classes are same across chunk for same component, we can just take the first chunk for each component
+        num_components = len(classes) // self._n_outputs
+
+        # index of the first parameter of each component in the likelihood parameters
+        # e.g. [0, 2, 4, 6] for 3 components with 2 parameters each
+        self._index_first_param_per_component = np.insert(
+            np.cumsum([
+                len(estimator_classes)
+                for estimator_classes in self._classes[:num_components]
+            ]),
+            0,
+            0,
+        )
+
+        self._parameter_names = [
+            f"p_{int(label)}" for i in range(num_components) for label in classes[i]
+        ]
+        return self
+
+    def component_names(self, input_series: TimeSeries) -> list[str]:
+        """Generates names for the parameters of the Likelihood."""
+        # format: <component_name>_p_<label>
+        return [
+            f"{component_name}_{parameter_name}"
+            for i, component_name in enumerate(input_series.components)
+            for parameter_name in self.parameter_names[
+                self._index_first_param_per_component[
+                    i
+                ] : self._index_first_param_per_component[i + 1]
+            ]
+        ]
+
+    def _estimator_predict(
+        self,
+        model,
+        x: np.ndarray,
+        **kwargs,
+    ) -> np.ndarray:
+        # list of length num_estimator of numpy arrays of shape (n_samples, n_classes)
+        # or (n_classes,) if n_samples == 1
+        # num_estimator = n_components * output_chunk_length (if multi_model)
+        model_output = model.model.predict_proba(x, **kwargs)
+        if not isinstance(model_output, list):
+            model_output = list(model_output)
+
+        # shape: (n_components * output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        class_proba = np.zeros((
+            len(model_output),
+            model_output[0].shape[0] if len(model_output[0].shape) > 1 else 1,
+            self.num_parameters,
+        ))
+
+        # filling the class_proba array with the predicted probabilities
+        for i, params_proba in enumerate(model_output):
+            comp_index = i % self._n_outputs
+            class_proba[
+                i,
+                :,
+                self._index_first_param_per_component[
+                    comp_index
+                ] : self._index_first_param_per_component[comp_index + 1],
+            ] = params_proba
+
+        # shape (n_components * output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        # n_likelihood_parameters is the sum of the number of classes for each component
+        return class_proba
+
+    def sample(self, model_output: np.ndarray) -> np.ndarray:
+        """
+        Samples a prediction from the likelihood distribution and the predicted parameters.
+        """
+        # shape (n_components * output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        n_entries, n_samples, n_params = model_output.shape
+
+        # shape (n_components * output_chunk_length, n_series * n_samples)
+        preds = np.empty((n_entries, n_samples), dtype=int)
+
+        for i in range(n_entries):
+            for j in range(n_samples):
+                comp_index = i % self._n_outputs
+                comp_params_start, comp_params_end = (
+                    self._index_first_param_per_component[comp_index],
+                    self._index_first_param_per_component[comp_index + 1],
+                )
+                preds[i, j] = self._rng.choice(
+                    self._classes[i],
+                    # size=(model_output.shape[1]),
+                    p=model_output[i, j, comp_params_start:comp_params_end],
+                    replace=True,
+                )
+
+        # reshape to (n_series * n_samples, n_components, output_chunk_length, n_components)
+        return preds.reshape(n_samples, self._n_outputs, -1)
+
+    def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
+        """
+        Returns the distribution parameters as a array, extracted from the raw model outputs.
+        """
+        n_samples = model_output.shape[1]
+
+        # reshape to (n_series * n_samples, output_chunk_length, n_likelihood_parameters)
+        params_reshaped = model_output.transpose(1, 0, 2).reshape(
+            n_samples, self._n_outputs, -1
+        )
+        return params_reshaped
+
+    def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
+        """
+        Gets the median prediction per component extracted from the model output.
+        """
+        # shape (n_components * output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        n_entries, n_samples, n_params = model_output.shape
+
+        # shape (n_components * output_chunk_length, n_series * n_samples)
+        preds = np.empty((n_entries, n_samples), dtype=int)
+
+        # get the class with the highest probability
+        indices = np.argmax(model_output, axis=2)
+        for i in range(n_entries):
+            component_index = i // self._n_outputs
+            class_index = (
+                indices[i] - self._index_first_param_per_component[component_index]
+            )
+            preds[i] = self._classes[i][class_index]
+
+        # reshape to (n_series * n_samples, output_chunk_length, n_components)
+        return preds.reshape(n_samples, self._n_outputs, -1)
+
+
 def _get_likelihood(
     likelihood: Optional[str],
     n_outputs: int,
@@ -466,121 +651,3 @@ def _get_likelihood(
         return ClassProbabilityLikelihood(
             n_outputs=n_outputs, random_state=random_state
         )
-
-
-class ClassProbabilityLikelihood(SKLearnLikelihood):
-    def __init__(
-        self,
-        n_outputs: int,
-        random_state: Optional[int] = None,
-    ):
-        """
-        Class probability likelihood.
-        Likelihood to predict the probability of each class for a forecasting classification task.
-
-        Parameters
-        ----------
-        n_outputs
-            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
-            `output_chunk_length`.
-        random_state
-            Optionally, control the randomness of the sampling.
-        """
-        super().__init__(
-            likelihood_type=LikelihoodType.ClassProbability,
-            n_outputs=n_outputs,
-            random_state=random_state,
-            parameter_names=[],
-        )
-
-    def fit(self, model):
-        """
-        Fits the likelihood to the model.
-
-        Parameters
-        ----------
-        model
-            The model to fit the likelihood to. The model is expected to be fitted and have a `class_labels` attribute.
-        """
-        if not hasattr(model, "class_labels"):
-            raise_log(
-                ValueError(
-                    "The model must have a `class_labels` attribute to fit the likelihood."
-                ),
-                logger,
-            )
-
-        # single-labels and single-model tasks should return a array of classes
-        # multi-labels or multi-models tasks should return a list of arraya of classes
-        # unify `class_labels` to a list of arrays of classes for simplicity
-        classes = model.class_labels
-        if not isinstance(classes, list):
-            classes = [classes]
-        self._classes = classes
-
-        unique_classes = {label for comp_classes in classes for label in comp_classes}
-        self._parameter_names = [f"p_{int(label)}" for label in unique_classes]
-        return self
-
-    def _estimator_predict(
-        self,
-        model,
-        x: np.ndarray,
-        **kwargs,
-    ) -> np.ndarray:
-        model_output = np.array(model.model.predict_proba(x, **kwargs))
-
-        output_dim = len(model_output.shape)
-
-        # univariate & single-chunk output
-        if output_dim <= 2:
-            # embedding well shaped 2D output into 3D
-            model_output = np.expand_dims(model_output, axis=0)
-        # shape (n_components * output_chunk_length, n_series * n_samples, n_classes)
-        return model_output
-
-    def sample(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Samples a prediction from the likelihood distribution and the predicted parameters.
-        """
-        # model_output is a 3D array of shape (n_components * output_chunk_length, n_series * n_samples, n_classes)
-
-        n_entries, n_samples, n_params = model_output.shape
-
-        preds = np.empty((model_output.shape[0], model_output.shape[1]), dtype=int)
-
-        for i in range(model_output.shape[0]):
-            preds[i] = self._rng.choice(
-                self._classes[i],
-                size=(model_output.shape[1]),
-                p=model_output[i],
-                replace=True,
-            )
-        return preds.reshape(n_samples, self._n_outputs, -1)
-
-    def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Returns the distribution parameters as a array, extracted from the raw model outputs.
-        """
-        n_samples = model_output.shape[1]
-
-        # reshape to (n_series * n_samples, output_chunk_length, n_components * n_classes)
-        params_reshaped = model_output.transpose(1, 0, 2).reshape(
-            n_samples, self._n_outputs, -1
-        )
-        return params_reshaped
-
-    def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
-        """
-        Gets the median prediction per component extracted from the model output.
-        """
-        # model_output is a 3D array of shape (n_components * output_chunk_length, n_series * n_samples, n_classes)
-        preds = np.empty((model_output.shape[0], model_output.shape[1]), dtype=int)
-
-        # get the class with the highest probability
-        indices = np.argmax(model_output, axis=2)
-        for i in range(indices.shape[0]):
-            preds[i] = self._classes[i][indices[i]]
-
-        # reshape to (n_series * n_samples, output_chunk_length, n_components)
-        return preds.reshape(model_output.shape[1], self._n_outputs, -1)
