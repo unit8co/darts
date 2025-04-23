@@ -731,12 +731,14 @@ class TestProbabilisticClassifierModels:
         )
 
     @pytest.mark.parametrize(
-        "clf_params",
-        process_model_list(probabilistic_classifiers),
+        "clf_params", process_model_list(probabilistic_classifiers)
     )
     def test_class_proba_likelihood_median_pred_is_same_than_no_likelihood(
         self, clf_params
     ):
+        # check that the model's prediction is the same with and without the likelihood
+        # when predict_likelihood_parameters=False
+        # Meaning _get_median_prediction on top on predict_proba produce the same output than the model predict
         clf, kwargs = clf_params
         model = clf(lags=2, **kwargs, likelihood=None)
         model_likelihood = clf(
@@ -752,15 +754,37 @@ class TestProbabilisticClassifierModels:
             str(err.value) == "`predict_likelihood_parameters=True` is only"
             " supported for probabilistic models fitted with a likelihood."
         )
+        # univariate series
+        model_likelihood.fit(self.sine_univariate1_cat)
+        assert model_likelihood.predict(5) == model.predict(5)
+
+        # multivariate series
+        model.fit(self.sine_multiseries1_cat)
+        model_likelihood.fit(self.sine_multiseries1_cat)
+        assert model_likelihood.predict(5) == model.predict(5)
+
+        # multi series
+        model.fit(series=[self.sine_univariate1_cat, self.sine_univariate1_cat])
+        model_likelihood.fit(
+            series=[self.sine_univariate1_cat, self.sine_univariate1_cat]
+        )
+        assert model_likelihood.predict(5) == model.predict(5)
+
+    @pytest.mark.parametrize(
+        "clf_params", process_model_list(probabilistic_classifiers)
+    )
+    def test_class_probabilities_are_valid(self, clf_params):
+        clf, kwargs = clf_params
+        model_likelihood = clf(
+            lags=2,
+            **kwargs,
+        )
 
         model_likelihood.fit(self.sine_univariate1_cat)
+
         # model_likelihood has ClassProbability likelihood
         probas = model_likelihood.predict(1, predict_likelihood_parameters=True)
         # Sum of class proba is 1
         assert probas.sum(axis=1).values()[0][0] == pytest.approx(1)
         # As many probabilties as classes
         assert len(probas.components) == 3
-
-        # Without predict_likelihood_parameters model predict same class with and without the likelihood
-        # Meaning _get_median_prediction on top on predict_proba produce the same output than the model predict
-        assert model_likelihood.predict(5) == model.predict(5)
