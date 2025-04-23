@@ -324,11 +324,10 @@ class RegressionEnsembleModel(EnsembleModel):
             model.output_chunk_shift > 0 for model in self.forecasting_models
         ])
 
-        if has_output_chunk_shift:
-            # get the minimum output_chunk_length of the forecasting models
-            min_forecasting_model_output_chunk_length = min([
-                model.output_chunk_length for model in self.forecasting_models
-            ])
+        # get the minimum output_chunk_length of the forecasting models
+        min_forecasting_model_output_chunk_length = min([
+            model.output_chunk_length for model in self.forecasting_models
+        ])
 
         # ensure every train_n_points not greater than the output_chunk_length when has_output_chunk_shift
         if self.train_n_points == -1:
