@@ -918,6 +918,8 @@ class SKLearnModel(GlobalForecastingModel):
                 "eval_weight_name": val_weight_name,
                 "n_jobs": n_jobs_multioutput_wrapper,
             }
+            if self._model_type == ModelType.FORECASTING_CLASSIFIER:
+                mor_kwargs["output_chunk_length"] = self._output_chunk_length
 
             self.model = get_multioutput_estimator_cls(self._model_type)(
                 self.model, **mor_kwargs

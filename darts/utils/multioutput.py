@@ -1,5 +1,6 @@
 from typing import Optional
 
+import numpy as np
 from sklearn.base import is_classifier
 from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
@@ -29,6 +30,7 @@ class MultiOutputMixin:
         *args,
         eval_set_name: Optional[str] = None,
         eval_weight_name: Optional[str] = None,
+        output_chunk_length: Optional[int] = None,
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
@@ -37,6 +39,7 @@ class MultiOutputMixin:
         self.estimators_ = None
         self.n_features_in_ = None
         self.feature_names_in_ = None
+        self._output_chunk_length = output_chunk_length
 
     def fit(self, X, y, sample_weight=None, **fit_params):
         """Fit the model to data, separately for each output variable.
@@ -153,7 +156,32 @@ class MultiOutputClassifier(MultiOutputMixin, sk_MultiOutputClassifier):
     def fit(self, X, y, sample_weight=None, **fit_params):
         super().fit(X=X, y=y, sample_weight=sample_weight, **fit_params)
         self.classes_ = [estimator.classes_ for estimator in self.estimators_]
+
+        self.check_classes_across_estimators(self._output_chunk_length, self.classes_)
         return self
+
+    @staticmethod
+    def check_classes_across_estimators(
+        output_chunk_length: int, classes: list[np.ndarray[int]]
+    ):
+        # estimators/classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ...]
+        # estimator dealing with same component should have same classes
+        if output_chunk_length > 1:
+            num_components = len(classes) // output_chunk_length
+            for i in range(output_chunk_length):
+                if any(
+                    not np.array_equal(classes[i], estimator_classes)
+                    for estimator_classes in classes[i::num_components]
+                ):
+                    raise_log(
+                        ValueError(
+                            "Models for the same target component were not trained on the same classes. "
+                            "This might be due to target series being too short or "
+                            "to the periodicity in the target series matching the number of estimator.\n"
+                            f"For component {i} classes are: "
+                            f"{[estimator_classes for estimator_classes in classes[i::num_components]]}"
+                        )
+                    )
 
 
 def get_multioutput_estimator_cls(model_type: ModelType) -> type[MultiOutputMixin]:
