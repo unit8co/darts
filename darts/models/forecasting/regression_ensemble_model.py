@@ -324,10 +324,22 @@ class RegressionEnsembleModel(EnsembleModel):
             model.output_chunk_shift > 0 for model in self.forecasting_models
         ])
 
-        # get the minimum output_chunk_length of the forecasting models
-        min_forecasting_model_output_chunk_length = min([
-            model.output_chunk_length for model in self.forecasting_models
-        ])
+        if has_output_chunk_shift:
+            # get the minimum output_chunk_length of the forecasting models
+            min_forecasting_model_output_chunk_length = min([
+                model.output_chunk_length for model in self.forecasting_models
+            ])
+
+        # shift by the forecasting models' largest input length
+        all_shifts = []
+        # when it's not clearly defined, extreme_lags returns
+        # `min_train_series_length` for the LocalForecastingModels
+        for model in self.forecasting_models:
+            min_target_lag, _, _, _, _, _, _, _ = model.extreme_lags
+            if min_target_lag is not None:
+                all_shifts.append(-min_target_lag)
+
+        input_shift = max(all_shifts)
 
         # ensure every train_n_points not greater than the output_chunk_length when has_output_chunk_shift
         if self.train_n_points == -1:
@@ -348,16 +360,6 @@ class RegressionEnsembleModel(EnsembleModel):
                     else [len(ts) for ts in series]
                 )
 
-            # shift by the forecasting models' largest input length
-            all_shifts = []
-            # when it's not clearly defined, extreme_lags returns
-            # `min_train_series_length` for the LocalForecastingModels
-            for model in self.forecasting_models:
-                min_target_lag, _, _, _, _, _, _, _ = model.extreme_lags
-                if min_target_lag is not None:
-                    all_shifts.append(-min_target_lag)
-
-            input_shift = max(all_shifts)
             idx_series_too_short = []
             tmp_train_n_points = []
             for idx, ts_length in enumerate(train_n_points):
@@ -396,18 +398,18 @@ class RegressionEnsembleModel(EnsembleModel):
             logger,
         )
 
-        raise_if(
-            has_output_chunk_shift
-            and self.regression_model.output_chunk_length
-            > min_forecasting_model_output_chunk_length - input_shift,
-            f"the `output_chunk_length` of the regression model {self.regression_model.output_chunk_length} is too big "
-            "when `output_chunk_shift` > 0 in the forecasting models "
-            "(must be strictly smaller than or equal to the min `output_chunk_length` of "
-            f"the forecasting models {min_forecasting_model_output_chunk_length} minus the max lag of "
-            f"the forecasting models {input_shift} which equals to "
-            f"{min_forecasting_model_output_chunk_length - input_shift})",
-            logger,
-        )
+        if has_output_chunk_shift:
+            raise_if(
+                self.regression_model.output_chunk_length
+                > min_forecasting_model_output_chunk_length - input_shift,
+                f"the `output_chunk_length` of the regression model {self.regression_model.output_chunk_length} "
+                "is too big when `output_chunk_shift` > 0 in the forecasting models "
+                "(must be strictly smaller than or equal to the min `output_chunk_length` of "
+                f"the forecasting models {min_forecasting_model_output_chunk_length} minus the max lag of "
+                f"the forecasting models {input_shift} which equals to "
+                f"{min_forecasting_model_output_chunk_length - input_shift})",
+                logger,
+            )
 
         if is_single_series:
             forecast_training = series[: -self.train_n_points]
