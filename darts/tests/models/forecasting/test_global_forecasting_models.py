@@ -666,7 +666,7 @@ class TestGlobalForecastingModels:
         model.fit([self.ts_pass_train, self.ts_pass_train_1])
 
         with pytest.raises(ValueError):
-            model.predict_from_dataset(n=1, input_series_dataset=unsupported_type)
+            model.predict_from_dataset(n=1, dataset=unsupported_type)
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_prediction_with_different_n(self, config):

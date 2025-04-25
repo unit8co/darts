@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 
 _SampleIndexType = dict[FeatureType, tuple[Optional[int], Optional[int]]]
 
-DatasetOutputType = tuple[
+TrainingSample = tuple[
     np.ndarray,
     Optional[np.ndarray],
     Optional[np.ndarray],
@@ -40,37 +40,18 @@ _SERIES_TYPES = [
 class TrainingDataset(ABC, Dataset):
     def __init__(self):
         """
-        Super-class for all training datasets for torch models in Darts. These include
+        Super-class for all training datasets for torch models in Darts.
 
-        * "PastCovariates" datasets (for PastCovariatesTorchModel): containing (past_target,
-                                                                                past_covariates,
-                                                                                static_covariates,
-                                                                                future_target)
-        * "FutureCovariates" datasets (for FutureCovariatesTorchModel): containing (past_target,
-                                                                                    future_covariates,
-                                                                                    static_covariates,
-                                                                                    future_target)
-        * "DualCovariates" datasets (for DualCovariatesTorchModel): containing (past_target,
-                                                                                historic_future_covariates,
-                                                                                future_covariates,
-                                                                                static_covariates,
-                                                                                future_target)
-        * "MixedCovariates" datasets (for MixedCovariatesTorchModel): containing (past_target,
-                                                                                  past_covariates,
-                                                                                  historic_future_covariates,
-                                                                                  future_covariates,
-                                                                                  static_covariates,
-                                                                                  future_target)
-        * "SplitCovariates" datasets (for SplitCovariatesTorchModel): containing (past_target,
-                                                                                  past_covariates,
-                                                                                  future_covariates,
-                                                                                  static_covariates,
-                                                                                  future_target)
+        Each sample drawn from this dataset must be an eight-element tuple extracted from a specific time window and
+        set of single input `TimeSeries`. The elements are:
 
-        The covariates are optional and can be `None`.
-
-        This is meant to be used for training (or validation), all data except `future_target` represents model
-        inputs (`future_target` is the output the model are trained to predict).
+        - past_target: target `series` values in the input chunk
+        - past_covariates: Optional `past_covariates` values in the input chunk
+        - historic_future_covariates: Optional `future_covariates` values in the input chunk
+        - future_covariates: Optional `future_covariates` values in the output chunk
+        - static_covariates: Optional `static_covariates` values of the `series`
+        - sample_weight: Optional `sample_weight` values in the output chunk
+        - future_target: `series` values in the output chunk
 
         Darts `TorchForecastingModel`s can be fit from instances of `TrainingDataset` of the right type using the
         `fit_from_dataset()` method.
@@ -90,7 +71,7 @@ class TrainingDataset(ABC, Dataset):
         pass
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> DatasetOutputType:
+    def __getitem__(self, idx: int) -> TrainingSample:
         pass
 
     def _memory_indexer(
@@ -105,8 +86,8 @@ class TrainingDataset(ABC, Dataset):
         future_covariates: Optional[TimeSeries] = None,
         sample_weight: Optional[TimeSeries] = None,
     ) -> _SampleIndexType:
-        """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
-        sample `i` from `series_idx`.
+        """Returns the (start, end) indices for each feature type (past target, future target, past covariates,
+        historic future covariates, future covariates, and sample weight) of the current sample `i` from `series_idx`.
 
         Works for all TimeSeries index types: pd.DatetimeIndex, pd.RangeIndex (and the deprecated Int64Index)
 

@@ -14,10 +14,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-
-MixedCovariatesTrainTensorType = tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
+from darts.utils.data import TrainingSample
 
 
 class _MovingAvg(nn.Module):
@@ -469,9 +466,7 @@ class DLinearModel(MixedCovariatesTorchModel):
         self.const_init = const_init
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> torch.nn.Module:
+    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
         # samples are made of
         # (past_target, past_covariates, historic_future_covariates,
         #  future_covariates, static_covariates, future_target)
@@ -510,10 +505,6 @@ class DLinearModel(MixedCovariatesTorchModel):
             const_init=self.const_init,
             **self.pl_module_params,
         )
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
 
     @property
     def supports_static_covariates(self) -> bool:

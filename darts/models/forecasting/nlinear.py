@@ -14,6 +14,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data import TrainingSample
 
 
 class _NLinearModule(PLMixedCovariatesModule):
@@ -424,7 +425,7 @@ class NLinearModel(MixedCovariatesTorchModel):
             "normalize = True cannot be used with probabilistic NLinearModel",
         )
 
-    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
         # samples are made of
         # (past_target, past_covariates, historic_future_covariates,
         #  future_covariates, static_covariates, future_target)
@@ -464,10 +465,6 @@ class NLinearModel(MixedCovariatesTorchModel):
             normalize=self.normalize,
             **self.pl_module_params,
         )
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
 
     @property
     def supports_static_covariates(self) -> bool:

@@ -25,13 +25,7 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
-from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
-from darts.utils.data.training_dataset import MixedCovariatesTrainingDataset
-
-MixedCovariatesTrainTensorType = tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
-
+from darts.utils.data import TrainingSample
 
 logger = get_logger(__name__)
 
@@ -220,9 +214,7 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         )
 
     @abstractmethod
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TrainingSample) -> _GlobalNaiveModule:
         pass
 
     def _verify_predict_sample(self, predict_sample: tuple):
@@ -243,33 +235,9 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         return True
 
     @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    @property
     def _requires_training(self) -> bool:
         # naive models do not have to be trained.
         return False
-
-    def _build_train_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
-        max_samples_per_ts: Optional[int],
-    ) -> MixedCovariatesTrainingDataset:
-        return MixedCovariatesSequentialDataset(
-            target_series=target,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=0,
-            output_chunk_shift=self.output_chunk_shift,
-            max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self.uses_static_covariates,
-            sample_weight=sample_weight,
-        )
 
 
 class _NoCovariatesMixin:
@@ -448,9 +416,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
             )
         self.agg_fn = agg_fn
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveAggregateModule(agg_fn=self.agg_fn, **self.pl_module_params)
 
 
@@ -548,9 +514,7 @@ class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveSeasonalModule(**self.pl_module_params)
 
 
@@ -661,7 +625,5 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveDrift(**self.pl_module_params)

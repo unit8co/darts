@@ -6,11 +6,9 @@ Shifted Training Dataset
 from collections.abc import Sequence
 from typing import Optional, Union
 
-import numpy as np
-
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.training_dataset import TrainingDataset
+from darts.utils.data.training_dataset import TrainingDataset, TrainingSample
 from darts.utils.data.utils import FeatureType, _process_sample_weight
 from darts.utils.ts_utils import series2seq
 
@@ -32,15 +30,15 @@ class GenericShiftedDataset(TrainingDataset):
     ):
         """Generic Shifted Dataset
 
-        Each sample drawn from this dataset is a eight-element tuple extracted from a specific time window and
+        Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
         set of single input `TimeSeries`. The elements are:
 
         - past_target: target `series` values in the input chunk
-        - past_covariates: `past_covariates` values in the input chunk
-        - historic_future_covariates: `future_covariates` values in the input chunk
-        - future_covariates: `future_covariates` values in the output chunk
-        - static_covariates: `static_covariates` values of the `series`
-        - sample weights: `sample_weight` values in the output chunk
+        - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)
+        - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)
+        - future_covariates: `future_covariates` values in the output chunk (`None` if `future_covariates=None`)
+        - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)
+        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
         - future_target: `series` values in the output chunk
 
         The output chunk starts `shift` after the input chunk's start.
@@ -60,9 +58,9 @@ class GenericShiftedDataset(TrainingDataset):
         future_covariates
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates.
         input_chunk_length
-            The length of the emitted past series.
+            The length of the target series the model takes as input.
         output_chunk_length
-            The length of the emitted future series.
+            The length of the target series the model emits as output.
         shift
             The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         max_samples_per_ts
@@ -72,7 +70,7 @@ class GenericShiftedDataset(TrainingDataset):
             If not `None`, will only keep a maximum of `max_samples_per_ts` samples per series, extracted from the most
             recent past.
         use_static_covariates
-            Whether to use/include static covariate data from `series`.
+            Whether to use/include static covariate data from the target `series`.
         sample_weight
             Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
             per label (each step in `output_chunk_length`), and per component.
@@ -143,17 +141,7 @@ class GenericShiftedDataset(TrainingDataset):
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(
-        self, idx
-    ) -> tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
+    def __getitem__(self, idx) -> TrainingSample:
         # determine the index of the time series.
         series_idx = idx // self.max_samples_per_ts
         series = self.series[series_idx]

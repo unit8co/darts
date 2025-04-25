@@ -18,7 +18,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
-from darts.utils.data import PastCovariatesShiftedDataset
+from darts.utils.data import PastCovariatesShiftedDataset, TrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -505,11 +505,7 @@ class TCNModel(PastCovariatesTorchModel):
         self.dropout = dropout
         self.weight_norm = weight_norm
 
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0
@@ -533,16 +529,17 @@ class TCNModel(PastCovariatesTorchModel):
 
     def _build_train_dataset(
         self,
-        target: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> PastCovariatesShiftedDataset:
         return PastCovariatesShiftedDataset(
-            target_series=target,
-            covariates=past_covariates,
-            length=self.input_chunk_length,
+            series=series,
+            past_covariates=past_covariates,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.input_chunk_length,
             shift=self.output_chunk_length + self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,

@@ -16,6 +16,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.utils.data import TrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -814,11 +815,7 @@ class NBEATSModel(PastCovariatesTorchModel):
         if isinstance(layer_widths, int):
             self.layer_widths = [layer_widths] * self.num_stacks
 
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (
             train_sample[1].shape[1] if train_sample[1] is not None else 0

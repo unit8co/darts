@@ -38,7 +38,6 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
-from torch import Tensor
 from torch.utils.data import DataLoader
 
 from darts.dataprocessing.encoders import SequentialEncoder
@@ -55,28 +54,12 @@ from darts.models.forecasting.forecasting_model import (
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.timeseries import TimeSeries
-from darts.utils.data.inference_dataset import (
-    DualCovariatesInferenceDataset,
-    FutureCovariatesInferenceDataset,
+from darts.utils.data import (
+    GenericInferenceDataset,
+    GenericShiftedDataset,
     InferenceDataset,
-    MixedCovariatesInferenceDataset,
-    PastCovariatesInferenceDataset,
-    SplitCovariatesInferenceDataset,
-)
-from darts.utils.data.sequential_dataset import (
-    DualCovariatesSequentialDataset,
-    FutureCovariatesSequentialDataset,
-    MixedCovariatesSequentialDataset,
-    PastCovariatesSequentialDataset,
-    SplitCovariatesSequentialDataset,
-)
-from darts.utils.data.training_dataset import (
-    DualCovariatesTrainingDataset,
-    FutureCovariatesTrainingDataset,
-    MixedCovariatesTrainingDataset,
-    PastCovariatesTrainingDataset,
-    SplitCovariatesTrainingDataset,
     TrainingDataset,
+    TrainingSample,
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -298,7 +281,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # class name will be set in fit_from_dataset()
         self._module_name: Optional[str] = ""
 
-        self.train_sample: Optional[tuple] = None
+        self.train_sample: Optional[TrainingSample] = None
         self.output_dim: Optional[int] = None
 
         self.n_epochs = n_epochs
@@ -557,63 +540,152 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @abstractmethod
-    def _create_model(self, train_sample: tuple[Tensor]) -> PLForecastingModule:
+    def _create_model(self, train_sample: TrainingSample) -> PLForecastingModule:
         """
         This method has to be implemented by all children. It is in charge of instantiating the actual torch model,
         based on examples input/output tensors (i.e. implement a model with the right input/output sizes).
         """
         pass
 
-    @abstractmethod
     def _build_train_dataset(
         self,
-        target: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: Optional[int],
     ) -> TrainingDataset:
         """
-        Each model must specify the default training dataset to use.
+        Models can override this method to return a custom `TrainingDataset`.
         """
-        pass
+        return GenericShiftedDataset(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            shift=self.output_chunk_length + self.output_chunk_shift,
+            max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
+        )
 
-    @abstractmethod
     def _build_inference_dataset(
         self,
-        target: Sequence[TimeSeries],
         n: int,
+        series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         stride: int = 0,
         bounds: Optional[np.ndarray] = None,
     ) -> InferenceDataset:
         """
-        Each model must specify the default training dataset to use.
+        Models can override this method to return a custom `InferenceDataset`.
         """
-        pass
+        return GenericInferenceDataset(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            n=n,
+            stride=stride,
+            bounds=bounds,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            output_chunk_shift=self.output_chunk_shift,
+            use_static_covariates=self.uses_static_covariates,
+        )
 
-    @abstractmethod
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+    @staticmethod
+    def _verify_train_dataset_type(train_dataset: TrainingDataset):
         """
         Verify that the provided train dataset is of the correct type
         """
-        pass
+        _raise_if_wrong_type(train_dataset, TrainingDataset)
 
-    @abstractmethod
-    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
+    @staticmethod
+    def _verify_inference_dataset_type(inference_dataset: InferenceDataset):
         """
         Verify that the provided inference dataset is of the correct type
         """
-        pass
+        _raise_if_wrong_type(inference_dataset, InferenceDataset)
 
-    @abstractmethod
-    def _verify_predict_sample(self, predict_sample: tuple):
+    @staticmethod
+    def _validate_predict_sample(train_sample: tuple, predict_sample: tuple):
+        """Validates that the predict sample matches a sample that the model was trained on.
+
+        For models relying on `TrainingDataset` and `InferenceDataset`.
+
+        Parameters
+        ----------
+        train_sample
+            (past_target, past_covariates, historic_future_covariates, future_covariates, static covariates,
+            sample_weight, future_target)
+        predict_sample
+            (past_target, past_covariates, future_past_covariates, historic_future_covariates, future_covariates,
+            static_covariates, ts_target)
         """
-        verify that the (first) sample contained in the inference dataset matches the model type and the
-        data the model has been trained on.
-        """
-        pass
+        # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
+        ds_names = [
+            "past_target",
+            "past_covariates",
+            "historic_future_covariates",
+            "future_covariates",
+            "static_covariates",
+        ]
+
+        # ignore `sample_weight` and `future_target` from train sample
+        train_datasets = train_sample[:-2]
+        train_has_ds = [ds is not None for ds in train_datasets]
+
+        # ignore `future_past_covariates` and `ts_target` from predict sample
+        predict_datasets = predict_sample[:2] + predict_sample[3:-1]
+        predict_has_ds = [ds is not None for ds in predict_datasets]
+
+        tgt_train, tgt_pred = train_datasets[0], predict_datasets[0]
+        if tgt_train.shape[-1] != tgt_pred.shape[-1]:
+            raise_log(
+                ValueError(
+                    "The provided target has a dimension (width) that does not match "
+                    "the dimension of the target this model has been trained on."
+                ),
+                logger=logger,
+            )
+
+        for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(
+            zip(train_has_ds, predict_has_ds, ds_names)
+        ):
+            if ds_in_train and not ds_in_predict:
+                raise_log(
+                    ValueError(
+                        f"This model has been trained with `{ds_name}`; some `{ds_name}` "
+                        f"of matching dimensionality are needed for prediction."
+                    ),
+                    logger=logger,
+                )
+            if not ds_in_train and ds_in_predict:
+                raise_log(
+                    ValueError(
+                        f"This model has been trained without `{ds_name}`; No `{ds_name}` "
+                        f"should be provided for prediction.",
+                    ),
+                    logger=logger,
+                )
+            if (
+                ds_in_train
+                and ds_in_predict
+                and (
+                    train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1]
+                    if ds_name != "static_covariates"
+                    else train_datasets[idx].shape != predict_datasets[idx].shape
+                )
+            ):
+                raise_log(
+                    ValueError(
+                        f"The provided `{ds_name}` must have equal dimensionality as the "
+                        f"`{ds_name}` used for training the model.",
+                    ),
+                    logger=logger,
+                )
 
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
@@ -646,11 +718,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 logger=logger,
             )
 
-    @abstractmethod
     def _update_covariates_use(self):
         """Based on the Forecasting class and the training_sample attribute, update the
         uses_[past/future/static]_covariates attributes."""
-        pass
+        _, past_cov, historic_future_cov, future_cov, static_cov, _ = self.train_sample
+
+        self._uses_past_covariates = past_cov is not None
+        self._uses_past_covariates = future_cov is not None
+        self._uses_static_covariates = static_cov is not None
 
     def to_onnx(self, path: Optional[str] = None, **kwargs):
         """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
@@ -923,7 +998,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         train_dataset = self._build_train_dataset(
-            target=series,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             sample_weight=sample_weight,
@@ -932,7 +1007,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         if val_series is not None:
             val_dataset = self._build_train_dataset(
-                target=val_series,
+                series=val_series,
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
                 sample_weight=val_sample_weight,
@@ -993,10 +1068,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         train_dataset
-            A training dataset with a type matching this model (e.g. :class:`PastCovariatesTrainingDataset` for
+            A training dataset with a type matching this model (e.g. :class:`PastCovariatesSequentialDataset` for
             :class:`PastCovariatesTorchModel`).
         val_dataset
-            A training dataset with a type matching this model (e.g. :class:`PastCovariatesTrainingDataset` for
+            A training dataset with a type matching this model (e.g. :class:`PastCovariatesSequentialDataset` for
             :class:`PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
         trainer
             Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom `trainer` will
@@ -1519,8 +1594,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         dataset = self._build_inference_dataset(
-            target=series,
             n=n,
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             stride=0,
@@ -1529,7 +1604,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         predictions = self.predict_from_dataset(
             n,
-            dataset,
+            dataset=dataset,
             trainer=trainer,
             verbose=verbose,
             batch_size=batch_size,
@@ -1547,7 +1622,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def predict_from_dataset(
         self,
         n: int,
-        input_series_dataset: InferenceDataset,
+        dataset: InferenceDataset,
         trainer: Optional[pl.Trainer] = None,
         batch_size: Optional[int] = None,
         verbose: Optional[bool] = None,
@@ -1573,7 +1648,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ----------
         n
             The number of time steps after the end of the training time series for which to produce predictions
-        input_series_dataset
+        dataset
             Optionally, a series or sequence of series, representing the history of the target series' whose
             future is to be predicted. If specified, the method returns the forecasts of these
             series. Otherwise, the method returns the forecast of the (single) training series.
@@ -1617,10 +1692,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # we need to call super's super's method directly, because GlobalForecastingModel expects series:
         ForecastingModel.predict(self, n, num_samples)
 
-        self._verify_inference_dataset_type(input_series_dataset)
+        self._verify_inference_dataset_type(dataset)
 
         # check that covariates and dimensions are matching what we had during training
-        self._verify_predict_sample(input_series_dataset[0])
+        self._validate_predict_sample(
+            train_sample=self.train_sample, predict_sample=dataset[0]
+        )
 
         if roll_size is None:
             roll_size = self.output_chunk_length
@@ -1666,7 +1743,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         pred_loader = DataLoader(
-            input_series_dataset,
+            dataset,
             **dataloader_kwargs,
         )
 
@@ -2238,6 +2315,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
+    def supports_multivariate(self) -> bool:
+        return True
+
+    @property
     def supports_probabilistic_prediction(self) -> bool:
         return (
             self.model.supports_probabilistic_prediction
@@ -2317,6 +2398,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             **kwargs,
         )
         return series2seq(forecasts_list, seq_type_out=series_seq_type)
+
+    @property
+    def _model_encoder_settings(
+        self,
+    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
+        return (
+            self.input_chunk_length,
+            self.output_chunk_length + self.output_chunk_shift,
+            self.supports_past_covariates,
+            self.supports_future_covariates,
+            None,
+            None,
+        )
 
     def _load_encoders(
         self, tfm_save: "TorchForecastingModel", load_encoders: bool
@@ -2490,185 +2584,23 @@ def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):
 
 """
 Below we define the 5 torch model types:
-    * PastCovariatesTorchModel
-    * FutureCovariatesTorchModel
-    * DualCovariatesTorchModel
-    * MixedCovariatesTorchModel
-    * SplitCovariatesTorchModel
+
+* `PastCovariatesTorchModel`
+* `FutureCovariatesTorchModel`
+* `DualCovariatesTorchModel`
+* `MixedCovariatesTorchModel`
+* `SplitCovariatesTorchModel`
 """
-# TODO: there's a lot of repetition below... is there a cleaner way to do this in Python- Using eg generics or something
-
-
-def _basic_compare_sample(train_sample: tuple, predict_sample: tuple):
-    """
-    For all models relying on one type of covariates only (Past, Future, Dual), we can rely on the fact
-    that training/inference datasets have target and covariates in first and second position to do the checks.
-
-    - `train_sample` comes with last dimension (static covs, target TimeSeries)
-    - `predict_sample` comes with last dimensions (..., static covs, target TimeSeries, first prediction time stamp)
-
-    """
-    tgt_train, cov_train, static_train = train_sample[:2] + (train_sample[-2],)
-    tgt_pred, cov_pred, static_pred = predict_sample[:2] + (predict_sample[-3],)
-    raise_if_not(
-        tgt_train.shape[-1] == tgt_pred.shape[-1],
-        "The provided target has a dimension (width) that does not match the dimension "
-        "of the target this model has been trained on.",
-    )
-    for (c_train, c_pred), c_descr in zip(
-        [(cov_train, cov_pred), (static_train, static_pred)],
-        ["past or future covariates", "static covariates"],
-    ):
-        raise_if(
-            c_train is not None and c_pred is None,
-            f"This model has been trained with {c_descr}; covariates of matching dimensionality are required "
-            f"for prediction.",
-        )
-        raise_if(
-            c_train is None and c_pred is not None,
-            f"This model has been trained without {c_descr}. No {c_descr} should be provided for prediction.",
-        )
-        raise_if(
-            c_train is not None
-            and c_pred is not None
-            and (
-                c_train.shape[-1] != c_pred.shape[-1]
-                if c_descr != "static covariates"
-                else c_train.shape != c_pred.shape
-            ),
-            f"The provided {c_descr} must have dimensionality matching that of the covariates used for training "
-            "the model.",
-        )
-
-
-def _mixed_compare_sample(train_sample: tuple, predict_sample: tuple):
-    """
-    For models relying on MixedCovariates.
-
-    Parameters
-    ----------
-    train_sample
-        (past_target, past_covariates, historic_future_covariates, future_covariates, static covariates, future_target)
-    predict_sample
-        (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates,
-        static_covariates, ts_target)
-    """
-    # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
-    ds_names = [
-        "past_target",
-        "past_covariates",
-        "historic_future_covariates",
-        "future_covariates",
-        "static_covariates",
-    ]
-
-    train_has_ds = [ds is not None for ds in train_sample[:-1]]
-    predict_has_ds = [
-        ds is not None for ds in predict_sample[:4] + (predict_sample[5],)
-    ]
-
-    train_datasets = train_sample[:-1]
-    predict_datasets = predict_sample[:4] + (predict_sample[5],)
-
-    tgt_train, tgt_pred = train_datasets[0], predict_datasets[0]
-    raise_if_not(
-        tgt_train.shape[-1] == tgt_pred.shape[-1],
-        "The provided target has a dimension (width) that does not match the dimension "
-        "of the target this model has been trained on.",
-    )
-
-    for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(
-        zip(train_has_ds, predict_has_ds, ds_names)
-    ):
-        raise_if(
-            ds_in_train and not ds_in_predict,
-            f"This model has been trained with `{ds_name}`; some `{ds_name}` of matching dimensionality are needed "
-            f"for prediction.",
-        )
-        raise_if(
-            not ds_in_train and ds_in_predict,
-            f"This model has been trained without `{ds_name}`; No `{ds_name}` should be provided for prediction.",
-        )
-        raise_if(
-            ds_in_train
-            and ds_in_predict
-            and (
-                train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1]
-                if ds_name != "static_covariates"
-                else train_datasets[idx].shape != predict_datasets[idx].shape
-            ),
-            f"The provided `{ds_name}` must have equal dimensionality as the `{ds_name}` used for training the model.",
-        )
 
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
-    supports_future_covariates = False
-
-    def _build_train_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
-        max_samples_per_ts: Optional[int],
-    ) -> PastCovariatesTrainingDataset:
-        return PastCovariatesSequentialDataset(
-            target_series=target,
-            covariates=past_covariates,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self.uses_static_covariates,
-            sample_weight=sample_weight,
-        )
-
-    def _build_inference_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        n: int,
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        stride: int = 0,
-        bounds: Optional[np.ndarray] = None,
-    ) -> PastCovariatesInferenceDataset:
-        return PastCovariatesInferenceDataset(
-            target_series=target,
-            covariates=past_covariates,
-            n=n,
-            stride=stride,
-            bounds=bounds,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            use_static_covariates=self.uses_static_covariates,
-        )
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        _raise_if_wrong_type(train_dataset, PastCovariatesTrainingDataset)
-
-    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
-        _raise_if_wrong_type(inference_dataset, PastCovariatesInferenceDataset)
-
-    def _verify_predict_sample(self, predict_sample: tuple):
-        _basic_compare_sample(self.train_sample, predict_sample)
+    @property
+    def supports_past_covariates(self) -> bool:
+        return True
 
     @property
-    def _model_encoder_settings(
-        self,
-    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
-        input_chunk_length = self.input_chunk_length
-        output_chunk_length = self.output_chunk_length
-        takes_past_covariates = True
-        takes_future_covariates = False
-        return (
-            input_chunk_length,
-            output_chunk_length + self.output_chunk_shift,
-            takes_past_covariates,
-            takes_future_covariates,
-            None,
-            None,
-        )
+    def supports_future_covariates(self) -> bool:
+        return False
 
     @property
     def extreme_lags(
@@ -2693,82 +2625,16 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             None,
         )
-
-    def _update_covariates_use(self):
-        """The model is expected to rely on the `PastCovariatesTrainingDataset`"""
-        _, past_covs, static_covs, _ = self.train_sample
-        self._uses_past_covariates = past_covs is not None
-        self._uses_future_covariates = False
-        self._uses_static_covariates = static_covs is not None
 
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
-    supports_past_covariates = False
-
-    def _build_train_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
-        max_samples_per_ts: Optional[int],
-    ) -> FutureCovariatesTrainingDataset:
-        return FutureCovariatesSequentialDataset(
-            target_series=target,
-            covariates=future_covariates,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self.uses_static_covariates,
-            sample_weight=sample_weight,
-        )
-
-    def _build_inference_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        n: int,
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        stride: int = 0,
-        bounds: Optional[np.ndarray] = None,
-    ) -> FutureCovariatesInferenceDataset:
-        return FutureCovariatesInferenceDataset(
-            target_series=target,
-            covariates=future_covariates,
-            n=n,
-            stride=stride,
-            bounds=bounds,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            use_static_covariates=self.uses_static_covariates,
-        )
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        _raise_if_wrong_type(train_dataset, FutureCovariatesTrainingDataset)
-
-    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
-        _raise_if_wrong_type(inference_dataset, FutureCovariatesInferenceDataset)
-
-    def _verify_predict_sample(self, predict_sample: tuple):
-        _basic_compare_sample(self.train_sample, predict_sample)
+    @property
+    def supports_past_covariates(self) -> bool:
+        return False
 
     @property
-    def _model_encoder_settings(
-        self,
-    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
-        input_chunk_length = self.input_chunk_length
-        output_chunk_length = self.output_chunk_length
-        takes_past_covariates = False
-        takes_future_covariates = True
-        return (
-            input_chunk_length,
-            output_chunk_length + self.output_chunk_shift,
-            takes_past_covariates,
-            takes_future_covariates,
-            None,
-            None,
-        )
+    def supports_future_covariates(self) -> bool:
+        return True
 
     @property
     def extreme_lags(
@@ -2793,83 +2659,16 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             None,
         )
-
-    def _update_covariates_use(self):
-        """The model is expected to rely on the `FutureCovariatesTrainingDataset`"""
-        _, future_covs, static_covs, _ = self.train_sample
-        self._uses_past_covariates = False
-        self._uses_future_covariates = future_covs is not None
-        self._uses_static_covariates = static_covs is not None
 
 
 class DualCovariatesTorchModel(TorchForecastingModel, ABC):
-    supports_past_covariates = False
-
-    def _build_train_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
-        max_samples_per_ts: Optional[int],
-    ) -> DualCovariatesTrainingDataset:
-        return DualCovariatesSequentialDataset(
-            target_series=target,
-            covariates=future_covariates,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self.uses_static_covariates,
-            sample_weight=sample_weight,
-        )
-
-    def _build_inference_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        n: int,
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        stride: int = 0,
-        bounds: Optional[np.ndarray] = None,
-    ) -> DualCovariatesInferenceDataset:
-        return DualCovariatesInferenceDataset(
-            target_series=target,
-            covariates=future_covariates,
-            n=n,
-            stride=stride,
-            bounds=bounds,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            use_static_covariates=self.uses_static_covariates,
-        )
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        _raise_if_wrong_type(train_dataset, DualCovariatesTrainingDataset)
-
-    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
-        _raise_if_wrong_type(inference_dataset, DualCovariatesInferenceDataset)
-
-    def _verify_predict_sample(self, predict_sample: tuple):
-        _basic_compare_sample(self.train_sample, predict_sample)
+    @property
+    def supports_past_covariates(self) -> bool:
+        return False
 
     @property
-    def _model_encoder_settings(
-        self,
-    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
-        input_chunk_length = self.input_chunk_length
-        output_chunk_length = self.output_chunk_length
-        takes_past_covariates = False
-        takes_future_covariates = True
-        return (
-            input_chunk_length,
-            output_chunk_length + self.output_chunk_shift,
-            takes_past_covariates,
-            takes_future_covariates,
-            None,
-            None,
-        )
+    def supports_future_covariates(self) -> bool:
+        return True
 
     @property
     def extreme_lags(
@@ -2894,85 +2693,16 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             None,
         )
-
-    def _update_covariates_use(self):
-        """The model is expected to rely on the `DualCovariatesTrainingDataset`"""
-        _, historic_future_covs, future_covs, static_covs, _ = self.train_sample
-        self._uses_past_covariates = False
-        self._uses_future_covariates = (
-            historic_future_covs is not None or future_covs is not None
-        )
-        self._uses_static_covariates = static_covs is not None
 
 
 class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
-    def _build_train_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
-        max_samples_per_ts: Optional[int],
-    ) -> MixedCovariatesTrainingDataset:
-        return MixedCovariatesSequentialDataset(
-            target_series=target,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self.uses_static_covariates,
-            sample_weight=sample_weight,
-        )
-
-    def _build_inference_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        n: int,
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        stride: int = 0,
-        bounds: Optional[np.ndarray] = None,
-    ) -> MixedCovariatesInferenceDataset:
-        return MixedCovariatesInferenceDataset(
-            target_series=target,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            n=n,
-            stride=stride,
-            bounds=bounds,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            use_static_covariates=self.uses_static_covariates,
-        )
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        _raise_if_wrong_type(train_dataset, MixedCovariatesTrainingDataset)
-
-    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
-        _raise_if_wrong_type(inference_dataset, MixedCovariatesInferenceDataset)
-
-    def _verify_predict_sample(self, predict_sample: tuple):
-        _mixed_compare_sample(self.train_sample, predict_sample)
+    @property
+    def supports_past_covariates(self) -> bool:
+        return True
 
     @property
-    def _model_encoder_settings(
-        self,
-    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
-        input_chunk_length = self.input_chunk_length
-        output_chunk_length = self.output_chunk_length
-        takes_past_covariates = True
-        takes_future_covariates = True
-        return (
-            input_chunk_length,
-            output_chunk_length + self.output_chunk_shift,
-            takes_past_covariates,
-            takes_future_covariates,
-            None,
-            None,
-        )
+    def supports_future_covariates(self) -> bool:
+        return True
 
     @property
     def extreme_lags(
@@ -2997,88 +2727,16 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             None,
         )
-
-    def _update_covariates_use(self):
-        """The model is expected to rely on the `MixedCovariatesTrainingDataset`"""
-        _, past_covs, historic_future_covs, future_covs, static_covs, _ = (
-            self.train_sample
-        )
-        self._uses_past_covariates = past_covs is not None
-        self._uses_future_covariates = (
-            historic_future_covs is not None or future_covs is not None
-        )
-        self._uses_static_covariates = static_covs is not None
 
 
 class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
-    def _build_train_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
-        max_samples_per_ts: Optional[int],
-    ) -> SplitCovariatesTrainingDataset:
-        return SplitCovariatesSequentialDataset(
-            target_series=target,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self.uses_static_covariates,
-            sample_weight=sample_weight,
-        )
-
-    def _build_inference_dataset(
-        self,
-        target: Sequence[TimeSeries],
-        n: int,
-        past_covariates: Optional[Sequence[TimeSeries]],
-        future_covariates: Optional[Sequence[TimeSeries]],
-        stride: int = 0,
-        bounds: Optional[np.ndarray] = None,
-    ) -> SplitCovariatesInferenceDataset:
-        return SplitCovariatesInferenceDataset(
-            target_series=target,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            n=n,
-            stride=stride,
-            bounds=bounds,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
-            use_static_covariates=self.uses_static_covariates,
-        )
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        _raise_if_wrong_type(train_dataset, SplitCovariatesTrainingDataset)
-
-    def _verify_inference_dataset_type(self, inference_dataset: InferenceDataset):
-        _raise_if_wrong_type(inference_dataset, SplitCovariatesInferenceDataset)
-
-    def _verify_predict_sample(self, predict_sample: tuple):
-        # TODO: we have to check both past and future covariates
-        raise NotImplementedError()
+    @property
+    def supports_past_covariates(self) -> bool:
+        return True
 
     @property
-    def _model_encoder_settings(
-        self,
-    ) -> tuple[int, int, bool, bool, Optional[list[int]], Optional[list[int]]]:
-        input_chunk_length = self.input_chunk_length
-        output_chunk_length = self.output_chunk_length
-        takes_past_covariates = True
-        takes_future_covariates = True
-        return (
-            input_chunk_length,
-            output_chunk_length + self.output_chunk_shift,
-            takes_past_covariates,
-            takes_future_covariates,
-            None,
-            None,
-        )
+    def supports_future_covariates(self) -> bool:
+        return True
 
     @property
     def extreme_lags(
@@ -3103,12 +2761,3 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             None,
         )
-
-    def _update_covariates_use(self):
-        """The model is expected to rely on the `SplitCovariatesTrainingDataset`"""
-        _, past_covs, historic_future_covs, future_covs, static_covs, _ = (
-            self.train_sample
-        )
-        self._uses_past_covariates = past_covs is not None
-        self._uses_future_covariates = future_covs is not None
-        self._uses_static_covariates = static_covs is not None

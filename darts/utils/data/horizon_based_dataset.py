@@ -8,7 +8,7 @@ from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.training_dataset import DatasetOutputType, TrainingDataset
+from darts.utils.data.training_dataset import TrainingDataset, TrainingSample
 from darts.utils.data.utils import FeatureType, _process_sample_weight
 from darts.utils.ts_utils import series2seq
 
@@ -125,7 +125,7 @@ class HorizonBasedDataset(TrainingDataset):
         """
         return self.total_nr_samples
 
-    def __getitem__(self, idx: int) -> DatasetOutputType:
+    def __getitem__(self, idx: int) -> TrainingSample:
         # determine the index of the time series.
         series_idx = idx // self.nr_samples_per_ts
         series = self.series[series_idx]

@@ -29,18 +29,10 @@ from darts.models.forecasting.tft_submodels import (
     get_embedding_size,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import (
-    MixedCovariatesSequentialDataset,
-    MixedCovariatesTrainingDataset,
-    TrainingDataset,
-)
+from darts.utils.data import TrainingDataset, TrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
 
 logger = get_logger(__name__)
-
-MixedCovariatesTrainTensorType = tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
 
 
 class _TFTModule(PLMixedCovariatesModule):
@@ -964,7 +956,7 @@ class TFTModel(MixedCovariatesTorchModel):
         self.norm_type = norm_type
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
+    def _create_model(self, train_sample: TrainingSample) -> nn.Module:
         """
         `train_sample` contains the following tensors:
             (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
@@ -1157,12 +1149,12 @@ class TFTModel(MixedCovariatesTorchModel):
 
     def _build_train_dataset(
         self,
-        target: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> MixedCovariatesSequentialDataset:
+    ) -> TrainingDataset:
         raise_if(
             future_covariates is None and not self.add_relative_index,
             "TFTModel requires future covariates. The model applies multi-head attention queries on future "
@@ -1171,28 +1163,13 @@ class TFTModel(MixedCovariatesTorchModel):
             "These will automatically generate `future_covariates` from indexes.",
             logger,
         )
-
-        return MixedCovariatesSequentialDataset(
-            target_series=target,
+        return super()._build_train_dataset(
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
-            use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
         )
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        raise_if_not(
-            isinstance(train_dataset, MixedCovariatesTrainingDataset),
-            "TFTModel requires a training dataset of type MixedCovariatesTrainingDataset.",
-        )
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
 
     @property
     def supports_static_covariates(self) -> bool:

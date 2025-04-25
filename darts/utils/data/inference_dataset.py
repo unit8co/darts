@@ -20,7 +20,7 @@ from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
-DatasetOutputType = tuple[
+InferenceSample = tuple[
     np.ndarray,
     Optional[np.ndarray],
     Optional[np.ndarray],
@@ -50,7 +50,7 @@ class InferenceDataset(ABC, Dataset):
         pass
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> DatasetOutputType:
+    def __getitem__(self, idx: int) -> InferenceSample:
         pass
 
     @staticmethod
@@ -135,20 +135,47 @@ class GenericInferenceDataset(InferenceDataset):
         output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
     ):
-        """
-        Contains (past_target, past_covariates | historic_future_covariates, future_past_covariates | future_covariate,
-        static_covariates).
+        """Generic Inference Dataset
 
-        "future_past_covariates" are past covariates that happen to be also known in the future - those
-        are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
-        For this reason, when n > output_chunk_length, this dataset will also emit the "future past_covariates".
+        Each sample drawn from this dataset is a nine-element tuple extracted from a specific time window and
+        set of single input `TimeSeries`. The elements are:
 
-        "historic_future_covariates" are historic future covariates that are given for the input_chunk in the past.
+        - past_target: target `series` values in the input chunk
+        - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)
+        - future_past_covariates: `past_covariates` values in the forecast horizon (`None` if `past_covariates=None`
+          or `n<=output_chunk_length` / non-auto-regressive forecasting)
+        - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)
+        - future_covariates: `future_covariates` values in the forecast horizon (`None` if `future_covariates=None`)
+        - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)
+        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
+        - future_target: `series` values in the output chunk
+
+        The output chunk / forecast horizon starts `output_chunk_length + output_chunk_shift` after the input chunk's
+        start.
+
+        The sample index determines:
+
+        - the position / time of the extracted chunks relative to the end of a single target `series`
+        - the index (which series and covariates) to use in case `series` (and covariates) are
+          passed as a sequence of series.
+
+        With `bounds=None`, all samples will be extracted relative to the end of the target `series` (input chunk's end
+        time is the same as the target series' end time). Otherwise, samples will be extracted from the given
+        boundaries `bounds` with a stride of `stride`.
+
+        .. note::
+            "historic_future_covariates" are the values of the future-known covariates that fall into the sample's
+            input chunk (the past window / history in the view of the sample).
+
+        .. note::
+            "future_past_covariates" are past covariates that happen to be also known in the future - those
+            are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
+            For this reason, when n > output_chunk_length, this dataset will also emit the "future past_covariates".
 
         Parameters
         ----------
         series
-            The target series that are to be predicted into the future.
+            One or a sequence of target `TimeSeries` that are to be predicted into the future.
         past_covariates
             Optionally, one or a sequence of `TimeSeries` containing past covariates. If past covariates
             were used during training, they must be supplied at prediction.
@@ -167,11 +194,11 @@ class GenericInferenceDataset(InferenceDataset):
         input_chunk_length
             The length of the target series the model takes as input.
         output_chunk_length
-            The length of the target series the model emits in output.
+            The length of the target series the model emits as output.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates
-            Whether to use/include static covariate data from input series.
+            Whether to use/include static covariate data from the target `series`.
         """
         super().__init__()
 
@@ -254,7 +281,7 @@ class GenericInferenceDataset(InferenceDataset):
             stride_idx = (index - cumulative_lengths[list_index - 1]) * stride
         return list_index, bound_left + stride_idx
 
-    def __getitem__(self, idx: int) -> DatasetOutputType:
+    def __getitem__(self, idx: int) -> InferenceSample:
         if self.bounds is None:
             series_idx, series_start_idx, series_end_idx = (
                 idx,

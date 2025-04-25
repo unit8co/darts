@@ -18,7 +18,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.timeseries import TimeSeries
-from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
+from darts.utils.data import GenericShiftedDataset, TrainingSample
 
 logger = get_logger(__name__)
 
@@ -538,7 +538,7 @@ class RNNModel(DualCovariatesTorchModel):
         self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
 
-    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
         # samples are made of (past_target, historic_future_covariates, future_covariates, future_target)
         # historic_future_covariates and future_covariates have the same width
         input_dim = train_sample[0].shape[1] + (
@@ -566,35 +566,32 @@ class RNNModel(DualCovariatesTorchModel):
 
     def _build_train_dataset(
         self,
-        target: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> DualCovariatesShiftedDataset:
-        return DualCovariatesShiftedDataset(
-            target_series=target,
-            covariates=future_covariates,
-            length=self.training_length,
+    ) -> GenericShiftedDataset:
+        return GenericShiftedDataset(
+            series=series,
+            future_covariates=future_covariates,
+            input_chunk_length=self.training_length,
+            output_chunk_length=self.training_length,
             shift=1,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
         )
 
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+    def _verify_train_dataset_type(self, train_dataset: GenericShiftedDataset):
         raise_if_not(
-            isinstance(train_dataset, DualCovariatesShiftedDataset),
-            "RNNModel requires a training dataset of type DualCovariatesShiftedDataset.",
+            isinstance(train_dataset, GenericShiftedDataset),
+            "RNNModel requires a training dataset of type `GenericShiftDataset`.",
         )
         raise_if_not(
-            train_dataset.ds_past.shift == 1,
+            train_dataset.shift == 1,
             "RNNModel requires a shifted training dataset with shift=1.",
         )
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
 
     @property
     def min_train_series_length(self) -> int:
