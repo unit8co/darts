@@ -55,9 +55,9 @@ from darts.models.forecasting.forecasting_model import (
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.timeseries import TimeSeries
 from darts.utils.data import (
-    GenericInferenceDataset,
-    GenericShiftedDataset,
     InferenceDataset,
+    SequentialInferenceDataset,
+    ShiftedTrainingDataset,
     TrainingDataset,
     TrainingSample,
 )
@@ -558,7 +558,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         Models can override this method to return a custom `TrainingDataset`.
         """
-        return GenericShiftedDataset(
+        return ShiftedTrainingDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -582,7 +582,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         Models can override this method to return a custom `InferenceDataset`.
         """
-        return GenericInferenceDataset(
+        return SequentialInferenceDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,

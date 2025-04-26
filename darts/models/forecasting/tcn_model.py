@@ -19,8 +19,8 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import (
-    GenericShiftedDataset,
     ModuleInput,
+    ShiftedTrainingDataset,
     TrainingDataset,
     TrainingSample,
 )
@@ -540,7 +540,7 @@ class TCNModel(PastCovariatesTorchModel):
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
     ) -> TrainingDataset:
-        return GenericShiftedDataset(
+        return ShiftedTrainingDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,

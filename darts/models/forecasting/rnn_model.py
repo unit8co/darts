@@ -18,7 +18,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.timeseries import TimeSeries
-from darts.utils.data import GenericShiftedDataset, ModuleInput, TrainingSample
+from darts.utils.data import ModuleInput, ShiftedTrainingDataset, TrainingSample
 
 logger = get_logger(__name__)
 
@@ -571,8 +571,8 @@ class RNNModel(DualCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> GenericShiftedDataset:
-        return GenericShiftedDataset(
+    ) -> ShiftedTrainingDataset:
+        return ShiftedTrainingDataset(
             series=series,
             future_covariates=future_covariates,
             input_chunk_length=self.training_length,
@@ -583,9 +583,9 @@ class RNNModel(DualCovariatesTorchModel):
             sample_weight=sample_weight,
         )
 
-    def _verify_train_dataset_type(self, train_dataset: GenericShiftedDataset):
+    def _verify_train_dataset_type(self, train_dataset: ShiftedTrainingDataset):
         raise_if_not(
-            isinstance(train_dataset, GenericShiftedDataset),
+            isinstance(train_dataset, ShiftedTrainingDataset),
             "RNNModel requires a training dataset of type `GenericShiftDataset`.",
         )
         raise_if_not(

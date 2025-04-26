@@ -1,4 +1,3 @@
-import inspect
 import itertools
 
 import numpy as np
@@ -17,22 +16,10 @@ if not TORCH_AVAILABLE:
     )
 
 from darts.utils.data import (  # noqa: F401
-    DualCovariatesInferenceDataset,
-    DualCovariatesSequentialDataset,
-    DualCovariatesShiftedDataset,
-    FutureCovariatesInferenceDataset,
-    FutureCovariatesSequentialDataset,
-    FutureCovariatesShiftedDataset,
-    HorizonBasedDataset,
-    MixedCovariatesInferenceDataset,
-    MixedCovariatesSequentialDataset,
-    MixedCovariatesShiftedDataset,
-    PastCovariatesInferenceDataset,
-    PastCovariatesSequentialDataset,
-    PastCovariatesShiftedDataset,
-    SplitCovariatesInferenceDataset,
-    SplitCovariatesSequentialDataset,
-    SplitCovariatesShiftedDataset,
+    HorizonBasedTrainingDataset,
+    SequentialInferenceDataset,
+    SequentialTrainingDataset,
+    ShiftedTrainingDataset,
 )
 
 
@@ -71,14 +58,14 @@ class TestDataset:
 
     def test_past_covariates_inference_dataset(self):
         # one target series
-        ds = PastCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=self.target1, input_chunk_length=len(self.target1)
         )
         np.testing.assert_almost_equal(ds[0][0], self.vals1)
         self._assert_eq(ds[0][1:], (None, None, None, None, self.cov_st1, self.target1))
 
         # two target series
-        ds = PastCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=[self.target1, self.target2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
@@ -87,12 +74,12 @@ class TestDataset:
 
         # fail if covariates do not have same size
         with pytest.raises(ValueError):
-            ds = PastCovariatesInferenceDataset(
+            ds = SequentialInferenceDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
 
         # with covariates
-        ds = PastCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=[self.target1, self.target2],
             past_covariates=[self.cov1, self.cov2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
@@ -119,7 +106,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = PastCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             past_covariates=short_cov,
             input_chunk_length=10,
@@ -132,7 +119,7 @@ class TestDataset:
             _ = ds[0]
 
         # Should return correct values when covariates is long enough
-        ds = PastCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             past_covariates=long_cov,
             input_chunk_length=10,
@@ -156,7 +143,7 @@ class TestDataset:
             pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
         )
 
-        ds = PastCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             past_covariates=covariate,
             input_chunk_length=10,
@@ -174,14 +161,14 @@ class TestDataset:
 
     def test_future_covariates_inference_dataset(self):
         # one target series
-        ds = FutureCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=self.target1, input_chunk_length=len(self.target1)
         )
         np.testing.assert_almost_equal(ds[0][0], self.vals1)
         self._assert_eq(ds[0][1:], (None, None, None, None, self.cov_st1, self.target1))
 
         # two target series
-        ds = FutureCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=[self.target1, self.target2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
@@ -190,7 +177,7 @@ class TestDataset:
 
         # fail if covariates do not have same size
         with pytest.raises(ValueError):
-            ds = FutureCovariatesInferenceDataset(
+            ds = SequentialInferenceDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
@@ -211,7 +198,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = FutureCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             future_covariates=short_cov,
             input_chunk_length=10,
@@ -223,7 +210,7 @@ class TestDataset:
             _ = ds[0]
 
         # Should return correct values when covariates is long enough
-        ds = FutureCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             future_covariates=long_cov,
             input_chunk_length=10,
@@ -246,7 +233,7 @@ class TestDataset:
             pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
         )
 
-        ds = FutureCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             future_covariates=covariate,
             input_chunk_length=10,
@@ -263,14 +250,14 @@ class TestDataset:
 
     def test_dual_covariates_inference_dataset(self):
         # one target series
-        ds = DualCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=self.target1, input_chunk_length=len(self.target1)
         )
         np.testing.assert_almost_equal(ds[0][0], self.vals1)
         self._assert_eq(ds[0][1:], (None, None, None, None, self.cov_st1, self.target1))
 
         # two target series
-        ds = DualCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=[self.target1, self.target2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
@@ -279,7 +266,7 @@ class TestDataset:
 
         # fail if covariates do not have same size
         with pytest.raises(ValueError):
-            ds = DualCovariatesInferenceDataset(
+            ds = SequentialInferenceDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
@@ -300,7 +287,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = DualCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             future_covariates=short_cov,
             input_chunk_length=10,
@@ -313,7 +300,7 @@ class TestDataset:
             _ = ds[0]
 
         # Should return correct values when covariates is long enough
-        ds = DualCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             future_covariates=long_cov,
             input_chunk_length=10,
@@ -337,7 +324,7 @@ class TestDataset:
             pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
         )
 
-        ds = DualCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             future_covariates=covariate,
             input_chunk_length=10,
@@ -373,7 +360,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = MixedCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             past_covariates=past_cov,
             future_covariates=past_cov,
@@ -387,7 +374,7 @@ class TestDataset:
             _ = ds[0]
 
         # Should return correct values when covariates is long enough
-        ds = MixedCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             past_covariates=long_past_cov,
             future_covariates=future_cov,
@@ -417,7 +404,7 @@ class TestDataset:
             pd.RangeIndex(start=30, stop=100, step=1), np.random.randn(70)
         )
 
-        ds = MixedCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             past_covariates=past_cov,
             future_covariates=future_cov,
@@ -454,7 +441,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = SplitCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             past_covariates=past_cov,
             future_covariates=past_cov,
@@ -468,7 +455,7 @@ class TestDataset:
             _ = ds[0]
 
         # Should return correct values when covariates is long enough
-        ds = SplitCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             past_covariates=long_past_cov,
             future_covariates=future_cov,
@@ -499,7 +486,7 @@ class TestDataset:
             pd.RangeIndex(start=30, stop=100, step=1), np.random.randn(70)
         )
 
-        ds = SplitCovariatesInferenceDataset(
+        ds = SequentialInferenceDataset(
             series=target,
             past_covariates=past_cov,
             future_covariates=future_cov,
@@ -520,24 +507,21 @@ class TestDataset:
         "config",
         [
             # (dataset class, whether contains future, future batch index)
-            (PastCovariatesInferenceDataset, None),
-            (FutureCovariatesInferenceDataset, 4),
-            (DualCovariatesInferenceDataset, 4),
-            (MixedCovariatesInferenceDataset, 4),
-            (SplitCovariatesInferenceDataset, 4),
+            (SequentialInferenceDataset, [], None),
+            (SequentialInferenceDataset, ["past"], None),
+            (SequentialInferenceDataset, ["future"], 4),
+            (SequentialInferenceDataset, ["past", "future"], 4),
         ],
     )
     def test_inference_dataset_output_chunk_shift(self, config):
-        ds_cls, future_idx = config
+        ds_cls, use_covs, future_idx = config
         ocl = 1
         ocs = 2
         target = self.target1[: -(ocl + ocs)]
 
         ds_covs = {}
-        ds_init_params = set(inspect.signature(ds_cls.__init__).parameters)
-        for cov_type in ["past_covariates", "future_covariates"]:
-            if cov_type in ds_init_params:
-                ds_covs[cov_type] = self.cov1
+        for cov_type in use_covs:
+            ds_covs[cov_type + "_covariates"] = self.cov1
 
         with pytest.raises(ValueError) as err:
             _ = ds_cls(
@@ -591,7 +575,7 @@ class TestDataset:
 
     def test_past_covariates_sequential_dataset(self):
         # one target series
-        ds = PastCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -611,7 +595,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = PastCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -643,7 +627,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = PastCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -677,12 +661,12 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = PastCovariatesSequentialDataset(
+            ds = SequentialTrainingDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
 
         # two targets and two covariates
-        ds = PastCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[self.target1, self.target2],
             past_covariates=[self.cov1, self.cov2],
             input_chunk_length=10,
@@ -720,7 +704,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = PastCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=target,
             past_covariates=cov,
             input_chunk_length=10,
@@ -736,7 +720,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = PastCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=target,
             past_covariates=cov,
             input_chunk_length=10,
@@ -752,7 +736,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = PastCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=target,
             past_covariates=cov,
             input_chunk_length=10,
@@ -782,7 +766,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = PastCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=target,
             past_covariates=cov,
             input_chunk_length=10,
@@ -807,7 +791,7 @@ class TestDataset:
 
     def test_future_covariates_sequential_dataset(self):
         # one target series
-        ds = FutureCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -827,7 +811,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = FutureCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -859,7 +843,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = FutureCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -893,7 +877,7 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = FutureCovariatesSequentialDataset(
+            ds = SequentialTrainingDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
@@ -908,7 +892,7 @@ class TestDataset:
         cov1 = TimeSeries.from_values(np.random.randn(120))
         cov2 = TimeSeries.from_values(np.random.randn(80))
 
-        ds = FutureCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[target1, target2],
             future_covariates=[cov1, cov2],
             input_chunk_length=10,
@@ -939,7 +923,7 @@ class TestDataset:
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
 
-        ds = FutureCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=2,
@@ -960,7 +944,7 @@ class TestDataset:
         )
         cov1 = TimeSeries.from_values(np.random.randn(7))
 
-        ds = FutureCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=2,
@@ -975,7 +959,7 @@ class TestDataset:
         # sample weight, future_target)
 
         # one target series
-        ds = DualCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -995,7 +979,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = DualCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1027,7 +1011,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = DualCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1061,7 +1045,7 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = DualCovariatesSequentialDataset(
+            ds = SequentialTrainingDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
@@ -1076,7 +1060,7 @@ class TestDataset:
         cov1 = TimeSeries.from_values(np.random.randn(120))
         cov2 = TimeSeries.from_values(np.random.randn(80))
 
-        ds = DualCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[target1, target2],
             future_covariates=[cov1, cov2],
             input_chunk_length=10,
@@ -1107,7 +1091,7 @@ class TestDataset:
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
 
-        ds = DualCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=2,
@@ -1128,7 +1112,7 @@ class TestDataset:
         )
         cov1 = TimeSeries.from_values(np.random.randn(7))
 
-        ds = DualCovariatesSequentialDataset(
+        ds = SequentialTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=2,
@@ -1140,7 +1124,7 @@ class TestDataset:
 
     def test_past_covariates_shifted_dataset(self):
         # one target series
-        ds = PastCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1161,7 +1145,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = PastCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1194,7 +1178,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = PastCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1229,12 +1213,12 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = PastCovariatesShiftedDataset(
+            ds = ShiftedTrainingDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
 
         # two targets and two covariates
-        ds = PastCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
             past_covariates=[self.cov1, self.cov2],
             input_chunk_length=10,
@@ -1271,7 +1255,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(10))
-        ds = PastCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[target1],
             past_covariates=[cov1],
             input_chunk_length=3,
@@ -1293,7 +1277,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = PastCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[target1],
             past_covariates=[cov1],
             input_chunk_length=3,
@@ -1313,7 +1297,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(5))
-        ds = PastCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[target1],
             past_covariates=[cov1],
             input_chunk_length=3,
@@ -1325,7 +1309,7 @@ class TestDataset:
 
     def test_future_covariates_shifted_dataset(self):
         # one target series
-        ds = FutureCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1346,7 +1330,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = FutureCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1379,7 +1363,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = FutureCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1414,13 +1398,13 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = FutureCovariatesShiftedDataset(
+            ds = ShiftedTrainingDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
 
         # two targets and two covariates
-        ds = FutureCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
             future_covariates=[self.cov1, self.cov2],
             input_chunk_length=10,
@@ -1457,7 +1441,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(10))
-        ds = FutureCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1479,7 +1463,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = FutureCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1499,7 +1483,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(7))
-        ds = FutureCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1511,7 +1495,7 @@ class TestDataset:
 
     def test_dual_covariates_shifted_dataset(self):
         # one target series
-        ds = DualCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1532,7 +1516,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = DualCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1565,7 +1549,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = DualCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1600,13 +1584,13 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = DualCovariatesShiftedDataset(
+            ds = ShiftedTrainingDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
 
         # two targets and two covariates
-        ds = DualCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
             future_covariates=[self.cov1, self.cov2],
             input_chunk_length=10,
@@ -1643,7 +1627,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(10))
-        ds = DualCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1665,7 +1649,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = DualCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1685,7 +1669,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(7))
-        ds = DualCovariatesShiftedDataset(
+        ds = ShiftedTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1703,7 +1687,7 @@ class TestDataset:
         weight = weight1 if use_weight else None
         weight_exp = weight1[85:95] if use_weight else None
         # one target series
-        ds = HorizonBasedDataset(
+        ds = HorizonBasedTrainingDataset(
             series=self.target1,
             output_chunk_length=10,
             lh=(1, 3),
@@ -1728,7 +1712,7 @@ class TestDataset:
         weight = [weight1, weight2] if use_weight else None
         weight_exp1 = weight1[85:95] if use_weight else None
         weight_exp2 = weight2[135:145] if use_weight else None
-        ds = HorizonBasedDataset(
+        ds = HorizonBasedTrainingDataset(
             series=[self.target1, self.target2],
             output_chunk_length=10,
             lh=(1, 3),
@@ -1763,7 +1747,7 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = HorizonBasedDataset(
+            ds = HorizonBasedTrainingDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
 
@@ -1771,7 +1755,7 @@ class TestDataset:
         weight = [weight1, weight2] if use_weight else None
         weight_exp1 = weight1[85:95] if use_weight else None
         weight_exp2 = weight2[135:145] if use_weight else None
-        ds = HorizonBasedDataset(
+        ds = HorizonBasedTrainingDataset(
             series=[self.target1, self.target2],
             past_covariates=[self.cov1, self.cov2],
             output_chunk_length=10,
@@ -1808,25 +1792,22 @@ class TestDataset:
         "config",
         [
             # (dataset class, whether contains future, future batch index)
-            (PastCovariatesSequentialDataset, None),
-            (FutureCovariatesSequentialDataset, 3),
-            (DualCovariatesSequentialDataset, 3),
-            (MixedCovariatesSequentialDataset, 3),
-            (SplitCovariatesSequentialDataset, 3),
+            (SequentialTrainingDataset, [], None),
+            (SequentialTrainingDataset, ["past"], None),
+            (SequentialTrainingDataset, ["future"], 3),
+            (SequentialTrainingDataset, ["past", "future"], 3),
         ],
     )
     def test_sequential_training_dataset_output_chunk_shift(self, config):
-        ds_cls, future_idx = config
+        ds_cls, use_covs, future_idx = config
         ocl = 1
         ocs = 2
         target = self.target1[: -(ocl + ocs)]
         sample_weight = target + 1
 
         ds_covs = {}
-        ds_init_params = set(inspect.signature(ds_cls.__init__).parameters)
-        for cov_type in ["covariates", "past_covariates", "future_covariates"]:
-            if cov_type in ds_init_params:
-                ds_covs[cov_type] = self.cov1
+        for cov_type in use_covs:
+            ds_covs[cov_type + "_covariates"] = self.cov1
 
         # regular dataset with output shift=0 and ocl=3: the 3rd future values should be identical to the 1st future
         # values of a dataset with output shift=2 and ocl=1
@@ -1872,17 +1853,16 @@ class TestDataset:
         "config",
         itertools.product(
             [
-                PastCovariatesSequentialDataset,
-                FutureCovariatesSequentialDataset,
-                DualCovariatesSequentialDataset,
-                MixedCovariatesSequentialDataset,
-                SplitCovariatesSequentialDataset,
+                (SequentialTrainingDataset, []),
+                (SequentialTrainingDataset, ["past"]),
+                (SequentialTrainingDataset, ["future"]),
+                (SequentialTrainingDataset, ["past", "future"]),
             ],
             [True, False],
         ),
     )
     def test_sequential_training_dataset_weight(self, config):
-        ds_cls, manual_weight = config
+        (ds_cls, use_covs), manual_weight = config
 
         def get_built_in_weigths(targets):
             if isinstance(targets, list):
@@ -1899,10 +1879,8 @@ class TestDataset:
         built_in_weight = "linear"
 
         ds_covs = {}
-        ds_init_params = set(inspect.signature(ds_cls.__init__).parameters)
-        for cov_type in ["covariates", "past_covariates", "future_covariates"]:
-            if cov_type in ds_init_params:
-                ds_covs[cov_type] = self.cov1
+        for cov_type in use_covs:
+            ds_covs[cov_type + "_covariates"] = self.cov1
 
         # no sample weight
         ds = ds_cls(
@@ -2019,17 +1997,8 @@ class TestDataset:
         weight_exp = ds[0][-1] + 1 if manual_weight else get_built_in_weigths(target)
         assert np.all(ds[0][-2] == weight_exp)
 
-    @pytest.mark.parametrize(
-        "ds_cls",
-        [
-            PastCovariatesSequentialDataset,
-            FutureCovariatesSequentialDataset,
-            DualCovariatesSequentialDataset,
-            MixedCovariatesSequentialDataset,
-            SplitCovariatesSequentialDataset,
-        ],
-    )
-    def test_sequential_training_dataset_invalid_weight(self, ds_cls):
+    def test_sequential_training_dataset_invalid_weight(self):
+        ds_cls = SequentialTrainingDataset
         ts = self.target1
 
         # invalid built-in weight
