@@ -12,11 +12,11 @@ import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import (
-    PLPastCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data import TrainingSample
+from darts.utils.data import ModuleInput, TrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -319,7 +319,7 @@ class _Stack(nn.Module):
         return stack_residual, stack_forecast
 
 
-class _NHiTSModule(PLPastCovariatesModule):
+class _NHiTSModule(PLForecastingModule):
     def __init__(
         self,
         input_dim: int,
@@ -423,8 +423,8 @@ class _NHiTSModule(PLPastCovariatesModule):
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
 
     @io_processor
-    def forward(self, x_in: tuple):
-        x, _ = x_in
+    def forward(self, x_in: ModuleInput):
+        x, _, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc

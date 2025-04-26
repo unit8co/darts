@@ -8,8 +8,12 @@ from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.training_dataset import TrainingDataset, TrainingSample
-from darts.utils.data.utils import FeatureType, _process_sample_weight
+from darts.utils.data.training_dataset import TrainingDataset
+from darts.utils.data.utils import (
+    FeatureType,
+    TrainingDatasetOutput,
+    _process_sample_weight,
+)
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
@@ -30,7 +34,7 @@ class GenericShiftedDataset(TrainingDataset):
     ):
         """Generic Shifted Dataset
 
-        Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
+        Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
         set of single input `TimeSeries`. The elements are:
 
         - past_target: target `series` values in the input chunk
@@ -141,7 +145,7 @@ class GenericShiftedDataset(TrainingDataset):
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(self, idx) -> TrainingSample:
+    def __getitem__(self, idx) -> TrainingDatasetOutput:
         # determine the index of the time series.
         series_idx = idx // self.max_samples_per_ts
         series = self.series[series_idx]
@@ -299,7 +303,15 @@ class GenericShiftedDataset(TrainingDataset):
         if self.uses_static_covariates_covariates:
             sc = series.static_covariates_values(copy=False)
 
-        # (past target, past cov, historic future cov, future cov, static cov, sample weight, future target)
+        # (
+        #     past target,
+        #     past cov,
+        #     historic future cov,
+        #     future cov,
+        #     static cov,
+        #     sample weight,
+        #     future target
+        # )
         return pt, pc, hfc, fc, sc, sw, ft
 
 

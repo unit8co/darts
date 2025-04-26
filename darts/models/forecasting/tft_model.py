@@ -17,7 +17,7 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.tft_submodels import (
@@ -29,13 +29,13 @@ from darts.models.forecasting.tft_submodels import (
     get_embedding_size,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import TrainingDataset, TrainingSample
+from darts.utils.data import ModuleInput, TrainingDataset, TrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
 
 logger = get_logger(__name__)
 
 
-class _TFTModule(PLMixedCovariatesModule):
+class _TFTModule(PLForecastingModule):
     def __init__(
         self,
         output_dim: tuple[int, int],
@@ -444,9 +444,7 @@ class _TFTModule(PLMixedCovariatesModule):
         return mask
 
     @io_processor
-    def forward(
-        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ) -> torch.Tensor:
+    def forward(self, x_in: ModuleInput) -> torch.Tensor:
         """TFT model forward pass.
 
         Parameters

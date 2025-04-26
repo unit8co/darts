@@ -13,12 +13,17 @@ import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import (
-    PLPastCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
-from darts.utils.data import PastCovariatesShiftedDataset, TrainingSample
+from darts.utils.data import (
+    GenericShiftedDataset,
+    ModuleInput,
+    TrainingDataset,
+    TrainingSample,
+)
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -131,7 +136,7 @@ class _ResidualBlock(nn.Module):
         return x
 
 
-class _TCNModule(PLPastCovariatesModule):
+class _TCNModule(PLForecastingModule):
     def __init__(
         self,
         input_size: int,
@@ -237,8 +242,8 @@ class _TCNModule(PLPastCovariatesModule):
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
     @io_processor
-    def forward(self, x_in: tuple):
-        x, _ = x_in
+    def forward(self, x_in: ModuleInput):
+        x, _, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
         x = x.transpose(1, 2)
@@ -534,10 +539,11 @@ class TCNModel(PastCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> PastCovariatesShiftedDataset:
-        return PastCovariatesShiftedDataset(
+    ) -> TrainingDataset:
+        return GenericShiftedDataset(
             series=series,
             past_covariates=past_covariates,
+            future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.input_chunk_length,
             shift=self.output_chunk_length + self.output_chunk_shift,

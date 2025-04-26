@@ -3,18 +3,16 @@ D-Linear
 --------
 """
 
-from typing import Optional
-
 import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import TrainingSample
+from darts.utils.data import ModuleInput, TrainingSample
 
 
 class _MovingAvg(nn.Module):
@@ -58,7 +56,7 @@ class _SeriesDecomp(nn.Module):
         return res, moving_mean
 
 
-class _DLinearModule(PLMixedCovariatesModule):
+class _DLinearModule(PLForecastingModule):
     """
     DLinear module
     """
@@ -152,9 +150,7 @@ class _DLinearModule(PLMixedCovariatesModule):
             )
 
     @io_processor
-    def forward(
-        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ):
+    def forward(self, x_in: ModuleInput):
         """
         x_in
             comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`

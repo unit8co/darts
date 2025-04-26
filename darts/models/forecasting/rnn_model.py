@@ -13,17 +13,17 @@ import torch.nn as nn
 
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
-    PLDualCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.timeseries import TimeSeries
-from darts.utils.data import GenericShiftedDataset, TrainingSample
+from darts.utils.data import GenericShiftedDataset, ModuleInput, TrainingSample
 
 logger = get_logger(__name__)
 
 
-class CustomRNNModule(PLDualCovariatesModule, ABC):
+class CustomRNNModule(PLForecastingModule, ABC):
     def __init__(
         self,
         input_size: int,
@@ -80,7 +80,7 @@ class CustomRNNModule(PLDualCovariatesModule, ABC):
     @io_processor
     @abstractmethod
     def forward(
-        self, x_in: tuple, h: Optional[torch.Tensor] = None
+        self, x_in: ModuleInput, h: Optional[torch.Tensor] = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """RNN Module forward.
 
@@ -257,9 +257,9 @@ class _RNNModule(CustomRNNModule):
 
     @io_processor
     def forward(
-        self, x_in: tuple, h: Optional[torch.Tensor] = None
+        self, x_in: ModuleInput, h: Optional[torch.Tensor] = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
-        x, _ = x_in
+        x, _, _ = x_in
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
 

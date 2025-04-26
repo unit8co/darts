@@ -14,7 +14,6 @@ try:
         FutureCovariatesInferenceDataset,
         GenericInferenceDataset,
         InferenceDataset,
-        InferenceSample,
         MixedCovariatesInferenceDataset,
         PastCovariatesInferenceDataset,
         SplitCovariatesInferenceDataset,
@@ -38,7 +37,8 @@ try:
         PastCovariatesShiftedDataset,
         SplitCovariatesShiftedDataset,
     )
-    from darts.utils.data.training_dataset import TrainingDataset, TrainingSample
+    from darts.utils.data.training_dataset import TrainingDataset
+    from darts.utils.data.utils import ModuleInput, TrainingSample
 except ImportError:  # Torch is not available
     from darts.utils.utils import NotImportedModule
 
@@ -95,7 +95,8 @@ except ImportError:  # Torch is not available
     GenericInferenceDataset = NotImportedModule(module_name="(Py)Torch", warn=False)
 
     TrainingSample = NotImportedModule(module_name="(Py)Torch", warn=False)
-    InferenceSample = NotImportedModule(module_name="(Py)Torch", warn=False)
+    ModuleInput = NotImportedModule(module_name="(Py)Torch", warn=False)
+
 
 __all__ = [
     "HorizonBasedDataset",
@@ -119,5 +120,5 @@ __all__ = [
     "GenericShiftedDataset",
     "GenericInferenceDataset",
     "TrainingSample",
-    "InferenceSample",
+    "ModuleInput",
 ]

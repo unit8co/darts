@@ -1,8 +1,9 @@
 from enum import Enum
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
+import torch
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -14,6 +15,47 @@ logger = get_logger(__name__)
 DIVISIBLE_FREQS = {"D", "h", "H", "T", "min", "s", "S", "L", "ms", "U", "us", "N", "ns"}
 # supported built-in sample weight generators for regression and torch models
 SUPPORTED_SAMPLE_WEIGHT = {"linear", "exponential"}
+
+
+# `TrainingDataset` output
+# (past target, past cov, historic future cov, future cov, static cov, sample weight, future target)
+TrainingDatasetOutput = tuple[
+    np.ndarray,
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    np.ndarray,
+]
+
+# `InferenceDataset` output
+# (past target, past cov, future past cov, historic future cov, future cov, static cov, target series, pred time)
+InferenceDatasetOutput = tuple[
+    np.ndarray,
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    TimeSeries,
+    Union[pd.Timestamp, int],
+]
+
+# training sample has no sample weight
+# (past target, past cov, historic future cov, future cov, static cov, future target)
+TrainingSample = tuple[
+    np.ndarray,
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    Optional[np.ndarray],
+    np.ndarray,
+]
+
+# the module receives three tensors
+# (past features (past target + past cov + historic future cov), future cov, static cov)
+ModuleInput = tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
 
 
 class FeatureType(Enum):

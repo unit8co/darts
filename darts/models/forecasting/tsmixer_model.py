@@ -30,11 +30,11 @@ from torch import nn
 from darts.logging import get_logger, raise_log
 from darts.models.components import layer_norm_variants
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import TrainingSample
+from darts.utils.data import ModuleInput, TrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -309,7 +309,7 @@ class _ConditionalMixerLayer(nn.Module):
         return x
 
 
-class _TSMixerModule(PLMixedCovariatesModule):
+class _TSMixerModule(PLForecastingModule):
     def __init__(
         self,
         input_dim: int,
@@ -455,10 +455,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         return mixer_layers
 
     @io_processor
-    def forward(
-        self,
-        x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
-    ) -> torch.Tensor:
+    def forward(self, x_in: ModuleInput) -> torch.Tensor:
         # x_hist contains the historical time series data and the historical
         """TSMixer model forward pass.
 

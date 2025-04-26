@@ -6,32 +6,21 @@ Training Datasets Base Classes
 from abc import ABC, abstractmethod
 from typing import Optional
 
-import numpy as np
 from torch.utils.data import Dataset
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.utils import FeatureType
+from darts.utils.data.utils import FeatureType, TrainingDatasetOutput
 
 logger = get_logger(__name__)
 
 _SampleIndexType = dict[FeatureType, tuple[Optional[int], Optional[int]]]
 
-TrainingSample = tuple[
-    np.ndarray,
-    Optional[np.ndarray],
-    Optional[np.ndarray],
-    Optional[np.ndarray],
-    Optional[np.ndarray],
-    Optional[np.ndarray],
-    np.ndarray,
-]
-
 _SERIES_TYPES = [
     FeatureType.PAST_TARGET,
     FeatureType.FUTURE_TARGET,
     FeatureType.PAST_COVARIATES,
-    FeatureType.HISTORIC_FUTURE_COVARIATES,
+    FeatureType.PAST_COVARIATES,
     FeatureType.FUTURE_COVARIATES,
     FeatureType.SAMPLE_WEIGHT,
 ]
@@ -42,7 +31,7 @@ class TrainingDataset(ABC, Dataset):
         """
         Super-class for all training datasets for torch models in Darts.
 
-        Each sample drawn from this dataset must be an eight-element tuple extracted from a specific time window and
+        Each sample drawn from this dataset must be a seven-element tuple extracted from a specific time window and
         set of single input `TimeSeries`. The elements are:
 
         - past_target: target `series` values in the input chunk
@@ -71,7 +60,7 @@ class TrainingDataset(ABC, Dataset):
         pass
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> TrainingSample:
+    def __getitem__(self, idx: int) -> TrainingDatasetOutput:
         pass
 
     def _memory_indexer(

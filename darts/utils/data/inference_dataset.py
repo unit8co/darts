@@ -14,22 +14,11 @@ from torch.utils.data import Dataset
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.utils import FeatureType
+from darts.utils.data.utils import FeatureType, InferenceDatasetOutput
 from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
-
-InferenceSample = tuple[
-    np.ndarray,
-    Optional[np.ndarray],
-    Optional[np.ndarray],
-    Optional[np.ndarray],
-    Optional[np.ndarray],
-    Optional[np.ndarray],
-    TimeSeries,
-    Union[pd.Timestamp, int],
-]
 
 
 class InferenceDataset(ABC, Dataset):
@@ -50,7 +39,7 @@ class InferenceDataset(ABC, Dataset):
         pass
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> InferenceSample:
+    def __getitem__(self, idx: int) -> InferenceDatasetOutput:
         pass
 
     @staticmethod
@@ -137,7 +126,7 @@ class GenericInferenceDataset(InferenceDataset):
     ):
         """Generic Inference Dataset
 
-        Each sample drawn from this dataset is a nine-element tuple extracted from a specific time window and
+        Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
         set of single input `TimeSeries`. The elements are:
 
         - past_target: target `series` values in the input chunk
@@ -147,8 +136,8 @@ class GenericInferenceDataset(InferenceDataset):
         - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)
         - future_covariates: `future_covariates` values in the forecast horizon (`None` if `future_covariates=None`)
         - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)
-        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
-        - future_target: `series` values in the output chunk
+        - target_series: the target `TimeSeries`
+        - pred_time: the time of the first point in the forecast horizon
 
         The output chunk / forecast horizon starts `output_chunk_length + output_chunk_shift` after the input chunk's
         start.
@@ -281,7 +270,7 @@ class GenericInferenceDataset(InferenceDataset):
             stride_idx = (index - cumulative_lengths[list_index - 1]) * stride
         return list_index, bound_left + stride_idx
 
-    def __getitem__(self, idx: int) -> InferenceSample:
+    def __getitem__(self, idx: int) -> InferenceDatasetOutput:
         if self.bounds is None:
             series_idx, series_start_idx, series_end_idx = (
                 idx,

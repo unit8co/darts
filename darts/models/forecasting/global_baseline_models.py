@@ -18,7 +18,7 @@ import torch
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import (
@@ -58,7 +58,7 @@ def _repeat_along_output_chunk(x: torch.Tensor, ocl: int) -> torch.Tensor:
     return x.view(-1, 1, x[0].shape[-1], 1).expand(-1, ocl, -1, -1)
 
 
-class _GlobalNaiveModule(PLMixedCovariatesModule, ABC):
+class _GlobalNaiveModule(PLForecastingModule, ABC):
     def __init__(self, *args, **kwargs):
         """Pytorch module for implementing naive models.
 

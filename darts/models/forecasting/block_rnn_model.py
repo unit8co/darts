@@ -12,16 +12,16 @@ import torch.nn as nn
 
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
-    PLPastCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data import TrainingSample
+from darts.utils.data import ModuleInput, TrainingSample
 
 logger = get_logger(__name__)
 
 
-class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
+class CustomBlockRNNModule(PLForecastingModule, ABC):
     def __init__(
         self,
         input_size: int,
@@ -86,7 +86,7 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
 
     @io_processor
     @abstractmethod
-    def forward(self, x_in: tuple) -> torch.Tensor:
+    def forward(self, x_in: ModuleInput) -> torch.Tensor:
         """BlockRNN Module forward.
 
         Parameters
@@ -178,8 +178,8 @@ class _BlockRNNModule(CustomBlockRNNModule):
         self.fc = nn.Sequential(*feats)
 
     @io_processor
-    def forward(self, x_in: tuple):
-        x, _ = x_in
+    def forward(self, x_in: ModuleInput):
+        x, _, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
 

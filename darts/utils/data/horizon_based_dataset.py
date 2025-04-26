@@ -8,8 +8,12 @@ from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.training_dataset import TrainingDataset, TrainingSample
-from darts.utils.data.utils import FeatureType, _process_sample_weight
+from darts.utils.data.training_dataset import TrainingDataset
+from darts.utils.data.utils import (
+    FeatureType,
+    TrainingDatasetOutput,
+    _process_sample_weight,
+)
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
@@ -125,7 +129,7 @@ class HorizonBasedDataset(TrainingDataset):
         """
         return self.total_nr_samples
 
-    def __getitem__(self, idx: int) -> TrainingSample:
+    def __getitem__(self, idx: int) -> TrainingDatasetOutput:
         # determine the index of the time series.
         series_idx = idx // self.nr_samples_per_ts
         series = self.series[series_idx]
@@ -238,12 +242,14 @@ class HorizonBasedDataset(TrainingDataset):
         if self.use_static_covariates:
             sc = series.static_covariates_values(copy=False)
 
-        return (
-            pt,
-            pc,
-            hfc,
-            fc,
-            sc,
-            sw,
-            ft,
-        )
+        # (
+        #     past target,
+        #     past cov,
+        #     future past cov (`None` as not used during training),
+        #     historic future cov,
+        #     future cov,
+        #     static cov,
+        #     sample weight,
+        #     future target
+        # )
+        return pt, pc, None, hfc, fc, sc, sw, ft
