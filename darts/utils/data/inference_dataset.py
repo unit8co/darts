@@ -26,12 +26,10 @@ class InferenceDataset(ABC, Dataset):
         """
         Abstract class for all darts torch inference dataset.
 
-        It can be used as models' inputs, to obtain simple forecasts on each `TimeSeries`
-        (using covariates if specified).
+        Provides samples to compute forecasts using a `TorchForecastingModel`.
 
-        The first elements of the tuples it contains are numpy arrays (which will be translated to torch tensors
-        by the torch DataLoader). The last elements of the tuples are the (past) target TimeSeries, which is
-        needed in order to properly construct the time axis of the forecast series.
+        Darts `TorchForecastingModel` can predict from instances of `InferenceDataset` using the
+        `predict_from_dataset()` method.
         """
 
     @abstractmethod
@@ -181,9 +179,10 @@ class SequentialInferenceDataset(InferenceDataset):
             per series. The boundaries must represent the positional index of the series (0, len(series)).
             If provided, `stride` must be `>=1`.
         input_chunk_length
-            The length of the target series the model takes as input.
+            The length of the lookback / past window the model takes as input.
         output_chunk_length
-            The length of the target series the model emits as output.
+            The length of the lookahead / future window that the model emits as output (for the target) and takes as
+            input (for future covariates).
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future.
         use_static_covariates

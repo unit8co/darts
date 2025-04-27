@@ -48,11 +48,11 @@ class TrainingDataset(ABC, Dataset):
         - sample_weight: Optional `sample_weight` values in the output chunk
         - future_target: `series` values in the output chunk
 
-        Darts `TorchForecastingModel`s can be fit from instances of `TrainingDataset` of the right type using the
-        `fit_from_dataset()` method.
+        Darts `TorchForecastingModel` can be fit from instances of `TrainingDataset` using the `fit_from_dataset()`
+        method.
 
-        `TrainingDataset` inherits torch `Dataset`; meaning that the implementations have to
-        provide the `__getitem__()` method.
+        `TrainingDataset` inherits torch `Dataset`; meaning that the implementations have to provide the
+        `__getitem__()` method.
 
         It contains `np.ndarray` (and not `TimeSeries`), because training requires the values only,
         and so we can get big performance gains when slicing by returning only numpy views of the data
@@ -100,9 +100,10 @@ class TrainingDataset(ABC, Dataset):
         shift
             The number of time steps by which to shift the output chunks relative to the input chunks.
         input_chunk_length
-            The length of the emitted past series.
+            The length of the lookback / past window the model takes as input.
         output_chunk_length
-            The length of the emitted future output series.
+            The length of the lookahead / future window that the model emits as output (for the target) and takes as
+            input (for future covariates).
         end_of_output_idx
             the index where the output chunk of the current sample ends in `series`.
         past_covariates
@@ -233,7 +234,7 @@ class ShiftedTrainingDataset(TrainingDataset):
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
-        """Generic Shifted Dataset
+        """Shifted Training Dataset
 
         Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
         set of single input `TimeSeries`. The elements are:
@@ -254,6 +255,15 @@ class ShiftedTrainingDataset(TrainingDataset):
         - the index (which series and covariates) to use in case `series` (and covariates) are
           passed as a sequence of series.
 
+        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+        lengths, they will contain different numbers of slices. Therefore, some particular slices may
+        be sampled more often than others if they belong to shorter time series.
+
+        .. note::
+            Each series in the provided sequence must have a minimum length of
+            `max(input_chunk_length, shift + output_chunk_length)`.
+
         Parameters
         ----------
         series
@@ -263,9 +273,10 @@ class ShiftedTrainingDataset(TrainingDataset):
         future_covariates
             Optionally, one or a sequence of `TimeSeries` containing future-known covariates.
         input_chunk_length
-            The length of the target series the model takes as input.
+            The length of the lookback / past window the model takes as input.
         output_chunk_length
-            The length of the target series the model emits as output.
+            The length of the lookahead / future window that the model emits as output (for the target) and takes as
+            input (for future covariates).
         shift
             The number of time steps by which to shift the output chunks relative to the start of the input chunks.
         max_samples_per_ts
@@ -328,12 +339,10 @@ class ShiftedTrainingDataset(TrainingDataset):
         )
 
         # setup sample weights; ignore weights when `ocl==0`
-        self.sample_weight = None
-        if sample_weight is not None:
-            if output_chunk_length > 0:
-                self.sample_weight = _process_sample_weight(sample_weight, self.series)
-            else:
-                self.sample_weight = None
+        if sample_weight is not None and output_chunk_length > 0:
+            self.sample_weight = _process_sample_weight(sample_weight, self.series)
+        else:
+            self.sample_weight = None
 
         # setup samples
         if self.max_samples_per_ts is None:
@@ -352,27 +361,9 @@ class ShiftedTrainingDataset(TrainingDataset):
         series = self.series[series_idx]
         series_vals = series.random_component_values(copy=False)
 
-        # determine the actual number of possible samples in this time series
-        n_samples_in_ts = len(series_vals) - self.size_of_both_chunks + 1
-
-        if n_samples_in_ts < 1:
-            raise_log(
-                ValueError(
-                    "The dataset contains some target `series` that are too short to contain "
-                    "`max(self.input_chunk_length, self.shift + self.output_chunk_length)` "
-                    f"({series_idx}-th series)"
-                ),
-                logger=logger,
-            )
-
         # determine the index at the end of the output chunk
-        # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
-        end_of_output_idx = (
-            len(series)
-            - (idx - (series_idx * self.max_samples_per_ts)) % n_samples_in_ts
-        )
+        end_of_output_idx = self._get_end_of_output_idx(series, series_idx, idx)
 
-        # load covariates
         # load covariates
         past_covariates = (
             self.past_covariates[series_idx] if self.uses_past_covariates else None
@@ -515,6 +506,27 @@ class ShiftedTrainingDataset(TrainingDataset):
         # )
         return pt, pc, hfc, fc, sc, sw, ft
 
+    def _get_end_of_output_idx(self, series, series_idx, idx):
+        # determine the actual number of possible samples in this time series
+        n_samples_in_ts = len(series) - self.size_of_both_chunks + 1
+
+        if n_samples_in_ts < 1:
+            raise_log(
+                ValueError(
+                    "The dataset contains some target `series` that are shorter than "
+                    "`max(self.input_chunk_length, self.shift + self.output_chunk_length)` "
+                    f"({series_idx}-th series)."
+                ),
+                logger=logger,
+            )
+
+        # determine the index at the end of the output chunk
+        # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
+        return (
+            len(series)
+            - (idx - (series_idx * self.max_samples_per_ts)) % n_samples_in_ts
+        )
+
 
 class SequentialTrainingDataset(ShiftedTrainingDataset):
     def __init__(
@@ -529,51 +541,59 @@ class SequentialTrainingDataset(ShiftedTrainingDataset):
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ):
-        """
-        A time series dataset containing tuples of
-        (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
-        sample weights, future_target).
-        The "past" series (incl `historic_future_covariates`) have length `input_chunk_length`
-        and the "future" series have length `output_chunk_length`. The "future" series are immediately consecutive
-        to the "past" series. The slicing of past and future covariates matches that of past and future targets,
-        respectively. The slicing itself relies on time indexes to align the series if they have unequal lengths.
+        """Sequential Training Dataset
 
-        Each series must be long enough to contain at least one (input, output) pair; i.e., each
-        series must have length at least `input_chunk_length + output_chunk_length`.
-        If these conditions are not satisfied, an error will be raised when trying to access some of the splits.
+        Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
+        set of single input `TimeSeries`. The elements are:
+
+        - past_target: target `series` values in the input chunk
+        - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)
+        - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)
+        - future_covariates: `future_covariates` values in the output chunk (`None` if `future_covariates=None`)
+        - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)
+        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
+        - future_target: `series` values in the output chunk
+
+        The output chunk starts `input_chunk_length + output_chunk_shift` after the input chunk's start.
+
+        The sample index determines:
+
+        - the position / time of the extracted chunks relative to the end of a single target `series`
+        - the index (which series and covariates) to use in case `series` (and covariates) are
+          passed as a sequence of series.
 
         The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
         a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
         lengths, they will contain different numbers of slices. Therefore, some particular slices may
         be sampled more often than others if they belong to shorter time series.
 
+        .. note::
+            Each series in the provided sequence must have a minimum length of
+            `input_chunk_length + output_chunk_shift + output_chunk_length`.
+
         Parameters
         ----------
         series
             One or a sequence of target `TimeSeries`.
         past_covariates
-            Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `series`. Moreover, all
-            covariates in the sequence must have a time span large enough to contain all the required slices.
-            The joint slicing of the target and covariates is relying on the time axes of both series.
+            Optionally, one or a sequence of `TimeSeries` containing past covariates.
         future_covariates
-            Optionally, one or a sequence of `TimeSeries` containing future-known covariates. This has to follow
-            the same constraints as `past_covariates`.
+            Optionally, one or a sequence of `TimeSeries` containing future-known covariates.
         input_chunk_length
-            The length of the emitted past series.
+            The length of the lookback / past window the model takes as input.
         output_chunk_length
-            The length of the emitted future series.
+            The length of the lookahead / future window that the model emits as output (for the target) and takes as
+            input (for future covariates).
         output_chunk_shift
-            Optionally, the number of steps to shift the start of the output chunk into the future.
+            The number of steps to shift the start of the output chunk into the future.
         max_samples_per_ts
-            This is an upper bound on the number of tuples that can be produced per time series.
-            It can be used in order to have an upper bound on the total size of the dataset and
-            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
-            creation) to know their sizes, which might be expensive on big datasets.
-            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
-            most recent `max_samples_per_ts` samples will be considered.
+            This is an upper bound on the number of samples that can be produced per time series. It can be used to
+            limit the total size of the dataset and ensure proper sampling. If `None`, will read all individual time
+            series in advance (at dataset creation) to check their sizes. This might be expensive on big datasets.
+            If not `None`, will only keep a maximum of `max_samples_per_ts` samples per series, extracted from the most
+            recent past.
         use_static_covariates
-            Whether to use/include static covariate data from input series.
+            Whether to use/include static covariate data from the target `series`.
         sample_weight
             Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
             per label (each step in `output_chunk_length`), and per component.
@@ -599,53 +619,68 @@ class SequentialTrainingDataset(ShiftedTrainingDataset):
         )
 
 
-class HorizonBasedTrainingDataset(TrainingDataset):
+class HorizonBasedTrainingDataset(SequentialTrainingDataset):
     def __init__(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         output_chunk_length: int = 12,
+        output_chunk_shift: int = 0,
         lh: tuple[int, int] = (1, 3),
         lookback: int = 3,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
     ) -> None:
-        """
-        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, sample weights,
-        future_target)
-        arrays,
-        in a way inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
+        """Horizon Based Training Dataset
 
-        The "past" series have length `lookback * output_chunk_length`, and the "future" series has length
-        `output_chunk_length`.
+        A dataset inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
 
-        Given the horizon `output_chunk_length` of a model, this dataset will compute some "past/future"
-        splits as follows:
-        First a "forecast point" is selected in the range of the last
-        `(min_lh * output_chunk_length, max_lh * output_chunk_length)` points before the end of the time series.
-        The "future" then consists in the following `output_chunk_length` points, and the "past" will be the preceding
-        `lookback * output_chunk_length` points.
+        Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
+        set of single input `TimeSeries`. The elements are:
 
-        All the series in the provided sequence must be long enough; i.e. have length at least
-        `(lookback + max_lh) * output_chunk_length`, and `min_lh` must be at least 1
-        (to have targets of length exactly `1 * output_chunk_length`).
-        The target and past_covariates time series are sliced together using their time indexes for alignment.
+        - past_target: target `series` values in the input chunk
+        - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)
+        - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)
+        - future_covariates: `future_covariates` values in the output chunk (`None` if `future_covariates=None`)
+        - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)
+        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)
+        - future_target: `series` values in the output chunk
 
-        The sampling is uniform both over the number of time series and the number of samples per series;
-        i.e. the i-th sample of this dataset has 1/(N*M) chance of coming from any of the M samples in any of the N
-        time series in the sequence.
+        Given the horizon `output_chunk_length` of a model, this dataset will compute some "past / future" input and
+        output chunks as follows: First a "forecast point" is selected in the range of the last `(min_lh *
+        output_chunk_length, max_lh * output_chunk_length)` points before the end of the time series.
+        The "future" output chunk then consists in the following `output_chunk_length` points, and the "past" input
+        chunk will be the preceding `lookback * output_chunk_length` points.
+
+        The sample index determines:
+
+        - the position / time of the extracted chunks relative to the end of a single target `series`
+        - the index (which series and covariates) to use in case `series` (and covariates) are
+          passed as a sequence of series.
+
+        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+        lengths, they will contain different numbers of slices. Therefore, some particular slices may
+        be sampled more often than others if they belong to shorter time series.
+
+        .. note::
+            Each series in the provided sequence must have a minimum length of
+            `(lookback + max_lh) * output_chunk_length`, and `min_lh` must be `>=1`.
 
         Parameters
         ----------
         series
             One or a sequence of target `TimeSeries`.
         past_covariates
-            Optionally, one or a sequence of `TimeSeries` containing past-observed covariates. If this parameter is set,
-            the provided sequence must have the same length as that of `series`. Moreover, all
-            covariates in the sequence must have a time span large enough to contain all the required slices.
-            The joint slicing of the target and covariates is relying on the time axes of both series.
+            Optionally, one or a sequence of `TimeSeries` containing past covariates.
+        future_covariates
+            Optionally, one or a sequence of `TimeSeries` containing future-known covariates.
         output_chunk_length
-            The length of the "output" series emitted by the model
+            The length of the lookahead / future window that the model emits as output (for the target) and takes as
+            input (for future covariates).
+        output_chunk_shift
+            The number of steps to shift the start of the output chunk into the future.
         lh
             A `(min_lh, max_lh)` interval for the forecast point, starting from the end of the series.
             For example, `(1, 3)` will select forecast points uniformly between `1*H` and `3*H` points
@@ -655,7 +690,7 @@ class HorizonBasedTrainingDataset(TrainingDataset):
             multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths
             `3 * output_chunk_length`.
         use_static_covariates
-            Whether to use/include static covariate data from input series.
+            Whether to use/include static covariate data from the target `series`.
         sample_weight
             Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
             per label (each step in `output_chunk_length`), and per component.
@@ -667,31 +702,9 @@ class HorizonBasedTrainingDataset(TrainingDataset):
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
-        super().__init__()
-
-        # setup target and sequence
-        series = series2seq(series)
-        past_covariates = series2seq(past_covariates)
-
-        if past_covariates is not None and len(series) != len(past_covariates):
-            raise_log(
-                ValueError(
-                    "The provided sequence of target `series` must have the same length as "
-                    f"the provided sequence of `{FeatureType.PAST_COVARIATES.value}`."
-                ),
-                logger=logger,
-            )
-
-        self.series = series
-        self.past_covariates = past_covariates
-        self.sample_weight = _process_sample_weight(sample_weight, self.series)
-
-        self.output_chunk_length = output_chunk_length
-        self.min_lh, self.max_lh = lh
-        self.lookback = lookback
-
         # Checks
-        if not (self.max_lh >= self.min_lh >= 1):
+        min_lh, max_lh = lh
+        if not (max_lh >= min_lh >= 1):
             raise_log(
                 ValueError(
                     "The lh parameter should be an int tuple (min_lh, max_lh), "
@@ -699,136 +712,37 @@ class HorizonBasedTrainingDataset(TrainingDataset):
                 ),
                 logger=logger,
             )
-        self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_chunk_length
-        self.total_nr_samples = len(self.series) * self.nr_samples_per_ts
-        self.use_static_covariates = use_static_covariates
+        max_samples_per_ts = (max_lh - min_lh) * output_chunk_length
 
-    def __len__(self):
-        """
-        Returns the total number of possible (input, target) splits.
-        """
-        return self.total_nr_samples
+        super().__init__(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            input_chunk_length=lookback * output_chunk_length,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
+            max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=use_static_covariates,
+            sample_weight=sample_weight,
+        )
 
-    def __getitem__(self, idx: int) -> TrainingDatasetOutput:
-        # determine the index of the time series.
-        series_idx = idx // self.nr_samples_per_ts
-        series = self.series[series_idx]
-        series_vals = series.random_component_values(copy=False)
+        self.min_lh, self.max_lh = min_lh, max_lh
+        self.lookback = lookback
 
-        if len(series_vals) < (self.lookback + self.max_lh) * self.output_chunk_length:
+    def _get_end_of_output_idx(self, series, series_idx, idx):
+        # determine the actual number of possible samples in this time series
+        if len(series) < (self.lookback + self.max_lh) * self.output_chunk_length:
             raise_log(
                 ValueError(
-                    "The dataset contains some input/target series that are shorter than "
-                    f"`(lookback + max_lh) * H` ({series_idx}-th series)"
+                    "The dataset contains some target `series` that are shorter than "
+                    f"`(lookback + max_lh) * H` ({series_idx}-th series)."
                 ),
                 logger=logger,
             )
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)
-        # lh_idx should be in [0, self.nr_samples_per_ts)
-        lh_idx = idx - (series_idx * self.nr_samples_per_ts)
+        # lh_idx should be in [0, self.max_samples_per_ts)
+        lh_idx = idx - (series_idx * self.max_samples_per_ts)
 
         # determine the index at the end of the output chunk
-        end_of_output_idx = len(series) - (
-            (self.min_lh - 1) * self.output_chunk_length + lh_idx
-        )
-
-        # optionally, load covariates
-        past_covariates = (
-            self.past_covariates[series_idx]
-            if self.past_covariates is not None
-            else None
-        )
-
-        # optionally, load sample weight
-        sample_weight = (
-            self.sample_weight[series_idx] if self.sample_weight is not None else None
-        )
-
-        shift = self.lookback * self.output_chunk_length
-        input_chunk_length = shift
-
-        # get start and end indices (positions) of all feature types for the current sample
-        idx_bounds = self._memory_indexer(
-            series_idx=series_idx,
-            series=series,
-            shift=shift,
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
-            end_of_output_idx=end_of_output_idx,
-            past_covariates=past_covariates,
-            future_covariates=None,
-            sample_weight=sample_weight,
-        )
-
-        # extract past target series
-        start, end = idx_bounds[FeatureType.PAST_TARGET]
-        pt = series_vals[start:end]
-
-        # extract future target series
-        start, end = idx_bounds[FeatureType.FUTURE_TARGET]
-        ft = series_vals[start:end]
-
-        # past cov, historic future cov, future cov, static cov, sample weight
-        pc, hfc, fc, sc, sw = None, None, None, None, None
-
-        # extract sample covariates
-        if self.past_covariates is not None:
-            start, end = idx_bounds[FeatureType.PAST_COVARIATES]
-            if end > len(past_covariates):
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.PAST_COVARIATES.value}` that "
-                        f"don't extend far enough into the future ({idx}-th sample)."
-                    ),
-                    logger=logger,
-                )
-            pc = past_covariates.random_component_values(copy=False)[start:end]
-            if len(pc) != len(pt):
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.PAST_COVARIATES.value}` whose "
-                        f"time axis doesn't allow to obtain the input (or output) chunk "
-                        f"relative to the target `series`."
-                    ),
-                    logger=logger,
-                )
-
-        # extract sample weights
-        if self.sample_weight is not None:
-            start, end = idx_bounds[FeatureType.SAMPLE_WEIGHT]
-            if end > len(sample_weight):
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.SAMPLE_WEIGHT.value}` series "
-                        f"that don't extend far enough into the future. ({idx}-th sample)"
-                    ),
-                    logger=logger,
-                )
-
-            sw = sample_weight.random_component_values(copy=False)[start:end]
-
-            if len(sw) != self.output_chunk_length:
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.SAMPLE_WEIGHT.value}` series "
-                        f"whose time axis don't allow to obtain the input (or output) "
-                        f"chunk relative to the target `series`."
-                    ),
-                    logger=logger,
-                )
-
-        # extract sample static covariates
-        if self.use_static_covariates:
-            sc = series.static_covariates_values(copy=False)
-
-        # (
-        #     past target,
-        #     past cov,
-        #     historic future cov,
-        #     future cov,
-        #     static cov,
-        #     sample weight,
-        #     future target
-        # )
-        return pt, pc, hfc, fc, sc, sw, ft
+        return len(series) - ((self.min_lh - 1) * self.output_chunk_length + lh_idx)
