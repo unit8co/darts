@@ -457,11 +457,12 @@ class BlockRNNModel(PastCovariatesTorchModel):
         self.activation = activation
 
     def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
-        # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
+        (past_target, past_covariates, _, _, _, _) = train_sample
+        input_dim = past_target.shape[1] + (
+            past_covariates.shape[1] if past_covariates is not None else 0
         )
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes

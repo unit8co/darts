@@ -134,6 +134,8 @@ class TrainingDataset(ABC, Dataset):
             idx_bounds[FeatureType.PAST_TARGET] = (past_start, past_end)
             idx_bounds[FeatureType.FUTURE_TARGET] = (future_start, future_end)
 
+            series_times = series._time_index
+
             for cov, cov_type, start, end in zip(
                 [past_covariates, future_covariates, future_covariates],
                 [
@@ -152,7 +154,6 @@ class TrainingDataset(ABC, Dataset):
                 # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
                 # extract actual index value (respects datetime- and integer-based indexes; also from non-zero
                 # start)
-                series_times = series._time_index
                 cov_times = cov._time_index
                 start_time = series_times[start]
                 end_time = series_times[end - 1]
@@ -174,16 +175,12 @@ class TrainingDataset(ABC, Dataset):
             # sample weight
             if sample_weight is not None:
                 # extract the index position (index) from index value
-                series_time_index = series._time_index
-                sample_weight_time_index = sample_weight._time_index
+                weight_times = sample_weight._time_index
 
-                start_time = series_time_index[future_start]
-                end_time = series_time_index[future_end - 1]
+                start_time = series_times[future_start]
+                end_time = series_times[future_end - 1]
 
-                if (
-                    start_time not in sample_weight_time_index
-                    or end_time not in sample_weight_time_index
-                ):
+                if start_time not in weight_times or end_time not in weight_times:
                     raise_log(
                         ValueError(
                             f"Invalid `{FeatureType.SAMPLE_WEIGHT.value}`; could not find "
@@ -192,8 +189,8 @@ class TrainingDataset(ABC, Dataset):
                         logger=logger,
                     )
 
-                sample_weight_start = sample_weight_time_index.get_loc(start_time)
-                sample_weight_end = sample_weight_time_index.get_loc(end_time) + 1
+                sample_weight_start = weight_times.get_loc(start_time)
+                sample_weight_end = weight_times.get_loc(end_time) + 1
                 idx_bounds[FeatureType.SAMPLE_WEIGHT] = (
                     sample_weight_start,
                     sample_weight_end,
@@ -214,12 +211,11 @@ class TrainingDataset(ABC, Dataset):
 
             for series_type in _SERIES_TYPES:
                 start, end = self._index_memory[series_idx][series_type]
-                if start is not None:
-                    start += idx_shift
-                if end is not None:
-                    end += idx_shift
 
-                idx_bounds[series_type] = (start, end)
+                idx_bounds[series_type] = (
+                    start + idx_shift if start is not None else start,
+                    end + idx_shift if end is not None else end,
+                )
 
         return idx_bounds
 

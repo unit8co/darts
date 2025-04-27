@@ -107,11 +107,10 @@ class CustomRNNModule(PLForecastingModule, ABC):
         # only return the forecast, not the hidden state
         return self(self._process_input_batch(input_batch))[0]
 
-    def _process_input_batch(
-        self, input_batch: tuple
-    ) -> tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def _process_input_batch(self, input_batch: tuple) -> ModuleInput:
         (
             past_target,
+            _,  # past covariates
             historic_future_covariates,
             future_covariates,
             static_covariates,
@@ -124,11 +123,12 @@ class CustomRNNModule(PLForecastingModule, ABC):
                 if future_covariates is not None
                 else past_target
             ),
+            None,
             static_covariates,
         )
 
     def _produce_predict_output(
-        self, x: tuple, last_hidden_state: Optional[torch.Tensor] = None
+        self, x: ModuleInput, last_hidden_state: Optional[torch.Tensor] = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
@@ -149,6 +149,8 @@ class CustomRNNModule(PLForecastingModule, ABC):
         """
         (
             past_target,
+            _,  # past covariates
+            _,  # future past covariates
             historic_future_covariates,
             future_covariates,
             static_covariates,
@@ -171,6 +173,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
         batch_prediction = []
         out, last_hidden_state = self._produce_predict_output((
             input_series,
+            None,
             static_covariates,
         ))
         batch_prediction.append(out[:, -1:, :])
@@ -192,7 +195,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
 
             # feed new input to model, including the last hidden state from the previous iteration
             out, last_hidden_state = self._produce_predict_output(
-                (new_input, static_covariates), last_hidden_state
+                (new_input, None, static_covariates), last_hidden_state
             )
 
             # append prediction to batch prediction array, increase counter
@@ -539,12 +542,12 @@ class RNNModel(DualCovariatesTorchModel):
         self.training_length = training_length
 
     def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
-        # samples are made of (past_target, historic_future_covariates, future_covariates, future_target)
-        # historic_future_covariates and future_covariates have the same width
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future target)
+        (past_target, _, _, future_covariates, _, _) = train_sample
+        input_dim = past_target.shape[1] + (
+            future_covariates.shape[1] if future_covariates is not None else 0
         )
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         kwargs = {}

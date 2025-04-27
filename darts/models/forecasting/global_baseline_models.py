@@ -25,7 +25,7 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
-from darts.utils.data import TrainingSample
+from darts.utils.data import SequentialTrainingDataset, TrainingDataset, TrainingSample
 
 logger = get_logger(__name__)
 
@@ -238,6 +238,26 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
     def _requires_training(self) -> bool:
         # naive models do not have to be trained.
         return False
+
+    def _build_train_dataset(
+        self,
+        series: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]],
+        future_covariates: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Sequence[TimeSeries]],
+        max_samples_per_ts: Optional[int],
+    ) -> TrainingDataset:
+        return SequentialTrainingDataset(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=0,
+            output_chunk_shift=self.output_chunk_shift,
+            max_samples_per_ts=max_samples_per_ts,
+            use_static_covariates=self.uses_static_covariates,
+            sample_weight=sample_weight,
+        )
 
 
 class _NoCovariatesMixin:

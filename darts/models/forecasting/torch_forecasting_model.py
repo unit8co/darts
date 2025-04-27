@@ -57,7 +57,7 @@ from darts.timeseries import TimeSeries
 from darts.utils.data import (
     InferenceDataset,
     SequentialInferenceDataset,
-    ShiftedTrainingDataset,
+    SequentialTrainingDataset,
     TrainingDataset,
     TrainingSample,
 )
@@ -558,13 +558,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         Models can override this method to return a custom `TrainingDataset`.
         """
-        return ShiftedTrainingDataset(
+        return SequentialTrainingDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
-            shift=self.output_chunk_length + self.output_chunk_shift,
+            output_chunk_shift=self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,
             sample_weight=sample_weight,
@@ -724,7 +724,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         _, past_cov, historic_future_cov, future_cov, static_cov, _ = self.train_sample
 
         self._uses_past_covariates = past_cov is not None
-        self._uses_past_covariates = future_cov is not None
+        self._uses_future_covariates = future_cov is not None
         self._uses_static_covariates = static_cov is not None
 
     def to_onnx(self, path: Optional[str] = None, **kwargs):

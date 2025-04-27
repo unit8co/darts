@@ -2054,7 +2054,9 @@ class TestTorchForecastingModel:
                     cov_name + "_covariates": covs[cov_name + "_covariates"][:-1]
                 }
                 _ = model_fc_shift.predict(n=ocl, **add_covs)
-            assert f"provided {cov_name} covariates at dataset index" in str(err.value)
+            assert f"provided `{cov_name}_covariates` at dataset index" in str(
+                err.value
+            )
 
     @pytest.mark.parametrize("config", itertools.product(models, [2, 3, 4]))
     def test_multi_ts_prediction(self, config):
@@ -2174,7 +2176,7 @@ class TestTorchForecastingModel:
             model.fit(ts, sample_weight=ts[:-1])
         assert (
             str(err.value)
-            == "Missing sample weights; could not find sample weights in index value range: "
+            == "Invalid `sample_weight`; could not find sample weights in index value range: "
             "2000-01-11 00:00:00 - 2000-01-11 00:00:00."
         )
 
@@ -2195,7 +2197,7 @@ class TestTorchForecastingModel:
         assert (
             str(err.value)
             == "The number of components in `sample_weight` must either be `1` or match the "
-            "number of target series components `1`. (0-th series)"
+            "number of target series components `1` (0-th series)."
         )
         # with correct number it works
         model = model_cls(**model_kwargs)

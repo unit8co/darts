@@ -292,6 +292,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         dataloader_idx
             the dataloader index
         """
+        # batch has elements (past target, past cov, future past cov, historic future cov, future cov,
+        # static cov, target `TimeSeries`, pred start time)
         input_data_tuple, batch_input_series, batch_pred_starts = (
             batch[:-2],
             batch[-2],
@@ -576,9 +578,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         (
             past_target,
             past_covariates,
+            future_past_covariates,
             historic_future_covariates,
             future_covariates,
-            future_past_covariates,
             static_covariates,
         ) = input_batch
 

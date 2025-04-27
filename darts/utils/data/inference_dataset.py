@@ -83,9 +83,9 @@ class InferenceDataset(ABC, Dataset):
             if cov.start_time() > cov_start:
                 raise_log(
                     ValueError(
-                        f"For the given forecasting case, the provided `{cov_type.value}_covariates` at "
+                        f"For the given forecasting case, the provided `{cov_type.value}` at "
                         f"dataset index `{series_idx}` do not extend far enough into the past. The "
-                        f"`{cov_type.value}_covariates` must start at or before time step `{cov_start}`, whereas now "
+                        f"`{cov_type.value}` must start at or before time step `{cov_start}`, whereas now "
                         f"they start at time step `{cov.start_time()}`."
                     ),
                     logger=logger,
@@ -94,10 +94,10 @@ class InferenceDataset(ABC, Dataset):
             if cov.end_time() < cov_end:
                 raise_log(
                     ValueError(
-                        f"For the given forecasting horizon `n={n}`, the provided `{cov_type.value}_covariates` "
+                        f"For the given forecasting horizon `n={n}`, the provided `{cov_type.value}` "
                         f"at dataset index `{series_idx}` do not extend far enough into the future. As `"
                         f"{'n > output_chunk_length' if n > output_chunk_length else 'n <= output_chunk_length'}"
-                        f"` the `{cov_type.value}_covariates` must end at or after time step `{cov_end}`, "
+                        f"` the `{cov_type.value}` must end at or after time step `{cov_end}`, "
                         f"whereas now they end at time step `{cov.end_time()}`."
                     ),
                     logger=logger,
@@ -207,7 +207,7 @@ class SequentialInferenceDataset(InferenceDataset):
             if cov is not None and len(series) != len(cov):
                 raise_log(
                     ValueError(
-                        f"The sequence of `{name}_covariates` must have the same length as "
+                        f"The sequence of `{name}` must have the same length as "
                         f"the sequence of target `series`."
                     ),
                     logger=logger,
