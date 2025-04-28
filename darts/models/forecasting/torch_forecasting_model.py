@@ -610,7 +610,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         _raise_if_wrong_type(inference_dataset, InferenceDataset)
 
     @staticmethod
-    def _validate_predict_sample(train_sample: tuple, predict_sample: tuple):
+    def _validate_predict_sample(train_sample: TrainingSample, predict_sample: tuple):
         """Validates that the predict sample matches a sample that the model was trained on.
 
         For models relying on `TrainingDataset` and `InferenceDataset`.
@@ -619,10 +619,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ----------
         train_sample
             (past_target, past_covariates, historic_future_covariates, future_covariates, static covariates,
-            sample_weight, future_target)
+            future_target)
         predict_sample
             (past_target, past_covariates, future_past_covariates, historic_future_covariates, future_covariates,
-            static_covariates, ts_target)
+            static_covariates, target series, prediction start time)
         """
         # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
         ds_names = [
@@ -634,14 +634,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ]
 
         # ignore `sample_weight` and `future_target` from train sample
-        train_datasets = train_sample[:-2]
-        train_has_ds = [ds is not None for ds in train_datasets]
+        train_features = train_sample[:-1]
+        train_has_ds = [ds is not None for ds in train_features]
 
         # ignore `future_past_covariates` and `ts_target` from predict sample
-        predict_datasets = predict_sample[:2] + predict_sample[3:-1]
-        predict_has_ds = [ds is not None for ds in predict_datasets]
+        predict_features = predict_sample[:2] + predict_sample[3:-2]
+        predict_has_ds = [ds is not None for ds in predict_features]
 
-        tgt_train, tgt_pred = train_datasets[0], predict_datasets[0]
+        if len(train_features) != len(predict_features):
+            raise_log(
+                ValueError(
+                    f"Mismatch between number of training features `{len(train_features)}` "
+                    f"and prediction features `{len(predict_features)}`. Make sure your prediction "
+                    f"dataset's `__getitem__` method returns the same output type as given in "
+                    f"`darts.utils.data.inference_dataset.InferenceDataset`."
+                ),
+                logger=logger,
+            )
+        tgt_train, tgt_pred = train_features[0], predict_features[0]
         if tgt_train.shape[-1] != tgt_pred.shape[-1]:
             raise_log(
                 ValueError(
@@ -674,9 +684,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ds_in_train
                 and ds_in_predict
                 and (
-                    train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1]
+                    train_features[idx].shape[-1] != predict_features[idx].shape[-1]
                     if ds_name != "static_covariates"
-                    else train_datasets[idx].shape != predict_datasets[idx].shape
+                    else train_features[idx].shape != predict_features[idx].shape
                 )
             ):
                 raise_log(

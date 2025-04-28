@@ -1,6 +1,9 @@
 """
 Inference Datasets
 ------------------
+
+- :class:`~darts.utils.data.inference_dataset.InferenceDataset`
+- :class:`~darts.utils.data.inference_dataset.SequentialInferenceDataset`
 """
 
 import bisect
@@ -24,12 +27,28 @@ logger = get_logger(__name__)
 class InferenceDataset(ABC, Dataset):
     def __init__(self):
         """
-        Abstract class for all darts torch inference dataset.
+        Abstract class for all inference datasets that can be used with Darts' `TorchForecastingModel`.
 
         Provides samples to compute forecasts using a `TorchForecastingModel`.
 
+        Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
+        set of single input `TimeSeries`. The elements are:
+
+        - past_target: target `series` values in the input chunk
+        - past_covariates: Optional `past_covariates` values in the input chunk
+        - future_past_covariates: Optional `past_covariates` values in the forecast horizon (for auto-regression with
+          `n>output_chunk_length`)
+        - historic_future_covariates: Optional `future_covariates` values in the input chunk
+        - future_covariates: Optional `future_covariates` values in the output chunk and forecast horizon
+        - static_covariates: Optional `static_covariates` values of the `series`
+        - target_series: the target `TimeSeries`
+        - pred_time: the time of the first point in the forecast horizon
+
         Darts `TorchForecastingModel` can predict from instances of `InferenceDataset` using the
         `predict_from_dataset()` method.
+
+        `InferenceDataset` inherits torch `Dataset`; meaning that the implementations have to provide the
+        `__getitem__()` method.
         """
 
     @abstractmethod
@@ -156,8 +175,8 @@ class SequentialInferenceDataset(InferenceDataset):
 
         .. note::
             "future_past_covariates" are past covariates that happen to be also known in the future - those
-            are needed for forecasting with n > output_chunk_length by any model relying on past covariates.
-            For this reason, when n > output_chunk_length, this dataset will also emit the "future past_covariates".
+            are needed for forecasting with `n > output_chunk_length` (auto-regression) by any model relying on past
+            covariates. For this reason, this dataset may also emit the "future past_covariates".
 
         Parameters
         ----------

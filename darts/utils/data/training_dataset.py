@@ -1,6 +1,11 @@
 """
 Training Datasets
 -----------------
+
+- :class:`~darts.utils.data.training_dataset.TrainingDataset`
+- :class:`~darts.utils.data.training_dataset.ShiftedTrainingDataset`
+- :class:`~darts.utils.data.training_dataset.SequentialTrainingDataset`
+- :class:`~darts.utils.data.training_dataset.HorizonBasedTrainingDataset`
 """
 
 from abc import ABC, abstractmethod
@@ -35,7 +40,7 @@ _SERIES_TYPES = [
 class TrainingDataset(ABC, Dataset):
     def __init__(self):
         """
-        Super-class for all training datasets for torch models in Darts.
+        Abstract class for all training datasets that can be used with Darts' `TorchForecastingModel`.
 
         Each sample drawn from this dataset must be a seven-element tuple extracted from a specific time window and
         set of single input `TimeSeries`. The elements are:
