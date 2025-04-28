@@ -13,10 +13,10 @@ from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import (
+from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
-    RegressionModel,
+    SKLearnModel,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -29,7 +29,7 @@ from darts.utils.likelihood_models.sklearn import (
 logger = get_logger(__name__)
 
 
-class LinearRegressionModel(RegressionModel):
+class LinearRegressionModel(SKLearnModel):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,

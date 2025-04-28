@@ -1,6 +1,6 @@
 """
-Likelihoods for `RegressionModel`
----------------------------------
+Likelihoods for `SKLearnModel`
+------------------------------
 """
 
 from abc import ABC, abstractmethod
@@ -27,7 +27,7 @@ class SKLearnLikelihood(Likelihood, ABC):
         n_outputs: int,
         random_state: Optional[int] = None,
     ):
-        """Base class for sklearn wrapper (e.g. `RegressionModel`) likelihoods.
+        """Base class for sklearn wrapper (e.g. `SKLearnModel`) likelihoods.
 
         Parameters
         ----------
@@ -64,7 +64,7 @@ class SKLearnLikelihood(Likelihood, ABC):
         Parameters
         ----------
         model
-            The Darts `RegressionModel`.
+            The Darts `SKLearnModel`.
         x
             The input feature array passed to the underlying estimator's `predict()` method.
         num_samples
@@ -77,7 +77,7 @@ class SKLearnLikelihood(Likelihood, ABC):
         kwargs
             Some kwargs passed to the underlying estimator's `predict()` method.
         """
-        model_output = self._estimator_predict(model, x, **kwargs)
+        model_output = self._estimator_predict(model, x=x, **kwargs)
         if predict_likelihood_parameters:
             return self.predict_likelihood_parameters(model_output)
         elif num_samples == 1:
@@ -110,7 +110,7 @@ class SKLearnLikelihood(Likelihood, ABC):
         Parameters
         ----------
         model
-            The Darts `RegressionModel`.
+            The Darts `SKLearnModel`.
         x
             The input feature array passed to the underlying estimator's `predict()` method.
         kwargs
@@ -437,7 +437,7 @@ def _get_likelihood(
     random_state: Optional[int],
     quantiles: Optional[list[float]],
 ) -> Optional[SKLearnLikelihood]:
-    """Get the `Likelihood` object for `RegressionModel`.
+    """Get the `Likelihood` object for `SKLearnModel`.
 
     Parameters
     ----------

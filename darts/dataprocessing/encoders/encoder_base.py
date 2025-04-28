@@ -56,10 +56,10 @@ class CovariatesIndexGenerator(ABC):
         A   in combination with :class:`LocalForecastingModel`, or in a model agnostic scenario:
                 All parameters can be ignored. This scenario is only supported by
                 :class:`FutureCovariatesIndexGenerator`.
-        B   in combination with :class:`RegressionModel`:
+        B   in combination with :class:`SKLearnModel`:
                 Set `input_chunk_length`, `output_chunk_length`, and `lags_covariates`.
                 `input_chunk_length` is the absolute value of the minimum target lag `abs(min(lags))` used with the
-                regression model.
+                `SKLearnModel`.
                 Set `output_chunk_length`, and `lags_covariates` with the identical values used at forecasting model
                 creation. For the covariates lags, use `lags_past_covariates` for class:`PastCovariatesIndexGenerator`,
                 and `lags_future_covariates` for class:`PastCovariatesIndexGenerator`.
@@ -72,12 +72,12 @@ class CovariatesIndexGenerator(ABC):
         input_chunk_length
             Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.
             Corresponds to `input_chunk_length` for :class:`TorchForecastingModel`, or to the absolute minimum target
-            lag value `abs(min(lags))` for :class:`RegressionModel`.
+            lag value `abs(min(lags))` for :class:`SKLearnModel`.
         output_chunk_length
             Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.
-            Corresponds to `output_chunk_length` for both :class:`TorchForecastingModel`, and :class:`RegressionModel`.
+            Corresponds to `output_chunk_length` for both :class:`TorchForecastingModel`, and :class:`SKLearnModel`.
         lags_covariates
-            Optionally, a list of integers giving the covariates lags used for Darts' RegressionModels. Only required
+            Optionally, a list of integers giving the covariates lags used for Darts' SKLearnModels. Only required
             in scenario B. Corresponds to the lag values from `lags_past_covariates` for past covariates, and
             `lags_future_covariates` for future covariates.
         """
@@ -205,7 +205,7 @@ class CovariatesIndexGenerator(ABC):
             and output_chunk_length is None
             and lags_covariates is None
         )
-        # RegressionModel
+        # SKLearnModel
         is_scenario_b = (
             input_chunk_length is not None
             and output_chunk_length is not None
@@ -281,15 +281,15 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
         #     raised if user supplied insufficient covariates
         # case 1
         #     only input_chunk_length and output_chunk_length are given: the complete covariate index is within the
-        #     target index; always True for all models except RegressionModels.
+        #     target index; always True for all models except SKLearnModels.
         # case 2
         #     covariate lags were given (shift_start <= 0 and shift_end <= 0) and
         #     abs(shift_start - 1) <= input_chunk_length: the complete covariate index is within the target index;
-        #     can only be True for RegressionModels.
+        #     can only be True for SKLearnModels.
         # case 3
         #     covariate lags were given (shift_start <= 0 and shift_end <= 0) and
         #     abs(shift_start - 1) > input_chunk_length: we need to add indices before the beginning of the target
-        #     series; can only be True for RegressionModels.
+        #     series; can only be True for SKLearnModels.
 
         target_end = target.end_time()
         if covariates is not None:  # case 0
@@ -323,12 +323,12 @@ class PastCovariatesIndexGenerator(CovariatesIndexGenerator):
         # case 1
         #     only input_chunk_length and output_chunk_length are given: we need to generate a time index that starts
         #     `input_chunk_length - 1` before the end of `target` and ends `max(0, n - output_chunk_length)` after the
-        #     end of `target`; always True for all models except RegressionModels.
+        #     end of `target`; always True for all models except SKLearnModels.
         # case 2
         #     covariate lags were given (shift_start <= 0 and shift_end <= 0): we need to generate a time index that
         #     starts `-shift_start` before the end of `target` and has a length of
         #     `shift_steps + max(0, n - output_chunk_length)`, where `shift_steps` is the number of time steps between
-        #     `shift_start` and `shift_end`; can only be True for RegressionModels.
+        #     `shift_start` and `shift_end`; can only be True for SKLearnModels.
 
         target_end = target.end_time()
         if covariates is not None:  # case 0
@@ -383,17 +383,17 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         #     simply return the target time index.
         # case 2
         #     only input_chunk_length and output_chunk_length are given: the complete covariate index is within the
-        #     target index; always True for all models except RegressionModels.
+        #     target index; always True for all models except SKLearnModels.
         # case 3
         #     covariate lags were given and (shift_start <= 0 or shift_end <= 0): historic part of future covariates.
         #     if shift_end < 0 there will only be the historic part of future covariates.
         #     If shift_start <= 0 and abs(shift_start - 1) > input_chunk_length: we need to add indices before the
-        #     beginning of the target series; can only be True for RegressionModels.
+        #     beginning of the target series; can only be True for SKLearnModels.
         # case 4
         #     covariate lags were given and (shift_start > 0 or shift_end > 0): future part of future covariates.
         #     if shift_start > 0 there will only be the future part of future covariates.
         #     If shift_end > 0 and shift_start > input_chunk_length: we need to add indices after the end of the
-        #     target series; can only be True for RegressionModels.
+        #     target series; can only be True for SKLearnModels.
 
         target_end = target.end_time()
 
@@ -434,11 +434,11 @@ class FutureCovariatesIndexGenerator(CovariatesIndexGenerator):
         # case 2
         #     only input_chunk_length and output_chunk_length are given: we need to generate a time index that starts
         #     `input_chunk_length - 1` before the end of `target` and ends `max(n, output_chunk_length)` after the
-        #     end of `target`; always True for all models except RegressionModels.
+        #     end of `target`; always True for all models except SKLearnModels.
         # case 3
         #     covariate lags were given: we need to generate a time index that starts `-shift_start`
         #     steps before the end of `target` and has a length of `shift_steps + max(0, n - output_chunk_length)`,
-        #     where `shift_steps` is `shift_end - shift_start`; can only be True for RegressionModels.
+        #     where `shift_steps` is `shift_end - shift_start`; can only be True for SKLearnModels.
 
         target_end = target.end_time()
         if covariates is not None:  # case 0
@@ -915,12 +915,12 @@ def _generate_train_idx(target, steps_ahead_start, steps_ahead_end) -> Supported
 
     case 1
         (steps_ahead_start >= 0 and steps_ahead_end is None or <= 1)
-        the complete index is within the target index; always True for all models except RegressionModels.
+        the complete index is within the target index; always True for all models except SKLearnModels.
     case 2
-        steps_ahead_start < 0: add indices before the target start time; only possible for RegressionModels
+        steps_ahead_start < 0: add indices before the target start time; only possible for SKLearnModels
         where the minimum past lag is larger than input_chunk_length.
     case 3
-        steps_ahead_end > 0: add indices after the target end time; only possible for RegressionModels
+        steps_ahead_end > 0: add indices after the target end time; only possible for SKLearnModels
         where the maximum future lag is larger than output_chunk_length.
 
     Parameters
