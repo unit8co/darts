@@ -47,8 +47,9 @@ class InferenceDataset(ABC, Dataset):
         Darts `TorchForecastingModel` can predict from instances of `InferenceDataset` using the
         `predict_from_dataset()` method.
 
-        `InferenceDataset` inherits torch `Dataset`; meaning that the implementations have to provide the
-        `__getitem__()` method.
+        `InferenceDataset` inherits from torch `Dataset`; meaning that all subclasses must implement the
+        `__getitem__()` method. All returned elements except `target_series` (`TimeSeries`) and `pred_time`
+        (`pd.Timestamp` or `int`) must be of type `np.ndarray` (or `None` for optional covariates).
         """
 
     @abstractmethod
@@ -279,7 +280,7 @@ class SequentialInferenceDataset(InferenceDataset):
         return self.len_preds
 
     @staticmethod
-    def find_list_index(index, cumulative_lengths, bounds, stride):
+    def _find_list_index(index, cumulative_lengths, bounds, stride):
         list_index = bisect.bisect_right(cumulative_lengths, index)
         bound_left = bounds[list_index, 0]
         if list_index == 0:
@@ -296,7 +297,7 @@ class SequentialInferenceDataset(InferenceDataset):
                 None,
             )
         else:
-            series_idx, series_end_idx = self.find_list_index(
+            series_idx, series_end_idx = self._find_list_index(
                 idx,
                 self.cum_lengths,
                 self.bounds,

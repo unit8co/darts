@@ -56,12 +56,9 @@ class TrainingDataset(ABC, Dataset):
         Darts `TorchForecastingModel` can be fit from instances of `TrainingDataset` using the `fit_from_dataset()`
         method.
 
-        `TrainingDataset` inherits torch `Dataset`; meaning that the implementations have to provide the
-        `__getitem__()` method.
-
-        It contains `np.ndarray` (and not `TimeSeries`), because training requires the values only,
-        and so we can get big performance gains when slicing by returning only numpy views of the data
-        underlying the `TimeSeries`.
+        `TrainingDataset` inherits from torch `Dataset`; meaning that all subclasses must implement the
+        `__getitem__()` method. All returned elements must be of type `np.ndarray` (or `None` for optional covariates
+        and sample weight).
         """
 
         self._index_memory: dict = {}
