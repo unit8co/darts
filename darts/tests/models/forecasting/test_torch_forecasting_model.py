@@ -30,6 +30,7 @@ from torchmetrics import (
     MeanAbsolutePercentageError,
     Metric,
     MetricCollection,
+    R2Score,
 )
 
 from darts.models import (
@@ -1428,6 +1429,7 @@ class TestTorchForecastingModel:
         metric_collection = MetricCollection([
             MeanAbsolutePercentageError(),
             MeanAbsoluteError(),
+            R2Score(),
         ])
 
         model_kwargs = {
@@ -1476,6 +1478,7 @@ class TestTorchForecastingModel:
         metric_collection = MetricCollection([
             MeanAbsolutePercentageError(),
             MeanAbsoluteError(),
+            R2Score(),
         ])
         model_kwargs = {
             "logger": DummyLogger(),
