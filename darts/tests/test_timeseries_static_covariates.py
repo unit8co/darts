@@ -161,7 +161,6 @@ class TestTimeSeriesStaticCovariate:
             value_cols=value_cols,
             metadata_cols=["st1", "constant"],
         )
-        # print(ts_groups1)
         assert len(ts_groups1) == self.n_groups
         for i, ts in enumerate(ts_groups1):
             assert ts.static_covariates.index.equals(
