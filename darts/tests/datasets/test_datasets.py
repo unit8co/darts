@@ -15,7 +15,7 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
-from darts.utils.data import (  # noqa: F401
+from darts.utils.data import (
     HorizonBasedTrainingDataset,
     SequentialInferenceDataset,
     SequentialTrainingDataset,
