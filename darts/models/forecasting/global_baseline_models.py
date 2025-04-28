@@ -213,10 +213,6 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             logger=logger,
         )
 
-    @abstractmethod
-    def _create_model(self, train_sample: TrainingSample) -> _GlobalNaiveModule:
-        pass
-
     def _verify_predict_sample(self, predict_sample: tuple):
         # naive models do not have to be trained, predict sample does not
         # have to match the training sample

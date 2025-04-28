@@ -102,7 +102,6 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
             The BlockRNN output Tensor with shape `(batch_size, output_chunk_length, target_size, nr_params)`.
             It contains the prediction at the last time step of the sequence.
         """
-        pass
 
 
 # TODO add batch norm

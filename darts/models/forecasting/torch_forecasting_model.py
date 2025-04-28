@@ -545,7 +545,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         This method has to be implemented by all children. It is in charge of instantiating the actual torch model,
         based on examples input/output tensors (i.e. implement a model with the right input/output sizes).
         """
-        pass
 
     def _build_train_dataset(
         self,
@@ -1078,10 +1077,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         train_dataset
-            A training dataset with a type matching this model (e.g. :class:`PastCovariatesSequentialDataset` for
+            A training dataset with a type matching this model (e.g. :class:`SequentialTrainingDataset` for
             :class:`PastCovariatesTorchModel`).
         val_dataset
-            A training dataset with a type matching this model (e.g. :class:`PastCovariatesSequentialDataset` for
+            A training dataset with a type matching this model (e.g. :class:`SequentialTrainingDataset` for
             :class:`PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
         trainer
             Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom `trainer` will
@@ -1613,7 +1612,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         predictions = self.predict_from_dataset(
-            n,
+            n=n,
             dataset=dataset,
             trainer=trainer,
             verbose=verbose,
