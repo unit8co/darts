@@ -15,7 +15,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🟠 Renamed `RegressionModel` to `SKLearnModel`. Using `RegressionModel` will raise a depraction warning.
   - 🟠 Renamed `RandomForest` to `RandomForestModel`. Using `RandomForest` will raise a depraction warning.
   - 🔴 Renamed `RegressionModelWithCategoricalCovariates` to `SKLearnModelWithCategoricalCovariates`. Removed `RegressionModelWithCategoricalCovariates`
-- 🔴 Improvements to `TorchForecastingModel` datasets: [#2796](https://github.com/unit8co/darts/pull/2796) by [Dennis Bader](https://github.com/dennisbader).
+- 🔴 Improvements to `TorchForecastingModel` datasets: [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
   - We simplified the training and inference datasets. Instead of having covariates specific datasets, the new datasets now support all combinations of covariates natively:
     - `ShiftedTrainingDataset` (replaces all `*ShiftedDataset`)
     - `SequentialTrainingDataset` (replaces all `*SequentialDataset`)
