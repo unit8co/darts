@@ -960,8 +960,9 @@ class TimeSeries:
         (2, (3, 1, 1), (6, 1, 1))
         """
         df = nw.from_native(df, eager_only=True, pass_through=False)
+        is_pandas = df.implementation.is_pandas()
         if time_col is None:
-            if not df.implementation.is_pandas():
+            if not is_pandas:
                 raise_log(
                     ValueError(
                         "`time_col` is required when `df` is not a `pandas.DataFrame`."
@@ -1056,18 +1057,19 @@ class TimeSeries:
             + extract_metadata_cols
         ]
 
-        # sort the entire `df` to avoid having to sort individually later on
-        df = df.sort(group_cols + extract_time_col)
-
         if df.get_column(time_col).is_sorted():
             logger.warning(
-                "UserWarning: The (time) index from `df` strictly monotonically increasing. This "
-                "results in time series groups with non-overlapping (time) index. You can ignore this "
+                "UserWarning: The (time) index from `df` is monotonically increasing. This may "
+                "result in time series groups with non-overlapping (time) index. You can ignore this "
                 "warning if the index represents the actual index of each individual time series group."
             )
+        elif is_pandas:
+            # for pandas `group_by` maintains the order, so we can achieve a performance boost with sorting
+            # the entire `df` once to avoid having to sort individually later on
+            df = df.sort(group_cols + extract_time_col)
 
         groups = df.group_by(group_cols[0] if len(group_cols) == 1 else group_cols)
-        n_groups = len(df[group_cols].unique())
+        n_groups = len(df[group_cols].unique()) if verbose else None
 
         # build progress bar for iterator
         iterator = _build_tqdm_iterator(

@@ -1,4 +1,5 @@
 import copy
+import itertools
 import os
 
 import numpy as np
@@ -7,6 +8,7 @@ import pytest
 
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import BoxCox, Scaler
+from darts.tests.conftest import POLARS_AVAILABLE
 from darts.timeseries import (
     DEFAULT_GLOBAL_STATIC_COV_NAME,
     METADATA_TAG,
@@ -14,6 +16,15 @@ from darts.timeseries import (
 )
 from darts.utils.timeseries_generation import linear_timeseries
 from darts.utils.utils import generate_index
+
+TEST_BACKENDS = ["pandas"]
+
+if POLARS_AVAILABLE:
+    import polars as pl
+
+    TEST_BACKENDS.append("polars")
+else:
+    pl = None
 
 
 def setup_test_case():
@@ -63,6 +74,28 @@ def setup_tag(tag, ts):
 
 class TestTimeSeriesStaticCovariate:
     n_groups, len_ts, df_long_uni, df_long_multi = setup_test_case()
+
+    @staticmethod
+    def pd_to_backend(df, backend, index=False):
+        if backend == "pandas":
+            return df
+        elif backend == "polars":
+            if index:
+                return pl.from_pandas(df.reset_index())
+            return pl.from_pandas(df)
+
+    @staticmethod
+    def helper_compare_backend_results(backend, test_case):
+        if backend == "pandas":
+            assert (
+                np.array(test_case["sc_act"]) == np.array(test_case["sc_exp"])
+            ).all()
+            assert test_case["md_act"] == test_case["md_exp"]
+        else:
+            # polars does not maintain order when calling `groupby`
+            sc_act = np.array(test_case["sc_act"]).tolist()
+            assert all(sc_exp in sc_act for sc_exp in test_case["sc_exp"])
+            assert all(md_exp in test_case["md_act"] for md_exp in test_case["md_exp"])
 
     @pytest.mark.parametrize("tag", [STATIC_COV_TAG, METADATA_TAG])
     def test_ts_from_x(self, tag, tmpdir_module):
@@ -119,9 +152,12 @@ class TestTimeSeriesStaticCovariate:
             == "`metadata` must be of type `dict` mapping metadata attributes to their values."
         )
 
-    @pytest.mark.parametrize("index_type", ["int", "dt", "str"])
-    def test_from_group_dataframe(self, index_type):
+    @pytest.mark.parametrize(
+        "config", itertools.product(["int", "dt", "str"], TEST_BACKENDS)
+    )
+    def test_from_group_dataframe(self, config):
         """Tests correct extract of TimeSeries groups from a long DataFrame with unsorted (time/integer) index"""
+        index_type, backend = config
         group = ["a", "a", "a", "b", "b", "b"]
         values = np.arange(len(group))
 
@@ -140,21 +176,36 @@ class TestTimeSeriesStaticCovariate:
             "time": time,
             "x": values,
         })
-        ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
+        ts = TimeSeries.from_group_dataframe(
+            self.pd_to_backend(df, backend), group_cols="group", time_col="time"
+        )
 
         # check the time index
         assert ts[0].time_index.equals(index_expected)
         assert ts[1].time_index.equals(index_expected)
 
         # check the values
-        assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
-        assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
+        vals_exp = [
+            [values[2], values[1], values[0]],
+            [values[3], values[4], values[5]],
+        ]
+        if backend == "pandas":
+            assert (ts[0].values().flatten() == vals_exp[0]).all()
+            assert (ts[1].values().flatten() == vals_exp[1]).all()
+        else:
+            assert ts[0].values().flatten().tolist() in vals_exp
+            assert ts[1].values().flatten().tolist() in vals_exp
 
-    def test_timeseries_from_longitudinal_df(self):
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_timeseries_from_longitudinal_df(self, backend):
         # univariate static covs: only group by "st1", keep static covs "st1"
         value_cols = ["a", "b", "c"]
+
+        df_long_uni = self.pd_to_backend(self.df_long_uni, backend)
+        df_long_multi = self.pd_to_backend(self.df_long_multi, backend)
+
         ts_groups1 = TimeSeries.from_group_dataframe(
-            df=self.df_long_uni,
+            df=df_long_uni,
             group_cols="st1",
             static_cols=None,
             time_col="times",
@@ -162,18 +213,23 @@ class TestTimeSeriesStaticCovariate:
             metadata_cols=["st1", "constant"],
         )
         assert len(ts_groups1) == self.n_groups
+
+        test_case = {"sc_exp": [], "sc_act": [], "md_exp": [], "md_act": []}
         for i, ts in enumerate(ts_groups1):
             assert ts.static_covariates.index.equals(
                 pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
             )
             assert ts.static_covariates.shape == (1, 1)
             assert ts.static_covariates.columns.equals(pd.Index(["st1"]))
-            assert (ts.static_covariates_values(copy=False) == [[i]]).all()
-            assert ts.metadata == {"st1": i, "constant": 1}
+            test_case["sc_exp"].append([[i]])
+            test_case["sc_act"].append(ts.static_covariates_values(copy=False))
+            test_case["md_exp"].append({"st1": i, "constant": 1})
+            test_case["md_act"].append(ts.metadata)
+        self.helper_compare_backend_results(backend, test_case)
 
         # multivariate static covs: only group by "st1", keep static covs "st1", "constant"
         ts_groups2 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1"],
             static_cols="constant",
             time_col="times",
@@ -181,15 +237,20 @@ class TestTimeSeriesStaticCovariate:
             metadata_cols=["st1", "constant"],
         )
         assert len(ts_groups2) == self.n_groups
+
+        test_case = {"sc_exp": [], "sc_act": [], "md_exp": [], "md_act": []}
         for i, ts in enumerate(ts_groups2):
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
-            assert (ts.static_covariates_values(copy=False) == [[i, 1]]).all()
-            assert ts.metadata == {"st1": i, "constant": 1}
+            test_case["sc_exp"].append([[i, 1]])
+            test_case["sc_act"].append(ts.static_covariates_values(copy=False))
+            test_case["md_exp"].append({"st1": i, "constant": 1})
+            test_case["md_act"].append(ts.metadata)
+        self.helper_compare_backend_results(backend, test_case)
 
         # multivariate static covs: group by "st1" and "st2", keep static covs "st1", "st2", "constant"
         ts_groups3 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             static_cols=["constant"],
             time_col="times",
@@ -197,6 +258,8 @@ class TestTimeSeriesStaticCovariate:
             metadata_cols=["st1", "st2", "constant"],
         )
         assert len(ts_groups3) == self.n_groups * 2
+
+        test_case = {"sc_exp": [], "sc_act": [], "md_exp": [], "md_act": []}
         for idx, ts in enumerate(ts_groups3):
             i = idx // 2
             j = idx % 2
@@ -204,13 +267,16 @@ class TestTimeSeriesStaticCovariate:
             assert ts.static_covariates.columns.equals(
                 pd.Index(["st1", "st2", "constant"])
             )
-            assert (ts.static_covariates_values(copy=False) == [[i, j, 1]]).all()
-            assert ts.metadata == {"st1": i, "st2": j, "constant": 1}
+            test_case["sc_exp"].append([[i, j, 1]])
+            test_case["sc_act"].append(ts.static_covariates_values(copy=False))
+            test_case["md_exp"].append({"st1": i, "st2": j, "constant": 1})
+            test_case["md_act"].append(ts.metadata)
+        self.helper_compare_backend_results(backend, test_case)
 
         # drop group columns gives same time series with dropped static covariates
         # drop first column
         ts_groups4 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             static_cols=["constant"],
             time_col="times",
@@ -219,17 +285,22 @@ class TestTimeSeriesStaticCovariate:
             metadata_cols=["st1", "st2", "constant"],
         )
         assert len(ts_groups4) == self.n_groups * 2
+
+        test_case = {"sc_exp": [], "sc_act": [], "md_exp": [], "md_act": []}
         for idx, ts in enumerate(ts_groups4):
             i = idx // 2
             j = idx % 2
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st2", "constant"]))
-            assert (ts.static_covariates_values(copy=False) == [[j, 1]]).all()
-            assert ts.metadata == {"st1": i, "st2": j, "constant": 1}
+            test_case["sc_exp"].append([[j, 1]])
+            test_case["sc_act"].append(ts.static_covariates_values(copy=False))
+            test_case["md_exp"].append({"st1": i, "st2": j, "constant": 1})
+            test_case["md_act"].append(ts.metadata)
+        self.helper_compare_backend_results(backend, test_case)
 
         # drop last column
         ts_groups5 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             static_cols=["constant"],
             time_col="times",
@@ -238,17 +309,22 @@ class TestTimeSeriesStaticCovariate:
             metadata_cols=["st1", "st2", "constant"],
         )
         assert len(ts_groups5) == self.n_groups * 2
+
+        test_case = {"sc_exp": [], "sc_act": [], "md_exp": [], "md_act": []}
         for idx, ts in enumerate(ts_groups5):
             i = idx // 2
             j = idx % 2
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
-            assert (ts.static_covariates_values(copy=False) == [[i, 1]]).all()
-            assert ts.metadata == {"st1": i, "st2": j, "constant": 1}
+            test_case["sc_exp"].append([[i, 1]])
+            test_case["sc_act"].append(ts.static_covariates_values(copy=False))
+            test_case["md_exp"].append({"st1": i, "st2": j, "constant": 1})
+            test_case["md_act"].append(ts.metadata)
+        self.helper_compare_backend_results(backend, test_case)
 
         # drop all columns
         ts_groups6 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             static_cols=["constant"],
             time_col="times",
@@ -257,15 +333,20 @@ class TestTimeSeriesStaticCovariate:
             metadata_cols="constant",
         )
         assert len(ts_groups6) == self.n_groups * 2
+
+        test_case = {"sc_exp": [], "sc_act": [], "md_exp": [], "md_act": []}
         for ts in ts_groups6:
             assert ts.static_covariates.shape == (1, 1)
             assert ts.static_covariates.columns.equals(pd.Index(["constant"]))
-            assert (ts.static_covariates_values(copy=False) == [[1]]).all()
-            assert ts.metadata == {"constant": 1}
+            test_case["sc_exp"].append([[1]])
+            test_case["sc_act"].append(ts.static_covariates_values(copy=False))
+            test_case["md_exp"].append({"constant": 1})
+            test_case["md_act"].append(ts.metadata)
+        self.helper_compare_backend_results(backend, test_case)
 
         # drop all static covariates (no `static_cols`, all `group_cols` dropped) and no metadata cols
         ts_groups7 = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             time_col="times",
             value_cols=value_cols,
@@ -277,20 +358,21 @@ class TestTimeSeriesStaticCovariate:
             assert ts.metadata is None
 
         ts_groups7_parallel = TimeSeries.from_group_dataframe(
-            df=self.df_long_multi,
+            df=df_long_multi,
             group_cols=["st1", "st2"],
             time_col="times",
             value_cols=value_cols,
             drop_group_cols=["st1", "st2"],
             n_jobs=-1,
         )
-        assert ts_groups7_parallel == ts_groups7
+        assert all([ts in ts_groups7_parallel for ts in ts_groups7])
 
-    def test_from_group_dataframe_invalid_drop_cols(self):
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_from_group_dataframe_invalid_drop_cols(self, backend):
         # drop col is not part of `group_cols`
         with pytest.raises(ValueError) as err:
             _ = TimeSeries.from_group_dataframe(
-                df=self.df_long_multi,
+                df=self.pd_to_backend(self.df_long_multi, backend),
                 group_cols=["st1"],
                 time_col="times",
                 value_cols="a",
@@ -298,10 +380,12 @@ class TestTimeSeriesStaticCovariate:
             )
         assert str(err.value).endswith("received: {'invalid'}.")
 
-    def test_from_group_dataframe_groups_too_short(self):
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_from_group_dataframe_groups_too_short(self, backend):
         # groups that are too short for TimeSeries requirements should raise an error
         df = copy.deepcopy(self.df_long_multi)
         df.loc[:, "non_static"] = np.arange(len(df))
+        df = self.pd_to_backend(df, backend)
         with pytest.raises(ValueError) as err:
             _ = TimeSeries.from_group_dataframe(
                 df=df,
