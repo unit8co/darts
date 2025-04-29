@@ -5,6 +5,7 @@ Datasets
 A few popular time series datasets
 """
 
+import platform
 from pathlib import Path
 
 import numpy as np
@@ -932,7 +933,11 @@ class ElectricityConsumptionZurichDataset(DatasetLoaderCSV):
                     "ewz_stromabgabe_netzebenen_stadt_zuerich/"
                     "download/ewz_stromabgabe_netzebenen_stadt_zuerich.csv"
                 ),
-                hash="a019125b7f9c1afeacb0ae60ce7455ef",
+                hash=(
+                    "1e21d679e972ce34a1db8320be9eec39"
+                    if platform.processor().startswith("arm")
+                    else "a019125b7f9c1afeacb0ae60ce7455ef"
+                ),
                 header_time="Timestamp",
                 freq="15min",
                 pre_process_csv_fn=pre_process_dataset,

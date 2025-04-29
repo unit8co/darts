@@ -37,7 +37,7 @@ class Likelihood:
         Base class for all likelihoods.
 
         * likelihoods for torch models
-        * likelihoods for sklearn-like models (e.g. RegressionModel subclasses)
+        * likelihoods for sklearn-like models (e.g. SKLearnModel subclasses)
 
         Parameters
         ----------

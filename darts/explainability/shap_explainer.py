@@ -1,10 +1,10 @@
 """
-Shap Explainer for RegressionModels
+Shap Explainer for SKLearnModels
 ------------------------------------
 A `shap explainer <https://github.com/slundberg/shap>`_ specifically for time series
 forecasting models.
 
-This class is (currently) limited to Darts' `RegressionModel` instances of forecasting models. It uses shap values to
+This class is (currently) limited to Darts' `SKLearnModel` instances of forecasting models. It uses shap values to
 provide "explanations" of each input features. The input features are the different past lags (of the target and/or
 past covariates), as well as potential future lags of future covariates used as inputs by the forecasting model to
 produce its forecasts. Furthermore, in the case of multivariate series, the features contain each dimension of
@@ -37,7 +37,7 @@ from darts import TimeSeries
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.explainability.explainability_result import ShapExplainabilityResult
 from darts.logging import get_logger, raise_if, raise_log
-from darts.models.forecasting.regression_model import RegressionModel
+from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.utils.data.tabularization import create_lagged_prediction_data
 
 logger = get_logger(__name__)
@@ -61,11 +61,11 @@ ShapMethod = NewType("ShapMethod", _ShapMethod)
 
 
 class ShapExplainer(_ForecastingModelExplainer):
-    model: RegressionModel
+    model: SKLearnModel
 
     def __init__(
         self,
-        model: RegressionModel,
+        model: SKLearnModel,
         background_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         background_past_covariates: Optional[
             Union[TimeSeries, Sequence[TimeSeries]]
@@ -84,13 +84,13 @@ class ShapExplainer(_ForecastingModelExplainer):
         - A background series is a `TimeSeries` used to train the shap explainer.
         - A foreground series is a `TimeSeries` that can be explained by a shap explainer after it has been fitted.
 
-        Currently, `ShapExplainer` only works with `RegressionModel` forecasting models.
+        Currently, `ShapExplainer` only works with `SKLearnModel` forecasting models.
         The number of explained horizons (t+1, t+2, ...) can be at most equal to `output_chunk_length` of `model`.
 
         Parameters
         ----------
         model
-            A `RegressionModel` to be explained. It must be fitted first.
+            A `SKLearnModel` to be explained. It must be fitted first.
         background_series
             One or several series to *train* the `ShapExplainer` along with any foreground series.
             Consider using a reduced well-chosen background to reduce computation time.
@@ -134,10 +134,10 @@ class ShapExplainer(_ForecastingModelExplainer):
         # 2) a de-trend methodology for the target. It can be for
         # example target - moving_average(input_chunk_length).
 
-        if not issubclass(type(model), RegressionModel):
+        if not issubclass(type(model), SKLearnModel):
             raise_log(
                 ValueError(
-                    "Invalid `model` type. Currently, only models of type `RegressionModel` are supported."
+                    "Invalid `model` type. Currently, only models of type `SKLearnModel` are supported."
                 ),
                 logger,
             )
@@ -146,7 +146,7 @@ class ShapExplainer(_ForecastingModelExplainer):
             raise_log(
                 ValueError(
                     "Invalid `multi_models` value `False`. Currently, "
-                    "ShapExplainer only supports RegressionModels "
+                    "ShapExplainer only supports SKLearnModels "
                     "with `multi_models=True`."
                 ),
                 logger,
@@ -252,7 +252,7 @@ class ShapExplainer(_ForecastingModelExplainer):
         3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
         and one future covariate with default component name ``"0"``.
         Also, ``horizons = [1, 2]``.
-        The model is a regression model, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
+        The model is a `SKLearnModel`, with ``lags = 3``, ``lags_past_covariates=[-1, -3]``,
         ``lags_future_covariates = [0]``.
 
         We provide `foreground_series`, `foreground_past_covariates`, `foreground_future_covariates` each of length 5.
@@ -516,8 +516,8 @@ class _RegressionShapExplainers:
     """
     Helper Class to wrap the different cases encountered with shap different explainers, multivariates,
     horizon etc.
-    Aim to provide shap values for any type of RegressionModel. Manage the MultioutputRegressor cases.
-    For darts RegressionModel only.
+    Aim to provide shap values for any type of SKLearnModel. Manage the MultioutputRegressor cases.
+    For darts SKLearnModel only.
     """
 
     default_sklearn_shap_explainers = {
@@ -565,7 +565,7 @@ class _RegressionShapExplainers:
 
     def __init__(
         self,
-        model: RegressionModel,
+        model: SKLearnModel,
         n: int,
         target_components: Sequence[str],
         past_covariates_components: Sequence[str],
@@ -634,7 +634,7 @@ class _RegressionShapExplainers:
         Parameters
         ----------
         foreground_X
-            the Dataframe of lags features specific of darts RegressionModel.
+            the Dataframe of lags features specific of darts SKLearnModel.
         horizons
             Optionally, a list of integers representing which points/steps in the future we want to explain,
             starting from the first prediction step at 1. Currently, only forecasting models are supported which
@@ -749,7 +749,7 @@ class _RegressionShapExplainers:
         Creates the shap format input for regression models.
         The output is a pandas DataFrame representing all lags of different covariates, and with adequate
         column names in order to map feature / shap values.
-        It uses create_lagged_data also used in RegressionModel to build the tabular dataset.
+        It uses create_lagged_data also used in SKLearnModel to build the tabular dataset.
 
         """
 

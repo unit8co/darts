@@ -1,19 +1,16 @@
 """
-AutoMFLES
------------
+TBATS
+-----
 """
 
 from typing import Optional
 
-from statsforecast.models import AutoMFLES as SFAutoMFLES
+from statsforecast.models import TBATS as SF_TBATS
 
-from darts.logging import get_logger
 from darts.models.forecasting.sf_model import StatsForecastModel
 
-logger = get_logger(__name__)
 
-
-class AutoMFLES(StatsForecastModel):
+class TBATS(StatsForecastModel):
     def __init__(
         self,
         *args,
@@ -22,22 +19,26 @@ class AutoMFLES(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-MFLES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """TBATS based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
 
-        Automatically selects the best MFLES model from all feasible combinations of the parameters
-        `seasonality_weights`, `smoother`, `ma`, and `seasonal_period`. Selection is made using the sMAPE metric by
-        default. We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#automfles>`_ for the exhaustive documentation
-        of the arguments.
+        Trigonometric Box-Cox transform, ARMA errors, Trend and Seasonal components (TBATS) model. It is an innovations
+        state space model framework used for forecasting time series with multiple seasonalities. It uses a Box-Cox
+        tranformation, ARMA errors, and a trigonometric representation of the seasonal patterns based on Fourier series.
+
+        We refer to the `StatsForecast documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tbats>`_ for the exhaustive documentation of
+        the arguments.
 
         In addition to univariate deterministic forecasting, it comes with additional support:
 
         - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
+          Darts adds support by first regressing the series against the future covariates using a
+          :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
+          StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
 
-        - **Probabilstic / Conformal forecasting:** Probabilstic forecasting can be performed using conformal
-          prediction. To activate it, simply set `prediction_intervals` at model creation. To generate probabilistic
-          forecasts, you can set the following parameters when calling
-          :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
+        - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
+          parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
 
           - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
 
@@ -57,7 +58,7 @@ class AutoMFLES(StatsForecastModel):
         Parameters
         ----------
         args
-            Positional arguments for ``statsforecasts.models.AutoMFLES``.
+            Positional arguments for ``statsforecasts.models.TBATS``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -88,36 +89,28 @@ class AutoMFLES(StatsForecastModel):
         random_state
             Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
         kwargs
-            Keyword arguments for ``statsforecasts.models.AutoMFLES``.
+            Keyword arguments for ``statsforecasts.models.TBATS``.
 
         Examples
         --------
         >>> from darts.datasets import AirPassengersDataset
-        >>> from darts.models import AutoMFLES
-        >>> from darts.utils.timeseries_generation import datetime_attribute_timeseries
+        >>> from darts.models import TBATS
         >>> series = AirPassengersDataset().load()
-        >>> # optionally, use some future covariates; e.g. the value of the month encoded as a sine and cosine series
-        >>> future_cov = datetime_attribute_timeseries(series, "month", cyclic=True, add_length=6)
-        >>> # define AutoMFLES parameters
-        >>> model = AutoMFLES(season_length=12, test_size=12)
-        >>> model.fit(series, future_covariates=future_cov)
-        >>> pred = model.predict(6, future_covariates=future_cov)
+        >>> # define TBATS parameters
+        >>> model = TBATS(season_length=12)
+        >>> model.fit(series)
+        >>> pred = model.predict(6)
         >>> pred.values()
-        array([[466.03298745],
-               [450.76192105],
-               [517.6342497 ],
-               [511.62988828],
-               [520.15305998],
-               [593.38690019]])
+        array([[450.79653684],
+               [472.09265790],
+               [497.76948306],
+               [510.74927369],
+               [520.92224557],
+               [570.33881522]])
         """
         super().__init__(
-            model=SFAutoMFLES(*args, **kwargs),
+            model=SF_TBATS(*args, **kwargs),
             quantiles=quantiles,
             add_encoders=add_encoders,
             random_state=random_state,
         )
-
-    @property
-    def _supports_native_future_covariates(self) -> bool:
-        # StatsForecast didn't set the `use_exog=True` flag for AutoMFLES even though it supports it.
-        return True
