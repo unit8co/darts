@@ -352,6 +352,8 @@ class TestSKLearnModels:
     sine_multiseries1 = [sine_univariate1, sine_univariate2, sine_univariate3]
     sine_multiseries2 = [sine_univariate4, sine_univariate5, sine_univariate6]
 
+    sine_multivariate_multiseries = [sine_multivariate1, sine_multivariate2]
+
     lags_1 = {"target": [-3, -2, -1], "past": [-4, -2], "future": [-5, 2]}
 
     @staticmethod
@@ -1362,22 +1364,43 @@ class TestSKLearnModels:
     )
     def test_multioutput_wrapper(self, config):
         """Check that with input_chunk_length=1, wrapping in MultiOutputRegressor occurs only when necessary"""
+
+        def check_only_non_native_are_wrapped(model, supports_multioutput_natively):
+            if supports_multioutput_natively:
+                assert not isinstance(model.model, MultiOutputRegressor)
+                # single estimator is responsible for both components
+                assert (
+                    model.model
+                    == model.get_estimator(horizon=0, target_dim=0)
+                    == model.get_estimator(horizon=0, target_dim=1)
+                )
+            else:
+                assert isinstance(model.model, MultiOutputRegressor)
+                # one estimator (sub-model) per component
+                assert model.get_estimator(
+                    horizon=0, target_dim=0
+                ) != model.get_estimator(horizon=0, target_dim=1)
+
         model, supports_multioutput_natively = config
+
+        # univariate should not be wrapped in MultiOutputRegressor
+        model.fit(series=self.sine_univariate1)
+        assert not isinstance(model.model, MultiOutputRegressor)
+
+        model = model.untrained_model()
+        # univariate should be wrapped in MultiOutputRegressor only if not natively supported
         model.fit(series=self.sine_multivariate1)
-        if supports_multioutput_natively:
-            assert not isinstance(model.model, MultiOutputRegressor)
-            # single estimator is responsible for both components
-            assert (
-                model.model
-                == model.get_estimator(horizon=0, target_dim=0)
-                == model.get_estimator(horizon=0, target_dim=1)
-            )
-        else:
-            assert isinstance(model.model, MultiOutputRegressor)
-            # one estimator (sub-model) per component
-            assert model.get_estimator(horizon=0, target_dim=0) != model.get_estimator(
-                horizon=0, target_dim=1
-            )
+        check_only_non_native_are_wrapped(model, supports_multioutput_natively)
+
+        model = model.untrained_model()
+        # mutli-series with same component should not be wrapped in MultiOutputRegressor
+        model.fit(series=self.sine_multiseries1)
+        assert not isinstance(model.model, MultiOutputRegressor)
+
+        model = model.untrained_model()
+        # mutli-series with mutli variate should be wrapped in MultiOutputRegressor only if not natively supported
+        model.fit(series=self.sine_multivariate_multiseries)
+        check_only_non_native_are_wrapped(model, supports_multioutput_natively)
 
     model_configs_multioutput = [
         (
