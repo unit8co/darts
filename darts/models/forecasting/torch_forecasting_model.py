@@ -625,7 +625,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
         ds_names = [
-            "past_target",
+            "series",
             "past_covariates",
             "historic_future_covariates",
             "future_covariates",
@@ -650,15 +650,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 ),
                 logger=logger,
             )
-        tgt_train, tgt_pred = train_features[0], predict_features[0]
-        if tgt_train.shape[-1] != tgt_pred.shape[-1]:
-            raise_log(
-                ValueError(
-                    "The provided target has a dimension (width) that does not match "
-                    "the dimension of the target this model has been trained on."
-                ),
-                logger=logger,
-            )
 
         for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(
             zip(train_has_ds, predict_has_ds, ds_names)
@@ -679,22 +670,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     ),
                     logger=logger,
                 )
-            if (
-                ds_in_train
-                and ds_in_predict
-                and (
-                    train_features[idx].shape[-1] != predict_features[idx].shape[-1]
-                    if ds_name != "static_covariates"
-                    else train_features[idx].shape != predict_features[idx].shape
-                )
-            ):
-                raise_log(
-                    ValueError(
-                        f"The provided `{ds_name}` must have equal dimensionality as the "
-                        f"`{ds_name}` used for training the model.",
-                    ),
-                    logger=logger,
-                )
+            if ds_in_train and ds_in_predict:
+                train_shape = train_features[idx].shape
+                preds_shape = predict_features[idx].shape
+
+                if ds_name == "static_covariates":
+                    train_n_comp = train_shape[0] * train_shape[1]
+                    preds_n_comp = preds_shape[0] * preds_shape[1]
+                else:
+                    train_n_comp = train_shape[-1]
+                    preds_n_comp = preds_shape[-1]
+
+                if train_n_comp != preds_n_comp:
+                    raise_log(
+                        ValueError(
+                            f"The provided `{ds_name}` must have equal number of components as the "
+                            f"`{ds_name}` used to train the model. Received number of components: "
+                            f"`{preds_n_comp}`, expected: `{train_n_comp}`.",
+                        ),
+                        logger=logger,
+                    )
 
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
