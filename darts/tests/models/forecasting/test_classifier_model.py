@@ -86,14 +86,20 @@ class TestClassifierModel:
     sine_univariate3_cat = sine_univariate3.map(lambda x: np.round(x))
 
     sine_multivariate1_cat = sine_univariate1_cat.stack(sine_univariate2_cat)
-    sine_multivariate2 = sine_univariate2.stack(sine_univariate3)
+    sine_multivariate2_cat = sine_univariate2_cat.stack(sine_univariate3_cat)
+
+    sine_multivariate1 = sine_univariate2.stack(sine_univariate3)
+    sine_multivariate2 = sine_univariate1.stack(sine_univariate3)
 
     sine_multiseries1_cat = [
         sine_univariate1_cat,
         sine_univariate2_cat,
         sine_univariate3_cat,
     ]
-    sine_multiseries2 = [sine_univariate4, sine_univariate5, sine_univariate6]
+    sine_multiseries1 = [sine_univariate4, sine_univariate5, sine_univariate6]
+
+    sine_multivariate_multiseries = [sine_multivariate1, sine_multivariate2]
+    sine_multivariate_multiseries_cat = [sine_multivariate1_cat, sine_multivariate2_cat]
 
     classifiers = [
         (LogisticRegression, {}),
@@ -354,7 +360,7 @@ class TestClassifierModel:
         # as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
             self.sine_multivariate1_cat,
-            self.sine_multivariate2,
+            self.sine_multivariate1,
             self.models_accuracies,
             model,
             idx,
@@ -379,7 +385,7 @@ class TestClassifierModel:
         # time series as well as expected, accuracies are defined at the top of the class
         self.helper_test_models_accuracy(
             self.sine_multiseries1_cat,
-            self.sine_multiseries2,
+            self.sine_multiseries1,
             self.models_accuracies,
             model,
             idx,
@@ -393,28 +399,55 @@ class TestClassifierModel:
     )
     def test_multioutput_wrapper(self, model_params):
         """Check that with input_chunk_length=1, wrapping in MultiOutputClassifier occurs only when necessary"""
-        (model_cls, kwargs), support_multioutput = model_params
+        (model_cls, kwargs), supports_multioutput_natively = model_params
         model = model_cls(
             lags_past_covariates=1,
             **kwargs,
         )
+
+        def check_only_non_native_are_wrapped(model, supports_multioutput_natively):
+            if supports_multioutput_natively:
+                assert not isinstance(model.model, MultiOutputClassifier)
+                # single estimator is responsible for both components
+                assert (
+                    model.model
+                    == model.get_estimator(horizon=0, target_dim=0)
+                    == model.get_estimator(horizon=0, target_dim=1)
+                )
+            else:
+                assert isinstance(model.model, MultiOutputClassifier)
+                # one estimator (sub-model) per component
+                assert model.get_estimator(
+                    horizon=0, target_dim=0
+                ) != model.get_estimator(horizon=0, target_dim=1)
+
+        # univariate should not be wrapped in MultiOutputRegressor
         model.fit(
-            series=self.sine_multivariate1_cat, past_covariates=self.sine_multivariate2
+            series=self.sine_univariate1_cat, past_covariates=self.sine_multivariate1
         )
-        if support_multioutput:
-            assert not isinstance(model.model, MultiOutputClassifier)
-            # single estimator is responsible for both components
-            assert (
-                model.model
-                == model.get_estimator(horizon=0, target_dim=0)
-                == model.get_estimator(horizon=0, target_dim=1)
-            )
-        else:
-            assert isinstance(model.model, MultiOutputClassifier)
-            # one estimator (sub-model) per component
-            assert model.get_estimator(horizon=0, target_dim=0) != model.get_estimator(
-                horizon=0, target_dim=1
-            )
+        assert not isinstance(model.model, MultiOutputClassifier)
+
+        model = model.untrained_model()
+        # univariate should be wrapped in MultiOutputRegressor only if not natively supported
+        model.fit(
+            series=self.sine_multivariate1_cat, past_covariates=self.sine_multivariate1
+        )
+        check_only_non_native_are_wrapped(model, supports_multioutput_natively)
+
+        model = model.untrained_model()
+        # mutli-series with same component should not be wrapped in MultiOutputRegressor
+        model.fit(
+            series=self.sine_multiseries1_cat, past_covariates=self.sine_multiseries1
+        )
+        assert not isinstance(model.model, MultiOutputClassifier)
+
+        model = model.untrained_model()
+        # mutli-series with mutli variate should be wrapped in MultiOutputRegressor only if not natively supported
+        model.fit(
+            series=self.sine_multivariate_multiseries_cat,
+            past_covariates=self.sine_multivariate_multiseries,
+        )
+        check_only_non_native_are_wrapped(model, supports_multioutput_natively)
 
     @pytest.mark.parametrize(
         "config",
@@ -462,8 +495,8 @@ class TestClassifierModel:
             # testing lags_past_covariates None but past_covariates during training
             model_instance.fit(
                 series=self.sine_univariate1_cat,
-                past_covariates=self.sine_multivariate2,
-                future_covariates=self.sine_multivariate2,
+                past_covariates=self.sine_multivariate1,
+                future_covariates=self.sine_multivariate1,
             )
 
         model_instance = model_cls(
@@ -484,8 +517,8 @@ class TestClassifierModel:
             # testing lags_future_covariates None but future_covariates during training
             model_instance.fit(
                 series=self.sine_univariate1_cat,
-                past_covariates=self.sine_multivariate2,
-                future_covariates=self.sine_multivariate2,
+                past_covariates=self.sine_multivariate1,
+                future_covariates=self.sine_multivariate1,
             )
 
         model_instance = model_cls(
@@ -498,7 +531,7 @@ class TestClassifierModel:
             # testing lags_future_covariates but no future_covariates during fit
             model_instance.fit(
                 series=self.sine_univariate1_cat,
-                past_covariates=self.sine_multivariate2,
+                past_covariates=self.sine_multivariate1,
             )
 
         # testing input_dim
@@ -649,18 +682,30 @@ class TestProbabilisticClassifierModels:
     sine_univariate3_cat = sine_univariate3.map(lambda x: np.round(x))
 
     sine_multivariate1_cat = sine_univariate1_cat.stack(sine_univariate2_cat)
-    sine_multivariate2 = sine_univariate2.stack(sine_univariate3)
+    sine_multivariate2_cat = sine_univariate1_cat.stack(sine_univariate3_cat)
+    sine_multivariate3_cat = sine_univariate2_cat.stack(sine_univariate3_cat)
+
+    sine_multivariate1 = sine_univariate2.stack(sine_univariate3)
+    sine_multivariate2 = sine_univariate1.stack(sine_univariate3)
 
     sine_multiseries1_cat = [
         sine_univariate1_cat,
         sine_univariate2_cat,
         sine_univariate3_cat,
     ]
-    sine_multiseries2 = [sine_univariate4, sine_univariate5, sine_univariate6]
+    sine_multiseries1 = [sine_univariate4, sine_univariate5, sine_univariate6]
+
+    sine_multiseries_multivariate_cat = [
+        sine_multivariate1_cat,
+        sine_multivariate2_cat,
+        sine_multivariate3_cat,
+    ]
+
+    sine_multivariate_multiseries = [sine_multivariate1, sine_multivariate2]
 
     probabilistic_classifiers = [
         (LogisticRegression, {}),
-        (KNeighborsClassifier, {"n_neighbors": 3}),
+        (KNeighborsClassifier, {"n_neighbors": 10}),
         (SVC, {"gamma": 2, "C": 1, "random_state": 42, "probability": True}),
         (GaussianProcessClassifier, {"kernel": 1.0 * RBF(1.0), "random_state": 42}),
         (DecisionTreeClassifier, {"max_depth": 5, "random_state": 42}),
@@ -682,6 +727,19 @@ class TestProbabilisticClassifierModels:
         ),
     ]
 
+    rmse_class_proba = [
+        0.07,  # LogisticRegression
+        0.16,  # KNeighborsClassifier
+        0.06,  # SVC
+        0.1,  # GaussianProcessClassifier
+        0.27,  # DecisionTreeClassifier
+        0.11,  # RandomForestClassifier
+        0.02,  # MLPClassifier
+        0.20,  # AdaBoostClassifier
+        0.07,  # GaussianNB
+        0.16,  # XGBClassifierModel
+    ]
+
     if lgbm_available:
         probabilistic_classifiers.append((
             LightGBMClassifierModel,
@@ -693,6 +751,7 @@ class TestProbabilisticClassifierModels:
                 "random_state": 42,
             },
         ))
+        rmse_class_proba.append(0.04)
 
     if cb_available:
         probabilistic_classifiers.append((
@@ -704,6 +763,7 @@ class TestProbabilisticClassifierModels:
                 "random_state": 42,
             },
         ))
+        rmse_class_proba.append(0.13)
 
     @pytest.mark.parametrize(
         "clf_params",
@@ -731,7 +791,8 @@ class TestProbabilisticClassifierModels:
         )
 
     @pytest.mark.parametrize(
-        "clf_params", process_model_list(probabilistic_classifiers)
+        "clf_params",
+        process_model_list(probabilistic_classifiers),
     )
     def test_class_proba_likelihood_median_pred_is_same_than_no_likelihood(
         self, clf_params
@@ -759,32 +820,84 @@ class TestProbabilisticClassifierModels:
         assert model_likelihood.predict(5) == model.predict(5)
 
         # multivariate series
+        model = model.untrained_model()
+        model_likelihood = model_likelihood.untrained_model()
+        model.fit(self.sine_multivariate1_cat)
+        model_likelihood.fit(self.sine_multivariate1_cat)
+        assert model_likelihood.predict(5) == model.predict(5)
+
+        # multiple univariate series
+        model = model.untrained_model()
+        model_likelihood = model_likelihood.untrained_model()
         model.fit(self.sine_multiseries1_cat)
         model_likelihood.fit(self.sine_multiseries1_cat)
-        assert model_likelihood.predict(5) == model.predict(5)
+        assert model_likelihood.predict(
+            n=5, series=self.sine_multiseries1_cat
+        ) == model.predict(n=5, series=self.sine_multiseries1_cat)
 
-        # multi series
-        model.fit(series=[self.sine_univariate1_cat, self.sine_univariate1_cat])
-        model_likelihood.fit(
-            series=[self.sine_univariate1_cat, self.sine_univariate1_cat]
+        # multiple multivariate series
+        # 3 series two variates each
+        model = model.untrained_model()
+        model_likelihood = model_likelihood.untrained_model()
+        model.fit(self.sine_multiseries_multivariate_cat)
+        model_likelihood.fit(self.sine_multiseries_multivariate_cat)
+        pred = model.predict(n=1, series=self.sine_multiseries_multivariate_cat)
+        pred_likelihood = model_likelihood.predict(
+            n=1, series=self.sine_multiseries_multivariate_cat
         )
-        assert model_likelihood.predict(5) == model.predict(5)
+        assert pred == pred_likelihood
 
     @pytest.mark.parametrize(
-        "clf_params", process_model_list(probabilistic_classifiers)
+        "clf_params",
+        zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
     )
     def test_class_probabilities_are_valid(self, clf_params):
-        clf, kwargs = clf_params
-        model_likelihood = clf(
+        """Check class probabilties have correct shape and meaning"""
+
+        (clf, kwargs), rmse_margin = clf_params
+        model = clf(
             lags=2,
             **kwargs,
         )
 
-        model_likelihood.fit(self.sine_univariate1_cat)
+        true_probas = np.array([0.1, 0.3, 0.6])
+        true_labels = [0, 1, 2]
 
+        df = pd.DataFrame({
+            "random_train": np.random.choice(
+                true_labels, size=100, replace=True, p=true_probas
+            ),
+            "random_test": np.random.choice(
+                true_labels, size=100, replace=True, p=true_probas
+            ),
+        })
+        series = TimeSeries.from_dataframe(
+            df, time_col=None, value_cols=["random_train"]
+        )
+        model.fit(series)
         # model_likelihood has ClassProbability likelihood
-        probas = model_likelihood.predict(1, predict_likelihood_parameters=True)
+        probas = model.predict(1, predict_likelihood_parameters=True)
         # Sum of class proba is 1
         assert probas.sum(axis=1).values()[0][0] == pytest.approx(1)
         # As many probabilties as classes
         assert len(probas.components) == 3
+        # Class porbabilities have the correct ordering
+        assert np.all(probas.values()[1:] > probas.values()[:-1])
+        assert np.all(model.class_labels == true_labels)
+
+        series_test = TimeSeries.from_dataframe(
+            df, time_col=None, value_cols=["random_test"]
+        )
+
+        avg_probas = probas.values()
+        for i in range(1, len(series_test)):
+            avg_probas += model.predict(
+                n=1,
+                series=series_test.split_after(i)[0],
+                predict_likelihood_parameters=True,
+            ).values()
+
+        avg_probas /= 1 + len(series_test)
+        print(avg_probas)
+        rmse = np.mean((avg_probas - true_probas) ** 2) ** 0.5
+        assert rmse <= rmse_margin
