@@ -9,7 +9,7 @@ from darts import TimeSeries, concatenate
 from darts.datasets import AirPassengersDataset
 from darts.logging import get_logger
 from darts.models import LinearRegressionModel, NaiveDrift, NaiveSeasonal
-from darts.tests.models.forecasting.test_regression_models import dummy_timeseries
+from darts.tests.models.forecasting.test_sklearn_models import dummy_timeseries
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_interval_names,

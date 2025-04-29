@@ -31,7 +31,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-latest]
+        os: [macos-14, ubuntu-latest]
         python-version: ['3.10']
         flavour: ['all']
 
@@ -48,9 +48,6 @@ jobs:
       - name: "Compile Dependency Versions"
         run: |
           curl -LsSf https://astral.sh/uv/install.sh | sh
-          if [ "${{ matrix.os }}" == "macos-13" ]; then
-            source $HOME/.local/bin/env
-          fi
           uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
 
       - name: "Cache python environment"
@@ -71,7 +68,12 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "Install Darts Locally"
+        run: |
+          pip install .
 
       - name: "Run tests"
         run: |
@@ -124,9 +126,10 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Locally"
+      - name: "Install Darts Locally"
         run: |
           pip install .
 
@@ -173,9 +176,10 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Locally"
+      - name: "Install Darts Locally"
         run: |
           pip install .
 

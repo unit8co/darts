@@ -14,10 +14,10 @@ import numpy as np
 import xgboost as xgb
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.regression_model import (
+from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
-    RegressionModel,
+    SKLearnModel,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -49,7 +49,7 @@ def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
     return grad, hess
 
 
-class XGBModel(RegressionModel):
+class XGBModel(SKLearnModel):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
