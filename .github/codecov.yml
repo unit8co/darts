@@ -3,4 +3,4 @@ coverage:
     project: off
     patch: off
   ignore:
-    - "darts/tests/*"
+    - "darts/tests/"
