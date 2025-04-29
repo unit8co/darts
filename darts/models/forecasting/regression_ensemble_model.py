@@ -120,9 +120,37 @@ class RegressionEnsembleModel(EnsembleModel):
             show_warnings=show_warnings,
         )
 
+        # check if forecasting model has same output_chunk_shift > 0
+        if any([model.output_chunk_shift > 0 for model in self.forecasting_models]):
+            expected_output_chunk_shift = self.forecasting_models[0].output_chunk_shift
+            raise_if_not(
+                all(
+                    model.output_chunk_shift == expected_output_chunk_shift
+                    for model in self.forecasting_models
+                ),
+                "All forecasting models must have the same `output_chunk_shift`.",
+            )
+            self.has_output_chunk_shift = True
+        else:
+            self.has_output_chunk_shift = False
+
+        # check if forecasting model has same output_chunk_length when output_chunk_shift > 0
+        if self.has_output_chunk_shift:
+            raise_if_not(
+                all(
+                    model.output_chunk_length
+                    == self.forecasting_models[0].output_chunk_length
+                    for model in self.forecasting_models
+                ),
+                "All forecasting models must have the same `output_chunk_length` when `output_chunk_shift > 0`.",
+            )
+
         if regression_model is None:
             regression_model = LinearRegressionModel(
-                lags=None, lags_future_covariates=[0], fit_intercept=False
+                lags=None,
+                lags_future_covariates=[expected_output_chunk_shift],
+                output_chunk_length=expected_output_chunk_shift,
+                fit_intercept=False,
             )
         elif isinstance(regression_model, SKLearnModel):
             raise_if_not(
@@ -134,14 +162,16 @@ class RegressionEnsembleModel(EnsembleModel):
         else:
             # scikit-learn like model
             regression_model = SKLearnModel(
-                lags_future_covariates=[0], model=regression_model
+                lags_future_covariates=[expected_output_chunk_shift],
+                output_chunk_length=expected_output_chunk_shift,
+                model=regression_model,
             )
 
         # check lags of the regression model
         raise_if_not(
-            regression_model.lags == {"future": [0]},
-            f"`lags` and `lags_past_covariates` of regression model must be `None`"
-            f"and `lags_future_covariates` must be [0]. Given:\n"
+            regression_model.lags == {"future": [expected_output_chunk_shift]},
+            f"`lags` and `lags_past_covariates` of regression model must be `None` "
+            f"and `lags_future_covariates` must be [{expected_output_chunk_shift}]. Given:\n"
             f"{regression_model.lags}",
         )
 
@@ -319,16 +349,16 @@ class RegressionEnsembleModel(EnsembleModel):
         # spare train_n_points points to serve as regression target
         is_single_series = isinstance(series, TimeSeries)
 
-        # check if the any forecasting model has output_chunk_shift > 0
-        has_output_chunk_shift = any([
-            model.output_chunk_shift > 0 for model in self.forecasting_models
-        ])
+        # # check if the any forecasting model has output_chunk_shift > 0
+        # has_output_chunk_shift = any([
+        #     model.output_chunk_shift > 0 for model in self.forecasting_models
+        # ])
 
-        if has_output_chunk_shift:
-            # get the minimum output_chunk_length of the forecasting models
-            min_forecasting_model_output_chunk_length = min([
-                model.output_chunk_length for model in self.forecasting_models
-            ])
+        # if has_output_chunk_shift:
+        #     # get the minimum output_chunk_length of the forecasting models
+        #     min_forecasting_model_output_chunk_length = min([
+        #         model.output_chunk_length for model in self.forecasting_models
+        #     ])
 
         # shift by the forecasting models' largest input length
         all_shifts = []
@@ -345,18 +375,18 @@ class RegressionEnsembleModel(EnsembleModel):
         if self.train_n_points == -1:
             if is_single_series:
                 train_n_points = (
-                    [min(len(series), min_forecasting_model_output_chunk_length)]
-                    if has_output_chunk_shift
+                    [min(len(series), self.forecasting_models[0].output_chunk_length)]
+                    if self.has_output_chunk_shift
                     else [len(series)]
                 )
             else:
                 # maximize each series usage
                 train_n_points = (
                     [
-                        min(len(ts), min_forecasting_model_output_chunk_length)
+                        min(len(ts), self.forecasting_models[0].output_chunk_length)
                         for ts in series
                     ]
-                    if has_output_chunk_shift
+                    if self.has_output_chunk_shift
                     else [len(ts) for ts in series]
                 )
 
@@ -398,16 +428,16 @@ class RegressionEnsembleModel(EnsembleModel):
             logger,
         )
 
-        if has_output_chunk_shift:
+        if self.has_output_chunk_shift:
             raise_if(
                 self.regression_model.output_chunk_length
-                > min_forecasting_model_output_chunk_length - input_shift,
+                > self.forecasting_models[0].output_chunk_length - input_shift,
                 f"the `output_chunk_length` of the regression model {self.regression_model.output_chunk_length} "
                 "is too big when `output_chunk_shift` > 0 in the forecasting models "
                 "(must be strictly smaller than or equal to the min `output_chunk_length` of "
-                f"the forecasting models {min_forecasting_model_output_chunk_length} minus the max lag of "
+                f"the forecasting models {self.forecasting_models[0].output_chunk_length} minus the max lag of "
                 f"the forecasting models {input_shift} which equals to "
-                f"{min_forecasting_model_output_chunk_length - input_shift})",
+                f"{self.forecasting_models[0].output_chunk_length - input_shift})",
                 logger,
             )
 
@@ -445,7 +475,7 @@ class RegressionEnsembleModel(EnsembleModel):
             num_samples=self.train_num_samples,
         )
 
-        if self.train_using_historical_forecasts and not has_output_chunk_shift:
+        if self.train_using_historical_forecasts and not self.has_output_chunk_shift:
             predictions = self._make_multiple_historical_forecasts(
                 train_n_points=self.train_n_points,
                 series=series,
