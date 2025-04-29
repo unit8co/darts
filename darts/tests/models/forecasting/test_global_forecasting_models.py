@@ -368,7 +368,7 @@ class TestGlobalForecastingModels:
             self.forecasting_horizon, series=self.ts_pass_train, **cov_kwargs
         )
 
-    @pytest.mark.parametrize("config", models_cls_kwargs_errs[7:9])
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_single_ts(self, config):
         model_cls, kwargs, err = config
         model = model_cls(

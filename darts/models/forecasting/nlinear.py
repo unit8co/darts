@@ -118,8 +118,10 @@ class _NLinearModule(PLMixedCovariatesModule):
             Input dimensions are `(n_samples, n_time_steps, n_variables)`
         """
         x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
+        # we clone `x`, to avoid value mutation from normalization when performing auto-regression
         x = x.clone()
         batch, _, _ = x.shape
+        seq_last = None
 
         if self.shared_weights:
             # discard covariates, to ensure that in_dim == out_dim
@@ -235,10 +237,10 @@ class NLinearModel(MixedCovariatesTorchModel):
             initialization is used (default='True').
         normalize
             Whether to apply the simple "normalization" proposed in the paper, which consists
-            in subtracting the last value of the input sequence from the input sequence. This will
-            be done for the target series and past covariates, but not future covariates because it would defeat the use
-            of encoders (see ``add_encoders``).
-            Without normalization, the models behaves like the simple Linear model proposed in the paper. Default: True.
+            in subtracting the last value of the input sequence from the input sequence. This is applied for the target
+            series and past covariates, but not future covariates because it would defeat the use of encoders (see
+            `add_encoders`). Without normalization, the models behaves like the simple Linear model proposed in the
+            paper. Default: True.
 
             .. note::
                 This cannot be applied to probabilistic models.
