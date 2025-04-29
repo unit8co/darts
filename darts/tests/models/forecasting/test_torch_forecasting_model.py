@@ -30,6 +30,7 @@ from torchmetrics import (
     MeanAbsolutePercentageError,
     Metric,
     MetricCollection,
+    R2Score,
 )
 
 from darts.models import (
@@ -1428,6 +1429,7 @@ class TestTorchForecastingModel:
         metric_collection = MetricCollection([
             MeanAbsolutePercentageError(),
             MeanAbsoluteError(),
+            R2Score(),
         ])
 
         model_kwargs = {
@@ -1476,6 +1478,7 @@ class TestTorchForecastingModel:
         metric_collection = MetricCollection([
             MeanAbsolutePercentageError(),
             MeanAbsoluteError(),
+            R2Score(),
         ])
         model_kwargs = {
             "logger": DummyLogger(),
@@ -2092,6 +2095,10 @@ class TestTorchForecastingModel:
         model_kwargs["pl_trainer_kwargs"]["fast_dev_run"] = False
         # create more than one batch sample as otherwise linear sample weight would always be `1.`
         ts = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+            + 1
+        ) + tg.sine_timeseries(
             length=model_kwargs["input_chunk_length"]
             + model_kwargs["output_chunk_length"]
             + 1
