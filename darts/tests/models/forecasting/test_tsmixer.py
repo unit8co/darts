@@ -381,6 +381,7 @@ class TestTSMixerModel:
                     **tfm_kwargs,
                 )
                 model.fit(ts)
+
         else:
             model = TSMixerModel(
                 input_chunk_length=input_len,
@@ -393,3 +394,7 @@ class TestTSMixerModel:
             )
             model.fit(ts)
             model.predict(n=output_len, series=ts)
+
+            # Assert that the encoder and decoder mixers have the expected number of blocks
+            assert len(model.model.decoder_mixer) == 2 - project_after_n_blocks
+            assert len(model.model.encoder_mixer) == project_after_n_blocks
