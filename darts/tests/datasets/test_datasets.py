@@ -1,4 +1,5 @@
 import itertools
+import math
 
 import numpy as np
 import pandas as pd
@@ -590,6 +591,71 @@ class TestDataset:
             np.all(el_reg == el_shift)
             for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
         ])
+
+    def test_inference_dataset_bounds(self):
+        # target1 has length 100
+        assert len(self.target1) == 100
+
+        kwargs = {
+            "input_chunk_length": 3,
+            "output_chunk_length": 1,
+            "n": 1,
+        }
+
+        # missing stride
+        with pytest.raises(ValueError) as exc:
+            SequentialInferenceDataset(
+                series=self.target1, stride=0, bounds=np.array([[3, 100]]), **kwargs
+            )
+        assert (
+            str(exc.value)
+            == "Must supply either both `stride` and `bounds`, or none of them."
+        )
+
+        # stride = 1
+        ds = SequentialInferenceDataset(
+            series=self.target1, stride=1, bounds=np.array([[3, 100]]), **kwargs
+        )
+        # length 98
+        assert len(ds) == 100 - 3 + 1
+        # first two sample are from beginning of the target with stride 1
+        np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
+        np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[1:4])
+        # last two sample are from end of the target with stride 1
+        np.testing.assert_array_almost_equal(ds[96][0], self.target1.values()[-4:-1])
+        np.testing.assert_array_almost_equal(ds[97][0], self.target1.values()[-3:])
+
+        # stride = 2, setting bounds upper limit as `100` can still only compute until `99` since starting
+        # at `3` with stride
+        ds = SequentialInferenceDataset(
+            series=self.target1, stride=2, bounds=np.array([[3, 100]]), **kwargs
+        )
+
+        # length 49
+        assert len(ds) == math.ceil((100 - 3 + 1) / 2)
+        # first two sample are from beginning of the target
+        np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
+        np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[2:5])
+        # last two sample are from end of the target
+        np.testing.assert_array_almost_equal(ds[47][0], self.target1.values()[-6:-3])
+        np.testing.assert_array_almost_equal(ds[48][0], self.target1.values()[-4:-1])
+
+        # stride = 2, setting bounds upper limit as `101` will result in an index error for sample 50
+        ds = SequentialInferenceDataset(
+            series=self.target1, stride=2, bounds=np.array([[3, 101]]), **kwargs
+        )
+
+        # length 50
+        assert len(ds) == math.ceil((101 - 3 + 1) / 2)
+        # getting the samples from before works
+        np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
+        np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[2:5])
+        np.testing.assert_array_almost_equal(ds[47][0], self.target1.values()[-6:-3])
+        np.testing.assert_array_almost_equal(ds[48][0], self.target1.values()[-4:-1])
+
+        # but sample at index 50 raises an error
+        with pytest.raises(IndexError):
+            _ = ds[50]
 
     def test_shifted_training_dataset_too_short(self):
         # one target series

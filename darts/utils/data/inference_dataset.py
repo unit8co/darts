@@ -54,11 +54,11 @@ class InferenceDataset(ABC, Dataset):
 
     @abstractmethod
     def __len__(self) -> int:
-        pass
+        """The total number of samples that can be extracted."""
 
     @abstractmethod
     def __getitem__(self, idx: int) -> InferenceDatasetOutput:
-        pass
+        """Returns a sample drawn from this dataset."""
 
     @staticmethod
     def _covariate_indexer(
