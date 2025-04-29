@@ -591,6 +591,89 @@ class TestDataset:
             for el_reg, el_shift in zip(batch_reg[:-1], batch_shift[:-1])
         ])
 
+    def test_shifted_training_dataset_too_short(self):
+        # one target series
+        with pytest.raises(ValueError) as exc:
+            _ = ShiftedTrainingDataset(
+                series=self.target1[:5],
+                input_chunk_length=3,
+                output_chunk_length=3,
+                shift=3,
+            )
+        assert str(exc.value) == (
+            "The input `series` are too short to extract even a single sample. "
+            "Expected min length: `6`, received max length: `5`."
+        )
+
+        # two target series both too short, will hint at max length of both
+        with pytest.raises(ValueError) as exc:
+            _ = ShiftedTrainingDataset(
+                series=[self.target1[:3], self.target1[:4]],
+                input_chunk_length=3,
+                output_chunk_length=3,
+                shift=3,
+            )
+        assert str(exc.value) == (
+            "The input `series` are too short to extract even a single sample. "
+            "Expected min length: `6`, received max length: `4`."
+        )
+
+        # two target series, first is long enough, second is too short;
+        # error is raised only when going through the dataset
+        ds = ShiftedTrainingDataset(
+            series=[self.target1[:6], self.target1[:5]],
+            input_chunk_length=3,
+            output_chunk_length=3,
+            shift=3,
+        )
+        # first sample of first series is okay
+        _ = ds[0]
+        # first sample of second series failed
+        with pytest.raises(ValueError) as exc:
+            _ = ds[1]
+        assert str(exc.value) == (
+            "The dataset contains target `series` that are too short to extract "
+            "even a single example. Expected min length: `6`, received length `5` "
+            "(at series sequence idx `1`)."
+        )
+
+    def test_horizon_training_dataset_too_short(self):
+        # two target series, first is long enough, second is too short;
+        # horizon based only detects too short series when going through the dataset
+        ds = HorizonBasedTrainingDataset(
+            series=[self.target1[:6], self.target1[:5]],
+            output_chunk_length=3,
+            lookback=1,
+            lh=(1, 1),
+        )
+        # first sample of first series is okay
+        _ = ds[0]
+        # first sample of second series failed
+        with pytest.raises(ValueError) as exc:
+            _ = ds[1]
+        assert str(exc.value) == (
+            "The dataset contains target `series` that are too short to extract "
+            "even a single example. Expected min length: `6`, received length `5` "
+            "(at series sequence idx `1`)."
+        )
+        # dataset end
+        with pytest.raises(IndexError):
+            _ = ds[2]
+
+    def test_horizon_training_dataset_invalid_lh(self):
+        # lh elements must be >= 1
+        with pytest.raises(ValueError) as exc:
+            _ = HorizonBasedTrainingDataset(
+                series=self.target1,
+                output_chunk_length=3,
+                lookback=1,
+                lh=(1, 0),
+            )
+        assert str(exc.value) == (
+            "Invalid `lh=(1, 0)`. `lh` must be a tuple `(min_lh, max_lh)`, "
+            "with `1 <= min_lh <= max_lh`."
+        )
+
     def test_past_covariates_sequential_dataset(self):
         # one target series
         ds = SequentialTrainingDataset(
@@ -1282,7 +1365,7 @@ class TestDataset:
             _ = ds[0]
         assert str(exc.value) == (
             "The `past_covariates` frequency `<2 * Days>` does not match "
-            "the target `series` frequency `<Day>` (0-th series)."
+            "the target `series` frequency `<Day>` (at series sequence idx `0`)."
         )
 
         # two targets and two covariates
@@ -1500,7 +1583,7 @@ class TestDataset:
             _ = ds[0]
         assert str(exc.value) == (
             "The `future_covariates` frequency `<2 * Days>` does not match "
-            "the target `series` frequency `<Day>` (0-th series)."
+            "the target `series` frequency `<Day>` (at series sequence idx `0`)."
         )
 
         # two targets and two covariates
@@ -1794,7 +1877,8 @@ class TestDataset:
             lookback=2,
             sample_weight=weight,
         )
-        assert len(ds) == 20
+        # 21 as both `lh` bounds are inclusive
+        assert len(ds) == 21
         self._assert_eq(
             ds[5],
             (
@@ -1819,7 +1903,8 @@ class TestDataset:
             lookback=2,
             sample_weight=weight,
         )
-        assert len(ds) == 40
+        # 42 as both `lh` bounds are inclusive per series
+        assert len(ds) == 42
         self._assert_eq(
             ds[5],
             (
@@ -1832,8 +1917,9 @@ class TestDataset:
                 self.target1[85:95],
             ),
         )
+        # 21 samples after comes the second series
         self._assert_eq(
-            ds[25],
+            ds[26],
             (
                 self.target2[115:135],
                 None,
@@ -1875,8 +1961,9 @@ class TestDataset:
                 self.target1[85:95],
             ),
         )
+        # 21 samples after comes the second series
         self._assert_eq(
-            ds[25],
+            ds[26],
             (
                 self.target2[115:135],
                 self.cov2[115:135],
@@ -2139,7 +2226,7 @@ class TestDataset:
         assert (
             str(err.value)
             == "The number of components in `sample_weight` must either be `1` or match "
-            "the number of target series components `1` (0-th series)."
+            "the number of target series components `1` (at series sequence idx `0`)."
         )
 
         # weight too short end

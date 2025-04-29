@@ -164,7 +164,7 @@ class TrainingDataset(ABC, Dataset):
                     raise_log(
                         ValueError(
                             f"The `{main_feat_type.value}` frequency `{feat.freq}` does not match the target "
-                            f"`series` frequency `{series.freq}` ({series_idx}-th series)."
+                            f"`series` frequency `{series.freq}` (at series sequence idx `{series_idx}`)."
                         )
                     )
 
@@ -343,6 +343,15 @@ class ShiftedTrainingDataset(TrainingDataset):
             )
         self.ideal_nr_samples = len(self.series) * self.max_samples_per_ts
 
+        if self.ideal_nr_samples <= 0:
+            raise_log(
+                ValueError(
+                    f"The input `series` are too short to extract even a single sample. "
+                    f"Expected min length: `{self.size_of_both_chunks}`, received max length: "
+                    f"`{int(self.ideal_nr_samples / len(self.series)) + self.size_of_both_chunks - 1}`."
+                )
+            )
+
     def __len__(self):
         return self.ideal_nr_samples
 
@@ -373,7 +382,7 @@ class ShiftedTrainingDataset(TrainingDataset):
                     ValueError(
                         f"The number of components in `{FeatureType.SAMPLE_WEIGHT.value}` must "
                         f"either be `1` or match the number of target series components "
-                        f"`{series.n_components}` ({series_idx}-th series)."
+                        f"`{series.n_components}` (at series sequence idx `{series_idx}`)."
                     ),
                     logger=logger,
                 )
@@ -445,9 +454,9 @@ class ShiftedTrainingDataset(TrainingDataset):
         if n_samples_in_ts < 1:
             raise_log(
                 ValueError(
-                    "The dataset contains some target `series` that are shorter than "
-                    "`max(self.input_chunk_length, self.shift + self.output_chunk_length)` "
-                    f"({series_idx}-th series)."
+                    f"The dataset contains target `series` that are too short to extract "
+                    f"even a single example. Expected min length: `{self.size_of_both_chunks}`, "
+                    f"received length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
                 logger=logger,
             )
@@ -639,12 +648,12 @@ class HorizonBasedTrainingDataset(SequentialTrainingDataset):
         if not (max_lh >= min_lh >= 1):
             raise_log(
                 ValueError(
-                    "The lh parameter should be an int tuple (min_lh, max_lh), "
-                    "with 1 <= min_lh <= max_lh"
+                    f"Invalid `lh={lh}`. `lh` must be a tuple `(min_lh, max_lh)`, "
+                    f"with `1 <= min_lh <= max_lh`."
                 ),
                 logger=logger,
             )
-        max_samples_per_ts = (max_lh - min_lh) * output_chunk_length
+        max_samples_per_ts = (max_lh - min_lh) * output_chunk_length + 1
 
         super().__init__(
             series=series,
@@ -663,11 +672,13 @@ class HorizonBasedTrainingDataset(SequentialTrainingDataset):
 
     def _get_end_of_output_idx(self, series, series_idx, idx):
         # determine the actual number of possible samples in this time series
-        if len(series) < (self.lookback + self.max_lh) * self.output_chunk_length:
+        min_length = (self.lookback + self.max_lh) * self.output_chunk_length
+        if len(series) < min_length:
             raise_log(
                 ValueError(
-                    "The dataset contains some target `series` that are shorter than "
-                    f"`(lookback + max_lh) * H` ({series_idx}-th series)."
+                    f"The dataset contains target `series` that are too short to extract "
+                    f"even a single example. Expected min length: `{min_length}`, received "
+                    f"length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
                 logger=logger,
             )
