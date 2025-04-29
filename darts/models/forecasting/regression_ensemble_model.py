@@ -120,6 +120,7 @@ class RegressionEnsembleModel(EnsembleModel):
             show_warnings=show_warnings,
         )
 
+        expected_output_chunk_shift = 0
         # check if forecasting model has same output_chunk_shift > 0
         if any([model.output_chunk_shift > 0 for model in self.forecasting_models]):
             expected_output_chunk_shift = self.forecasting_models[0].output_chunk_shift
@@ -149,7 +150,7 @@ class RegressionEnsembleModel(EnsembleModel):
             regression_model = LinearRegressionModel(
                 lags=None,
                 lags_future_covariates=[expected_output_chunk_shift],
-                output_chunk_length=expected_output_chunk_shift,
+                output_chunk_shift=expected_output_chunk_shift,
                 fit_intercept=False,
             )
         elif isinstance(regression_model, SKLearnModel):
@@ -163,7 +164,7 @@ class RegressionEnsembleModel(EnsembleModel):
             # scikit-learn like model
             regression_model = SKLearnModel(
                 lags_future_covariates=[expected_output_chunk_shift],
-                output_chunk_length=expected_output_chunk_shift,
+                output_chunk_shift=expected_output_chunk_shift,
                 model=regression_model,
             )
 
@@ -348,17 +349,6 @@ class RegressionEnsembleModel(EnsembleModel):
 
         # spare train_n_points points to serve as regression target
         is_single_series = isinstance(series, TimeSeries)
-
-        # # check if the any forecasting model has output_chunk_shift > 0
-        # has_output_chunk_shift = any([
-        #     model.output_chunk_shift > 0 for model in self.forecasting_models
-        # ])
-
-        # if has_output_chunk_shift:
-        #     # get the minimum output_chunk_length of the forecasting models
-        #     min_forecasting_model_output_chunk_length = min([
-        #         model.output_chunk_length for model in self.forecasting_models
-        #     ])
 
         # shift by the forecasting models' largest input length
         all_shifts = []
