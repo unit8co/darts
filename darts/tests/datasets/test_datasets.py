@@ -73,10 +73,13 @@ class TestDataset:
         self._assert_eq(ds[1][1:], (None, None, None, None, self.cov_st2, self.target2))
 
         # fail if covariates do not have same size
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             ds = SequentialInferenceDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
+        assert str(exc.value) == (
+            "The sequence of `past_covariates` must have the same length as the sequence of target `series`."
+        )
 
         # with covariates
         ds = SequentialInferenceDataset(
@@ -115,8 +118,14 @@ class TestDataset:
         )
 
         # should fail if covariates are too short
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             _ = ds[0]
+        assert str(exc.value) == (
+            "For the given forecasting horizon `n=30`, the provided `past_covariates` at dataset index "
+            "`0` do not extend far enough into the future. As `n > output_chunk_length` the `past_covariates` "
+            "must end at or after time step `2010-07-21 00:00:00`, whereas now they end at time "
+            "step `2010-07-01 00:00:00`."
+        )
 
         # Should return correct values when covariates is long enough
         ds = SequentialInferenceDataset(
@@ -176,11 +185,14 @@ class TestDataset:
         self._assert_eq(ds[1][1:], (None, None, None, None, self.cov_st2, self.target2))
 
         # fail if covariates do not have same size
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             ds = SequentialInferenceDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
+        assert str(exc.value) == (
+            "The sequence of `future_covariates` must have the same length as the sequence of target `series`."
+        )
 
         # With future past covariates:
         times1 = pd.date_range(start="20100101", end="20100701", freq="D")
@@ -206,8 +218,14 @@ class TestDataset:
         )
 
         # should fail if covariates are too short
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             _ = ds[0]
+        assert str(exc.value) == (
+            "For the given forecasting horizon `n=30`, the provided `future_covariates` at dataset "
+            "index `0` do not extend far enough into the future. As `n > output_chunk_length` the "
+            "`future_covariates` must end at or after time step `2010-07-31 00:00:00`, whereas now "
+            "they end at time step `2010-07-01 00:00:00`."
+        )
 
         # Should return correct values when covariates is long enough
         ds = SequentialInferenceDataset(
@@ -660,10 +678,13 @@ class TestDataset:
         )
 
         # two targets and one covariate
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             ds = SequentialTrainingDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
+        assert str(exc.value) == (
+            "The sequence of `past_covariates` must have the same length as the sequence of target `series`."
+        )
 
         # two targets and two covariates
         ds = SequentialTrainingDataset(
@@ -710,8 +731,13 @@ class TestDataset:
             input_chunk_length=10,
             output_chunk_length=10,
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             _ = ds[5]
+
+        assert str(exc.value) == (
+            "Invalid `past_covariates`; could not find values in index range: "
+            "2010-12-08 00:00:00 - 2010-12-17 00:00:00."
+        )
 
         # the same should fail when series are integer-indexed
         times1 = pd.RangeIndex(start=0, stop=100, step=1)
@@ -726,8 +752,11 @@ class TestDataset:
             input_chunk_length=10,
             output_chunk_length=10,
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             _ = ds[5]
+        assert str(exc.value) == (
+            "Invalid `past_covariates`; could not find values in index range: 75 - 84."
+        )
 
         # we should get the correct covariate slice even when target and covariates are not aligned
         times1 = pd.date_range(start="20100101", end="20110101", freq="D")
@@ -876,11 +905,14 @@ class TestDataset:
         )
 
         # two targets and one covariate
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             ds = SequentialTrainingDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
+        assert str(exc.value) == (
+            "The sequence of `future_covariates` must have the same length as the sequence of target `series`."
+        )
 
         # two targets and two covariates; covariates not aligned, must contain correct values
         target1 = TimeSeries.from_values(np.random.randn(100)).with_static_covariates(
@@ -951,8 +983,12 @@ class TestDataset:
             output_chunk_length=2,
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as exc:
             _ = ds[0]
+        assert (
+            str(exc.value)
+            == "Invalid `future_covariates`; could not find values in index range: 6 - 7."
+        )
 
     def test_dual_covariates_sequential_dataset(self):
         # Must contain (past_target, historic_future_covariates, future_covariates, static covariates,
@@ -1217,6 +1253,38 @@ class TestDataset:
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
 
+        # covariates end too early
+        chunk_length = 3
+        series = self.target1[: 2 * chunk_length]
+        ds = ShiftedTrainingDataset(
+            series=series,
+            past_covariates=series[: -(chunk_length + 1)],
+            input_chunk_length=chunk_length,
+            output_chunk_length=chunk_length,
+            shift=chunk_length,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = ds[0]
+        assert str(exc.value) == (
+            "Invalid `past_covariates`; could not find values in index range: "
+            "2000-01-01 00:00:00 - 2000-01-03 00:00:00."
+        )
+
+        # covariates are long enough but don't have the same frequency
+        ds = ShiftedTrainingDataset(
+            series=series,
+            past_covariates=self.target1[::2],
+            input_chunk_length=chunk_length,
+            output_chunk_length=chunk_length,
+            shift=chunk_length,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = ds[0]
+        assert str(exc.value) == (
+            "The `past_covariates` frequency `<2 * Days>` does not match "
+            "the target `series` frequency `<Day>` (0-th series)."
+        )
+
         # two targets and two covariates
         ds = ShiftedTrainingDataset(
             series=[self.target1, self.target2],
@@ -1402,6 +1470,38 @@ class TestDataset:
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
+
+        # covariates end too early
+        chunk_length = 3
+        series = self.target1[: 2 * chunk_length]
+        ds = ShiftedTrainingDataset(
+            series=series,
+            future_covariates=series[:-1],
+            input_chunk_length=chunk_length,
+            output_chunk_length=chunk_length,
+            shift=chunk_length,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = ds[0]
+        assert str(exc.value) == (
+            "Invalid `future_covariates`; could not find values in index range: "
+            "2000-01-04 00:00:00 - 2000-01-06 00:00:00."
+        )
+
+        # covariates are long enough but don't have the same frequency
+        ds = ShiftedTrainingDataset(
+            series=series,
+            future_covariates=self.target1[::2],
+            input_chunk_length=chunk_length,
+            output_chunk_length=chunk_length,
+            shift=chunk_length,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = ds[0]
+        assert str(exc.value) == (
+            "The `future_covariates` frequency `<2 * Days>` does not match "
+            "the target `series` frequency `<Day>` (0-th series)."
+        )
 
         # two targets and two covariates
         ds = ShiftedTrainingDataset(
@@ -2053,7 +2153,7 @@ class TestDataset:
             _ = ds[0]
         assert (
             str(err.value)
-            == "Invalid `sample_weight`; could not find sample weights in index value range: "
+            == "Invalid `sample_weight`; could not find values in index range: "
             "2000-04-07 00:00:00 - 2000-04-09 00:00:00."
         )
 
@@ -2068,7 +2168,7 @@ class TestDataset:
             _ = ds[len(ds) - 1]
         assert (
             str(err.value)
-            == "Invalid `sample_weight`; could not find sample weights in index value range: "
+            == "Invalid `sample_weight`; could not find values in index range: "
             "2000-01-02 00:00:00 - 2000-01-04 00:00:00."
         )
 

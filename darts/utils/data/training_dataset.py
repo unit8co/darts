@@ -65,11 +65,11 @@ class TrainingDataset(ABC, Dataset):
 
     @abstractmethod
     def __len__(self) -> int:
-        pass
+        """The total number of samples that can be extracted."""
 
     @abstractmethod
     def __getitem__(self, idx: int) -> TrainingDatasetOutput:
-        pass
+        """Returns a sample drawn from this dataset."""
 
     def _memory_indexer(
         self,
@@ -139,67 +139,56 @@ class TrainingDataset(ABC, Dataset):
 
             series_times = series._time_index
 
-            for cov, cov_type, start, end in zip(
-                [past_covariates, future_covariates, future_covariates],
+            # get start (inclusive) and end (exclusive) indices for all external features
+            for feat, feat_type, start, end in zip(
+                [past_covariates, future_covariates, future_covariates, sample_weight],
                 [
                     FeatureType.PAST_COVARIATES,
                     FeatureType.HISTORIC_FUTURE_COVARIATES,
                     FeatureType.FUTURE_COVARIATES,
+                    FeatureType.SAMPLE_WEIGHT,
                 ],
-                [past_start, past_start, future_start],
-                [past_end, past_end, future_end],
+                [past_start, past_start, future_start, future_start],
+                [past_end, past_end, future_end, future_end],
             ):
-                if cov is None:
-                    idx_bounds[cov_type] = (None, None)
+                if feat is None:
+                    idx_bounds[feat_type] = (None, None)
                     continue
+
+                main_feat_type = (
+                    feat_type
+                    if feat_type != FeatureType.HISTORIC_FUTURE_COVARIATES
+                    else FeatureType.FUTURE_COVARIATES
+                )
+                if feat.freq != series.freq:
+                    raise_log(
+                        ValueError(
+                            f"The `{main_feat_type.value}` frequency `{feat.freq}` does not match the target "
+                            f"`series` frequency `{series.freq}` ({series_idx}-th series)."
+                        )
+                    )
 
                 # we need to be careful with getting ranges and indexes:
                 # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
                 # extract actual index value (respects datetime- and integer-based indexes; also from non-zero
                 # start)
-                cov_times = cov._time_index
+                feat_times = feat._time_index
                 start_time = series_times[start]
                 end_time = series_times[end - 1]
 
-                if start_time not in cov_times or end_time not in cov_times:
+                if start_time not in feat_times or end_time not in feat_times:
                     raise_log(
                         ValueError(
-                            f"Missing covariates; could not find `{cov_type.value}` in index "
-                            f"value range: {start_time} - {end_time}."
+                            f"Invalid `{main_feat_type.value}`; could not find values in index "
+                            f"range: {start_time} - {end_time}."
                         ),
                         logger=logger,
                     )
 
                 # extract the index position (index) from index value
-                cov_start = cov_times.get_loc(start_time)
-                cov_end = cov_times.get_loc(end_time) + 1
-                idx_bounds[cov_type] = (cov_start, cov_end)
-
-            # sample weight
-            if sample_weight is not None:
-                # extract the index position (index) from index value
-                weight_times = sample_weight._time_index
-
-                start_time = series_times[future_start]
-                end_time = series_times[future_end - 1]
-
-                if start_time not in weight_times or end_time not in weight_times:
-                    raise_log(
-                        ValueError(
-                            f"Invalid `{FeatureType.SAMPLE_WEIGHT.value}`; could not find "
-                            f"sample weights in index value range: {start_time} - {end_time}."
-                        ),
-                        logger=logger,
-                    )
-
-                sample_weight_start = weight_times.get_loc(start_time)
-                sample_weight_end = weight_times.get_loc(end_time) + 1
-                idx_bounds[FeatureType.SAMPLE_WEIGHT] = (
-                    sample_weight_start,
-                    sample_weight_end,
-                )
-            else:
-                idx_bounds[FeatureType.SAMPLE_WEIGHT] = (None, None)
+                feat_start = feat_times.get_loc(start_time)
+                feat_end = feat_times.get_loc(end_time) + 1
+                idx_bounds[feat_type] = (feat_start, feat_end)
 
             # store position of initial sample and all relevant sub set indices
             self._index_memory[series_idx] = {
@@ -416,39 +405,12 @@ class ShiftedTrainingDataset(TrainingDataset):
         # extract past covariates
         if self.uses_past_covariates:
             start, end = idx_bounds[FeatureType.PAST_COVARIATES]
-            if end > len(past_covariates):
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.PAST_COVARIATES.value}` "
-                        f"that don't extend far enough into the future. ({idx}-th sample)"
-                    ),
-                    logger=logger,
-                )
-
             pc = past_covariates.random_component_values(copy=False)[start:end]
-
-            if len(pc) != self.input_chunk_length:
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.PAST_COVARIATES.value}` "
-                        f"whose time axis doesn't allow to obtain the input (and / or output) chunk relative to the "
-                        f"target `series`."
-                    ),
-                    logger=logger,
-                )
 
         # extract future covariates
         if self.uses_future_covariates:
             # future part of future covariates
             start, end = idx_bounds[FeatureType.FUTURE_COVARIATES]
-            if end > len(future_covariates):
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.FUTURE_COVARIATES.value}` "
-                        f"that don't extend far enough into the future. ({idx}-th sample)"
-                    ),
-                    logger=logger,
-                )
             vals = future_covariates.random_component_values(copy=False)
             fc = vals[start:end]
 
@@ -456,42 +418,10 @@ class ShiftedTrainingDataset(TrainingDataset):
             hfc_start, hfc_end = idx_bounds[FeatureType.HISTORIC_FUTURE_COVARIATES]
             hfc = vals[hfc_start:hfc_end]
 
-            if (
-                len(hfc) != self.input_chunk_length
-                or len(fc) != self.output_chunk_length
-            ):
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.FUTURE_COVARIATES.value}` "
-                        "whose time axis doesn't allow to obtain the input (and / or output) chunk relative to the "
-                        "target `series`."
-                    ),
-                    logger=logger,
-                )
-
         # extract sample weights
         if self.sample_weight is not None:
             start, end = idx_bounds[FeatureType.SAMPLE_WEIGHT]
-            if end > len(sample_weight):
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.SAMPLE_WEIGHT.value}` series "
-                        f"that don't extend far enough into the future. ({idx}-th sample)"
-                    ),
-                    logger=logger,
-                )
-
             sw = sample_weight.random_component_values(copy=False)[start:end]
-
-            if len(sw) != self.output_chunk_length:
-                raise_log(
-                    ValueError(
-                        f"The dataset contains `{FeatureType.SAMPLE_WEIGHT.value}` series "
-                        f"whose time axis don't allow to obtain the input (or output) "
-                        f"chunk relative to the target `series`."
-                    ),
-                    logger=logger,
-                )
 
         # extract static covariates
         if self.uses_static_covariates_covariates:
