@@ -122,9 +122,9 @@ class TestDataset:
         with pytest.raises(ValueError) as exc:
             _ = ds[0]
         assert str(exc.value) == (
-            "For the given forecasting horizon `n=30`, the provided `past_covariates` at dataset index "
+            "For the given forecasting horizon `n=30`, the provided `past_covariates` at series sequence index "
             "`0` do not extend far enough into the future. As `n > output_chunk_length` the `past_covariates` "
-            "must end at or after time step `2010-07-21 00:00:00`, whereas now they end at time "
+            "must end at or after time step `2010-07-21 00:00:00`, whereas now the end is at time "
             "step `2010-07-01 00:00:00`."
         )
 
@@ -222,10 +222,10 @@ class TestDataset:
         with pytest.raises(ValueError) as exc:
             _ = ds[0]
         assert str(exc.value) == (
-            "For the given forecasting horizon `n=30`, the provided `future_covariates` at dataset "
+            "For the given forecasting horizon `n=30`, the provided `future_covariates` at series sequence "
             "index `0` do not extend far enough into the future. As `n > output_chunk_length` the "
             "`future_covariates` must end at or after time step `2010-07-31 00:00:00`, whereas now "
-            "they end at time step `2010-07-01 00:00:00`."
+            "the end is at time step `2010-07-01 00:00:00`."
         )
 
         # Should return correct values when covariates is long enough

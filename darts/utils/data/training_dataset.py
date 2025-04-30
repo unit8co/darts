@@ -12,10 +12,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Optional, Union
 
-from torch.utils.data import Dataset
-
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.utils.data.dataset import DatasetBase
 from darts.utils.data.utils import (
     FeatureType,
     TrainingDatasetOutput,
@@ -25,19 +24,8 @@ from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
-_SampleIndexType = dict[FeatureType, tuple[Optional[int], Optional[int]]]
 
-_SERIES_TYPES = [
-    FeatureType.PAST_TARGET,
-    FeatureType.FUTURE_TARGET,
-    FeatureType.PAST_COVARIATES,
-    FeatureType.HISTORIC_FUTURE_COVARIATES,
-    FeatureType.FUTURE_COVARIATES,
-    FeatureType.SAMPLE_WEIGHT,
-]
-
-
-class TrainingDataset(ABC, Dataset):
+class TrainingDataset(DatasetBase, ABC):
     def __init__(self):
         """
         Abstract class for all training datasets that can be used with Darts' `TorchForecastingModel`.
@@ -60,156 +48,11 @@ class TrainingDataset(ABC, Dataset):
         `__getitem__()` method. All returned elements must be of type `np.ndarray` (or `None` for optional covariates
         and sample weight).
         """
-
-        self._index_memory: dict = {}
-
-    @abstractmethod
-    def __len__(self) -> int:
-        """The total number of samples that can be extracted."""
+        super().__init__()
 
     @abstractmethod
     def __getitem__(self, idx: int) -> TrainingDatasetOutput:
         """Returns a sample drawn from this dataset."""
-
-    def _memory_indexer(
-        self,
-        series_idx: int,
-        series: TimeSeries,
-        shift: int,
-        input_chunk_length: int,
-        output_chunk_length: int,
-        end_of_output_idx: int,
-        past_covariates: Optional[TimeSeries] = None,
-        future_covariates: Optional[TimeSeries] = None,
-        sample_weight: Optional[TimeSeries] = None,
-    ) -> _SampleIndexType:
-        """Returns the (start, end) indices for each feature type (past target, future target, past covariates,
-        historic future covariates, future covariates, and sample weight) of the current sample `i` from `series_idx`.
-
-        Works for all TimeSeries index types: pd.DatetimeIndex, pd.RangeIndex (and the deprecated Int64Index)
-
-        When `series_idx` is observed for the first time, it stores the position of the sample `0` within the full
-        target time series and the (start, end) indices of all sub sets.
-        This allows to calculate the sub set indices for all future samples `i` by simply adjusting for the difference
-        between the positions of sample `i` and sample `0`.
-
-        Parameters
-        ----------
-        series_idx
-            index of the current target TimeSeries.
-        series
-            current target TimeSeries.
-        shift
-            The number of time steps by which to shift the output chunks relative to the input chunks.
-        input_chunk_length
-            The length of the lookback / past window the model takes as input.
-        output_chunk_length
-            The length of the lookahead / future window that the model emits as output (for the target) and takes as
-            input (for future covariates).
-        end_of_output_idx
-            the index where the output chunk of the current sample ends in `series`.
-        past_covariates
-            current `past_covariates` TimeSeries.
-        future_covariates
-            current `future_covariates` TimeSeries.
-        sample_weight
-            current sample weight TimeSeries.
-        """
-        # store the start and end index (positions) for series and covariates
-        idx_bounds = {}
-
-        # the first time series_idx is observed
-        if series_idx not in self._index_memory:
-            start_of_output_idx = end_of_output_idx - output_chunk_length
-            start_of_input_idx = start_of_output_idx - shift
-
-            # select forecast point and target period, using the previously computed indexes
-            future_start, future_end = (
-                start_of_output_idx,
-                start_of_output_idx + output_chunk_length,
-            )
-
-            # select input period; look at the `input_chunk_length` points after start of input
-            past_start, past_end = (
-                start_of_input_idx,
-                start_of_input_idx + input_chunk_length,
-            )
-            idx_bounds[FeatureType.PAST_TARGET] = (past_start, past_end)
-            idx_bounds[FeatureType.FUTURE_TARGET] = (future_start, future_end)
-
-            series_times = series._time_index
-
-            # get start (inclusive) and end (exclusive) indices for all external features
-            for feat, feat_type, start, end in zip(
-                [past_covariates, future_covariates, future_covariates, sample_weight],
-                [
-                    FeatureType.PAST_COVARIATES,
-                    FeatureType.HISTORIC_FUTURE_COVARIATES,
-                    FeatureType.FUTURE_COVARIATES,
-                    FeatureType.SAMPLE_WEIGHT,
-                ],
-                [past_start, past_start, future_start, future_start],
-                [past_end, past_end, future_end, future_end],
-            ):
-                if feat is None:
-                    idx_bounds[feat_type] = (None, None)
-                    continue
-
-                main_feat_type = (
-                    feat_type
-                    if feat_type != FeatureType.HISTORIC_FUTURE_COVARIATES
-                    else FeatureType.FUTURE_COVARIATES
-                )
-                if feat.freq != series.freq:
-                    raise_log(
-                        ValueError(
-                            f"The `{main_feat_type.value}` frequency `{feat.freq}` does not match the target "
-                            f"`series` frequency `{series.freq}` (at series sequence idx `{series_idx}`)."
-                        )
-                    )
-
-                # we need to be careful with getting ranges and indexes:
-                # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
-                # extract actual index value (respects datetime- and integer-based indexes; also from non-zero
-                # start)
-                feat_times = feat._time_index
-                start_time = series_times[start]
-                end_time = series_times[end - 1]
-
-                if start_time not in feat_times or end_time not in feat_times:
-                    raise_log(
-                        ValueError(
-                            f"Invalid `{main_feat_type.value}`; could not find values in index "
-                            f"range: {start_time} - {end_time}."
-                        ),
-                        logger=logger,
-                    )
-
-                # extract the index position (index) from index value
-                feat_start = feat_times.get_loc(start_time)
-                feat_end = feat_times.get_loc(end_time) + 1
-                idx_bounds[feat_type] = (feat_start, feat_end)
-
-            # store position of initial sample and all relevant sub set indices
-            self._index_memory[series_idx] = {
-                "end_of_output_idx": end_of_output_idx,
-                **idx_bounds,
-            }
-        else:
-            # load position of initial sample and its sub set indices
-            end_of_output_idx_last = self._index_memory[series_idx]["end_of_output_idx"]
-            # evaluate how much the new sample needs to be shifted, and shift all indexes
-            idx_shift = end_of_output_idx - end_of_output_idx_last
-
-            for series_type in _SERIES_TYPES:
-                start, end = self._index_memory[series_idx][series_type]
-
-                idx_bounds[series_type] = (
-                    start + idx_shift if start is not None else start,
-                    end + idx_shift if end is not None else end,
-                )
-
-        return idx_bounds
 
 
 class ShiftedTrainingDataset(TrainingDataset):
@@ -359,7 +202,6 @@ class ShiftedTrainingDataset(TrainingDataset):
         # determine the index of the time series.
         series_idx = idx // self.max_samples_per_ts
         series = self.series[series_idx]
-        series_vals = series.random_component_values(copy=False)
 
         # determine the index at the end of the output chunk
         end_of_output_idx = self._get_end_of_output_idx(series, series_idx, idx)
@@ -398,8 +240,10 @@ class ShiftedTrainingDataset(TrainingDataset):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             sample_weight=sample_weight,
+            n=None,
         )
 
+        series_vals = series.random_component_values(copy=False)
         # extract past target series
         start, end = idx_bounds[FeatureType.PAST_TARGET]
         pt = series_vals[start:end]

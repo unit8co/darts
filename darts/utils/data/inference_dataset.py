@@ -12,11 +12,10 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import numpy as np
-import pandas as pd
-from torch.utils.data import Dataset
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.utils.data.dataset import DatasetBase
 from darts.utils.data.utils import FeatureType, InferenceDatasetOutput
 from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
 from darts.utils.ts_utils import series2seq
@@ -24,7 +23,7 @@ from darts.utils.ts_utils import series2seq
 logger = get_logger(__name__)
 
 
-class InferenceDataset(ABC, Dataset):
+class InferenceDataset(DatasetBase, ABC):
     def __init__(self):
         """
         Abstract class for all inference datasets that can be used with Darts' `TorchForecastingModel`.
@@ -51,81 +50,11 @@ class InferenceDataset(ABC, Dataset):
         `__getitem__()` method. All returned elements except `target_series` (`TimeSeries`) and `pred_time`
         (`pd.Timestamp` or `int`) must be of type `np.ndarray` (or `None` for optional covariates).
         """
-
-    @abstractmethod
-    def __len__(self) -> int:
-        """The total number of samples that can be extracted."""
+        super().__init__()
 
     @abstractmethod
     def __getitem__(self, idx: int) -> InferenceDatasetOutput:
         """Returns a sample drawn from this dataset."""
-
-    @staticmethod
-    def _covariate_indexer(
-        series_idx: int,
-        past_start: Union[pd.Timestamp, int],
-        past_end: Union[pd.Timestamp, int],
-        past_covariates: Optional[TimeSeries],
-        future_covariates: Optional[TimeSeries],
-        output_chunk_length: int,
-        output_chunk_shift: int,
-        n: int,
-    ) -> dict[FeatureType, tuple[Optional[int], Optional[int]]]:
-        """returns tuple of (past_start, past_end, future_start, future_end)"""
-        # we need to use the time index (datetime or integer) here to match the index with the covariate series
-        cov_times = {}
-
-        for cov, cov_type in zip(
-            [past_covariates, future_covariates],
-            [FeatureType.PAST_COVARIATES, FeatureType.FUTURE_COVARIATES],
-        ):
-            if cov is None:
-                cov_times[cov_type] = (None, None)
-                continue
-
-            # past covariates and historic part of future covariates
-            cov_start = past_start
-
-            if cov_type == FeatureType.PAST_COVARIATES:
-                # with auto-regression: model will consume future values up until forecasting point
-                cov_end = past_end + max(0, n - output_chunk_length) * cov.freq
-            else:
-                # future part of future covariates; up until the end of the forecast including `output_chunk_shift`
-                cov_end = (
-                    past_end
-                    + (max(n, output_chunk_length) + output_chunk_shift)
-                    * future_covariates.freq
-                )
-
-            # check start requirements for past covariates and historic part of future covariates
-            if cov.start_time() > cov_start:
-                raise_log(
-                    ValueError(
-                        f"For the given forecasting case, the provided `{cov_type.value}` at "
-                        f"dataset index `{series_idx}` do not extend far enough into the past. The "
-                        f"`{cov_type.value}` must start at or before time step `{cov_start}`, whereas now "
-                        f"they start at time step `{cov.start_time()}`."
-                    ),
-                    logger=logger,
-                )
-            # check end requirements for past covariates and future part of future covariates
-            if cov.end_time() < cov_end:
-                raise_log(
-                    ValueError(
-                        f"For the given forecasting horizon `n={n}`, the provided `{cov_type.value}` "
-                        f"at dataset index `{series_idx}` do not extend far enough into the future. As `"
-                        f"{'n > output_chunk_length' if n > output_chunk_length else 'n <= output_chunk_length'}"
-                        f"` the `{cov_type.value}` must end at or after time step `{cov_end}`, "
-                        f"whereas now they end at time step `{cov.end_time()}`."
-                    ),
-                    logger=logger,
-                )
-
-            # extract the index position (integer index) from time_index value
-            cov_start = cov.time_index.get_loc(cov_start)
-            cov_end = cov.time_index.get_loc(cov_end) + 1
-            cov_times[cov_type] = (cov_start, cov_end)
-        return cov_times
 
 
 class SequentialInferenceDataset(InferenceDataset):
@@ -290,12 +219,10 @@ class SequentialInferenceDataset(InferenceDataset):
         return list_index, bound_left + stride_idx
 
     def __getitem__(self, idx: int) -> InferenceDatasetOutput:
+        # determine the series index, and the index + 1 (exclusive range) of the output chunk end within that series
         if self.bounds is None:
-            series_idx, series_start_idx, series_end_idx = (
-                idx,
-                -self.input_chunk_length,
-                None,
-            )
+            series_idx = idx
+            series_end_idx = len(self.series[idx])
         else:
             series_idx, series_end_idx = self._find_list_index(
                 idx,
@@ -303,19 +230,20 @@ class SequentialInferenceDataset(InferenceDataset):
                 self.bounds,
                 self.stride,
             )
-            series_start_idx = series_end_idx - self.input_chunk_length
+        end_of_output_idx = (
+            series_end_idx + self.output_chunk_shift + self.output_chunk_length
+        )
 
         series = self.series[series_idx]
         if not len(series) >= self.input_chunk_length:
             raise_log(
                 ValueError(
-                    f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length})."
+                    f"The dataset contains target `series` that are too short to extract "
+                    f"the model input for prediction . Expected min length: `{self.input_chunk_length}`, "
+                    f"received length `{len(series)}` (at series sequence idx `{series_idx}`)."
                 ),
                 logger=logger,
             )
-        past_end = series._time_index[
-            series_end_idx - 1 if series_end_idx is not None else -1
-        ]
 
         # load covariates
         past_covariates = (
@@ -325,59 +253,72 @@ class SequentialInferenceDataset(InferenceDataset):
             self.future_covariates[series_idx] if self.uses_future_covariates else None
         )
 
+        idx_bounds = self._memory_indexer(
+            series_idx=series_idx,
+            series=series,
+            shift=self.input_chunk_length + self.output_chunk_shift,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            end_of_output_idx=end_of_output_idx,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            sample_weight=None,
+            n=self.n,
+        )
+
+        series_vals = series.random_component_values(copy=False)
         # extract past target series
-        pt = series.random_component_values(copy=False)[series_start_idx:series_end_idx]
+        start, end = idx_bounds[FeatureType.PAST_TARGET]
+        pt = series_vals[start:end]
+
+        # extract prediction start
+        start, _ = idx_bounds[FeatureType.FUTURE_TARGET]
+        if start < len(series):
+            pred_start = series[start]
+        else:
+            pred_start = (
+                series._time_index[-1] + ((start + 1) - len(series)) * series.freq
+            )
 
         # past cov, future past cov, historic future cov, future cov, static cov
         pc, fpc, hfc, fc, sc = None, None, None, None, None
 
-        if self.uses_past_covariates or self.uses_future_covariates:
-            # get start and end indices (integer) of the covariates including historic and future parts
-            cov_times = self._covariate_indexer(
-                series_idx=series_idx,
-                past_start=series.time_index[series_start_idx],
-                past_end=past_end,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                output_chunk_length=self.output_chunk_length,
-                output_chunk_shift=self.output_chunk_shift,
-                n=self.n,
-            )
+        # extract past covariates
+        if self.uses_past_covariates:
+            # past part of past covariates
+            start, end = idx_bounds[FeatureType.PAST_COVARIATES]
+            vals = past_covariates.random_component_values(copy=False)
+            pc = vals[start:end]
 
-            # extract past covariates
-            if self.uses_past_covariates:
-                start, end = cov_times[FeatureType.PAST_COVARIATES]
-                vals = past_covariates.random_component_values(copy=False)[start:end]
-                # historic part of past covariates
-                pc = vals[: self.input_chunk_length]
-                # future part of past covariates
-                fpc = vals[self.input_chunk_length :]
+            # future part of past covariates (`None` if not performing auto-regression)
+            fpc_start, fpc_end = idx_bounds[FeatureType.FUTURE_PAST_COVARIATES]
+            fpc = vals[fpc_start:fpc_end] if fpc_start is not None else None
 
-                # set to None if empty array
-                if len(pc) == 0:
-                    pc = None
-                if len(fpc) == 0:
-                    fpc = None
+        # extract future covariates
+        if self.uses_future_covariates:
+            # future part of future covariates
+            start, end = idx_bounds[FeatureType.FUTURE_COVARIATES]
+            vals = future_covariates.random_component_values(copy=False)
+            fc = vals[start:end]
 
-            # extract future covariates
-            if self.uses_future_covariates:
-                start, end = cov_times[FeatureType.FUTURE_COVARIATES]
-                vals = future_covariates.random_component_values(copy=False)[start:end]
-                # historic part of future covariates
-                hfc = vals[: self.input_chunk_length]
-                # future part of future covariates
-                fc = vals[self.input_chunk_length + self.output_chunk_shift :]
-
-                # set to None if empty array
-                if len(hfc) == 0:
-                    hfc = None
-                if len(fc) == 0:
-                    fc = None
+            # historic part of future covariates
+            hfc_start, hfc_end = idx_bounds[FeatureType.HISTORIC_FUTURE_COVARIATES]
+            hfc = vals[hfc_start:hfc_end]
 
         # extract static covariates
-        if self.use_static_covariates:
+        if self.uses_static_covariates_covariates:
             sc = series.static_covariates_values(copy=False)
 
+        # (
+        #     past target,
+        #     past cov,
+        #     future past cov,
+        #     historic future cov,
+        #     future cov,
+        #     static cov,
+        #     target series,
+        #     prediction start time,
+        # )
         return (
             pt,
             pc,
@@ -386,5 +327,5 @@ class SequentialInferenceDataset(InferenceDataset):
             fc,
             sc,
             series,
-            past_end + series.freq * (1 + self.output_chunk_shift),
+            pred_start,
         )

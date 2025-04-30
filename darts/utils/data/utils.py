@@ -69,6 +69,20 @@ class FeatureType(Enum):
     SAMPLE_WEIGHT = "sample_weight"
 
 
+# for extracting feature index boundaries
+_SampleIndexType = dict[FeatureType, tuple[Optional[int], Optional[int]]]
+
+_SERIES_TYPES = [
+    FeatureType.PAST_TARGET,
+    FeatureType.FUTURE_TARGET,
+    FeatureType.PAST_COVARIATES,
+    FeatureType.FUTURE_PAST_COVARIATES,
+    FeatureType.HISTORIC_FUTURE_COVARIATES,
+    FeatureType.FUTURE_COVARIATES,
+    FeatureType.SAMPLE_WEIGHT,
+]
+
+
 def _get_matching_index(ts_target: TimeSeries, ts_covariate: TimeSeries, idx: int):
     """
     Given two overlapping series `ts_target` and `ts_covariate` and an index point `idx` of `ts_target`, returns the
