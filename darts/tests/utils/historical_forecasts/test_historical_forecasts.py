@@ -441,6 +441,7 @@ class TestHistoricalforecast:
                 return None
             return NLinearModel(
                 input_chunk_length=3,
+                normalize=False,
                 likelihood=(
                     QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95]) if use_ll else None
                 ),
