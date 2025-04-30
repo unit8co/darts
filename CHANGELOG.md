@@ -36,6 +36,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+- Moved all torch dataset related modules from `darts.utils.data.*` to `darts.utils.data.torch_datasets.*`. The objects can still be imported as before with `from darts.utils.data import ...`
+- Moved tabularization module from `darts.utils.data.tabularization` into `darts.utils.data.tabularization.tabularization`. The objects can still be imported as before with `from darts.utils.data.tabularization import ...` [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
+
 ## [0.35.0](https://github.com/unit8co/darts/tree/0.35.0) (2025-04-18)
 
 ### For users of the library:

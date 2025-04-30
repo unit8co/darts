@@ -19,7 +19,11 @@ from darts.models.forecasting.pl_forecasting_module import (
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import ShiftedTorchTrainingDataset
-from darts.utils.data.utils import PLModuleInput, TorchBatch, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import (
+    PLModuleInput,
+    TorchBatch,
+    TorchTrainingSample,
+)
 
 logger = get_logger(__name__)
 

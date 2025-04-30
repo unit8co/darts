@@ -29,7 +29,7 @@ from darts.utils.data import (
     SequentialTorchTrainingDataset,
     TorchTrainingDataset,
 )
-from darts.utils.data.utils import TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import TorchTrainingSample
 
 logger = get_logger(__name__)
 

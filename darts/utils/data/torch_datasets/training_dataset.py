@@ -14,10 +14,10 @@ from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.dataset import TorchDataset
+from darts.utils.data.torch_datasets.dataset import TorchDataset
+from darts.utils.data.torch_datasets.utils import TorchTrainingDatasetOutput
 from darts.utils.data.utils import (
     FeatureType,
-    TorchTrainingDatasetOutput,
     _process_sample_weight,
 )
 from darts.utils.ts_utils import series2seq

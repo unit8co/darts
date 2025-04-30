@@ -15,8 +15,9 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.dataset import TorchDataset
-from darts.utils.data.utils import FeatureType, TorchInferenceDatasetOutput
+from darts.utils.data.torch_datasets.dataset import TorchDataset
+from darts.utils.data.torch_datasets.utils import TorchInferenceDatasetOutput
+from darts.utils.data.utils import FeatureType
 from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
 from darts.utils.ts_utils import series2seq
 

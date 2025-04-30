@@ -60,7 +60,7 @@ from darts.utils.data import (
     TorchInferenceDataset,
     TorchTrainingDataset,
 )
-from darts.utils.data.utils import (
+from darts.utils.data.torch_datasets.utils import (
     TorchBatch,
     TorchInferenceDatasetOutput,
     TorchTrainingSample,

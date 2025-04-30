@@ -30,7 +30,7 @@ from darts.models.forecasting.tft_submodels import (
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data import TorchTrainingDataset
-from darts.utils.data.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
 
 logger = get_logger(__name__)

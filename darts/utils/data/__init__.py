@@ -5,13 +5,13 @@ TimeSeries Datasets
 
 try:
     # inference datasets
-    from darts.utils.data.inference_dataset import (
+    from darts.utils.data.torch_datasets.inference_dataset import (
         SequentialTorchInferenceDataset,
         TorchInferenceDataset,
     )
 
     # training datasets
-    from darts.utils.data.training_dataset import (
+    from darts.utils.data.torch_datasets.training_dataset import (
         HorizonBasedTorchTrainingDataset,
         SequentialTorchTrainingDataset,
         ShiftedTorchTrainingDataset,

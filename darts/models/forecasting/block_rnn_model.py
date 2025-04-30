@@ -16,7 +16,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 logger = get_logger(__name__)
 

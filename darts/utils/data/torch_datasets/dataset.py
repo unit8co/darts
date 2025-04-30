@@ -10,15 +10,18 @@ from torch.utils.data import Dataset
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
+from darts.utils.data.torch_datasets.utils import (
+    TorchInferenceDatasetOutput,
+    TorchTrainingDatasetOutput,
+)
 from darts.utils.data.utils import (
     _SERIES_TYPES,
     FeatureType,
-    TorchInferenceDatasetOutput,
-    TorchTrainingDatasetOutput,
-    _SampleIndexType,
 )
 
 logger = get_logger(__name__)
+
+_SampleIndexType = dict[FeatureType, tuple[Optional[int], Optional[int]]]
 
 
 class TorchDataset(ABC, Dataset):
