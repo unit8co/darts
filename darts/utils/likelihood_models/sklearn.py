@@ -15,7 +15,6 @@ from darts.utils.likelihood_models.base import (
     LikelihoodType,
     quantile_names,
 )
-from darts.utils.multioutput import MultiOutputClassifier
 from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
@@ -463,8 +462,6 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         classes = model.class_labels
         if not isinstance(classes, list):
             classes = [classes]
-        # check that the classes are consistent across estimators for same component
-        MultiOutputClassifier.check_classes_across_estimators(self._n_outputs, classes)
         self._classes = classes
 
         # estimators/classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ...]

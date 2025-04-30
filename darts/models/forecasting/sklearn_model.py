@@ -1971,6 +1971,39 @@ class _ClassifierMixin:
     Mixin for sklearn-like classification forecasting models
     """
 
+    def fit(
+        self,
+        *args,
+        **kwargs,
+    ):
+        super().fit(
+            *args,
+            **kwargs,
+        )
+
+        classes = self.class_labels
+        # means multiple model have seen sub-part of the same compoents
+        # thus we need to make sure they have seeen the same classes during trainig
+        if self.multi_models and self._output_chunk_length > 1:
+            num_components = len(classes) // self._output_chunk_length
+
+            # classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ..]
+            output_chunk_length = len(classes) // num_components
+            for i in range(output_chunk_length):
+                if any(
+                    not np.array_equal(classes[i], estimator_classes)
+                    for estimator_classes in classes[i::num_components]
+                ):
+                    raise_log(
+                        ValueError(
+                            "Models for the same target component were not trained on the same classes. "
+                            "This might be due to target series being too short or "
+                            "to the periodicity in the target series matching the number of estimator.\n"
+                            f"For component {i} classes are: "
+                            f"{[estimator_classes for estimator_classes in classes[i::num_components]]}"
+                        )
+                    )
+
     @property
     def class_labels(self):
         """Returns the classes of the classifier model if the model was previously trained."""
