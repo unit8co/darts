@@ -274,7 +274,7 @@ class SequentialInferenceDataset(InferenceDataset):
         # extract prediction start
         start, _ = idx_bounds[FeatureType.FUTURE_TARGET]
         if start < len(series):
-            pred_start = series[start]
+            pred_start = series._time_index[start]
         else:
             pred_start = (
                 series._time_index[-1] + ((start + 1) - len(series)) * series.freq

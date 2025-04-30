@@ -620,10 +620,20 @@ class TestDataset:
         assert len(ds) == 100 - 3 + 1
         # first two sample are from beginning of the target with stride 1
         np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
+        assert ds[0][-2] == self.target1
+        assert ds[0][-1] == self.target1._time_index[3]
+
         np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[1:4])
+        assert ds[1][-2] == self.target1
+        assert ds[1][-1] == self.target1._time_index[4]
+
         # last two sample are from end of the target with stride 1
         np.testing.assert_array_almost_equal(ds[96][0], self.target1.values()[-4:-1])
+        assert ds[96][-2] == self.target1
+        assert ds[96][-1] == self.target1._time_index[-1]
         np.testing.assert_array_almost_equal(ds[97][0], self.target1.values()[-3:])
+        assert ds[97][-2] == self.target1
+        assert ds[97][-1] == self.target1._time_index[-1] + self.target1.freq
 
         # stride = 2, setting bounds upper limit as `100` can still only compute until `99` since starting
         # at `3` with stride
@@ -635,10 +645,34 @@ class TestDataset:
         assert len(ds) == math.ceil((100 - 3 + 1) / 2)
         # first two sample are from beginning of the target
         np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
+        assert ds[0][-1] == self.target1._time_index[3]
         np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[2:5])
+        assert ds[1][-1] == self.target1._time_index[5]
         # last two sample are from end of the target
         np.testing.assert_array_almost_equal(ds[47][0], self.target1.values()[-6:-3])
+        assert ds[47][-1] == self.target1._time_index[-3]
         np.testing.assert_array_almost_equal(ds[48][0], self.target1.values()[-4:-1])
+        assert ds[48][-1] == self.target1._time_index[-1]
+
+        # stride = 2, output_chunk_shift = 1, same past target values but pred time is shifted by `+1`
+        ds = SequentialInferenceDataset(
+            series=self.target1,
+            stride=2,
+            output_chunk_shift=1,
+            bounds=np.array([[3, 100]]),
+            **kwargs,
+        )
+
+        # length 49
+        assert len(ds) == math.ceil((100 - 3 + 1 - 1) / 2)
+        np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
+        assert ds[0][-1] == self.target1._time_index[4]
+        np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[2:5])
+        assert ds[1][-1] == self.target1._time_index[6]
+        np.testing.assert_array_almost_equal(ds[47][0], self.target1.values()[-6:-3])
+        assert ds[47][-1] == self.target1._time_index[-2]
+        np.testing.assert_array_almost_equal(ds[48][0], self.target1.values()[-4:-1])
+        assert ds[48][-1] == self.target1._time_index[-1] + self.target1.freq
 
         # stride = 2, setting bounds upper limit as `101` will result in an index error for sample 50
         ds = SequentialInferenceDataset(
@@ -649,9 +683,13 @@ class TestDataset:
         assert len(ds) == math.ceil((101 - 3 + 1) / 2)
         # getting the samples from before works
         np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
+        assert ds[0][-1] == self.target1._time_index[3]
         np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[2:5])
+        assert ds[1][-1] == self.target1._time_index[5]
         np.testing.assert_array_almost_equal(ds[47][0], self.target1.values()[-6:-3])
+        assert ds[47][-1] == self.target1._time_index[-3]
         np.testing.assert_array_almost_equal(ds[48][0], self.target1.values()[-4:-1])
+        assert ds[48][-1] == self.target1._time_index[-1]
 
         # but sample at index 50 raises an error
         with pytest.raises(IndexError):
