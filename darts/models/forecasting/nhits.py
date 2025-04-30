@@ -16,7 +16,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data import ModuleInput, TrainingSample
+from darts.utils.data.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -423,7 +423,7 @@ class _NHiTSModule(PLForecastingModule):
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
 
     @io_processor
-    def forward(self, x_in: ModuleInput):
+    def forward(self, x_in: PLModuleInput):
         x, _, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
@@ -805,7 +805,7 @@ class NHiTSModel(PastCovariatesTorchModel):
 
         return pooling_kernel_sizes, n_freq_downsample
 
-    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, _, _, _) = train_sample
         input_dim = past_target.shape[1] + (

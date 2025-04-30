@@ -18,7 +18,8 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.timeseries import TimeSeries
-from darts.utils.data import ModuleInput, ShiftedTrainingDataset, TrainingSample
+from darts.utils.data import ShiftedTorchTrainingDataset
+from darts.utils.data.utils import PLModuleInput, TorchBatch, TorchTrainingSample
 
 logger = get_logger(__name__)
 
@@ -80,7 +81,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
     @io_processor
     @abstractmethod
     def forward(
-        self, x_in: ModuleInput, h: Optional[torch.Tensor] = None
+        self, x_in: PLModuleInput, h: Optional[torch.Tensor] = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """RNN Module forward.
 
@@ -103,11 +104,11 @@ class CustomRNNModule(PLForecastingModule, ABC):
         """
         pass
 
-    def _produce_train_output(self, input_batch: tuple) -> torch.Tensor:
+    def _produce_train_output(self, input_batch: TorchBatch) -> torch.Tensor:
         # only return the forecast, not the hidden state
         return self(self._process_input_batch(input_batch))[0]
 
-    def _process_input_batch(self, input_batch: tuple) -> ModuleInput:
+    def _process_input_batch(self, input_batch: TorchBatch) -> PLModuleInput:
         (
             past_target,
             _,  # past covariates
@@ -128,7 +129,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
         )
 
     def _produce_predict_output(
-        self, x: ModuleInput, last_hidden_state: Optional[torch.Tensor] = None
+        self, x: PLModuleInput, last_hidden_state: Optional[torch.Tensor] = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
@@ -260,7 +261,7 @@ class _RNNModule(CustomRNNModule):
 
     @io_processor
     def forward(
-        self, x_in: ModuleInput, h: Optional[torch.Tensor] = None
+        self, x_in: PLModuleInput, h: Optional[torch.Tensor] = None
     ) -> tuple[torch.Tensor, torch.Tensor]:
         x, _, _ = x_in
         # data is of size (batch_size, input_length, input_size)
@@ -541,7 +542,7 @@ class RNNModel(DualCovariatesTorchModel):
         self.n_rnn_layers = n_rnn_layers
         self.training_length = training_length
 
-    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future target)
         (past_target, _, _, future_covariates, _, _) = train_sample
         input_dim = past_target.shape[1] + (
@@ -574,8 +575,8 @@ class RNNModel(DualCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> ShiftedTrainingDataset:
-        return ShiftedTrainingDataset(
+    ) -> ShiftedTorchTrainingDataset:
+        return ShiftedTorchTrainingDataset(
             series=series,
             future_covariates=future_covariates,
             input_chunk_length=self.training_length,
@@ -586,9 +587,9 @@ class RNNModel(DualCovariatesTorchModel):
             sample_weight=sample_weight,
         )
 
-    def _verify_train_dataset_type(self, train_dataset: ShiftedTrainingDataset):
+    def _verify_train_dataset_type(self, train_dataset: ShiftedTorchTrainingDataset):
         raise_if_not(
-            isinstance(train_dataset, ShiftedTrainingDataset),
+            isinstance(train_dataset, ShiftedTorchTrainingDataset),
             "RNNModel requires a training dataset of type `GenericShiftDataset`.",
         )
         raise_if_not(

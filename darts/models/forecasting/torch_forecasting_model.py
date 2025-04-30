@@ -55,11 +55,15 @@ from darts.models.forecasting.forecasting_model import (
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.timeseries import TimeSeries
 from darts.utils.data import (
-    InferenceDataset,
-    SequentialInferenceDataset,
-    SequentialTrainingDataset,
-    TrainingDataset,
-    TrainingSample,
+    SequentialTorchInferenceDataset,
+    SequentialTorchTrainingDataset,
+    TorchInferenceDataset,
+    TorchTrainingDataset,
+)
+from darts.utils.data.utils import (
+    TorchBatch,
+    TorchInferenceDatasetOutput,
+    TorchTrainingSample,
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -156,7 +160,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         It governs the interactions between:
             - Darts forecasting models (module) :class:`PLTorchForecastingModel`
             - Darts integrated PL Lightning Trainer :class:`pytorch_lightning.Trainer` or custom PL Trainers
-            - Dataset loaders :class:`TrainingDataset` and :class:`InferenceDataset` or custom Dataset Loaders.
+            - Dataset loaders :class:`TorchTrainingDataset` and :class:`TorchInferenceDataset` or custom Dataset
+              Loaders.
 
         When subclassing this class, please make sure to set the self.model attribute
         in the __init__ function and then call super().__init__ while passing the kwargs.
@@ -281,7 +286,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # class name will be set in fit_from_dataset()
         self._module_name: Optional[str] = ""
 
-        self.train_sample: Optional[TrainingSample] = None
+        self.train_sample: Optional[TorchTrainingSample] = None
         self.output_dim: Optional[int] = None
 
         self.n_epochs = n_epochs
@@ -540,7 +545,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @abstractmethod
-    def _create_model(self, train_sample: TrainingSample) -> PLForecastingModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         """
         This method has to be implemented by all children. It is in charge of instantiating the actual torch model,
         based on examples input/output tensors (i.e. implement a model with the right input/output sizes).
@@ -553,11 +558,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: Optional[int],
-    ) -> TrainingDataset:
+    ) -> TorchTrainingDataset:
         """
-        Models can override this method to return a custom `TrainingDataset`.
+        Models can override this method to return a custom `TorchTrainingDataset`.
         """
-        return SequentialTrainingDataset(
+        return SequentialTorchTrainingDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -577,11 +582,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         stride: int = 0,
         bounds: Optional[np.ndarray] = None,
-    ) -> InferenceDataset:
+    ) -> TorchInferenceDataset:
         """
-        Models can override this method to return a custom `InferenceDataset`.
+        Models can override this method to return a custom `TorchInferenceDataset`.
         """
-        return SequentialInferenceDataset(
+        return SequentialTorchInferenceDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -595,24 +600,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @staticmethod
-    def _verify_train_dataset_type(train_dataset: TrainingDataset):
+    def _verify_train_dataset_type(train_dataset: TorchTrainingDataset):
         """
         Verify that the provided train dataset is of the correct type
         """
-        _raise_if_wrong_type(train_dataset, TrainingDataset)
+        _raise_if_wrong_type(train_dataset, TorchTrainingDataset)
 
     @staticmethod
-    def _verify_inference_dataset_type(inference_dataset: InferenceDataset):
+    def _verify_inference_dataset_type(inference_dataset: TorchInferenceDataset):
         """
         Verify that the provided inference dataset is of the correct type
         """
-        _raise_if_wrong_type(inference_dataset, InferenceDataset)
+        _raise_if_wrong_type(inference_dataset, TorchInferenceDataset)
 
     @staticmethod
-    def _validate_predict_sample(train_sample: TrainingSample, predict_sample: tuple):
+    def _validate_predict_sample(
+        train_sample: TorchTrainingSample, predict_sample: TorchInferenceDatasetOutput
+    ):
         """Validates that the predict sample matches a sample that the model was trained on.
 
-        For models relying on `TrainingDataset` and `InferenceDataset`.
+        For models relying on `TorchTrainingDataset` and `TorchInferenceDataset`.
 
         Parameters
         ----------
@@ -625,7 +632,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
         ds_names = [
-            "past_target",
+            "series",
             "past_covariates",
             "historic_future_covariates",
             "future_covariates",
@@ -646,16 +653,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     f"Mismatch between number of training features `{len(train_features)}` "
                     f"and prediction features `{len(predict_features)}`. Make sure your prediction "
                     f"dataset's `__getitem__` method returns the same output type as given in "
-                    f"`darts.utils.data.inference_dataset.InferenceDataset`."
-                ),
-                logger=logger,
-            )
-        tgt_train, tgt_pred = train_features[0], predict_features[0]
-        if tgt_train.shape[-1] != tgt_pred.shape[-1]:
-            raise_log(
-                ValueError(
-                    "The provided target has a dimension (width) that does not match "
-                    "the dimension of the target this model has been trained on."
+                    f"`darts.utils.data.inference_dataset.TorchInferenceDataset`."
                 ),
                 logger=logger,
             )
@@ -679,22 +677,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     ),
                     logger=logger,
                 )
-            if (
-                ds_in_train
-                and ds_in_predict
-                and (
-                    train_features[idx].shape[-1] != predict_features[idx].shape[-1]
-                    if ds_name != "static_covariates"
-                    else train_features[idx].shape != predict_features[idx].shape
-                )
-            ):
-                raise_log(
-                    ValueError(
-                        f"The provided `{ds_name}` must have equal dimensionality as the "
-                        f"`{ds_name}` used for training the model.",
-                    ),
-                    logger=logger,
-                )
+            if ds_in_train and ds_in_predict:
+                train_shape = train_features[idx].shape
+                preds_shape = predict_features[idx].shape
+
+                if ds_name == "static_covariates":
+                    train_n_comp = train_shape[0] * train_shape[1]
+                    preds_n_comp = preds_shape[0] * preds_shape[1]
+                else:
+                    train_n_comp = train_shape[-1]
+                    preds_n_comp = preds_shape[-1]
+
+                if train_n_comp != preds_n_comp:
+                    raise_log(
+                        ValueError(
+                            f"The provided `{ds_name}` must have equal number of components as the "
+                            f"`{ds_name}` used to train the model. Received number of components: "
+                            f"`{preds_n_comp}`, expected: `{train_n_comp}`.",
+                        ),
+                        logger=logger,
+                    )
 
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
@@ -778,9 +780,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             path = self._default_save_path() + ".onnx"
 
         # last dimension in train_sample_shape is the expected target
-        mock_batch = tuple(
-            torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
-            for shape in self.model.train_sample_shape[:-1]
+        def _randomize(shape) -> Optional[torch.Tensor]:
+            return torch.rand((1,) + shape, dtype=self.model.dtype) if shape else None
+
+        # type warning if we do not create the mocked `mock_batch` explicitly
+        train_sample_shape = self.model.train_sample_shape
+        mock_batch: TorchBatch = (
+            _randomize(train_sample_shape[0]),
+            _randomize(train_sample_shape[1]),
+            _randomize(train_sample_shape[2]),
+            _randomize(train_sample_shape[3]),
+            _randomize(train_sample_shape[4]),
         )
         input_sample = self.model._process_input_batch(mock_batch)
 
@@ -821,7 +831,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         This method wraps around :func:`fit_from_dataset()`, constructing a default training
         dataset for this model. If you need more control on how the series are sliced for training, consider
-        calling :func:`fit_from_dataset()` with a custom :class:`darts.utils.data.TrainingDataset`.
+        calling :func:`fit_from_dataset()` with a custom :class:`darts.utils.data.TorchTrainingDataset`.
 
         Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
@@ -949,8 +959,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optional[Sequence[TimeSeries]],
         ],
         tuple[
-            TrainingDataset,
-            Optional[TrainingDataset],
+            TorchTrainingDataset,
+            Optional[TorchTrainingDataset],
             Optional[pl.Trainer],
             Optional[bool],
             int,
@@ -1053,15 +1063,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @random_method
     def fit_from_dataset(
         self,
-        train_dataset: TrainingDataset,
-        val_dataset: Optional[TrainingDataset] = None,
+        train_dataset: TorchTrainingDataset,
+        val_dataset: Optional[TorchTrainingDataset] = None,
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
     ) -> "TorchForecastingModel":
         """
-        Train the model with a specific :class:`darts.utils.data.TrainingDataset` instance.
+        Train the model with a specific :class:`darts.utils.data.TorchTrainingDataset` instance.
         These datasets implement a PyTorch ``Dataset``, and specify how the target and covariates are sliced
         for training. If you are not sure which training dataset to use, consider calling :func:`fit()` instead,
         which will create a default training dataset appropriate for this model.
@@ -1077,10 +1087,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         train_dataset
-            A training dataset with a type matching this model (e.g. :class:`SequentialTrainingDataset` for
+            A training dataset with a type matching this model (e.g. :class:`SequentialTorchTrainingDataset` for
             :class:`PastCovariatesTorchModel`).
         val_dataset
-            A training dataset with a type matching this model (e.g. :class:`SequentialTrainingDataset` for
+            A training dataset with a type matching this model (e.g. :class:`SequentialTorchTrainingDataset` for
             :class:`PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
         trainer
             Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom `trainer` will
@@ -1117,15 +1127,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _setup_for_train(
         self,
-        train_dataset: TrainingDataset,
-        val_dataset: Optional[TrainingDataset] = None,
+        train_dataset: TorchTrainingDataset,
+        val_dataset: Optional[TorchTrainingDataset] = None,
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
     ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
-        """This method acts on `TrainingDataset` inputs. It performs sanity checks, and sets up / returns the trainer,
-        model, and dataset loaders required for training the model with `_train()`.
+        """This method acts on `TorchTrainingDataset` inputs. It performs sanity checks, and sets up / returns the
+        trainer, model, and dataset loaders required for training the model with `_train()`.
         """
         self._verify_train_dataset_type(train_dataset)
 
@@ -1631,7 +1641,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def predict_from_dataset(
         self,
         n: int,
-        dataset: InferenceDataset,
+        dataset: TorchInferenceDataset,
         trainer: Optional[pl.Trainer] = None,
         batch_size: Optional[int] = None,
         verbose: Optional[bool] = None,
@@ -1643,10 +1653,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predict_likelihood_parameters: bool = False,
     ) -> Sequence[TimeSeries]:
         """
-        This method allows for predicting with a specific :class:`darts.utils.data.InferenceDataset` instance.
+        This method allows for predicting with a specific :class:`darts.utils.data.TorchInferenceDataset` instance.
         These datasets implement a PyTorch ``Dataset``, and specify how the target and covariates are sliced
         for inference. In most cases, you'll rather want to call :func:`predict()` instead, which will create an
-        appropriate :class:`InferenceDataset` for you.
+        appropriate :class:`TorchInferenceDataset` for you.
 
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter

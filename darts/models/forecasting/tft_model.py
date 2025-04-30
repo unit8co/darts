@@ -29,7 +29,8 @@ from darts.models.forecasting.tft_submodels import (
     get_embedding_size,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import ModuleInput, TrainingDataset, TrainingSample
+from darts.utils.data import TorchTrainingDataset
+from darts.utils.data.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
 
 logger = get_logger(__name__)
@@ -444,7 +445,7 @@ class _TFTModule(PLForecastingModule):
         return mask
 
     @io_processor
-    def forward(self, x_in: ModuleInput) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         """TFT model forward pass.
 
         Parameters
@@ -954,7 +955,7 @@ class TFTModel(MixedCovariatesTorchModel):
         self.norm_type = norm_type
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: TrainingSample) -> nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> nn.Module:
         """
         `train_sample` contains the following tensors:
             (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
@@ -1152,7 +1153,7 @@ class TFTModel(MixedCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> TrainingDataset:
+    ) -> TorchTrainingDataset:
         raise_if(
             future_covariates is None and not self.add_relative_index,
             "TFTModel requires future covariates. The model applies multi-head attention queries on future "

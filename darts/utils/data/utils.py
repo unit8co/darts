@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from enum import Enum
 from typing import Optional, Union
 
@@ -17,10 +18,10 @@ DIVISIBLE_FREQS = {"D", "h", "H", "T", "min", "s", "S", "L", "ms", "U", "us", "N
 SUPPORTED_SAMPLE_WEIGHT = {"linear", "exponential"}
 
 
-# `TrainingDataset` output
+# `TorchTrainingDataset` output
 # (past target, past cov, historic future cov, future cov, static cov, sample weight, future target)
-TrainingDatasetOutput = tuple[
-    np.ndarray,
+TorchTrainingDatasetOutput = tuple[
+    Optional[np.ndarray],
     Optional[np.ndarray],
     Optional[np.ndarray],
     Optional[np.ndarray],
@@ -28,11 +29,20 @@ TrainingDatasetOutput = tuple[
     Optional[np.ndarray],
     np.ndarray,
 ]
+TorchTrainingBatch = tuple[
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    torch.Tensor,
+]
 
-# `InferenceDataset` output
+# `TorchInferenceDataset` output
 # (past target, past cov, future past cov, historic future cov, future cov, static cov, target series, pred time)
-InferenceDatasetOutput = tuple[
-    np.ndarray,
+TorchInferenceDatasetOutput = tuple[
+    Optional[np.ndarray],
     Optional[np.ndarray],
     Optional[np.ndarray],
     Optional[np.ndarray],
@@ -41,11 +51,29 @@ InferenceDatasetOutput = tuple[
     TimeSeries,
     Union[pd.Timestamp, int],
 ]
+TorchInferenceBatch = tuple[
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Sequence[TimeSeries],
+    Union[Sequence[pd.Timestamp], Sequence[int]],
+]
+
+TorchBatch = tuple[
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+    Optional[torch.Tensor],
+]
 
 # training sample has no sample weight
 # (past target, past cov, historic future cov, future cov, static cov, future target)
-TrainingSample = tuple[
-    np.ndarray,
+TorchTrainingSample = tuple[
+    Optional[np.ndarray],
     Optional[np.ndarray],
     Optional[np.ndarray],
     Optional[np.ndarray],
@@ -55,7 +83,7 @@ TrainingSample = tuple[
 
 # the module receives three tensors
 # (past features (past target + past cov + historic future cov), future cov, static cov)
-ModuleInput = tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+PLModuleInput = tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
 
 
 class FeatureType(Enum):
@@ -67,6 +95,20 @@ class FeatureType(Enum):
     FUTURE_COVARIATES = "future_covariates"
     STATIC_COVARIATES = "static_covariates"
     SAMPLE_WEIGHT = "sample_weight"
+
+
+# for extracting feature index boundaries
+_SampleIndexType = dict[FeatureType, tuple[Optional[int], Optional[int]]]
+
+_SERIES_TYPES = [
+    FeatureType.PAST_TARGET,
+    FeatureType.FUTURE_TARGET,
+    FeatureType.PAST_COVARIATES,
+    FeatureType.FUTURE_PAST_COVARIATES,
+    FeatureType.HISTORIC_FUTURE_COVARIATES,
+    FeatureType.FUTURE_COVARIATES,
+    FeatureType.SAMPLE_WEIGHT,
+]
 
 
 def _get_matching_index(ts_target: TimeSeries, ts_covariate: TimeSeries, idx: int):

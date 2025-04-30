@@ -25,7 +25,11 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
-from darts.utils.data import SequentialTrainingDataset, TrainingDataset, TrainingSample
+from darts.utils.data import (
+    SequentialTorchTrainingDataset,
+    TorchTrainingDataset,
+)
+from darts.utils.data.utils import TorchTrainingSample
 
 logger = get_logger(__name__)
 
@@ -242,8 +246,8 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> TrainingDataset:
-        return SequentialTrainingDataset(
+    ) -> TorchTrainingDataset:
+        return SequentialTorchTrainingDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -432,7 +436,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
             )
         self.agg_fn = agg_fn
 
-    def _create_model(self, train_sample: TrainingSample) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveAggregateModule(agg_fn=self.agg_fn, **self.pl_module_params)
 
 
@@ -530,7 +534,7 @@ class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(self, train_sample: TrainingSample) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveSeasonalModule(**self.pl_module_params)
 
 
@@ -641,5 +645,5 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(self, train_sample: TrainingSample) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveDrift(**self.pl_module_params)

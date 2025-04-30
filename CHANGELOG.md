@@ -11,23 +11,25 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Improvements `NLinearModel`: Default value for `normalize` changed from `False` to `True` to reflect the source paper. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Renamed some regression models for consistency and clarity reasons. [#2774](https://github.com/unit8co/darts/pull/2774) by [Jonas Blanc](https://github.com/jonasblanc).
   - 🟠 Renamed `RegressionModel` to `SKLearnModel`. Using `RegressionModel` will raise a depraction warning.
   - 🟠 Renamed `RandomForest` to `RandomForestModel`. Using `RandomForest` will raise a depraction warning.
   - 🔴 Renamed `RegressionModelWithCategoricalCovariates` to `SKLearnModelWithCategoricalCovariates`. Removed `RegressionModelWithCategoricalCovariates`
 - 🔴 Improvements to `TorchForecastingModel` datasets: [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
   - We simplified the training and inference datasets. Instead of having covariates specific datasets, the new datasets now support all combinations of covariates natively:
-    - `ShiftedTrainingDataset` (replaces all `*ShiftedDataset`)
-    - `SequentialTrainingDataset` (replaces all `*SequentialDataset`)
-    - `HorizonBasedTrainingDataset` (replaces `HorizonBasedDataset`)
-    - `SequentialInferenceDataset` (replaces all `*InferenceDataset`)
+    - `ShiftedTorchTrainingDataset` (replaces all `*ShiftedDataset`)
+    - `SequentialTorchTrainingDataset` (replaces all `*SequentialDataset`)
+    - `HorizonBasedTorchTrainingDataset` (replaces `HorizonBasedDataset`)
+    - `SequentialTorchInferenceDataset` (replaces all `*InferenceDataset`)
   - All datasets now have uniform output:
     - Training datasets: Tuple[past target, past cov, historic future cov, future cov, static cov, sample weight, future target].
     - Inference datasets: Tuple[past target, past cov, future past cov, historic future cov, future cov, static cov, target TimeSeries, pred start time]
-  - `HorizonBasedTrainingDataset` now also supports future covariates.
+  - `HorizonBasedTorchTrainingDataset` now also supports future covariates.
 
 **Fixed**
 
+- Fixed some issues in `NLinearModel` with `normalize=True` that resulted in decreased predictive accuracy. Using `shared_weights=True` and auto-regressive forecasting now work properly. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Fixed a bug when training a `TorchForecastingModel`, where using certain `torchmetrics` that require a 2D model output (e.g. R2Score) raised an error. [He Weilin](https://github.com/cnhwl).
 
 **Dependencies**
