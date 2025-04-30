@@ -2,10 +2,10 @@
 Training Datasets
 -----------------
 
-- :class:`~darts.utils.data.training_dataset.TrainingDataset`
-- :class:`~darts.utils.data.training_dataset.ShiftedTrainingDataset`
-- :class:`~darts.utils.data.training_dataset.SequentialTrainingDataset`
-- :class:`~darts.utils.data.training_dataset.HorizonBasedTrainingDataset`
+- :class:`~darts.utils.data.training_dataset.TorchTrainingDataset`
+- :class:`~darts.utils.data.training_dataset.ShiftedTorchTrainingDataset`
+- :class:`~darts.utils.data.training_dataset.SequentialTorchTrainingDataset`
+- :class:`~darts.utils.data.training_dataset.HorizonBasedTorchTrainingDataset`
 """
 
 from abc import ABC, abstractmethod
@@ -14,10 +14,10 @@ from typing import Optional, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.dataset import DatasetBase
+from darts.utils.data.dataset import TorchDataset
 from darts.utils.data.utils import (
     FeatureType,
-    TrainingDatasetOutput,
+    TorchTrainingDatasetOutput,
     _process_sample_weight,
 )
 from darts.utils.ts_utils import series2seq
@@ -25,7 +25,7 @@ from darts.utils.ts_utils import series2seq
 logger = get_logger(__name__)
 
 
-class TrainingDataset(DatasetBase, ABC):
+class TorchTrainingDataset(TorchDataset, ABC):
     def __init__(self):
         """
         Abstract class for all training datasets that can be used with Darts' `TorchForecastingModel`.
@@ -41,21 +41,21 @@ class TrainingDataset(DatasetBase, ABC):
         - sample_weight: Optional `sample_weight` values in the output chunk
         - future_target: `series` values in the output chunk
 
-        Darts `TorchForecastingModel` can be fit from instances of `TrainingDataset` using the `fit_from_dataset()`
+        Darts `TorchForecastingModel` can be fit from instances of `TorchTrainingDataset` using the `fit_from_dataset()`
         method.
 
-        `TrainingDataset` inherits from torch `Dataset`; meaning that all subclasses must implement the
+        `TorchTrainingDataset` inherits from torch `Dataset`; meaning that all subclasses must implement the
         `__getitem__()` method. All returned elements must be of type `np.ndarray` (or `None` for optional covariates
         and sample weight).
         """
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> TrainingDatasetOutput:
+    def __getitem__(self, idx: int) -> TorchTrainingDatasetOutput:
         """Returns a sample drawn from this dataset."""
 
 
-class ShiftedTrainingDataset(TrainingDataset):
+class ShiftedTorchTrainingDataset(TorchTrainingDataset):
     def __init__(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -198,7 +198,7 @@ class ShiftedTrainingDataset(TrainingDataset):
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(self, idx) -> TrainingDatasetOutput:
+    def __getitem__(self, idx) -> TorchTrainingDatasetOutput:
         # determine the index of the time series.
         series_idx = idx // self.max_samples_per_ts
         series = self.series[series_idx]
@@ -313,7 +313,7 @@ class ShiftedTrainingDataset(TrainingDataset):
         )
 
 
-class SequentialTrainingDataset(ShiftedTrainingDataset):
+class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
     def __init__(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -404,7 +404,7 @@ class SequentialTrainingDataset(ShiftedTrainingDataset):
         )
 
 
-class HorizonBasedTrainingDataset(SequentialTrainingDataset):
+class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
     def __init__(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],

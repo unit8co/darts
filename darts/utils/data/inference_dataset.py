@@ -2,8 +2,8 @@
 Inference Datasets
 ------------------
 
-- :class:`~darts.utils.data.inference_dataset.InferenceDataset`
-- :class:`~darts.utils.data.inference_dataset.SequentialInferenceDataset`
+- :class:`~darts.utils.data.inference_dataset.TorchInferenceDataset`
+- :class:`~darts.utils.data.inference_dataset.SequentialTorchInferenceDataset`
 """
 
 import bisect
@@ -15,15 +15,15 @@ import numpy as np
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.utils.data.dataset import DatasetBase
-from darts.utils.data.utils import FeatureType, InferenceDatasetOutput
+from darts.utils.data.dataset import TorchDataset
+from darts.utils.data.utils import FeatureType, TorchInferenceDatasetOutput
 from darts.utils.historical_forecasts.utils import _process_predict_start_points_bounds
 from darts.utils.ts_utils import series2seq
 
 logger = get_logger(__name__)
 
 
-class InferenceDataset(DatasetBase, ABC):
+class TorchInferenceDataset(TorchDataset, ABC):
     def __init__(self):
         """
         Abstract class for all inference datasets that can be used with Darts' `TorchForecastingModel`.
@@ -43,21 +43,21 @@ class InferenceDataset(DatasetBase, ABC):
         - target_series: the target `TimeSeries`
         - pred_time: the time of the first point in the forecast horizon
 
-        Darts `TorchForecastingModel` can predict from instances of `InferenceDataset` using the
+        Darts `TorchForecastingModel` can predict from instances of `TorchInferenceDataset` using the
         `predict_from_dataset()` method.
 
-        `InferenceDataset` inherits from torch `Dataset`; meaning that all subclasses must implement the
+        `TorchInferenceDataset` inherits from torch `Dataset`; meaning that all subclasses must implement the
         `__getitem__()` method. All returned elements except `target_series` (`TimeSeries`) and `pred_time`
         (`pd.Timestamp` or `int`) must be of type `np.ndarray` (or `None` for optional covariates).
         """
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> InferenceDatasetOutput:
+    def __getitem__(self, idx: int) -> TorchInferenceDatasetOutput:
         """Returns a sample drawn from this dataset."""
 
 
-class SequentialInferenceDataset(InferenceDataset):
+class SequentialTorchInferenceDataset(TorchInferenceDataset):
     def __init__(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -71,7 +71,7 @@ class SequentialInferenceDataset(InferenceDataset):
         output_chunk_shift: int = 0,
         use_static_covariates: bool = True,
     ):
-        """Generic Inference Dataset
+        """Sequential Inference Dataset
 
         Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
         set of single input `TimeSeries`. The elements are:
@@ -218,7 +218,7 @@ class SequentialInferenceDataset(InferenceDataset):
             stride_idx = (index - cumulative_lengths[list_index - 1]) * stride
         return list_index, bound_left + stride_idx
 
-    def __getitem__(self, idx: int) -> InferenceDatasetOutput:
+    def __getitem__(self, idx: int) -> TorchInferenceDatasetOutput:
         # determine the series index, and the index + 1 (exclusive range) of the output chunk end within that series
         if self.bounds is None:
             series_idx = idx

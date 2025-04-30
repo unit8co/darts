@@ -21,7 +21,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.data import ModuleInput, TrainingSample
+from darts.utils.data.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -297,7 +297,7 @@ class _TransformerModule(PLForecastingModule):
         return src, tgt
 
     @io_processor
-    def forward(self, x_in: ModuleInput):
+    def forward(self, x_in: PLModuleInput):
         data, _, _ = x_in
         # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
         # side of the Transformer architecture
@@ -599,7 +599,7 @@ class TransformerModel(PastCovariatesTorchModel):
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
-    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, _, _, _) = train_sample
         input_dim = past_target.shape[1] + (

@@ -12,7 +12,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import ModuleInput, TrainingSample
+from darts.utils.data.utils import PLModuleInput, TorchTrainingSample
 
 
 class _MovingAvg(nn.Module):
@@ -150,7 +150,7 @@ class _DLinearModule(PLForecastingModule):
             )
 
     @io_processor
-    def forward(self, x_in: ModuleInput):
+    def forward(self, x_in: PLModuleInput):
         """
         x_in
             comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
@@ -462,7 +462,7 @@ class DLinearModel(MixedCovariatesTorchModel):
         self.const_init = const_init
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
             train_sample

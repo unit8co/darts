@@ -34,7 +34,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import ModuleInput, TrainingSample
+from darts.utils.data.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -455,7 +455,7 @@ class _TSMixerModule(PLForecastingModule):
         return mixer_layers
 
     @io_processor
-    def forward(self, x_in: ModuleInput) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         # x_hist contains the historical time series data and the historical
         """TSMixer model forward pass.
 
@@ -771,7 +771,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         self.hidden_size = hidden_size
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: TrainingSample) -> nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> nn.Module:
         """
         Parameters
         ----------

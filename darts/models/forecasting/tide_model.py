@@ -14,7 +14,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data import ModuleInput, TrainingSample
+from darts.utils.data.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -262,7 +262,7 @@ class _TideModule(PLForecastingModule):
         )
 
     @io_processor
-    def forward(self, x_in: ModuleInput) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         """TiDE model forward pass.
         Parameters
         ----------
@@ -647,7 +647,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.use_layer_norm = use_layer_norm
         self.dropout = dropout
 
-    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         (
             past_target,
             past_covariates,

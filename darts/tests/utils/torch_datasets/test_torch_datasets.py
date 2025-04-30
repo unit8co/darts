@@ -17,10 +17,10 @@ if not TORCH_AVAILABLE:
     )
 
 from darts.utils.data import (
-    HorizonBasedTrainingDataset,
-    SequentialInferenceDataset,
-    SequentialTrainingDataset,
-    ShiftedTrainingDataset,
+    HorizonBasedTorchTrainingDataset,
+    SequentialTorchInferenceDataset,
+    SequentialTorchTrainingDataset,
+    ShiftedTorchTrainingDataset,
 )
 
 
@@ -59,14 +59,14 @@ class TestDataset:
 
     def test_past_covariates_inference_dataset(self):
         # one target series
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=self.target1, input_chunk_length=len(self.target1)
         )
         np.testing.assert_almost_equal(ds[0][0], self.vals1)
         self._assert_eq(ds[0][1:], (None, None, None, None, self.cov_st1, self.target1))
 
         # two target series
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=[self.target1, self.target2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
@@ -75,7 +75,7 @@ class TestDataset:
 
         # fail if covariates do not have same size
         with pytest.raises(ValueError) as exc:
-            ds = SequentialInferenceDataset(
+            ds = SequentialTorchInferenceDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
         assert str(exc.value) == (
@@ -83,7 +83,7 @@ class TestDataset:
         )
 
         # with covariates
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=[self.target1, self.target2],
             past_covariates=[self.cov1, self.cov2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
@@ -110,7 +110,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             past_covariates=short_cov,
             input_chunk_length=10,
@@ -129,7 +129,7 @@ class TestDataset:
         )
 
         # Should return correct values when covariates is long enough
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             past_covariates=long_cov,
             input_chunk_length=10,
@@ -153,7 +153,7 @@ class TestDataset:
             pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             past_covariates=covariate,
             input_chunk_length=10,
@@ -171,14 +171,14 @@ class TestDataset:
 
     def test_future_covariates_inference_dataset(self):
         # one target series
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=self.target1, input_chunk_length=len(self.target1)
         )
         np.testing.assert_almost_equal(ds[0][0], self.vals1)
         self._assert_eq(ds[0][1:], (None, None, None, None, self.cov_st1, self.target1))
 
         # two target series
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=[self.target1, self.target2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
@@ -187,7 +187,7 @@ class TestDataset:
 
         # fail if covariates do not have same size
         with pytest.raises(ValueError) as exc:
-            ds = SequentialInferenceDataset(
+            ds = SequentialTorchInferenceDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
@@ -211,7 +211,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             future_covariates=short_cov,
             input_chunk_length=10,
@@ -229,7 +229,7 @@ class TestDataset:
         )
 
         # Should return correct values when covariates is long enough
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             future_covariates=long_cov,
             input_chunk_length=10,
@@ -252,7 +252,7 @@ class TestDataset:
             pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             future_covariates=covariate,
             input_chunk_length=10,
@@ -269,14 +269,14 @@ class TestDataset:
 
     def test_dual_covariates_inference_dataset(self):
         # one target series
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=self.target1, input_chunk_length=len(self.target1)
         )
         np.testing.assert_almost_equal(ds[0][0], self.vals1)
         self._assert_eq(ds[0][1:], (None, None, None, None, self.cov_st1, self.target1))
 
         # two target series
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=[self.target1, self.target2],
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
@@ -285,7 +285,7 @@ class TestDataset:
 
         # fail if covariates do not have same size
         with pytest.raises(ValueError):
-            ds = SequentialInferenceDataset(
+            ds = SequentialTorchInferenceDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
@@ -306,7 +306,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             future_covariates=short_cov,
             input_chunk_length=10,
@@ -319,7 +319,7 @@ class TestDataset:
             _ = ds[0]
 
         # Should return correct values when covariates is long enough
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             future_covariates=long_cov,
             input_chunk_length=10,
@@ -343,7 +343,7 @@ class TestDataset:
             pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             future_covariates=covariate,
             input_chunk_length=10,
@@ -379,7 +379,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             past_covariates=past_cov,
             future_covariates=past_cov,
@@ -393,7 +393,7 @@ class TestDataset:
             _ = ds[0]
 
         # Should return correct values when covariates is long enough
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             past_covariates=long_past_cov,
             future_covariates=future_cov,
@@ -423,7 +423,7 @@ class TestDataset:
             pd.RangeIndex(start=30, stop=100, step=1), np.random.randn(70)
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             past_covariates=past_cov,
             future_covariates=future_cov,
@@ -460,7 +460,7 @@ class TestDataset:
             times2, np.random.randn(len(times2))
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             past_covariates=past_cov,
             future_covariates=past_cov,
@@ -474,7 +474,7 @@ class TestDataset:
             _ = ds[0]
 
         # Should return correct values when covariates is long enough
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             past_covariates=long_past_cov,
             future_covariates=future_cov,
@@ -505,7 +505,7 @@ class TestDataset:
             pd.RangeIndex(start=30, stop=100, step=1), np.random.randn(70)
         )
 
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=target,
             past_covariates=past_cov,
             future_covariates=future_cov,
@@ -526,10 +526,10 @@ class TestDataset:
         "config",
         [
             # (dataset class, whether contains future, future batch index)
-            (SequentialInferenceDataset, [], None),
-            (SequentialInferenceDataset, ["past"], None),
-            (SequentialInferenceDataset, ["future"], 4),
-            (SequentialInferenceDataset, ["past", "future"], 4),
+            (SequentialTorchInferenceDataset, [], None),
+            (SequentialTorchInferenceDataset, ["past"], None),
+            (SequentialTorchInferenceDataset, ["future"], 4),
+            (SequentialTorchInferenceDataset, ["past", "future"], 4),
         ],
     )
     def test_inference_dataset_output_chunk_shift(self, config):
@@ -604,7 +604,7 @@ class TestDataset:
 
         # missing stride
         with pytest.raises(ValueError) as exc:
-            SequentialInferenceDataset(
+            SequentialTorchInferenceDataset(
                 series=self.target1, stride=0, bounds=np.array([[3, 100]]), **kwargs
             )
         assert (
@@ -613,7 +613,7 @@ class TestDataset:
         )
 
         # stride = 1
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=self.target1, stride=1, bounds=np.array([[3, 100]]), **kwargs
         )
         # length 98
@@ -637,7 +637,7 @@ class TestDataset:
 
         # stride = 2, setting bounds upper limit as `100` can still only compute until `99` since starting
         # at `3` with stride
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=self.target1, stride=2, bounds=np.array([[3, 100]]), **kwargs
         )
 
@@ -655,7 +655,7 @@ class TestDataset:
         assert ds[48][-1] == self.target1._time_index[-1]
 
         # stride = 2, output_chunk_shift = 1, same past target values but pred time is shifted by `+1`
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=self.target1,
             stride=2,
             output_chunk_shift=1,
@@ -675,7 +675,7 @@ class TestDataset:
         assert ds[48][-1] == self.target1._time_index[-1] + self.target1.freq
 
         # stride = 2, setting bounds upper limit as `101` will result in an index error for sample 50
-        ds = SequentialInferenceDataset(
+        ds = SequentialTorchInferenceDataset(
             series=self.target1, stride=2, bounds=np.array([[3, 101]]), **kwargs
         )
 
@@ -698,7 +698,7 @@ class TestDataset:
     def test_shifted_training_dataset_too_short(self):
         # one target series
         with pytest.raises(ValueError) as exc:
-            _ = ShiftedTrainingDataset(
+            _ = ShiftedTorchTrainingDataset(
                 series=self.target1[:5],
                 input_chunk_length=3,
                 output_chunk_length=3,
@@ -711,7 +711,7 @@ class TestDataset:
 
         # two target series both too short, will hint at max length of both
         with pytest.raises(ValueError) as exc:
-            _ = ShiftedTrainingDataset(
+            _ = ShiftedTorchTrainingDataset(
                 series=[self.target1[:3], self.target1[:4]],
                 input_chunk_length=3,
                 output_chunk_length=3,
@@ -724,7 +724,7 @@ class TestDataset:
 
         # two target series, first is long enough, second is too short;
         # error is raised only when going through the dataset
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1[:6], self.target1[:5]],
             input_chunk_length=3,
             output_chunk_length=3,
@@ -744,7 +744,7 @@ class TestDataset:
     def test_horizon_training_dataset_too_short(self):
         # two target series, first is long enough, second is too short;
         # horizon based only detects too short series when going through the dataset
-        ds = HorizonBasedTrainingDataset(
+        ds = HorizonBasedTorchTrainingDataset(
             series=[self.target1[:6], self.target1[:5]],
             output_chunk_length=3,
             lookback=1,
@@ -767,7 +767,7 @@ class TestDataset:
     def test_horizon_training_dataset_invalid_lh(self):
         # lh elements must be >= 1
         with pytest.raises(ValueError) as exc:
-            _ = HorizonBasedTrainingDataset(
+            _ = HorizonBasedTorchTrainingDataset(
                 series=self.target1,
                 output_chunk_length=3,
                 lookback=1,
@@ -780,7 +780,7 @@ class TestDataset:
 
     def test_past_covariates_sequential_dataset(self):
         # one target series
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -800,7 +800,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -832,7 +832,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -866,7 +866,7 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError) as exc:
-            ds = SequentialTrainingDataset(
+            ds = SequentialTorchTrainingDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
         assert str(exc.value) == (
@@ -874,7 +874,7 @@ class TestDataset:
         )
 
         # two targets and two covariates
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[self.target1, self.target2],
             past_covariates=[self.cov1, self.cov2],
             input_chunk_length=10,
@@ -912,7 +912,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=target,
             past_covariates=cov,
             input_chunk_length=10,
@@ -933,7 +933,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=target,
             past_covariates=cov,
             input_chunk_length=10,
@@ -952,7 +952,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=target,
             past_covariates=cov,
             input_chunk_length=10,
@@ -982,7 +982,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=target,
             past_covariates=cov,
             input_chunk_length=10,
@@ -1007,7 +1007,7 @@ class TestDataset:
 
     def test_future_covariates_sequential_dataset(self):
         # one target series
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1027,7 +1027,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1059,7 +1059,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1093,7 +1093,7 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError) as exc:
-            ds = SequentialTrainingDataset(
+            ds = SequentialTorchTrainingDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
@@ -1111,7 +1111,7 @@ class TestDataset:
         cov1 = TimeSeries.from_values(np.random.randn(120))
         cov2 = TimeSeries.from_values(np.random.randn(80))
 
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[target1, target2],
             future_covariates=[cov1, cov2],
             input_chunk_length=10,
@@ -1142,7 +1142,7 @@ class TestDataset:
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
 
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=2,
@@ -1163,7 +1163,7 @@ class TestDataset:
         )
         cov1 = TimeSeries.from_values(np.random.randn(7))
 
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=2,
@@ -1182,7 +1182,7 @@ class TestDataset:
         # sample weight, future_target)
 
         # one target series
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1202,7 +1202,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1234,7 +1234,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1268,7 +1268,7 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = SequentialTrainingDataset(
+            ds = SequentialTorchTrainingDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
@@ -1283,7 +1283,7 @@ class TestDataset:
         cov1 = TimeSeries.from_values(np.random.randn(120))
         cov2 = TimeSeries.from_values(np.random.randn(80))
 
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[target1, target2],
             future_covariates=[cov1, cov2],
             input_chunk_length=10,
@@ -1314,7 +1314,7 @@ class TestDataset:
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
 
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=2,
@@ -1335,7 +1335,7 @@ class TestDataset:
         )
         cov1 = TimeSeries.from_values(np.random.randn(7))
 
-        ds = SequentialTrainingDataset(
+        ds = SequentialTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=2,
@@ -1347,7 +1347,7 @@ class TestDataset:
 
     def test_past_covariates_shifted_dataset(self):
         # one target series
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1368,7 +1368,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1401,7 +1401,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1436,14 +1436,14 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = ShiftedTrainingDataset(
+            ds = ShiftedTorchTrainingDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
 
         # covariates end too early
         chunk_length = 3
         series = self.target1[: 2 * chunk_length]
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=series,
             past_covariates=series[: -(chunk_length + 1)],
             input_chunk_length=chunk_length,
@@ -1458,7 +1458,7 @@ class TestDataset:
         )
 
         # covariates are long enough but don't have the same frequency
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=series,
             past_covariates=self.target1[::2],
             input_chunk_length=chunk_length,
@@ -1473,7 +1473,7 @@ class TestDataset:
         )
 
         # two targets and two covariates
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1, self.target2],
             past_covariates=[self.cov1, self.cov2],
             input_chunk_length=10,
@@ -1510,7 +1510,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(10))
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[target1],
             past_covariates=[cov1],
             input_chunk_length=3,
@@ -1532,7 +1532,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[target1],
             past_covariates=[cov1],
             input_chunk_length=3,
@@ -1552,7 +1552,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(5))
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[target1],
             past_covariates=[cov1],
             input_chunk_length=3,
@@ -1564,7 +1564,7 @@ class TestDataset:
 
     def test_future_covariates_shifted_dataset(self):
         # one target series
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1585,7 +1585,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1618,7 +1618,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1653,7 +1653,7 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = ShiftedTrainingDataset(
+            ds = ShiftedTorchTrainingDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
@@ -1661,7 +1661,7 @@ class TestDataset:
         # covariates end too early
         chunk_length = 3
         series = self.target1[: 2 * chunk_length]
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=series,
             future_covariates=series[:-1],
             input_chunk_length=chunk_length,
@@ -1676,7 +1676,7 @@ class TestDataset:
         )
 
         # covariates are long enough but don't have the same frequency
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=series,
             future_covariates=self.target1[::2],
             input_chunk_length=chunk_length,
@@ -1691,7 +1691,7 @@ class TestDataset:
         )
 
         # two targets and two covariates
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1, self.target2],
             future_covariates=[self.cov1, self.cov2],
             input_chunk_length=10,
@@ -1728,7 +1728,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(10))
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1750,7 +1750,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1770,7 +1770,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(7))
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1782,7 +1782,7 @@ class TestDataset:
 
     def test_dual_covariates_shifted_dataset(self):
         # one target series
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=self.target1,
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1803,7 +1803,7 @@ class TestDataset:
         )
 
         # two target series
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1836,7 +1836,7 @@ class TestDataset:
         )
 
         # two target series with custom max_nr_samples
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1, self.target2],
             input_chunk_length=10,
             output_chunk_length=10,
@@ -1871,13 +1871,13 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = ShiftedTrainingDataset(
+            ds = ShiftedTorchTrainingDataset(
                 series=[self.target1, self.target2],
                 future_covariates=[self.cov1],
             )
 
         # two targets and two covariates
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[self.target1, self.target2],
             future_covariates=[self.cov1, self.cov2],
             input_chunk_length=10,
@@ -1914,7 +1914,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(10))
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1936,7 +1936,7 @@ class TestDataset:
             times1, np.random.randn(len(times1))
         ).with_static_covariates(self.cov_st2_df)
         cov1 = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1956,7 +1956,7 @@ class TestDataset:
             self.cov_st2_df
         )
         cov1 = TimeSeries.from_values(np.random.randn(7))
-        ds = ShiftedTrainingDataset(
+        ds = ShiftedTorchTrainingDataset(
             series=[target1],
             future_covariates=[cov1],
             input_chunk_length=3,
@@ -1974,7 +1974,7 @@ class TestDataset:
         weight = weight1 if use_weight else None
         weight_exp = weight1[85:95] if use_weight else None
         # one target series
-        ds = HorizonBasedTrainingDataset(
+        ds = HorizonBasedTorchTrainingDataset(
             series=self.target1,
             output_chunk_length=10,
             lh=(1, 3),
@@ -2000,7 +2000,7 @@ class TestDataset:
         weight = [weight1, weight2] if use_weight else None
         weight_exp1 = weight1[85:95] if use_weight else None
         weight_exp2 = weight2[135:145] if use_weight else None
-        ds = HorizonBasedTrainingDataset(
+        ds = HorizonBasedTorchTrainingDataset(
             series=[self.target1, self.target2],
             output_chunk_length=10,
             lh=(1, 3),
@@ -2037,7 +2037,7 @@ class TestDataset:
 
         # two targets and one covariate
         with pytest.raises(ValueError):
-            ds = HorizonBasedTrainingDataset(
+            ds = HorizonBasedTorchTrainingDataset(
                 series=[self.target1, self.target2], past_covariates=[self.cov1]
             )
 
@@ -2045,7 +2045,7 @@ class TestDataset:
         weight = [weight1, weight2] if use_weight else None
         weight_exp1 = weight1[85:95] if use_weight else None
         weight_exp2 = weight2[135:145] if use_weight else None
-        ds = HorizonBasedTrainingDataset(
+        ds = HorizonBasedTorchTrainingDataset(
             series=[self.target1, self.target2],
             past_covariates=[self.cov1, self.cov2],
             output_chunk_length=10,
@@ -2083,10 +2083,10 @@ class TestDataset:
         "config",
         [
             # (dataset class, whether contains future, future batch index)
-            (SequentialTrainingDataset, [], None),
-            (SequentialTrainingDataset, ["past"], None),
-            (SequentialTrainingDataset, ["future"], 3),
-            (SequentialTrainingDataset, ["past", "future"], 3),
+            (SequentialTorchTrainingDataset, [], None),
+            (SequentialTorchTrainingDataset, ["past"], None),
+            (SequentialTorchTrainingDataset, ["future"], 3),
+            (SequentialTorchTrainingDataset, ["past", "future"], 3),
         ],
     )
     def test_sequential_training_dataset_output_chunk_shift(self, config):
@@ -2144,10 +2144,10 @@ class TestDataset:
         "config",
         itertools.product(
             [
-                (SequentialTrainingDataset, []),
-                (SequentialTrainingDataset, ["past"]),
-                (SequentialTrainingDataset, ["future"]),
-                (SequentialTrainingDataset, ["past", "future"]),
+                (SequentialTorchTrainingDataset, []),
+                (SequentialTorchTrainingDataset, ["past"]),
+                (SequentialTorchTrainingDataset, ["future"]),
+                (SequentialTorchTrainingDataset, ["past", "future"]),
             ],
             [True, False],
         ),
@@ -2289,7 +2289,7 @@ class TestDataset:
         assert np.all(ds[0][-2] == weight_exp)
 
     def test_sequential_training_dataset_invalid_weight(self):
-        ds_cls = SequentialTrainingDataset
+        ds_cls = SequentialTorchTrainingDataset
         ts = self.target1
 
         # invalid built-in weight

@@ -13,15 +13,15 @@ from darts.logging import get_logger, raise_log
 from darts.utils.data.utils import (
     _SERIES_TYPES,
     FeatureType,
-    InferenceDatasetOutput,
-    TrainingDatasetOutput,
+    TorchInferenceDatasetOutput,
+    TorchTrainingDatasetOutput,
     _SampleIndexType,
 )
 
 logger = get_logger(__name__)
 
 
-class DatasetBase(ABC, Dataset):
+class TorchDataset(ABC, Dataset):
     def __init__(self):
         """
         Abstract class for all datasets that can be used with Darts' `TorchForecastingModel`.
@@ -38,7 +38,7 @@ class DatasetBase(ABC, Dataset):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Union[TrainingDatasetOutput, InferenceDatasetOutput]:
+    ) -> Union[TorchTrainingDatasetOutput, TorchInferenceDatasetOutput]:
         """Returns a sample drawn from this dataset."""
 
     def _memory_indexer(

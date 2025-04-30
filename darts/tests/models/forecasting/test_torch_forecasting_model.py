@@ -2057,7 +2057,7 @@ class TestTorchForecastingModel:
                     cov_name + "_covariates": covs[cov_name + "_covariates"][:-1]
                 }
                 _ = model_fc_shift.predict(n=ocl, **add_covs)
-            assert f"provided `{cov_name}_covariates` at dataset index" in str(
+            assert f"provided `{cov_name}_covariates` at series sequence index" in str(
                 err.value
             )
 

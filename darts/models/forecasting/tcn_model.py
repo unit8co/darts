@@ -18,12 +18,8 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
-from darts.utils.data import (
-    ModuleInput,
-    ShiftedTrainingDataset,
-    TrainingDataset,
-    TrainingSample,
-)
+from darts.utils.data import ShiftedTorchTrainingDataset, TorchTrainingDataset
+from darts.utils.data.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -242,7 +238,7 @@ class _TCNModule(PLForecastingModule):
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
     @io_processor
-    def forward(self, x_in: ModuleInput):
+    def forward(self, x_in: PLModuleInput):
         x, _, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
@@ -510,7 +506,7 @@ class TCNModel(PastCovariatesTorchModel):
         self.dropout = dropout
         self.weight_norm = weight_norm
 
-    def _create_model(self, train_sample: TrainingSample) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
         (past_target, past_covariates, _, _, _, _) = train_sample
         input_dim = past_target.shape[1] + (
@@ -540,8 +536,8 @@ class TCNModel(PastCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> TrainingDataset:
-        return ShiftedTrainingDataset(
+    ) -> TorchTrainingDataset:
+        return ShiftedTorchTrainingDataset(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
