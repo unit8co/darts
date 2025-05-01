@@ -2333,6 +2333,24 @@ class TestTorchForecastingModel:
             "and prediction features `2`."
         )
 
+    def test_to_dtype(self, tmpdir_fn):
+        model = self.helper_create_DLinearModel(work_dir=tmpdir_fn)
+        model.fit(self.series[:24])
+
+        assert model.model.dtype is torch.float64
+        model.model.to_dtype(torch.float64)
+        assert model.model.dtype is torch.float64
+        model.model.to_dtype(torch.float32)
+        assert model.model.dtype is torch.float32
+        model.model.to_dtype(torch.float16)
+        assert model.model.dtype is torch.float16
+
+        with pytest.raises(ValueError) as exc:
+            model.model.to_dtype(np.float64)
+        assert str(exc.value).startswith(
+            "Trying to load dtype `<class 'numpy.float64'>`."
+        )
+
     def helper_equality_encoders(
         self, first_encoders: dict[str, Any], second_encoders: dict[str, Any]
     ):

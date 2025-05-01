@@ -695,6 +695,74 @@ class TestDataset:
         with pytest.raises(IndexError):
             _ = ds[50]
 
+    def test_inference_dataset_series_too_short(self):
+        # stride = 2, setting bounds upper limit as `101` will result in an index error for sample 50
+        ds = SequentialTorchInferenceDataset(
+            series=self.target1, input_chunk_length=len(self.target1) + 1
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = ds[0]
+        assert str(exc.value).startswith(
+            "The dataset contains target `series` that are too short"
+        )
+
+        # past covs start too late
+        ds = SequentialTorchInferenceDataset(
+            series=self.target1,
+            past_covariates=self.target1[1:],
+            input_chunk_length=len(self.target1),
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = ds[0]
+        assert str(exc.value).startswith(
+            "For the given forecasting case, the provided `past_covariates` at "
+            "series sequence index `0` do not extend far enough into the past."
+        )
+
+        # past covs end too early
+        ds = SequentialTorchInferenceDataset(
+            series=self.target1,
+            past_covariates=self.target1[:-1],
+            input_chunk_length=len(self.target1),
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = ds[0]
+        assert str(exc.value).startswith(
+            "For the given forecasting horizon `n=1`, the provided `past_covariates` at "
+            "series sequence index `0` do not extend far enough into the future."
+        )
+
+        # past covs start too late
+        target_short = self.target1[:-1]
+        ds = SequentialTorchInferenceDataset(
+            series=target_short,
+            future_covariates=self.target1[1:],
+            input_chunk_length=len(target_short),
+            output_chunk_length=1,
+            n=1,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = ds[0]
+        assert str(exc.value).startswith(
+            "For the given forecasting case, the provided `future_covariates` at "
+            "series sequence index `0` do not extend far enough into the past."
+        )
+
+        # future covs end too early
+        ds = SequentialTorchInferenceDataset(
+            series=target_short,
+            future_covariates=target_short,
+            input_chunk_length=len(target_short),
+            output_chunk_length=1,
+            n=1,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = ds[0]
+        assert str(exc.value).startswith(
+            "For the given forecasting horizon `n=1`, the provided `future_covariates` at "
+            "series sequence index `0` do not extend far enough into the future."
+        )
+
     def test_shifted_training_dataset_too_short(self):
         # one target series
         with pytest.raises(ValueError) as exc:

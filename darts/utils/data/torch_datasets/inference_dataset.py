@@ -236,7 +236,7 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         )
 
         series = self.series[series_idx]
-        if not len(series) >= self.input_chunk_length:
+        if len(series) < self.input_chunk_length:
             raise_log(
                 ValueError(
                     f"The dataset contains target `series` that are too short to extract "

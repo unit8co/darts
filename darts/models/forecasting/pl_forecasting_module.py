@@ -29,10 +29,6 @@ from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
-# Check whether we are running pytorch-lightning >= 1.6.0 or not:
-tokens = pl.__version__.split(".")
-pl_160_or_above = int(tokens[0]) > 1 or int(tokens[0]) == 1 and int(tokens[1]) >= 6
-
 
 def io_processor(forward):
     """Applies some input / output processing to PLForecastingModule.forward.
@@ -227,7 +223,22 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @abstractmethod
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
-        super().forward(x_in, *args, **kwargs)
+        """Same as :meth:`torch.nn.Module.forward`.
+
+        Parameters
+        ----------
+        x_in
+            ``(x_past, x_future, x_static)`` the past, future, and static features.
+        *args
+            Whatever you decide to pass into the forward method.
+        **kwargs
+            Keyword arguments are also possible.
+
+        Returns
+        -------
+        Any
+            The module's output.
+        """
 
     def training_step(
         self, train_batch: TorchTrainingBatch, batch_idx: int
@@ -765,46 +776,29 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.to_dtype(dtype)
 
         # restoring attributes necessary to resume from training properly
-        if (
-            "loss_fn" in checkpoint.keys()
-            and "torch_metrics_train" in checkpoint.keys()
-        ):
-            self.criterion = checkpoint["loss_fn"]
-            self.train_metrics = checkpoint["torch_metrics_train"]
-            self.val_metrics = checkpoint["torch_metrics_val"]
-        else:
-            # explicitly indicate to the user that there is a bug
-            logger.warning(
-                "This checkpoint was generated with darts <= 0.24.0, if a custom loss "
-                "was used to train the model, it won't be properly loaded. Similarly, "
-                "the torch metrics won't be restored from the checkpoint."
-            )
+        self.criterion = checkpoint["loss_fn"]
+        self.train_metrics = checkpoint["torch_metrics_train"]
+        self.val_metrics = checkpoint["torch_metrics_val"]
 
     def to_dtype(self, dtype):
         """Cast module precision (float32 by default) to another precision."""
         if dtype == torch.float16:
             self.half()
-        if dtype == torch.float32:
+        elif dtype == torch.float32:
             self.float()
         elif dtype == torch.float64:
             self.double()
         else:
             raise_if(
                 True,
-                f"Trying to load dtype {dtype}. Loading for this type is not implemented yet. Please report this "
+                f"Trying to load dtype `{dtype}`. Loading for this type is not implemented yet. Please report this "
                 f"issue on https://github.com/unit8co/darts",
                 logger,
             )
 
     @property
     def epochs_trained(self):
-        current_epoch = self.current_epoch
-
-        # For PTL < 1.6.0 we have to adjust:
-        if not pl_160_or_above and (self.current_epoch or self.global_step):
-            current_epoch += 1
-
-        return current_epoch
+        return self.current_epoch
 
     @property
     def output_chunk_length(self) -> Optional[int]:

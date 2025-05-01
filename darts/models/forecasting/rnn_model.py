@@ -146,7 +146,7 @@ class CustomRNNModule(PLForecastingModule, ABC):
             return output.squeeze(dim=-1), hidden
 
     def _get_batch_prediction(
-        self, n: int, input_batch: tuple, roll_size: int
+        self, n: int, input_batch: tuple[Optional[torch.Tensor], ...], roll_size: int
     ) -> torch.Tensor:
         """
         This model is recurrent, so we have to write a specific way to
