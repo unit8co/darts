@@ -16,6 +16,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.svm import SVC
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.utils import Tags
 
 from darts.logging import get_logger
 from darts.models.forecasting.catboost_model import CatBoostClassifierModel
@@ -185,8 +186,12 @@ class TestClassifierModel:
         assert model is not None
 
         # accepts only classifier
-        with pytest.raises(ValueError):
-            SKLearnClassifierModel(model=LinearRegression())
+        with pytest.raises(ValueError) as err:
+            SKLearnClassifierModel(model=LinearRegression(), lags=1)
+        assert (
+            str(err.value)
+            == "`SKLearnClassifierModel` must be initialized with a classifier `model`."
+        )
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_class_labels(self, clf_params):
@@ -236,6 +241,57 @@ class TestClassifierModel:
                 model.class_labels, expected_classes
             )
         ]).all()
+
+    @pytest.mark.parametrize(
+        "clf_params",
+        [
+            (SKLearnClassifierModel, {}),
+            (
+                XGBClassifierModel,
+                {
+                    "n_estimators": 1,
+                    "max_depth": 1,
+                    "max_leaves": 1,
+                    "random_state": 42,
+                },
+            ),
+        ],
+    )
+    def test_error_on_different_classes_for_same_component(self, clf_params):
+        """check that estimators for the same component see the same labels"""
+        clf, kwargs = clf_params
+        # only one estimator see the last labels of the series thus the estimator due to output_chunk_length=2
+        # for the same component won't see the same labels
+        df = pd.DataFrame({
+            "comp1": np.array([0, 0, 0, 1, 2]),
+            "comp2": np.array([0, 0, 0, 1, 3]),
+        })
+        series = TimeSeries.from_dataframe(df, time_col=None, value_cols=["comp1"])
+        model = clf(lags=1, output_chunk_length=2, **kwargs)
+
+        with pytest.raises(ValueError) as err:
+            model.fit(series=series)
+        assert str(err.value).startswith(
+            "Models for the same target component were not trained on the same classes. This might be due to target"
+            " series being too short or to the periodicity in the target series matching the number of estimator."
+        )
+
+        # if same labels per component it does not raise an error
+        df = pd.DataFrame({
+            "comp1": np.array([0, 0, 0, 1, 1]),
+            "comp2": np.array([0, 0, 1, 2, 0]),
+        })
+        series = TimeSeries.from_dataframe(df, time_col=None, value_cols=["comp1"])
+        model.fit(series=series)
+
+        # if multi_model=False then this is not an issue
+        df = pd.DataFrame({
+            "comp1": np.array([0, 0, 0, 1, 2]),
+            "comp2": np.array([0, 0, 0, 1, 3]),
+        })
+        series = TimeSeries.from_dataframe(df, time_col=None, value_cols=["comp1"])
+        model = clf(lags=1, output_chunk_length=2, multi_models=False, **kwargs)
+        model.fit(series=series)
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_optional_static_covariates(self, clf_params):
@@ -851,7 +907,7 @@ class TestProbabilisticClassifierModels:
         "clf_params",
         zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
     )
-    def test_class_probabilities_are_valid(self, clf_params):
+    def test_univariate_class_probabilities_are_valid(self, clf_params):
         """Check class probabilties have correct shape and meaning"""
 
         (clf, kwargs), rmse_margin = clf_params
@@ -898,6 +954,79 @@ class TestProbabilisticClassifierModels:
             ).values()
 
         avg_probas /= 1 + len(series_test)
-        print(avg_probas)
         rmse = np.mean((avg_probas - true_probas) ** 2) ** 0.5
         assert rmse <= rmse_margin
+
+    def test_warning_on_no_predict_proba(self, caplog):
+        class NoPredictProbaModel:
+            def fit(*args):
+                pass
+
+            def predict(*args):
+                pass
+
+            def __sklearn_tags__(self):
+                return Tags(estimator_type="classifier", target_tags=None)
+
+        with caplog.at_level(logging.WARNING):
+            SKLearnClassifierModel(model=NoPredictProbaModel(), lags=2)
+            assert any([
+                message.startswith(
+                    "`model` has no method with name `predict_proba()`. "
+                    "Probabilistic forecasting support not available."
+                )
+                for message in caplog.messages
+            ])
+        caplog.clear()
+
+        with caplog.at_level(logging.WARNING):
+            SKLearnClassifierModel(
+                model=SVC(gamma=2, C=1, random_state=42, probability=True), lags=2
+            )
+            assert not any([
+                message.startswith(
+                    "`model` has no method with name `predict_proba()`. "
+                )
+                for message in caplog.messages
+            ])
+
+            # Without probability=True SVC has no "predict_proba" method
+            SKLearnClassifierModel(model=SVC(gamma=2, C=1, random_state=42), lags=2)
+            assert any(record.levelname == "WARNING" for record in caplog.records)
+            assert any([
+                message.startswith(
+                    "`model` has no method with name `predict_proba()`. "
+                    "Set `probability=True` at `SVC` model creation "
+                )
+                for message in caplog.messages
+            ])
+
+    def test_class_probability_component_names(self):
+        component_names = [
+            "sine_p_0",
+            "sine_p_1",
+            "sine_p_2",
+            "sine_1_p_0",
+            "sine_1_p_1",
+            "sine_1_p_2",
+        ]
+
+        model = SKLearnClassifierModel(lags=1, output_chunk_length=2)
+
+        # component_names before fit throws an error
+        with pytest.raises(ValueError) as err:
+            model.likelihood.component_names(self.sine_multivariate1_cat)
+        assert (
+            str(err.value) == "`component_names` requires the likelihood to be fitted "
+            "but `ClassProbabilityLikelihood` is not fitted."
+        )
+
+        # once fitted, component_names are correct
+        model.fit(self.sine_multivariate1_cat)
+        model.likelihood.component_names(self.sine_multivariate1_cat) == component_names
+
+        # predicted component names are correct
+        preds = model.predict(n=2, predict_likelihood_parameters=True)
+
+        # Two components of 3 labels each => 6 probas
+        assert np.all(preds.components == component_names)
