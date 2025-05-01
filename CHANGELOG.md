@@ -16,6 +16,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🟠 Renamed `RegressionModel` to `SKLearnModel`. Using `RegressionModel` will raise a depraction warning.
   - 🟠 Renamed `RandomForest` to `RandomForestModel`. Using `RandomForest` will raise a depraction warning.
   - 🔴 Renamed `RegressionModelWithCategoricalCovariates` to `SKLearnModelWithCategoricalCovariates`. Removed `RegressionModelWithCategoricalCovariates`
+- 🔴 Improvements to `TorchForecastingModel` datasets: [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
+  - We simplified the training and inference datasets. Instead of having covariates specific datasets, the new datasets now support all combinations of covariates natively:
+    - `ShiftedTorchTrainingDataset` (replaces all `*ShiftedDataset`)
+    - `SequentialTorchTrainingDataset` (replaces all `*SequentialDataset`)
+    - `HorizonBasedTorchTrainingDataset` (replaces `HorizonBasedDataset`)
+    - `SequentialTorchInferenceDataset` (replaces all `*InferenceDataset`)
+  - All datasets now have uniform output:
+    - Training datasets: Tuple[past target, past cov, historic future cov, future cov, static cov, sample weight, future target].
+    - Inference datasets: Tuple[past target, past cov, future past cov, historic future cov, future cov, static cov, target TimeSeries, pred start time]
+  - `HorizonBasedTorchTrainingDataset` now also supports future covariates.
 
 **Fixed**
 
@@ -25,6 +35,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
+
+- Moved all torch dataset related modules from `darts.utils.data.*` to `darts.utils.data.torch_datasets.*`. The objects can still be imported as before with `from darts.utils.data import ...`
+- Moved tabularization module from `darts.utils.data.tabularization` into `darts.utils.data.tabularization.tabularization`. The objects can still be imported as before with `from darts.utils.data.tabularization import ...` [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.35.0](https://github.com/unit8co/darts/tree/0.35.0) (2025-04-18)
 

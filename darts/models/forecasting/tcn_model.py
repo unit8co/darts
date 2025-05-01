@@ -13,12 +13,13 @@ import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import (
-    PLPastCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
-from darts.utils.data import PastCovariatesShiftedDataset
+from darts.utils.data import ShiftedTorchTrainingDataset, TorchTrainingDataset
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -131,7 +132,7 @@ class _ResidualBlock(nn.Module):
         return x
 
 
-class _TCNModule(PLPastCovariatesModule):
+class _TCNModule(PLForecastingModule):
     def __init__(
         self,
         input_size: int,
@@ -237,8 +238,8 @@ class _TCNModule(PLPastCovariatesModule):
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
     @io_processor
-    def forward(self, x_in: tuple):
-        x, _ = x_in
+    def forward(self, x_in: PLModuleInput):
+        x, _, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
         x = x.transpose(1, 2)
@@ -505,16 +506,13 @@ class TCNModel(PastCovariatesTorchModel):
         self.dropout = dropout
         self.weight_norm = weight_norm
 
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
-        # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
+        (past_target, past_covariates, _, _, _, _) = train_sample
+        input_dim = past_target.shape[1] + (
+            past_covariates.shape[1] if past_covariates is not None else 0
         )
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         return _TCNModule(
@@ -533,16 +531,18 @@ class TCNModel(PastCovariatesTorchModel):
 
     def _build_train_dataset(
         self,
-        target: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> PastCovariatesShiftedDataset:
-        return PastCovariatesShiftedDataset(
-            target_series=target,
-            covariates=past_covariates,
-            length=self.input_chunk_length,
+    ) -> TorchTrainingDataset:
+        return ShiftedTorchTrainingDataset(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.input_chunk_length,
             shift=self.output_chunk_length + self.output_chunk_shift,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=self.uses_static_covariates,

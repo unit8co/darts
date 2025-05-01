@@ -18,20 +18,18 @@ import torch
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
-from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
-from darts.utils.data.training_dataset import MixedCovariatesTrainingDataset
-
-MixedCovariatesTrainTensorType = tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
-
+from darts.utils.data import (
+    SequentialTorchTrainingDataset,
+    TorchTrainingDataset,
+)
+from darts.utils.data.torch_datasets.utils import TorchTrainingSample
 
 logger = get_logger(__name__)
 
@@ -64,7 +62,7 @@ def _repeat_along_output_chunk(x: torch.Tensor, ocl: int) -> torch.Tensor:
     return x.view(-1, 1, x[0].shape[-1], 1).expand(-1, ocl, -1, -1)
 
 
-class _GlobalNaiveModule(PLMixedCovariatesModule, ABC):
+class _GlobalNaiveModule(PLForecastingModule, ABC):
     def __init__(self, *args, **kwargs):
         """Pytorch module for implementing naive models.
 
@@ -219,12 +217,6 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
             logger=logger,
         )
 
-    @abstractmethod
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
-        pass
-
     def _verify_predict_sample(self, predict_sample: tuple):
         # naive models do not have to be trained, predict sample does not
         # have to match the training sample
@@ -243,24 +235,20 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         return True
 
     @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    @property
     def _requires_training(self) -> bool:
         # naive models do not have to be trained.
         return False
 
     def _build_train_dataset(
         self,
-        target: Sequence[TimeSeries],
+        series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
-    ) -> MixedCovariatesTrainingDataset:
-        return MixedCovariatesSequentialDataset(
-            target_series=target,
+    ) -> TorchTrainingDataset:
+        return SequentialTorchTrainingDataset(
+            series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             input_chunk_length=self.input_chunk_length,
@@ -448,9 +436,7 @@ class GlobalNaiveAggregate(_NoCovariatesMixin, _GlobalNaiveModel):
             )
         self.agg_fn = agg_fn
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveAggregateModule(agg_fn=self.agg_fn, **self.pl_module_params)
 
 
@@ -548,9 +534,7 @@ class GlobalNaiveSeasonal(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveSeasonalModule(**self.pl_module_params)
 
 
@@ -661,7 +645,5 @@ class GlobalNaiveDrift(_NoCovariatesMixin, _GlobalNaiveModel):
             **kwargs,
         )
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> _GlobalNaiveModule:
+    def _create_model(self, train_sample: TorchTrainingSample) -> _GlobalNaiveModule:
         return _GlobalNaiveDrift(**self.pl_module_params)
