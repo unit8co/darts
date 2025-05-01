@@ -57,7 +57,12 @@ class TorchDataset(ABC, Dataset):
         sample_weight: Optional[TimeSeries],
         n: Optional[int],
     ) -> _SampleIndexType:
-        """returns tuple of (past_start, past_end, future_start, future_end)"""
+        """Returns dict with feature names and (start, end) index ranges.
+
+        The features are (past target, future target, past cov, future past cov, historic future cov,
+        future cov, sample weight)
+
+        """
         # store the start and end index (positions) for series and covariates
         idx_bounds = {}
 
