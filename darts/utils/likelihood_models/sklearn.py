@@ -486,6 +486,13 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
 
     def component_names(self, input_series: TimeSeries) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
+        if self._index_first_param_per_component is None:
+            raise_log(
+                ValueError(
+                    "`component_names` requires the likelihood to be fitted "
+                    "but `ClassProbabilityLikelihood` is not fitted."
+                )
+            )
         # format: <component_name>_p_<label>
         return [
             f"{component_name}_{parameter_name}"
@@ -508,93 +515,97 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         if not isinstance(model_output, list):
             model_output = [model_output]
 
-        # shape: (n_components * output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        # shape: (output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        # n_likelihood_parameters is the sum of the number of classes for each component
         class_proba = np.zeros((
-            len(model_output),
+            self._n_outputs,
             model_output[0].shape[0],
             self.num_parameters,
         ))
 
+        # ordered first by _n_outputs then by component: [comp0_chunk0, comp1_chunk0, ..]
         n_component = len(model_output) // self._n_outputs
         # filling the class_proba array with the predicted probabilities
         for i, params_proba in enumerate(model_output):
             component_index = i % n_component
+            output_index = i // n_component
             class_proba[
-                i,
+                output_index,
                 :,
                 self._index_first_param_per_component[
                     component_index
                 ] : self._index_first_param_per_component[component_index + 1],
             ] = params_proba
 
-        # shape (n_components * output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        # shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)
         # n_likelihood_parameters is the sum of the number of classes for each component
+        # n_likelihood_parameters are ordered as in component_names:
+        # [comp0_l1, comp0_l2, comp1_l1, comp1_l2, comp1_l3,...]
+        # should be accessed through _index_first_param_per_component (for comp1 => 2)
         return class_proba
 
     def sample(self, model_output: np.ndarray) -> np.ndarray:
         """
         Samples a prediction from the likelihood distribution and the predicted parameters.
         """
-        # shape (n_components * output_chunk_length, n_series * n_samples, n_likelihood_parameters)
-        n_entries, n_samples, _ = model_output.shape
+        # shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        n_output, n_samples, _ = model_output.shape
 
-        # shape (n_components * output_chunk_length, n_series * n_samples)
-        preds = np.empty((n_entries, n_samples), dtype=int)
+        n_component = len(self._classes) // self._n_outputs
 
-        num_component = len(model_output) // self._n_outputs
-        for i in range(n_entries):
-            for j in range(n_samples):
-                component_index = i % num_component
-                comp_params_start, comp_params_end = (
-                    self._index_first_param_per_component[component_index],
-                    self._index_first_param_per_component[component_index + 1],
-                )
-                preds[i, j] = self._rng.choice(
-                    self._classes[i],
-                    # size=(model_output.shape[1]),
-                    p=model_output[i, j, comp_params_start:comp_params_end],
-                    replace=True,
-                )
+        # shape (output_chunk_length, n_series * n_samples, n_components)
+        preds = np.empty((n_output, n_samples, n_component), dtype=int)
 
-        # reshape to (n_series * n_samples, n_components, output_chunk_length, n_components)
-        return preds.transpose(1, 0).reshape(n_samples, self._n_outputs, -1)
+        for output_idx in range(n_output):
+            for sample_idx in range(n_samples):
+                for component_idx, (component_start, component_end) in enumerate(
+                    zip(
+                        self._index_first_param_per_component[:-1],
+                        self._index_first_param_per_component[1:],
+                    )
+                ):
+                    preds[output_idx, sample_idx, component_idx] = self._rng.choice(
+                        self._classes[output_idx],
+                        p=model_output[
+                            output_idx, sample_idx, component_start:component_end
+                        ],
+                    )
+
+        # reshape to (n_series * n_samples, output_chunk_length, n_components)
+        return preds.transpose(1, 0, 2)
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
         """
         Returns the distribution parameters as a array, extracted from the raw model outputs.
         """
-        # shape (n_components * output_chunk_length, n_series * n_samples, n_likelihood_parameters)
-        _, n_samples, _ = model_output.shape
-
         # reshape to (n_series * n_samples, output_chunk_length, n_likelihood_parameters)
-        params_reshaped = model_output.transpose(1, 0, 2).reshape(
-            n_samples, self._n_outputs, -1
-        )
-        return params_reshaped
+        return model_output.transpose(1, 0, 2)
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
         """
         Gets the median prediction per component extracted from the model output.
         """
-        # shape (n_components * output_chunk_length, n_series * n_samples, n_likelihood_parameters)
-        n_entries, n_samples, n_params = model_output.shape
+        # shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        n_output, n_samples, n_params = model_output.shape
+        # shape (output_chunk_length, n_series * n_samples, n_components)
+        n_component = len(self._classes) // self._n_outputs
+        preds = np.empty((n_output, n_samples, n_component), dtype=int)
 
-        # shape (n_components * output_chunk_length, n_series * n_samples)
-        preds = np.empty((n_entries, n_samples), dtype=int)
-
-        # get the class with the highest probability
-        indices = np.argmax(model_output, axis=2)
-
-        num_component = len(model_output) // self._n_outputs
-        for i in range(n_entries):
-            component_index = i % num_component
-            class_index = (
-                indices[i] - self._index_first_param_per_component[component_index]
+        for component_idx, (component_start, component_end) in enumerate(
+            zip(
+                self._index_first_param_per_component[:-1],
+                self._index_first_param_per_component[1:],
             )
-            preds[i] = self._classes[i][class_index]
+        ):
+            # shape (output_chunk_length, n_series * n_samples)
+            indices = np.argmax(
+                model_output[:, :, component_start:component_end], axis=2
+            )
+
+            preds[:, :, component_idx] = self._classes[component_idx][indices]
 
         # reshape to (n_series * n_samples, output_chunk_length, n_components)
-        return preds.transpose(1, 0).reshape(n_samples, self._n_outputs, -1)
+        return preds.transpose(1, 0, 2)
 
 
 def _get_likelihood(
