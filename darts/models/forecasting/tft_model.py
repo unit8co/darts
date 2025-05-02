@@ -1153,6 +1153,7 @@ class TFTModel(MixedCovariatesTorchModel):
         future_covariates: Optional[Sequence[TimeSeries]],
         sample_weight: Optional[Sequence[TimeSeries]],
         max_samples_per_ts: Optional[int],
+        stride: int = 1,
     ) -> TorchTrainingDataset:
         raise_if(
             future_covariates is None and not self.add_relative_index,
@@ -1168,6 +1169,7 @@ class TFTModel(MixedCovariatesTorchModel):
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             sample_weight=sample_weight,
+            stride=stride,
         )
 
     @property

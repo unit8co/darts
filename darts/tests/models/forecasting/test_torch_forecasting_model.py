@@ -1,5 +1,6 @@
 import copy
 import itertools
+import math
 import os
 from typing import Any, Optional
 from unittest.mock import patch
@@ -2350,6 +2351,28 @@ class TestTorchForecastingModel:
         assert str(exc.value).startswith(
             "Trying to load dtype `<class 'numpy.float64'>`."
         )
+
+    @pytest.mark.parametrize("stride", [1, 2])
+    def test_fit_with_stride(self, stride):
+        # mocking `fit_from_dataset` to check that `stride` was passed properly
+        icl, ocl = 5, 1
+        with patch(
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.fit_from_dataset"
+        ) as fit_patch:
+            model = DLinearModel(
+                input_chunk_length=5, output_chunk_length=1, n_epochs=1, **tfm_kwargs
+            )
+            # this should extract 3 samples with stride == 1
+            model.fit(
+                series=self.series[: icl + ocl + 2],
+                val_series=self.series[: icl + ocl + 2],
+                stride=stride,
+            )
+            input_args = fit_patch.call_args.args
+            train_set = input_args[0]
+            val_set = input_args[1]
+            assert len(train_set) == len(val_set) == math.ceil(3 / stride)
+            assert train_set.stride == val_set.stride == stride
 
     def helper_equality_encoders(
         self, first_encoders: dict[str, Any], second_encoders: dict[str, Any]
