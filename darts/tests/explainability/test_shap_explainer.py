@@ -20,11 +20,11 @@ from darts.models import (
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
-    NotImportedModule,
-    RegressionModel,
+    SKLearnModel,
     XGBModel,
 )
 from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.utils import NotImportedModule
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
@@ -151,7 +151,7 @@ class TestShapExplainer:
         with pytest.raises(ValueError):
             ShapExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
 
-        # Model should be a RegressionModel
+        # Model should be a SKLearnModel
         m = ExponentialSmoothing()
         m.fit(self.target_ts["price"])
         with pytest.raises(ValueError):
@@ -230,7 +230,7 @@ class TestShapExplainer:
         assert isinstance(shap_explain.explainers.explainers, shap.explainers.Linear)
 
         # ExtraTreesRegressor - also not a MultiOutputRegressor
-        m = RegressionModel(
+        m = SKLearnModel(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
             lags_future_covariates=[0],

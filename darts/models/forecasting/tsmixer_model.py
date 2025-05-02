@@ -30,15 +30,12 @@ from torch import nn
 from darts.logging import get_logger, raise_log
 from darts.models.components import layer_norm_variants
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
-
-MixedCovariatesTrainTensorType = tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
 
 logger = get_logger(__name__)
 
@@ -312,7 +309,7 @@ class _ConditionalMixerLayer(nn.Module):
         return x
 
 
-class _TSMixerModule(PLMixedCovariatesModule):
+class _TSMixerModule(PLForecastingModule):
     def __init__(
         self,
         input_dim: int,
@@ -458,10 +455,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         return mixer_layers
 
     @io_processor
-    def forward(
-        self,
-        x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
-    ) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         # x_hist contains the historical time series data and the historical
         """TSMixer model forward pass.
 
@@ -581,8 +575,9 @@ class TSMixerModel(MixedCovariatesTorchModel):
         num_blocks
             The number of mixer blocks in the model. The number includes the first block and all subsequent blocks.
         activation
-            The name of the activation function to use in the mixer layers. Default: `"ReLU"`. Must be one of
-            `"ReLU", "RReLU", "PReLU", "ELU", "Softplus", "Tanh", "SELU", "LeakyReLU", "Sigmoid", "GELU"`.
+            The activation function to use in the mixer layers (default='ReLU').
+            Supported activations: ['ReLU', 'RReLU', 'PReLU', 'ELU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU', 'Sigmoid',
+            'GELU']
         dropout
             Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout at inference time
             for model uncertainty estimation (enabled with ``mc_dropout=True`` at prediction time).
@@ -604,7 +599,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
@@ -776,7 +771,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         self.hidden_size = hidden_size
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> nn.Module:
         """
         Parameters
         ----------
@@ -829,17 +824,5 @@ class TSMixerModel(MixedCovariatesTorchModel):
         )
 
     @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    @property
     def supports_static_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_future_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_past_covariates(self) -> bool:
         return True

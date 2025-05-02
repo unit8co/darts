@@ -12,15 +12,16 @@ import torch.nn as nn
 
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
-    PLPastCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 logger = get_logger(__name__)
 
 
-class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
+class CustomBlockRNNModule(PLForecastingModule, ABC):
     def __init__(
         self,
         input_size: int,
@@ -85,7 +86,7 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
 
     @io_processor
     @abstractmethod
-    def forward(self, x_in: tuple) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         """BlockRNN Module forward.
 
         Parameters
@@ -101,7 +102,6 @@ class CustomBlockRNNModule(PLPastCovariatesModule, ABC):
             The BlockRNN output Tensor with shape `(batch_size, output_chunk_length, target_size, nr_params)`.
             It contains the prediction at the last time step of the sequence.
         """
-        pass
 
 
 # TODO add batch norm
@@ -177,8 +177,8 @@ class _BlockRNNModule(CustomBlockRNNModule):
         self.fc = nn.Sequential(*feats)
 
     @io_processor
-    def forward(self, x_in: tuple):
-        x, _ = x_in
+    def forward(self, x_in: PLModuleInput):
+        x, _, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
 
@@ -270,7 +270,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
@@ -455,16 +455,13 @@ class BlockRNNModel(PastCovariatesTorchModel):
         self.dropout = dropout
         self.activation = activation
 
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
-        # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
+        (past_target, past_covariates, _, _, _, _) = train_sample
+        input_dim = past_target.shape[1] + (
+            past_covariates.shape[1] if past_covariates is not None else 0
         )
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes

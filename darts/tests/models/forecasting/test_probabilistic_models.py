@@ -9,18 +9,17 @@ from darts.logging import get_logger
 from darts.metrics import mae
 from darts.models import (
     ARIMA,
-    BATS,
     TBATS,
     CatBoostModel,
     ConformalNaiveModel,
     ExponentialSmoothing,
     LightGBMModel,
     LinearRegressionModel,
-    NotImportedModule,
     XGBModel,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils import timeseries_generation as tg
+from darts.utils.utils import NotImportedModule
 
 logger = get_logger(__name__)
 
@@ -39,7 +38,7 @@ if TORCH_AVAILABLE:
         TSMixerModel,
     )
     from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
-    from darts.utils.likelihood_models import (
+    from darts.utils.likelihood_models.torch import (
         BernoulliLikelihood,
         BetaLikelihood,
         CauchyLikelihood,
@@ -73,23 +72,12 @@ models_cls_kwargs_errs = [
     (ExponentialSmoothing, {}, 0.3, None),
     (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03, None),
     (
-        BATS,
-        {
-            "use_trend": False,
-            "use_damped_trend": False,
-            "use_box_cox": True,
-            "use_arma_errors": False,
-            "random_state": 42,
-        },
-        0.04,
-        None,
-    ),
-    (
         TBATS,
         {
+            "season_length": 12,
             "use_trend": False,
             "use_damped_trend": False,
-            "use_box_cox": True,
+            "use_boxcox": True,
             "use_arma_errors": False,
             "random_state": 42,
         },

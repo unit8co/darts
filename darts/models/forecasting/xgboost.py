@@ -14,13 +14,18 @@ import numpy as np
 import xgboost as xgb
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.regression_model import (
+from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
     LAGS_TYPE,
-    RegressionModel,
-    _LikelihoodMixin,
+    SKLearnModel,
+    _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models.sklearn import (
+    QuantileRegression,
+    _check_likelihood,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
@@ -44,7 +49,7 @@ def xgb_quantile_loss(labels: np.ndarray, preds: np.ndarray, quantile: float):
     return grad, hess
 
 
-class XGBModel(RegressionModel, _LikelihoodMixin):
+class XGBModel(SKLearnModel):
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -187,24 +192,23 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._median_idx = None
         self._model_container = None
-        self.quantiles = None
-        self._likelihood = likelihood
-        self._rng = None
 
         # parse likelihood
-        available_likelihoods = ["poisson", "quantile"]  # to be extended
         if likelihood is not None:
-            self._check_likelihood(likelihood, available_likelihoods)
+            _check_likelihood(likelihood, ["poisson", "quantile"])
             if likelihood in {"poisson"}:
                 self.kwargs["objective"] = f"count:{likelihood}"
             elif likelihood == "quantile":
                 self.kwargs["objective"] = "reg:quantileerror"
-                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
-                self._model_container = self._get_model_container()
+                self._model_container = _QuantileModelContainer()
 
-            self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
+        self._likelihood = _get_likelihood(
+            likelihood=likelihood,
+            n_outputs=output_chunk_length if multi_models else 1,
+            random_state=random_state,
+            quantiles=quantiles,
+        )
 
         super().__init__(
             lags=lags,
@@ -278,10 +282,11 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
         """
         # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
         #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
-        if self.likelihood == "quantile":
+        likelihood = self.likelihood
+        if isinstance(likelihood, QuantileRegression):
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
-            for quantile in self.quantiles:
+            for quantile in likelihood.quantiles:
                 self.kwargs["quantile_alpha"] = quantile
                 self.model = xgb.XGBRegressor(**self.kwargs)
                 super().fit(
@@ -314,27 +319,6 @@ class XGBModel(RegressionModel, _LikelihoodMixin):
             **kwargs,
         )
         return self
-
-    def _predict_and_sample(
-        self,
-        x: np.ndarray,
-        num_samples: int,
-        predict_likelihood_parameters: bool,
-        **kwargs,
-    ) -> np.ndarray:
-        """Override of RegressionModel's predict method to allow for the probabilistic case"""
-        if self.likelihood is not None:
-            return self._predict_and_sample_likelihood(
-                x, num_samples, self.likelihood, predict_likelihood_parameters, **kwargs
-            )
-        else:
-            return super()._predict_and_sample(
-                x, num_samples, predict_likelihood_parameters, **kwargs
-            )
-
-    @property
-    def supports_probabilistic_prediction(self) -> bool:
-        return self.likelihood is not None
 
     @property
     def supports_val_set(self) -> bool:

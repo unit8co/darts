@@ -10,16 +10,12 @@ import torch.nn as nn
 
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
-
-MixedCovariatesTrainTensorType = tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
-
 
 logger = get_logger(__name__)
 
@@ -64,7 +60,7 @@ class _ResidualBlock(nn.Module):
         return x
 
 
-class _TideModule(PLMixedCovariatesModule):
+class _TideModule(PLForecastingModule):
     def __init__(
         self,
         input_dim: int,
@@ -266,9 +262,7 @@ class _TideModule(PLMixedCovariatesModule):
         )
 
     @io_processor
-    def forward(
-        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         """TiDE model forward pass.
         Parameters
         ----------
@@ -464,7 +458,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
@@ -653,9 +647,7 @@ class TiDEModel(MixedCovariatesTorchModel):
         self.use_layer_norm = use_layer_norm
         self.dropout = dropout
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> torch.nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         (
             past_target,
             past_covariates,
@@ -721,14 +713,6 @@ class TiDEModel(MixedCovariatesTorchModel):
             **self.pl_module_params,
         )
 
-    @property
-    def supports_static_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
-
     def _check_ckpt_parameters(self, tfm_save):
         # new parameters were added that will break loading weights
         new_params = ["temporal_hidden_size_past", "temporal_hidden_size_future"]
@@ -736,3 +720,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             if param not in tfm_save.model_params:
                 tfm_save.model_params[param] = None
         super()._check_ckpt_parameters(tfm_save)
+
+    @property
+    def supports_static_covariates(self) -> bool:
+        return True

@@ -17,6 +17,9 @@ from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
+NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
+
 ArrayOrArraySequence = Union[np.ndarray, Sequence[np.ndarray]]
 
 
@@ -48,18 +51,18 @@ def create_lagged_data(
     Optional[ArrayOrArraySequence],
 ]:
     """
-    Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
-    `sklearn` model) when `is_training = True`; alternatively, creates the features array `X` to produce a series
-    of prediction from an already-trained regression model when `is_training = False`. In both cases, a list of time
-    indices corresponding to each generated observation is also returned.
+    Creates the features array `X` and labels array `y` to train a lagged-variables `SKLearnModel` when
+    `is_training = True`; alternatively, creates the features array `X` to produce a series of prediction from an
+    already-trained model when `is_training = False`. In both cases, a list of time indices corresponding to
+    each generated observation is also returned.
 
     Notes
     -----
     Instead of calling `create_lagged_data` directly, it is instead recommended that:
         - `create_lagged_training_data` be called if one wishes to create the `X` and `y` arrays
-        to train a regression model.
+        to train an `SKLearnModel`.
         - `create_lagged_prediction_data` be called if one wishes to create the `X` array required
-        to generate a prediction from an already-trained regression model.
+        to generate a prediction from an already-trained `SKLearnModel`.
     This is because even though both of these functions are merely wrappers around `create_lagged_data`, their
     call signatures are more easily interpreted than `create_lagged_data`. For example,
     `create_lagged_prediction_data` does not accept `output_chunk_length` nor `multi_models` as inputs, since
@@ -67,11 +70,11 @@ def create_lagged_data(
     returns only `X` and `times` as outputs, as opposed to returning `y` as `None` along with `X` and `times`.
 
     The `X` array is constructed from the lagged values of up to three separate timeseries:
-        1. The `target_series`, which contains the values we're trying to predict. A regression model that
+        1. The `target_series`, which contains the values we're trying to predict. An `SKLearnModel` that
         uses previous values of the target its predicting is referred to as *autoregressive*; please refer to
         [1]_ for further details about autoregressive timeseries models.
         2. The past covariates series, which contains values that are *not* known into the future. Unlike
-        the target series, however, past covariates are *not* to be predicted by the regression model.
+        the target series, however, past covariates are *not* to be predicted by the `SKLearnModel`.
         3. The future covariates (AKA 'exogenous' covariates) series, which contains values that are known
         into the future, even beyond the data in `target_series` and `past_covariates`.
     See [2]_ for a more detailed discussion about target, past, and future covariates. Conversely, `y` is
@@ -140,14 +143,14 @@ def create_lagged_data(
     Parameters
     ----------
     target_series
-        Optionally, the series for the regression model to predict. Must be specified if `is_training = True`.
+        Optionally, the series for the `SKLearnModel` to predict. Must be specified if `is_training = True`.
         Can be specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
     past_covariates
-        Optionally, the past covariates series that the regression model will use as inputs. Unlike the
-        `target_series`, `past_covariates` are *not* to be predicted by the regression model. Can be
+        Optionally, the past covariates series that the `SKLearnModel` will use as inputs. Unlike the
+        `target_series`, `past_covariates` are *not* to be predicted by the `SKLearnModel`. Can be
         specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
     future_covariates
-        Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
+        Optionally, the future covariates (i.e. exogenous covariates) series that the `SKLearnModel` will
         use as inputs. Can be specified as either a `TimeSeries` or as a `Sequence[TimeSeries]`.
     lags
         Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
@@ -167,7 +170,7 @@ def create_lagged_data(
         lags are relative to the first time step of the shifted output chunk. If the lags are provided as
         a dictionary, the lags values are specific to each component in the future covariates series.
     output_chunk_length
-        Optionally, the number of time steps ahead into the future the regression model is to predict. Must
+        Optionally, the number of time steps ahead into the future the `SKLearnModel` is to predict. Must
         best specified if `is_training = True`.
     output_chunk_shift
         Optionally, the number of time steps to shift the output chunk ahead into the future.
@@ -182,9 +185,9 @@ def create_lagged_data(
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
         especially in cases where many observations could be generated.
     multi_models
-        Optionally, specifies whether the regression model predicts multiple time steps into the future. If `True`,
-        then the regression model is assumed to predict all time steps from time `t` to `t+output_chunk_length`.
-        If `False`, then the regression model is assumed to predict *only* the time step at `t+output_chunk_length`.
+        Optionally, specifies whether the `SKLearnModel` predicts multiple time steps into the future. If `True`,
+        then the `SKLearnModel` is assumed to predict all time steps from time `t` to `t+output_chunk_length`.
+        If `False`, then the `SKLearnModel` is assumed to predict *only* the time step at `t+output_chunk_length`.
         This input is ignored if `is_training = False`.
     check_inputs
         Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Should be set
@@ -197,8 +200,8 @@ def create_lagged_data(
         to `True` results in faster tabularization at the potential cost of higher memory usage. See Notes for further
         details.
     is_training
-        Optionally, specifies whether the constructed lagged data are to be used for training a regression model
-        (i.e. `is_training = True`), or for generating predictions from an already-trained regression model (i.e.
+        Optionally, specifies whether the constructed lagged data are to be used for training an `SKLearnModel`
+        (i.e. `is_training = True`), or for generating predictions from an already-trained `SKLearnModel` (i.e.
         `is_training = False`). If `is_training = True`, `target_series` and `output_chunk_length` must be specified,
         the `multi_models` input is utilised, and a label array `y` is returned. Conversely, if `is_training = False`,
         then `target_series` and `output_chunk_length` do not need to be specified, the `multi_models` input is ignored,
@@ -435,7 +438,7 @@ def create_lagged_training_data(
     Optional[ArrayOrArraySequence],
 ]:
     """
-    Creates the features array `X` and labels array `y` to train a lagged-variables regression model (e.g. an
+    Creates the features array `X` and labels array `y` to train a lagged-variables `SKLearnModel` (e.g. an
     `sklearn` model); the time index values of each observation is also returned.
 
     Notes
@@ -446,16 +449,16 @@ def create_lagged_training_data(
     Parameters
     ----------
     target_series
-        The series for the regression model to predict.
+        The series for the `SKLearnModel` to predict.
     output_chunk_length
-        The number of time steps ahead into the future the regression model is to predict.
+        The number of time steps ahead into the future the `SKLearnModel` is to predict.
     output_chunk_shift
         Optionally, the number of time steps to shift the output chunk ahead into the future.
     past_covariates
-        Optionally, the past covariates series that the regression model will use as inputs. Unlike the
-        `target_series`, `past_covariates` are *not* to be predicted by the regression model.
+        Optionally, the past covariates series that the `SKLearnModel` will use as inputs. Unlike the
+        `target_series`, `past_covariates` are *not* to be predicted by the `SKLearnModel`.
     future_covariates
-        Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
+        Optionally, the future covariates (i.e. exogenous covariates) series that the `SKLearnModel` will
         use as inputs.
     lags
         Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
@@ -484,9 +487,9 @@ def create_lagged_training_data(
         samples are kept. In theory, specifying a smaller `max_samples_per_ts` should reduce computation time,
         especially in cases where many observations could be generated.
     multi_models
-        Optionally, specifies whether the regression model predicts multiple time steps into the future. If `True`,
-        then the regression model is assumed to predict all time steps from time `t` to `t+output_chunk_length`.
-        If `False`, then the regression model is assumed to predict *only* the time step at `t+output_chunk_length`.
+        Optionally, specifies whether the `SKLearnModel` predicts multiple time steps into the future. If `True`,
+        then the `SKLearnModel` is assumed to predict all time steps from time `t` to `t+output_chunk_length`.
+        If `False`, then the `SKLearnModel` is assumed to predict *only* the time step at `t+output_chunk_length`.
     check_inputs
         Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Should be set
         to `False` if inputs have already been checked for validity (e.g. inside the `__init__` of a class), otherwise
@@ -593,7 +596,7 @@ def create_lagged_prediction_data(
     show_warnings: bool = True,
 ) -> tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
     """
-    Creates the features array `X` to produce a series of prediction from an already-trained regression model; the
+    Creates the features array `X` to produce a series of prediction from an already-trained `SKLearnModel`; the
     time index values of each observation is also returned.
 
     Notes
@@ -604,12 +607,12 @@ def create_lagged_prediction_data(
     Parameters
     ----------
     target_series
-        Optionally, the series for the regression model to predict.
+        Optionally, the series for the `SKLearnModel` to predict.
     past_covariates
-        Optionally, the past covariates series that the regression model will use as inputs. Unlike the
-        `target_series`, `past_covariates` are *not* to be predicted by the regression model.
+        Optionally, the past covariates series that the `SKLearnModel` will use as inputs. Unlike the
+        `target_series`, `past_covariates` are *not* to be predicted by the `SKLearnModel`.
     future_covariates
-        Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
+        Optionally, the future covariates (i.e. exogenous covariates) series that the `SKLearnModel` will
         use as inputs.
     lags
         Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
@@ -714,7 +717,7 @@ def add_static_covariates_to_lagged_data(
     last_shape: Optional[tuple[int, int]] = None,
 ) -> Union[np.ndarray, Sequence[np.ndarray]]:
     """
-    Add static covariates to the features' table for RegressionModels.
+    Add static covariates to the features' table for SKLearnModels.
     If `uses_static_covariates=True`, all target series used in `fit()` and `predict()` must have static
     covariates with identical dimensionality. Otherwise, will not consider static covariates.
 
@@ -901,7 +904,7 @@ def create_lagged_component_names(
             # combine all the lags and sort them in ascending order across all the components
             comp_lags_reordered = np.concatenate([
                 np.array(variate_lags[comp_name], dtype=int) for comp_name in components
-            ]).argsort()
+            ]).argsort(**STABLE_SORT_KWARGS)
             tmp_lagged_feats_names = []
             for name in components:
                 tmp_lagged_feats_names += [
@@ -968,7 +971,7 @@ def _get_lagged_indices(
             # Lags are grouped by component, extracted from the same window
             lags_extract_i = [np.array(c_lags, dtype=int) for c_lags in lags_i.values()]
             # Sort the lags across the components in ascending order
-            lags_order_i = np.concatenate(lags_extract_i).argsort()
+            lags_order_i = np.concatenate(lags_extract_i).argsort(**STABLE_SORT_KWARGS)
         lags_extract.append(lags_extract_i)
         lags_order.append(lags_order_i)
     return lags_extract, lags_order
@@ -1396,7 +1399,7 @@ def _create_lagged_data_autoregression(
     num_samples: int,
 ) -> np.ndarray:
     """Extract lagged data from target, past covariates and future covariates for auto-regression
-    with RegressionModels.
+    with SKLearnModels.
     """
     series_length = len(target_series)
     X = []
@@ -1473,7 +1476,7 @@ def _extract_component_lags_autoregression(
     # prepare index to reorder features by lags across components
     comp_lags_reordered = np.concatenate([
         comp_lags for comp_lags in component_lags[series_type].values()
-    ]).argsort()
+    ]).argsort(**STABLE_SORT_KWARGS)
 
     # convert relative lags to absolute
     if series_type == "target":
@@ -1600,12 +1603,12 @@ def _get_feature_times(
     Parameters
     ----------
     target_series
-        Optionally, the series for the regression model to predict.
+        Optionally, the series for the `SKLearnModel` to predict.
     past_covariates
-        Optionally, the past covariates series that the regression model will use as inputs. Unlike the
-        `target_series`, `past_covariates` are *not* to be predicted by the regression model.
+        Optionally, the past covariates series that the `SKLearnModel` will use as inputs. Unlike the
+        `target_series`, `past_covariates` are *not* to be predicted by the `SKLearnModel`.
     future_covariates
-        Optionally, the future covariates (i.e. exogenous covariates) series that the regression model will
+        Optionally, the future covariates (i.e. exogenous covariates) series that the `SKLearnModel` will
         use as inputs.
     lags
         Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
@@ -1615,7 +1618,7 @@ def _get_feature_times(
     lags_future_covariates
         Optionally, the lags of `future_covariates` to be used as features.
     output_chunk_length
-        Optionally, the number of time steps ahead into the future the regression model is to predict. This is ignored
+        Optionally, the number of time steps ahead into the future the `SKLearnModel` is to predict. This is ignored
         if `is_training = False`.
     output_chunk_shift
         Optionally, the number of time steps to shift the output chunk ahead into the future.
@@ -1661,7 +1664,7 @@ def _get_feature_times(
     UserWarning
         If a `lags_*` input is specified without the accompanying time series or vice versa. The only expection to this
         is when `lags` isn't specified alongside `target_series` when `is_training = True`, since one may wish to fit
-        a regression model without using autoregressive features.
+        a `SKLearnModel` without using autoregressive features.
 
     """
     if is_training and (target_series is None):

@@ -93,10 +93,10 @@ def _optimized_historical_forecasts(
     ][0]
     super_predict_params = inspect.signature(super(tfm_cls, model).predict).parameters
     super(tfm_cls, model).predict(
-        forecast_horizon,
-        series,
-        past_covariates,
-        future_covariates,
+        n=forecast_horizon,
+        series=series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
         show_warnings=show_warnings,
@@ -104,8 +104,8 @@ def _optimized_historical_forecasts(
     )
 
     dataset = model._build_inference_dataset(
-        target=series,
         n=forecast_horizon,
+        series=series,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
         stride=stride,
@@ -113,8 +113,8 @@ def _optimized_historical_forecasts(
     )
 
     predictions = model.predict_from_dataset(
-        forecast_horizon,
-        dataset,
+        n=forecast_horizon,
+        dataset=dataset,
         verbose=verbose,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,

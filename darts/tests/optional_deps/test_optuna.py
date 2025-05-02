@@ -31,7 +31,7 @@ if TORCH_AVAILABLE:
         pass
 
     from darts.models import TCNModel
-    from darts.utils.likelihood_models import GaussianLikelihood
+    from darts.utils.likelihood_models.torch import GaussianLikelihood
 
 
 class TestOptuna:
@@ -120,7 +120,7 @@ class TestOptuna:
 
             # Evaluate how good it is on the validation set, using sMAPE
             preds = model.predict(series=self.train, n=self.val_length)
-            smapes = smape(self.val, preds, n_jobs=-1)
+            smapes = smape(self.val, preds)
             smape_val = np.mean(smapes)
 
             return smape_val if smape_val != np.nan else float("inf")
@@ -172,7 +172,7 @@ class TestOptuna:
 
             # Evaluate how good it is on the validation set, using sMAPE
             preds = model.predict(series=self.train, n=self.val_length)
-            smapes = smape(self.val, preds, n_jobs=-1)
+            smapes = smape(self.val, preds)
             smape_val = np.mean(smapes)
 
             return smape_val if smape_val != np.nan else float("inf")
