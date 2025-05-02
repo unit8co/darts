@@ -1098,10 +1098,10 @@ class TestCreateLaggedTrainingData:
         expected_X = np.expand_dims(expected_X, axis=-1)
 
         if stride > 1:
-            expected_X = expected_X[::stride]
-            expected_y = expected_y[::stride]
-            expected_times_x = expected_times_x[::stride]
-            expected_times_y = expected_times_y[::stride]
+            expected_X = expected_X[::-stride][::-1]
+            expected_y = expected_y[::-stride][::-1]
+            expected_times_x = expected_times_x[::-stride][::-1]
+            expected_times_y = expected_times_y[::-stride][::-1]
 
         kwargs = {
             "expected_X": expected_X,
@@ -1283,9 +1283,9 @@ class TestCreateLaggedTrainingData:
             freq=target.freq,
         )
         if stride > 1:
-            expected_X = expected_X[::stride]
-            expected_y = expected_y[::stride]
-            expected_times = expected_times[::stride]
+            expected_X = expected_X[::-stride][::-1]
+            expected_y = expected_y[::-stride][::-1]
+            expected_times = expected_times[::-stride][::-1]
 
         # Test correctness for 'moving window' and for 'time intersection' methods, as well
         # as for different `multi_models` values:
@@ -1376,9 +1376,9 @@ class TestCreateLaggedTrainingData:
             freq=target.freq,
         )
         if stride > 1:
-            expected_X = expected_X[::stride]
-            expected_y = expected_y[::stride]
-            expected_times = expected_times[::stride]
+            expected_X = expected_X[::-stride][::-1]
+            expected_y = expected_y[::-stride][::-1]
+            expected_times = expected_times[::-stride][::-1]
 
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
@@ -1484,9 +1484,9 @@ class TestCreateLaggedTrainingData:
             freq=target.freq,
         )
         if stride > 1:
-            expected_X[::stride]
-            expected_y[::stride]
-            expected_times[::stride]
+            expected_X[::-stride][::-1]
+            expected_y[::-stride][::-1]
+            expected_times[::-stride][::-1]
 
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
@@ -1591,9 +1591,9 @@ class TestCreateLaggedTrainingData:
             freq=target.freq,
         )
         if stride > 1:
-            expected_X[::stride]
-            expected_y[::stride]
-            expected_times[::stride]
+            expected_X[::-stride][::-1]
+            expected_y[::-stride][::-1]
+            expected_times[::-stride][::-1]
 
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
@@ -1684,9 +1684,9 @@ class TestCreateLaggedTrainingData:
             freq=target.freq,
         )
         if stride > 1:
-            expected_X[::stride]
-            expected_y[::stride]
-            expected_times[::stride]
+            expected_X[::-stride][::-1]
+            expected_y[::-stride][::-1]
+            expected_times[::-stride][::-1]
 
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
@@ -1843,9 +1843,9 @@ class TestCreateLaggedTrainingData:
             output_chunk_shift,
         )[:, :, np.newaxis]
         if stride > 1:
-            expected_X[::stride]
-            expected_y[::stride]
-            feats_times[::stride]
+            expected_X[::-stride][::-1]
+            expected_y[::-stride][::-1]
+            feats_times[::-stride][::-1]
 
         # lags are already in dict format
         self.helper_check_lagged_data(
@@ -1896,13 +1896,13 @@ class TestCreateLaggedTrainingData:
             3 * [target_2.all_values(copy=False)[:-1, :, :]], axis=1
         )
         expected_X = np.concatenate(
-            [expected_X_1[::stride], expected_X_2[::stride]], axis=0
+            [expected_X_1[::-stride][::-1], expected_X_2[::-stride][::-1]], axis=0
         )
-        expected_y_1 = target_1.all_values(copy=False)[1::stride, :, :]
-        expected_y_2 = target_2.all_values(copy=False)[1::stride, :, :]
+        expected_y_1 = target_1.all_values(copy=False)[1:][::-stride][::-1]
+        expected_y_2 = target_2.all_values(copy=False)[1:][::-stride][::-1]
         expected_y = np.concatenate([expected_y_1, expected_y_2], axis=0)
-        expected_times_1 = target_1.time_index[1::stride]
-        expected_times_2 = target_2.time_index[1::stride]
+        expected_times_1 = target_1.time_index[1:][::-stride][::-1]
+        expected_times_2 = target_2.time_index[1:][::-stride][::-1]
 
         kwargs = {
             "expected_X": expected_X,
@@ -1959,10 +1959,10 @@ class TestCreateLaggedTrainingData:
         output_chunk_length = 1
         # Expected solution:
         expected_X = np.concatenate(
-            3 * [target.all_values(copy=False)[:-1:stride, :, :]], axis=1
+            3 * [target.all_values(copy=False)[:-1][::-stride][::-1]], axis=1
         )
-        expected_y = target.all_values(copy=False)[1::stride, :, :]
-        expected_times = target.time_index[1::stride]
+        expected_y = target.all_values(copy=False)[1:][::-stride][::-1]
+        expected_times = target.time_index[1:][::-stride][::-1]
 
         kwargs = {
             "expected_X": expected_X,
