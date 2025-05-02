@@ -225,9 +225,8 @@ def create_lagged_data(
         computed globally based on the length of the longest series in `series`. Then for each series, the weights
         are extracted from the end of the global weights. This gives a common time weighting across all series.
     stride
-        The number of time steps between consecutive samples (windows of lagged values extracted from the target
-        series), applied starting from the end of the series. This should be used with caution as it might
-        introduce bias in the forecasts.
+        The number of time steps between consecutive samples, applied starting from the end of the series. This should
+        be used with caution as it might introduce bias in the forecasts.
     show_warnings
         Whether to show warnings.
 
@@ -509,9 +508,8 @@ def create_lagged_training_data(
         feature/label arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
     stride
-        The number of time steps between consecutive samples (windows of lagged values extracted from the target
-        series), applied starting from the end of the series. This should be used with caution as it might
-        introduce bias in the forecasts.
+        The number of time steps between consecutive samples, applied starting from the end of the series. This should
+        be used with caution as it might introduce bias in the forecasts.
     sample_weight
         Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,
         per label (each step in `output_chunk_length`), and per component.
@@ -659,9 +657,8 @@ def create_lagged_prediction_data(
         arrays formed by each `TimeSeries` along the `0`th axis. Note that `times` is still returned as
         `Sequence[pd.Index]`, even when `concatenate = True`.
     stride
-        The number of time steps between consecutive samples (windows of lagged values extracted from the target
-        series), applied starting from the end of the series. This should be used with caution as it will cause
-        gaps in the forecasts.
+        The number of time steps between consecutive samples applied, starting from the end of the series. This should
+        be used with caution as it will cause gaps in the forecasts.
     show_warnings
         Whether to show warnings.
 
@@ -1081,36 +1078,10 @@ def _create_lagged_data_by_moving_window(
         series_and_lags_specified = min_lag_i is not None
         is_target_series = is_training and (i == 0)
         if is_target_series or series_and_lags_specified:
-            time_index_i = series_i.time_index
-
-            if time_index_i[0] == start_time:
-                start_time_idx = 0
-            # If lags are sufficiently large, `series_i` may not contain all
-            # feature times. For example, if `lags_past_covariates = [-50]`,
-            # then we can construct features for time `51` using the value
-            # of `past_covariates` at time `1`, but `past_covariates` may
-            # only go up to time `30`. This does *not* occur when considering
-            # the target series, however, since this series must have values
-            # for all feature times - these values will become labels.
-            # If `start_time` not included in `time_index_i`, can 'manually' calculate
-            # what its index *would* be if `time_index_i` were extended to include that time:
-            elif not is_target_series and (time_index_i[-1] < start_time):
-                start_time_idx = (
-                    len(time_index_i)
-                    - 1
-                    + n_steps_between(
-                        end=start_time, start=time_index_i[-1], freq=series_i.freq
-                    )
-                )
-            # future covariates can start after `start_time` if all lags are > 0
-            elif not is_target_series and (time_index_i[0] > start_time):
-                start_time_idx = -n_steps_between(
-                    end=time_index_i[0], start=start_time, freq=series_i.freq
-                )
-            # If `start_time` *is* included in `time_index_i`, need to binary search `time_index_i`
-            # for its position:
-            else:
-                start_time_idx = np.searchsorted(time_index_i, start_time)
+            # get the position of `start_time` relative to the beginning of the current series
+            start_time_idx = n_steps_between(
+                end=start_time, start=series_i._time_index[0], freq=series_i.freq
+            )
         if series_and_lags_specified:
             # Windows taken between times `t - max_lag_i` and `t - min_lag_i`
             window_len = max_lag_i - min_lag_i + 1

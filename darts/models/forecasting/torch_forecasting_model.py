@@ -829,7 +829,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
         stride: int = 1,
-        val_stride: int = 1,
     ) -> "TorchForecastingModel":
         """Fit/train the model on one or multiple series.
 
@@ -904,10 +903,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
         stride
-            The number of time steps between consecutive samples, applied starting from the end of the series. This
-            should be used with caution as it might introduce bias in the forecasts.
-        val_stride
-            Same as for `stride` but for the evaluation dataset.
+            The number of time steps between consecutive samples, applied starting from the end of the series. The same
+            stride will be applied to both the training and evaluation set (if supplied). This should be used with
+            caution as it might introduce bias in the forecasts.
 
         Returns
         -------
@@ -931,7 +929,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             val_past_covariates=val_past_covariates,
             val_future_covariates=val_future_covariates,
             val_sample_weight=val_sample_weight,
-            val_stride=val_stride,
             trainer=trainer,
             verbose=verbose,
             epochs=epochs,
@@ -959,7 +956,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
-        val_stride: int = 1,
         trainer: Optional[pl.Trainer] = None,
         verbose: Optional[bool] = None,
         epochs: int = 0,
@@ -1045,7 +1041,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 future_covariates=val_future_covariates,
                 sample_weight=val_sample_weight,
                 max_samples_per_ts=max_samples_per_ts,
-                stride=val_stride,
+                stride=stride,
             )
         else:
             val_dataset = None

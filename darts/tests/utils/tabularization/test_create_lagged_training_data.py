@@ -1484,9 +1484,9 @@ class TestCreateLaggedTrainingData:
             freq=target.freq,
         )
         if stride > 1:
-            expected_X[::-stride][::-1]
-            expected_y[::-stride][::-1]
-            expected_times[::-stride][::-1]
+            expected_X = expected_X[::-stride][::-1]
+            expected_y = expected_y[::-stride][::-1]
+            expected_times = expected_times[::-stride][::-1]
 
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
@@ -1591,9 +1591,9 @@ class TestCreateLaggedTrainingData:
             freq=target.freq,
         )
         if stride > 1:
-            expected_X[::-stride][::-1]
-            expected_y[::-stride][::-1]
-            expected_times[::-stride][::-1]
+            expected_X = expected_X[::-stride][::-1]
+            expected_y = expected_y[::-stride][::-1]
+            expected_times = expected_times[::-stride][::-1]
 
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
@@ -1684,9 +1684,9 @@ class TestCreateLaggedTrainingData:
             freq=target.freq,
         )
         if stride > 1:
-            expected_X[::-stride][::-1]
-            expected_y[::-stride][::-1]
-            expected_times[::-stride][::-1]
+            expected_X = expected_X[::-stride][::-1]
+            expected_y = expected_y[::-stride][::-1]
+            expected_times = expected_times[::-stride][::-1]
 
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
@@ -1843,9 +1843,9 @@ class TestCreateLaggedTrainingData:
             output_chunk_shift,
         )[:, :, np.newaxis]
         if stride > 1:
-            expected_X[::-stride][::-1]
-            expected_y[::-stride][::-1]
-            feats_times[::-stride][::-1]
+            expected_X = expected_X[::-stride][::-1]
+            expected_y = expected_y[::-stride][::-1]
+            feats_times = feats_times[::-stride][::-1]
 
         # lags are already in dict format
         self.helper_check_lagged_data(
@@ -2925,7 +2925,6 @@ class TestCreateLaggedTrainingData:
             use_moving_windows=use_moving_windows,
             stride=stride,
         )
-
         # weights shape must match label shape, since we have one
         # weight per sample and predict step
         assert weights.shape == y.shape
