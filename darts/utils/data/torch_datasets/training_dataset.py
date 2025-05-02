@@ -10,6 +10,7 @@ Training Datasets
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from math import ceil
 from typing import Optional, Union
 
 from darts import TimeSeries
@@ -64,6 +65,7 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         shift: int = 1,
+        stride: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -113,6 +115,10 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             input (for future covariates).
         shift
             The number of time steps by which to shift the output chunks relative to the start of the input chunks.
+        stride
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         max_samples_per_ts
             This is an upper bound on the number of samples that can be produced per time series. It can be used to
             limit the total size of the dataset and ensure proper sampling. If `None`, will read all individual time
@@ -133,6 +139,12 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         """
         super().__init__()
+
+        if not (isinstance(stride, int) and stride > 0):
+            raise_log(
+                ValueError("`stride` must be a positive integer greater than 0."),
+                logger=logger,
+            )
 
         # setup target and sequence
         series = series2seq(series)
@@ -156,21 +168,33 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
                     logger=logger,
                 )
 
-        self.series = series
-        self.past_covariates = past_covariates
-        self.future_covariates = future_covariates
+        size_of_both_chunks = max(input_chunk_length, shift + output_chunk_length)
 
-        self.uses_past_covariates = past_covariates is not None
-        self.uses_future_covariates = future_covariates is not None
-        self.uses_static_covariates_covariates = static_covariates is not None
+        # setup samples
+        if max_samples_per_ts is None:
+            # read all time series to get the maximum size
+            max_samples_per_ts = max(len(ts) for ts in series) - size_of_both_chunks + 1
+            if max_samples_per_ts <= 0:
+                raise_log(
+                    ValueError(
+                        f"The input `series` are too short to extract even a single sample. "
+                        f"Expected min length: `{size_of_both_chunks}`, received max length: "
+                        f"`{max_samples_per_ts + size_of_both_chunks - 1}`."
+                    )
+                )
+            max_samples_per_ts = ceil(max_samples_per_ts / stride)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
+        self.size_of_both_chunks = size_of_both_chunks
         self.shift = shift
+        self.stride = stride
         self.max_samples_per_ts = max_samples_per_ts
-        self.size_of_both_chunks = max(
-            self.input_chunk_length, self.shift + self.output_chunk_length
-        )
+        self.ideal_nr_samples = len(series) * self.max_samples_per_ts
+
+        self.series = series
+        self.past_covariates = past_covariates
+        self.future_covariates = future_covariates
 
         # setup sample weights; ignore weights when `ocl==0`
         if sample_weight is not None and output_chunk_length > 0:
@@ -178,22 +202,9 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         else:
             self.sample_weight = None
 
-        # setup samples
-        if self.max_samples_per_ts is None:
-            # read all time series to get the maximum size
-            self.max_samples_per_ts = (
-                max(len(ts) for ts in self.series) - self.size_of_both_chunks + 1
-            )
-        self.ideal_nr_samples = len(self.series) * self.max_samples_per_ts
-
-        if self.ideal_nr_samples <= 0:
-            raise_log(
-                ValueError(
-                    f"The input `series` are too short to extract even a single sample. "
-                    f"Expected min length: `{self.size_of_both_chunks}`, received max length: "
-                    f"`{int(self.ideal_nr_samples / len(self.series)) + self.size_of_both_chunks - 1}`."
-                )
-            )
+        self.uses_past_covariates = past_covariates is not None
+        self.uses_future_covariates = future_covariates is not None
+        self.uses_static_covariates_covariates = static_covariates is not None
 
     def __len__(self):
         return self.ideal_nr_samples
@@ -293,7 +304,9 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
 
     def _get_end_of_output_idx(self, series, series_idx, idx):
         # determine the actual number of possible samples in this time series
-        n_samples_in_ts = len(series) - self.size_of_both_chunks + 1
+        n_samples_in_ts = ceil(
+            (len(series) - self.size_of_both_chunks + 1) / self.stride
+        )
 
         if n_samples_in_ts < 1:
             raise_log(
@@ -309,7 +322,9 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
         # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
         return (
             len(series)
-            - (idx - (series_idx * self.max_samples_per_ts)) % n_samples_in_ts
+            - (idx - (series_idx * self.max_samples_per_ts))
+            % n_samples_in_ts
+            * self.stride
         )
 
 
@@ -322,6 +337,7 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
         input_chunk_length: int = 12,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
+        stride: int = 1,
         max_samples_per_ts: Optional[int] = None,
         use_static_covariates: bool = True,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
@@ -371,6 +387,10 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             input (for future covariates).
         output_chunk_shift
             The number of steps to shift the start of the output chunk into the future.
+        stride
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         max_samples_per_ts
             This is an upper bound on the number of samples that can be produced per time series. It can be used to
             limit the total size of the dataset and ensure proper sampling. If `None`, will read all individual time
@@ -398,6 +418,7 @@ class SequentialTorchTrainingDataset(ShiftedTorchTrainingDataset):
             input_chunk_length=input_chunk_length,
             output_chunk_length=output_chunk_length,
             shift=shift,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
@@ -412,6 +433,7 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         output_chunk_length: int = 12,
         output_chunk_shift: int = 0,
+        stride: int = 1,
         lh: tuple[int, int] = (1, 3),
         lookback: int = 3,
         use_static_covariates: bool = True,
@@ -466,6 +488,10 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
             input (for future covariates).
         output_chunk_shift
             The number of steps to shift the start of the output chunk into the future.
+        stride
+            The number of time steps between consecutive samples (windows of lagged values extracted from the target
+            series), applied starting from the end of the series. This should be used with caution as it might
+            introduce bias in the forecasts.
         lh
             A `(min_lh, max_lh)` interval for the forecast point, starting from the end of the series.
             For example, `(1, 3)` will select forecast points uniformly between `1*H` and `3*H` points
@@ -498,6 +524,7 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
                 logger=logger,
             )
         max_samples_per_ts = (max_lh - min_lh) * output_chunk_length + 1
+        max_samples_per_ts = ceil(max_samples_per_ts / stride)
 
         super().__init__(
             series=series,
@@ -506,6 +533,7 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
             input_chunk_length=lookback * output_chunk_length,
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
+            stride=stride,
             max_samples_per_ts=max_samples_per_ts,
             use_static_covariates=use_static_covariates,
             sample_weight=sample_weight,
@@ -529,7 +557,7 @@ class HorizonBasedTorchTrainingDataset(SequentialTorchTrainingDataset):
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)
         # lh_idx should be in [0, self.max_samples_per_ts)
-        lh_idx = idx - (series_idx * self.max_samples_per_ts)
+        lh_idx = (idx - (series_idx * self.max_samples_per_ts)) * self.stride
 
         # determine the index at the end of the output chunk
         return len(series) - ((self.min_lh - 1) * self.output_chunk_length + lh_idx)

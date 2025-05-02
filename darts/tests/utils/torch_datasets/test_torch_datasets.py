@@ -57,16 +57,16 @@ class TestDataset:
             else:
                 assert right is None
 
-    def _check_strided_ds(self, regular_ds, strided_ds, stride: int):
+    def _check_ds_stride(self, ds_regular, ds_stride, stride: int):
         """
-        Every `stride`-th values in a dataset with stride=1 should be identical to the dataset strided with `stride
+        Every `stride`-th values in a dataset with stride=1 should be identical to the dataset stridden with `stride
         """
-        # if the un-strided length is a multiple of the stride
-        if len(regular_ds) % stride == 0:
-            assert len(regular_ds) == len(strided_ds) * stride
+        # if the un-stridden length is a multiple of the stride
+        if len(ds_regular) % stride == 0:
+            assert len(ds_regular) == len(ds_stride) * stride
 
-        for idx, batch_str in enumerate(strided_ds):
-            for entry_s, entry_r in zip(batch_str, regular_ds[idx * stride]):
+        for idx, batch_str in enumerate(ds_stride):
+            for entry_s, entry_r in zip(batch_str, ds_regular[idx * stride]):
                 if entry_s is not None and entry_r is not None:
                     np.testing.assert_almost_equal(entry_s, entry_r)
                 else:
@@ -2061,7 +2061,7 @@ class TestDataset:
 
         weight_exp = weight1[85:95] if use_weight else None
         # one target series
-        ds_kwargs["target_series"] = self.target1
+        ds_kwargs["series"] = self.target1
         ds_kwargs["sample_weight"] = weight1 if use_weight else None
         ds = HorizonBasedTorchTrainingDataset(**ds_kwargs)
         # 21 as both `lh` bounds are inclusive
@@ -2079,19 +2079,13 @@ class TestDataset:
             ),
         )
         # one target series, with stride
-        self._check_strided_ds(
-            regular_ds=ds,
-            strided_ds=HorizonBasedTorchTrainingDataset(
-                **ds_kwargs,
-                stride=3,
-            ),
-            stride=3,
-        )
+        ds_stride = HorizonBasedTorchTrainingDataset(**ds_kwargs, stride=3)
+        self._check_ds_stride(ds_regular=ds, ds_stride=ds_stride, stride=3)
 
         # two target series
         weight_exp1 = weight1[85:95] if use_weight else None
         weight_exp2 = weight2[135:145] if use_weight else None
-        ds_kwargs["target_series"] = [self.target1, self.target2]
+        ds_kwargs["series"] = [self.target1, self.target2]
         ds_kwargs["sample_weight"] = [weight1, weight2] if use_weight else None
         ds = HorizonBasedTorchTrainingDataset(**ds_kwargs)
         # 42 as both `lh` bounds are inclusive per series
@@ -2122,11 +2116,8 @@ class TestDataset:
             ),
         )
         # two target series, with stride
-        self._check_strided_ds(
-            regular_ds=ds,
-            strided_ds=HorizonBasedTorchTrainingDataset(**ds_kwargs, stride=3),
-            stride=3,
-        )
+        ds_stride = HorizonBasedTorchTrainingDataset(**ds_kwargs, stride=3)
+        self._check_ds_stride(ds_regular=ds, ds_stride=ds_stride, stride=3)
 
         # two targets and one covariate
         with pytest.raises(ValueError):
@@ -2137,7 +2128,7 @@ class TestDataset:
         # two targets and two covariates
         weight_exp1 = weight1[85:95] if use_weight else None
         weight_exp2 = weight2[135:145] if use_weight else None
-        ds_kwargs["target_series"] = [self.target1, self.target2]
+        ds_kwargs["series"] = [self.target1, self.target2]
         ds_kwargs["past_covariates"] = [self.cov1, self.cov2]
         ds_kwargs["sample_weight"] = [weight1, weight2] if use_weight else None
         ds = HorizonBasedTorchTrainingDataset(**ds_kwargs)
@@ -2167,11 +2158,8 @@ class TestDataset:
             ),
         )
         # two targets and two covariates, with stride
-        self._check_strided_ds(
-            regular_ds=ds,
-            strided_ds=HorizonBasedTorchTrainingDataset(**ds_kwargs, stride=3),
-            stride=3,
-        )
+        ds_stride = HorizonBasedTorchTrainingDataset(**ds_kwargs, stride=3)
+        self._check_ds_stride(ds_regular=ds, ds_stride=ds_stride, stride=3)
 
     @pytest.mark.parametrize(
         "config",
@@ -2480,7 +2468,7 @@ class TestDataset:
         target = self.target1[: icl + ocl + nb_samples - 1]
 
         ds_reg = ds_cls(
-            target_series=target,
+            series=target,
             input_chunk_length=icl,
             output_chunk_length=ocl,
             stride=1,
@@ -2488,14 +2476,14 @@ class TestDataset:
         )
 
         ds_stride = ds_cls(
-            target_series=target,
+            series=target,
             input_chunk_length=icl,
             output_chunk_length=ocl,
             stride=3,
             **ds_covs,
         )
         assert len(ds_stride) * 3 == len(ds_reg) == nb_samples
-        self._check_strided_ds(regular_ds=ds_reg, strided_ds=ds_stride, stride=3)
+        self._check_ds_stride(ds_regular=ds_reg, ds_stride=ds_stride, stride=3)
 
     def test_get_matching_index(self):
         from darts.utils.data.utils import _get_matching_index
