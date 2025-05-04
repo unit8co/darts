@@ -13,6 +13,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.timeseries import HIERARCHY_TAG, METADATA_TAG, STATIC_COV_TAG
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -823,7 +824,7 @@ def _build_forecast_series_from_schema(
     predict_likelihood_parameters
         Whether the values represent predicted likelihood parameters.
     likelihood_component_names_fn
-        A function to compute the likelihood parameter component names. Only effictive with
+        A function to compute the likelihood parameter component names. Only effective when
         `predict_likelihood_parameters=True`.
 
     Returns
@@ -851,8 +852,8 @@ def _build_forecast_series_from_schema(
         hierarchy = None
     else:
         columns = schema["columns"]
-        static_covariates = schema["static_covariates"]
-        hierarchy = schema["hierarchy"]
+        static_covariates = schema[STATIC_COV_TAG]
+        hierarchy = schema[HIERARCHY_TAG]
 
     return TimeSeries.from_times_and_values(
         times=time_index,
@@ -860,7 +861,7 @@ def _build_forecast_series_from_schema(
         columns=columns,
         static_covariates=static_covariates,
         hierarchy=hierarchy,
-        metadata=schema["metadata"],
+        metadata=schema[METADATA_TAG],
     )
 
 

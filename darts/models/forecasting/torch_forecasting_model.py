@@ -1790,18 +1790,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             trainer=trainer, model=self.model, verbose=verbose, epochs=self.n_epochs
         )
 
-        # prediction output comes as nested list: list of predicted `TimeSeries` for each batch.
+        # prediction output comes as list of batch tuples
         out = self.trainer.predict(model=self.model, dataloaders=pred_loader)
+        # each batch tuple has elements (prediction np.ndarray, series schema, prediction start time)
         predictions, series_schemas, pred_starts = [], [], []
+
+        # flatten output for parallelization
         for pred, ss, ps in out:
             predictions.append(pred)
             series_schemas += ss
             pred_starts += ps
+
+        # concatenate to shape: (num_samples, n forecasts, forecast horizon, n components)
         predictions = np.concatenate(predictions, axis=1)
+        # reshape to: (n forecasts, forecast horizon, n components, num_samples)
         predictions = np.transpose(predictions, axes=(1, 2, 3, 0))
+
         if values_only:
             return predictions, series_schemas, pred_starts
 
+        # create forecast `TimeSeries`
         iterator = _build_tqdm_iterator(
             iterable=zip(predictions, series_schemas, pred_starts),
             verbose=verbose,
