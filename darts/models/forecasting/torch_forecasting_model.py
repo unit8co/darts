@@ -628,13 +628,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         train_sample
-            (past_target, past_covariates, historic_future_covariates, future_covariates, static covariates,
-            future_target)
+            (past target, past covariates, historic future covariates, future covariates, static covariates,
+            future target)
         predict_sample
-            (past_target, past_covariates, future_past_covariates, historic_future_covariates, future_covariates,
-            static_covariates, target series, prediction start time)
+            (past target, past covariates, future past covariates, historic future covariates, future covariates,
+            static covariates, target series schema, prediction start time)
         """
-        # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
+        # datasets; we skip future target for train and predict, and skip future past covariates for predict datasets
         ds_names = [
             "series",
             "past_covariates",
@@ -643,11 +643,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             "static_covariates",
         ]
 
-        # ignore `sample_weight` and `future_target` from train sample
+        # ignore sample weight and future target from train sample
         train_features = train_sample[:-1]
         train_has_ds = [ds is not None for ds in train_features]
 
-        # ignore `future_past_covariates` and `ts_target` from predict sample
+        # ignore future past covariates, target schema, and prediction start time from predict sample
         predict_features = predict_sample[:2] + predict_sample[3:-2]
         predict_has_ds = [ds is not None for ds in predict_features]
 

@@ -317,7 +317,7 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
         #     historic future cov,
         #     future cov,
         #     static cov,
-        #     target series,
+        #     target series schema,
         #     prediction start time,
         # )
         return (

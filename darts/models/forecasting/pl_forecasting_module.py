@@ -330,7 +330,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         batch
             output of Darts' :class:`TorchInferenceDataset` - tuple of ``(past target, past cov,
-            future past cov, historic future cov, future cov, static cov, input `TimeSeries`,
+            future past cov, historic future cov, future cov, static cov, target series schema,
             prediction start time step)``
         batch_idx
             the batch index of the current batch
@@ -338,7 +338,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             the dataloader index
         """
         # batch has elements (past target, past cov, future past cov, historic future cov, future cov,
-        # static cov, target `TimeSeries`, pred start time)
+        # static cov, target series schema, pred start time)
         input_data_tuple, batch_series_schemas, batch_pred_starts = (
             batch[:-2],
             batch[-2],
