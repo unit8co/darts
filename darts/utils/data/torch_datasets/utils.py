@@ -1,11 +1,9 @@
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import pandas as pd
 import torch
-
-from darts import TimeSeries
 
 # `TorchTrainingDataset` output
 # (past target, past cov, historic future cov, future cov, static cov, sample weight, future target)
@@ -41,7 +39,7 @@ TorchTrainingSample = tuple[
 
 
 # `TorchInferenceDataset` output
-# (past target, past cov, future past cov, historic future cov, future cov, static cov, target series, pred time)
+# (past target, past cov, future past cov, historic future cov, future cov, static cov, target series schema, pred time)
 TorchInferenceDatasetOutput = tuple[
     Optional[np.ndarray],
     Optional[np.ndarray],
@@ -49,7 +47,7 @@ TorchInferenceDatasetOutput = tuple[
     Optional[np.ndarray],
     Optional[np.ndarray],
     Optional[np.ndarray],
-    TimeSeries,
+    dict[str, Any],
     Union[pd.Timestamp, int],
 ]
 # `TorchInferenceDataset` output converted to batch with `torch.Tensor`
@@ -60,7 +58,7 @@ TorchInferenceBatch = tuple[
     Optional[torch.Tensor],
     Optional[torch.Tensor],
     Optional[torch.Tensor],
-    Sequence[TimeSeries],
+    Sequence[dict[str, Any]],
     Union[Sequence[pd.Timestamp], Sequence[int]],
 ]
 

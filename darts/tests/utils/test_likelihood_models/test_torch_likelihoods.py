@@ -49,7 +49,7 @@ likelihood_models = {
 }
 
 
-class TestLikelihoodModel:
+class TestTorchLikelihoodModel:
     def test_intra_class_equality(self):
         for _, model_pair in likelihood_models.items():
             assert model_pair[0] == model_pair[0]

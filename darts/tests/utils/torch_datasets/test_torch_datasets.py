@@ -37,6 +37,12 @@ class TestDataset:
     vals1, vals2 = target1.values(), target2.values()
     cov1, cov2 = gaussian_timeseries(length=100), gaussian_timeseries(length=150)
 
+    def _assert_eq_schema(self, left: dict, right: dict):
+        assert all([
+            (v == right[k] if not isinstance(v, pd.DataFrame) else v.equals(right[k]))
+            for k, v in left.items()
+        ])
+
     def _assert_eq(self, lefts: tuple, rights: tuple):
         for left, right in zip(lefts, rights):
             left = left.values() if isinstance(left, TimeSeries) else left
@@ -44,7 +50,7 @@ class TestDataset:
             assert type(left) is type(right)
             assert (
                 isinstance(
-                    left, (TimeSeries, pd.Series, pd.DataFrame, np.ndarray, list)
+                    left, (TimeSeries, pd.Series, pd.DataFrame, np.ndarray, list, dict)
                 )
                 or left is None
             )
@@ -52,8 +58,10 @@ class TestDataset:
                 assert left.equals(right)
             elif isinstance(left, np.ndarray):
                 np.testing.assert_array_equal(left, right)
-            elif isinstance(left, (list, TimeSeries)):
+            elif isinstance(left, list):
                 assert left == right
+            elif isinstance(left, dict):
+                self._assert_eq_schema(left, right)
             else:
                 assert right is None
 
@@ -78,7 +86,9 @@ class TestDataset:
             series=self.target1, input_chunk_length=len(self.target1)
         )
         np.testing.assert_almost_equal(ds[0][0], self.vals1)
-        self._assert_eq(ds[0][1:], (None, None, None, None, self.cov_st1, self.target1))
+        self._assert_eq(
+            ds[0][1:], (None, None, None, None, self.cov_st1, self.target1.schema())
+        )
 
         # two target series
         ds = SequentialTorchInferenceDataset(
@@ -86,7 +96,9 @@ class TestDataset:
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
         np.testing.assert_almost_equal(ds[1][0], self.vals2)
-        self._assert_eq(ds[1][1:], (None, None, None, None, self.cov_st2, self.target2))
+        self._assert_eq(
+            ds[1][1:], (None, None, None, None, self.cov_st2, self.target2.schema())
+        )
 
         # fail if covariates do not have same size
         with pytest.raises(ValueError) as exc:
@@ -106,7 +118,7 @@ class TestDataset:
         np.testing.assert_almost_equal(ds[1][0], self.vals2)
         np.testing.assert_almost_equal(ds[1][1], self.cov2.values())
         self._assert_eq(
-            ds[1][2:], (None, None, None, self.cov_st2, self.target2)
+            ds[1][2:], (None, None, None, self.cov_st2, self.target2.schema())
         )  # no "future past" covariate here
 
         # more complex case with future past covariates:
@@ -158,7 +170,7 @@ class TestDataset:
         assert ds[0][3] is None
         assert ds[0][4] is None
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -182,7 +194,7 @@ class TestDataset:
         assert ds[0][3] is None
         assert ds[0][4] is None
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
     def test_future_covariates_inference_dataset(self):
         # one target series
@@ -190,7 +202,9 @@ class TestDataset:
             series=self.target1, input_chunk_length=len(self.target1)
         )
         np.testing.assert_almost_equal(ds[0][0], self.vals1)
-        self._assert_eq(ds[0][1:], (None, None, None, None, self.cov_st1, self.target1))
+        self._assert_eq(
+            ds[0][1:], (None, None, None, None, self.cov_st1, self.target1.schema())
+        )
 
         # two target series
         ds = SequentialTorchInferenceDataset(
@@ -198,7 +212,9 @@ class TestDataset:
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
         np.testing.assert_almost_equal(ds[1][0], self.vals2)
-        self._assert_eq(ds[1][1:], (None, None, None, None, self.cov_st2, self.target2))
+        self._assert_eq(
+            ds[1][1:], (None, None, None, None, self.cov_st2, self.target2.schema())
+        )
 
         # fail if covariates do not have same size
         with pytest.raises(ValueError) as exc:
@@ -257,7 +273,7 @@ class TestDataset:
         np.testing.assert_almost_equal(ds[0][3], long_cov.values()[-60:-50])
         np.testing.assert_almost_equal(ds[0][4], long_cov.values()[-50:-20])
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -280,7 +296,7 @@ class TestDataset:
         np.testing.assert_almost_equal(ds[0][3], covariate.values()[20:30])
         np.testing.assert_almost_equal(ds[0][4], covariate.values()[30:50])
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
     def test_dual_covariates_inference_dataset(self):
         # one target series
@@ -288,7 +304,9 @@ class TestDataset:
             series=self.target1, input_chunk_length=len(self.target1)
         )
         np.testing.assert_almost_equal(ds[0][0], self.vals1)
-        self._assert_eq(ds[0][1:], (None, None, None, None, self.cov_st1, self.target1))
+        self._assert_eq(
+            ds[0][1:], (None, None, None, None, self.cov_st1, self.target1.schema())
+        )
 
         # two target series
         ds = SequentialTorchInferenceDataset(
@@ -296,7 +314,9 @@ class TestDataset:
             input_chunk_length=max(len(self.target1), len(self.target2)),
         )
         np.testing.assert_almost_equal(ds[1][0], self.vals2)
-        self._assert_eq(ds[1][1:], (None, None, None, None, self.cov_st2, self.target2))
+        self._assert_eq(
+            ds[1][1:], (None, None, None, None, self.cov_st2, self.target2.schema())
+        )
 
         # fail if covariates do not have same size
         with pytest.raises(ValueError):
@@ -348,7 +368,7 @@ class TestDataset:
         np.testing.assert_almost_equal(ds[0][3], long_cov.values()[-60:-50])
         np.testing.assert_almost_equal(ds[0][4], long_cov.values()[-50:-20])
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -372,7 +392,7 @@ class TestDataset:
         np.testing.assert_almost_equal(ds[0][3], covariate.values()[20:30])
         np.testing.assert_almost_equal(ds[0][4], covariate.values()[30:50])
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
     def test_mixed_covariates_inference_dataset(self):
         # With future past covariates:
@@ -425,7 +445,7 @@ class TestDataset:
         np.testing.assert_almost_equal(ds[0][3], future_cov.values()[-60:-50])
         np.testing.assert_almost_equal(ds[0][4], future_cov.values()[-50:-20])
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -453,7 +473,7 @@ class TestDataset:
         np.testing.assert_almost_equal(ds[0][3], future_cov.values()[10:20])
         np.testing.assert_almost_equal(ds[0][4], future_cov.values()[20:40])
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
     def test_split_covariates_inference_dataset(self):
         # With future past covariates:
@@ -507,7 +527,7 @@ class TestDataset:
         np.testing.assert_almost_equal(ds[0][3], future_cov.values()[-60:-50])
         np.testing.assert_almost_equal(ds[0][4], future_cov.values()[-50:-20])
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
         # Should also work for integer-indexed series
         target = TimeSeries.from_times_and_values(
@@ -535,7 +555,7 @@ class TestDataset:
         np.testing.assert_almost_equal(ds[0][3], future_cov.values()[10:20])
         np.testing.assert_almost_equal(ds[0][4], future_cov.values()[20:40])
         np.testing.assert_almost_equal(ds[0][5], self.cov_st2)
-        assert ds[0][6] == target
+        self._assert_eq_schema(ds[0][6], target.schema())
 
     @pytest.mark.parametrize(
         "config",
@@ -635,19 +655,19 @@ class TestDataset:
         assert len(ds) == 100 - 3 + 1
         # first two sample are from beginning of the target with stride 1
         np.testing.assert_array_almost_equal(ds[0][0], self.target1.values()[:3])
-        assert ds[0][-2] == self.target1
+        self._assert_eq_schema(ds[0][-2], self.target1.schema())
         assert ds[0][-1] == self.target1._time_index[3]
 
         np.testing.assert_array_almost_equal(ds[1][0], self.target1.values()[1:4])
-        assert ds[1][-2] == self.target1
+        self._assert_eq_schema(ds[1][-2], self.target1.schema())
         assert ds[1][-1] == self.target1._time_index[4]
 
         # last two sample are from end of the target with stride 1
         np.testing.assert_array_almost_equal(ds[96][0], self.target1.values()[-4:-1])
-        assert ds[96][-2] == self.target1
+        self._assert_eq_schema(ds[96][-2], self.target1.schema())
         assert ds[96][-1] == self.target1._time_index[-1]
         np.testing.assert_array_almost_equal(ds[97][0], self.target1.values()[-3:])
-        assert ds[97][-2] == self.target1
+        self._assert_eq_schema(ds[97][-2], self.target1.schema())
         assert ds[97][-1] == self.target1._time_index[-1] + self.target1.freq
 
         # stride = 2, setting bounds upper limit as `100` can still only compute until `99` since starting
