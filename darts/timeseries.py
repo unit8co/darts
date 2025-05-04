@@ -1902,6 +1902,20 @@ class TimeSeries:
 
         return nw.from_dict(data, backend=backend).to_native()
 
+    def _schema(self, copy: bool = True) -> dict[str, Any]:
+        """"""
+        schema = {
+            "time_freq": self._freq,
+            "time_name": self._time_index.name,
+            "columns": self._xa.get_index(DIMS[1]),
+            STATIC_COV_TAG: self.static_covariates,
+            HIERARCHY_TAG: self.hierarchy,
+            METADATA_TAG: self.metadata,
+        }
+        if copy:
+            schema = {k: deepcopy(v) for k, v in schema.items()}
+        return schema
+
     def quantile_df(self, quantile=0.5) -> pd.DataFrame:
         """
         Return a Pandas DataFrame containing the single desired quantile of each component (over the samples).

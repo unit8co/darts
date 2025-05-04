@@ -327,6 +327,6 @@ class SequentialTorchInferenceDataset(TorchInferenceDataset):
             hfc,
             fc,
             sc,
-            series,
+            series._schema(copy=False),
             pred_start,
         )

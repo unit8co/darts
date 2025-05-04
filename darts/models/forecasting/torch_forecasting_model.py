@@ -73,8 +73,10 @@ from darts.utils.historical_forecasts.optimized_historical_forecasts_torch impor
     _optimized_historical_forecasts,
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
+from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
 
 # Check whether we are running pytorch-lightning >= 2.0.0 or not:
 tokens = pl.__version__.split(".")
@@ -1662,6 +1664,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs: Optional[dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
+        values_only: bool = False,
     ) -> Sequence[TimeSeries]:
         """
         This method allows for predicting with a specific :class:`darts.utils.data.TorchInferenceDataset` instance.
@@ -1712,6 +1715,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
+        values_only
+            Whether to return the predicted values only. If `False`, will return `TimeSeries` objects. Otherwise, will
+            return a tuple of `(np.ndarray, list[dict[str, Any]], list[Union[pd.Timestamp, int]])`. The first element
+            represents the predictions with shape `(num_predictions, n, columns, num_samples)`. The second element
+            represents the schemas of forecasted target `TimeSeries`. The third element represents the prediction start
+            times.
 
         Returns
         -------
@@ -1756,7 +1765,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             num_samples=num_samples,
             roll_size=roll_size,
             batch_size=batch_size,
-            n_jobs=n_jobs,
             predict_likelihood_parameters=predict_likelihood_parameters,
             mc_dropout=mc_dropout,
         )
@@ -1783,9 +1791,37 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # prediction output comes as nested list: list of predicted `TimeSeries` for each batch.
-        predictions = self.trainer.predict(model=self.model, dataloaders=pred_loader)
-        # flatten and return
-        return [ts for batch in predictions for ts in batch]
+        out = self.trainer.predict(model=self.model, dataloaders=pred_loader)
+        predictions, series_schemas, pred_starts = [], [], []
+        for pred, ss, ps in out:
+            predictions.append(pred)
+            series_schemas += ss
+            pred_starts += ps
+        predictions = np.concatenate(predictions, axis=1)
+        predictions = np.transpose(predictions, axes=(1, 2, 3, 0))
+        if values_only:
+            return predictions, series_schemas, pred_starts
+
+        iterator = _build_tqdm_iterator(
+            iterable=zip(predictions, series_schemas, pred_starts),
+            verbose=verbose,
+            total=len(predictions),
+        )
+        ts_forecasts = _parallel_apply(
+            iterator=iterator,
+            fn=_build_forecast_series_from_schema,
+            n_jobs=n_jobs,
+            fn_args=tuple(),
+            fn_kwargs={
+                "predict_likelihood_parameters": predict_likelihood_parameters,
+                "likelihood_component_names_fn": (
+                    self.likelihood.component_names
+                    if predict_likelihood_parameters
+                    else None
+                ),
+            },
+        )
+        return ts_forecasts
 
     @property
     def first_prediction_index(self) -> int:
