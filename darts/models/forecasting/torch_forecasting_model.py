@@ -1814,6 +1814,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             iterable=zip(predictions, series_schemas, pred_starts),
             verbose=verbose,
             total=len(predictions),
+            desc="Generating TimeSeries",
         )
         ts_forecasts = _parallel_apply(
             iterator=iterator,
