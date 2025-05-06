@@ -10,7 +10,6 @@ import pytest
 import xarray as xr
 from scipy.stats import kurtosis, skew
 
-from darts import TimeSeries as TimeSeriesOld
 from darts import TimeSeriesNP as TimeSeries
 from darts import concatenate, slice_intersect
 from darts.tests.conftest import POLARS_AVAILABLE
@@ -33,21 +32,15 @@ class TestTimeSeries:
     pd_series2 = pd.Series(range(5, 15), index=times)
     pd_series3 = pd.Series(range(15, 25), index=times)
 
-    times = times[:6].union(times[8:])[::-1]
-    times.name = "hello"
-    values = pd.concat([pd_series1[:6], pd_series1[8:]]).values[::-1]
-    series1old: TimeSeries = TimeSeriesOld.from_times_and_values(
-        values=values,
-        times=times,
-        fill_missing_dates=True,
-        # freq="D"
-    )
-    series1: TimeSeries = TimeSeries.from_times_and_values(
-        values=values,
-        times=times,
-        fill_missing_dates=True,
-        # freq="D"
-    )
+    # times = times[:6].union(times[8:])[::-1]
+    # times.name = "hello"
+    # values = pd.concat([pd_series1[:6], pd_series1[8:]]).values[::-1]
+    # series1: TimeSeries = TimeSeries.from_times_and_values(
+    #     values=values,
+    #     times=times,
+    #     fill_missing_dates=True,
+    #     # freq="D"
+    # )
     series1: TimeSeries = TimeSeries.from_series(pd_series1)
     series2: TimeSeries = TimeSeries.from_series(pd_series2)
     series3: TimeSeries = TimeSeries.from_series(pd_series3)
@@ -57,43 +50,27 @@ class TestTimeSeries:
         assert series_test.to_series().equals(self.pd_series1.astype(float))
 
         # Creation with a well-formed array:
-        ar = xr.DataArray(
-            np.random.randn(10, 2, 3),
-            dims=("time", "component", "sample"),
-            coords={"time": self.times, "component": ["a", "b"]},
-            name="time series",
+        ts = TimeSeries(
+            times=self.times,
+            values=np.random.randn(10, 2, 3),
+            components=["a", "b"],
         )
-        ts = TimeSeries(ar)
         assert ts.is_stochastic
 
-        ar = xr.DataArray(
-            np.random.randn(10, 2, 1),
-            dims=("time", "component", "sample"),
-            coords={"time": pd.RangeIndex(0, 10, 1), "component": ["a", "b"]},
-            name="time series",
+        ts = TimeSeries(
+            times=pd.RangeIndex(0, 10, 1),
+            values=np.random.randn(10, 2, 1),
+            components=["a", "b"],
         )
-        ts = TimeSeries(ar)
         assert ts.is_deterministic
-
-        # creation with ill-formed arrays
-        with pytest.raises(ValueError):
-            ar2 = xr.DataArray(
-                np.random.randn(10, 2, 1),
-                dims=("time", "wrong", "sample"),
-                coords={"time": self.times, "wrong": ["a", "b"]},
-                name="time series",
-            )
-            _ = TimeSeries(ar2)
 
         with pytest.raises(ValueError):
             # duplicated column names
-            ar3 = xr.DataArray(
-                np.random.randn(10, 2, 1),
-                dims=("time", "component", "sample"),
-                coords={"time": self.times, "component": ["a", "a"]},
-                name="time series",
+            _ = TimeSeries(
+                times=self.times,
+                values=np.random.randn(10, 2, 1),
+                components=["a", "a"],
             )
-            _ = TimeSeries(ar3)
 
         # creation using from_xarray()
         ar = xr.DataArray(
@@ -369,12 +346,11 @@ class TestTimeSeries:
 
     def test_quantiles(self):
         values = np.random.rand(10, 2, 1000)
-        ar = xr.DataArray(
-            values,
-            dims=("time", "component", "sample"),
-            coords={"time": self.times, "component": ["a", "b"]},
+        ts = TimeSeries(
+            times=self.times,
+            values=values,
+            components=["a", "b"],
         )
-        ts = TimeSeries(ar)
 
         for q in [0.01, 0.1, 0.5, 0.95]:
             q_ts = ts.quantile_timeseries(quantile=q)
@@ -383,12 +359,11 @@ class TestTimeSeries:
     def test_quantiles_df(self):
         q = (0.01, 0.1, 0.5, 0.95)
         values = np.random.rand(10, 1, 1000)
-        ar = xr.DataArray(
-            values,
-            dims=("time", "component", "sample"),
-            coords={"time": self.times, "component": ["a"]},
+        ts = TimeSeries(
+            times=self.times,
+            values=values,
+            components=["a"],
         )
-        ts = TimeSeries(ar)
         q_ts = ts.quantiles_df(q)
         for col in q_ts:
             q = float(str(col).replace("a_", ""))
@@ -2082,14 +2057,9 @@ class TestTimeSeries:
     @patch("darts.timeseries.TimeSeries.to_dataframe")
     def test_to_csv_deterministic(self, pddf_mock):
         ts = TimeSeries(
-            xr.DataArray(
-                np.random.rand(10, 10, 1),
-                [
-                    ("time", pd.date_range("2000-01-01", periods=10)),
-                    ("component", ["comp_" + str(i) for i in range(10)]),
-                    ("sample", [0]),
-                ],
-            )
+            times=pd.date_range("2000-01-01", periods=10),
+            values=np.random.rand(10, 10, 1),
+            components=["comp_" + str(i) for i in range(10)],
         )
 
         ts.to_csv("test.csv")
@@ -2098,16 +2068,10 @@ class TestTimeSeries:
     @patch("darts.timeseries.TimeSeries.to_dataframe")
     def test_to_csv_stochastic(self, pddf_mock):
         ts = TimeSeries(
-            xr.DataArray(
-                np.random.rand(10, 10, 10),
-                [
-                    ("time", pd.date_range("2000-01-01", periods=10)),
-                    ("component", ["comp_" + str(i) for i in range(10)]),
-                    ("sample", range(10)),
-                ],
-            )
+            times=pd.date_range("2000-01-01", periods=10),
+            values=np.random.rand(10, 10, 10),
+            components=["comp_" + str(i) for i in range(10)],
         )
-
         with pytest.raises(ValueError):
             ts.to_csv("test.csv")
 
@@ -2505,14 +2469,9 @@ class TestTimeSeriesHierarchy:
 
 class TestTimeSeriesHeadTail:
     ts = TimeSeries(
-        xr.DataArray(
-            np.random.rand(10, 10, 10),
-            [
-                ("time", pd.date_range("2000-01-01", periods=10)),
-                ("component", ["comp_" + str(i) for i in range(10)]),
-                ("sample", range(10)),
-            ],
-        )
+        times=pd.date_range("2000-01-01", periods=10),
+        values=np.random.rand(10, 10, 10),
+        components=["comp_" + str(i) for i in range(10)],
     )
 
     def test_head_sunny_day_time_axis(self):
@@ -2836,12 +2795,11 @@ class TestTimeSeriesFromDataFrame:
 class TestSimpleStatistics:
     times = pd.date_range("20130101", "20130110", freq="D")
     values = np.random.rand(10, 2, 100)
-    ar = xr.DataArray(
-        values,
-        dims=("time", "component", "sample"),
-        coords={"time": times, "component": ["a", "b"]},
+    ts = TimeSeries(
+        times=times,
+        values=values,
+        components=["a", "b"],
     )
-    ts = TimeSeries(ar)
 
     def test_mean(self):
         for axis in range(3):

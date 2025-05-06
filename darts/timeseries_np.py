@@ -1523,7 +1523,7 @@ class TimeSeries:
         )
 
     @property
-    def shape(self) -> tuple[int]:
+    def shape(self) -> tuple[int, int, int]:
         """The shape of the series (n_timesteps, n_components, n_samples)."""
         return self._values.shape
 
@@ -2354,7 +2354,13 @@ class TimeSeries:
         """
 
         # the xarray will be copied in the TimeSeries constructor.
-        return self.__class__(self._xa)
+        return self.__class__(
+            times=self._time_index,
+            values=self._values,
+            components=self._components,
+            copy=True,
+            **self._attrs,
+        )
 
     def get_index_at_point(
         self, point: Union[pd.Timestamp, float, int], after=True
@@ -4946,10 +4952,9 @@ class TimeSeries:
     Dunder methods
     """
 
-    def _combine_arrays(
+    def _extract_values(
         self,
         other: Union[Self, xr.DataArray, np.ndarray],
-        combine_fn: Callable[[np.ndarray, np.ndarray], np.ndarray],
     ) -> Self:
         """
         This is a helper function that allows us to combine this series with another one,
@@ -4957,13 +4962,13 @@ class TimeSeries:
         """
 
         if isinstance(other, TimeSeries):
-            other_vals = other.data_array(copy=False).values
+            other_vals = other._values
         elif isinstance(other, xr.DataArray):
             other_vals = other.values
         else:
             other_vals = other
 
-        t, c, s = self._xa.shape
+        t, c, s = self.shape
         other_shape = other_vals.shape
         if not (
             # can combine arrays if shapes are equal (t, c, s)
@@ -4981,9 +4986,7 @@ class TimeSeries:
                 ),
                 logger=logger,
             )
-        new_xa = self._xa.copy()
-        new_xa.values = combine_fn(new_xa.values, other_vals)
-        return self.__class__(new_xa)
+        return other_vals
 
     @classmethod
     def _fill_missing_dates(
@@ -5242,85 +5245,108 @@ class TimeSeries:
             return known_dims.index(axis)
 
     def __eq__(self, other):
-        if isinstance(other, TimeSeries):
-            return self._xa.equals(other.data_array(copy=False))
-        return False
+        if not isinstance(other, TimeSeries):
+            return False
+
+        if self.shape != other.shape:
+            return False
+
+        if not self._time_index.equals(other._time_index):
+            return False
+
+        if not (self._values == other._values).all():
+            return False
+
+        if not self._components.equals(other._components):
+            return False
+
+        sc_self, sc_other = self.static_covariates, other.static_covariates
+        if (sc_self is not None) != (sc_other is not None):
+            return False
+        elif isinstance(sc_self, pd.DataFrame) and not sc_self.equals(sc_other):
+            return False
+
+        hr_self, hr_other = self.hierarchy, other.hierarchy
+        if (hr_self is not None) != (hr_other is not None):
+            return False
+        elif isinstance(hr_self, dict) and hr_self != hr_other:
+            return False
+
+        md_self, md_other = self.metadata, other.metadata
+        if (md_self is not None) != (md_other is not None):
+            return False
+        elif isinstance(md_self, dict) and md_self != md_other:
+            return False
+
+        return True
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __len__(self):
-        return len(self._xa)
+        return len(self._values)
 
     def __add__(self, other):
-        if isinstance(other, (int, float, np.integer)):
-            xa_ = _xarray_with_attrs(
-                self._xa + other, self.static_covariates, self.hierarchy, self.metadata
-            )
-            return self.__class__(xa_)
-        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            return self._combine_arrays(other, lambda s1, s2: s1 + s2)
-        else:
+        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            other = self._extract_values(other)
+        elif not isinstance(other, (int, float, np.integer)):
             raise_log(
                 TypeError(
                     f"unsupported operand type(s) for + or add(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
+        ts = self.copy()
+        np.add(ts._values, other, out=ts._values)
+        return ts
 
     def __radd__(self, other):
         return self + other
 
     def __sub__(self, other):
-        if isinstance(other, (int, float, np.integer)):
-            xa_ = _xarray_with_attrs(
-                self._xa - other, self.static_covariates, self.hierarchy, self.metadata
-            )
-            return self.__class__(xa_)
-        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            return self._combine_arrays(other, lambda s1, s2: s1 - s2)
-        else:
+        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            other = self._extract_values(other)
+        elif not isinstance(other, (int, float, np.integer)):
             raise_log(
                 TypeError(
                     f"unsupported operand type(s) for - or sub(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
+        ts = self.copy()
+        np.subtract(ts._values, other, out=ts._values)
+        return ts
 
     def __rsub__(self, other):
         return other + (-self)
 
     def __mul__(self, other):
-        if isinstance(other, (int, float, np.integer)):
-            xa_ = _xarray_with_attrs(
-                self._xa * other, self.static_covariates, self.hierarchy, self.metadata
-            )
-            return self.__class__(xa_)
-        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            return self._combine_arrays(other, lambda s1, s2: s1 * s2)
-        else:
+        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            other = self._extract_values(other)
+        elif not isinstance(other, (int, float, np.integer)):
             raise_log(
                 TypeError(
                     f"unsupported operand type(s) for * or mul(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
+        ts = self.copy()
+        np.multiply(ts._values, other, out=ts._values)
+        return ts
 
     def __rmul__(self, other):
         return self * other
 
     def __pow__(self, n):
         if isinstance(n, (int, float, np.integer)):
-            raise_if(n < 0, "Attempted to raise a series to a negative power.", logger)
-            xa_ = _xarray_with_attrs(
-                self._xa ** float(n),
-                self.static_covariates,
-                self.hierarchy,
-                self.metadata,
-            )
-            return self.__class__(xa_)
-        if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
-            return self._combine_arrays(n, lambda s1, s2: s1**s2)  # elementwise power
+            if n < 0:
+                raise_log(
+                    ValueError("Attempted to raise a series to a negative power."),
+                    logger,
+                )
+            n = float(n)
+        elif isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
+            n = self._extract_values(n)  # elementwise power
         else:
             raise_log(
                 TypeError(
@@ -5328,28 +5354,21 @@ class TimeSeries:
                 ),
                 logger,
             )
+        ts = self.copy()
+        np.power(ts._values, n, out=ts._values)
+        return ts
 
     def __truediv__(self, other):
         if isinstance(other, (int, float, np.integer)):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
-            xa_ = _xarray_with_attrs(
-                self._xa / other, self.static_covariates, self.hierarchy, self.metadata
-            )
-            return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            if isinstance(other, TimeSeries):
-                other_vals = other.data_array(copy=False).values
-            elif isinstance(other, xr.DataArray):
-                other_vals = other.values
-            else:
-                other_vals = other
-            if not (other_vals != 0).all():
+            other = self._extract_values(other)
+            if (other == 0).any():
                 raise_log(
                     ZeroDivisionError("Cannot divide by a TimeSeries with a value 0."),
                     logger,
                 )
-            return self._combine_arrays(other_vals, lambda s1, s2: s1 / s2)
         else:
             raise_log(
                 TypeError(
@@ -5358,118 +5377,116 @@ class TimeSeries:
                 ),
                 logger,
             )
+        ts = self.copy()
+        np.divide(ts._values, other, out=ts._values)
+        return ts
 
     def __rtruediv__(self, n):
         return n * (self ** (-1))
 
     def __abs__(self):
-        return self.__class__(abs(self._xa))
+        ts = self.copy()
+        np.absolute(ts._values, out=ts._values)
+        return ts
 
     def __neg__(self):
-        return self.__class__(-self._xa)
+        ts = self.copy()
+        np.negative(ts._values, out=ts._values)
+        return ts
 
     def __contains__(self, ts: Union[int, pd.Timestamp]) -> bool:
         return ts in self.time_index
 
     def __round__(self, n=None):
-        return self.__class__(self._xa.round(n))
+        ts = self.copy()
+        np.round(ts._values, n, out=ts._values)
+        return ts
 
-    def __lt__(self, other) -> xr.DataArray:
-        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_attrs(
-                self._xa < other, self.static_covariates, self.hierarchy, self.metadata
-            )
-        elif isinstance(other, TimeSeries):
-            return _xarray_with_attrs(
-                self._xa < other.data_array(copy=False),
-                self.static_covariates,
-                self.hierarchy,
-                self.metadata,
-            )
-        else:
+    def __lt__(self, other) -> Self:
+        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            other = self._extract_values(other)
+        elif not isinstance(other, (int, float, np.integer)):
             raise_log(
                 TypeError(
                     f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
+        ts = self.copy()
+        np.less(ts._values, other, out=ts._values)
+        return ts
 
-    def __gt__(self, other) -> xr.DataArray:
-        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_attrs(
-                self._xa > other, self.static_covariates, self.hierarchy, self.metadata
-            )
-        elif isinstance(other, TimeSeries):
-            return _xarray_with_attrs(
-                self._xa > other.data_array(copy=False),
-                self.static_covariates,
-                self.hierarchy,
-                self.metadata,
-            )
-        else:
+    def __gt__(self, other) -> Self:
+        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            other = self._extract_values(other)
+        elif not isinstance(other, (int, float, np.integer)):
             raise_log(
                 TypeError(
-                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
+                    f"unsupported operand type(s) for > : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
+        ts = self.copy()
+        np.greater(ts._values, other, out=ts._values)
+        return ts
 
-    def __le__(self, other) -> xr.DataArray:
-        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_attrs(
-                self._xa <= other, self.static_covariates, self.hierarchy, self.metadata
-            )
-        elif isinstance(other, TimeSeries):
-            return _xarray_with_attrs(
-                self._xa <= other.data_array(copy=False),
-                self.static_covariates,
-                self.hierarchy,
-                self.metadata,
-            )
-        else:
+    def __le__(self, other) -> Self:
+        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            other = self._extract_values(other)
+        elif not isinstance(other, (int, float, np.integer)):
             raise_log(
                 TypeError(
-                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
+                    f"unsupported operand type(s) for <= : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
+        ts = self.copy()
+        np.less_equal(ts._values, other, out=ts._values)
+        return ts
 
-    def __ge__(self, other) -> xr.DataArray:
-        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_attrs(
-                self._xa >= other, self.static_covariates, self.hierarchy, self.metadata
-            )
-        elif isinstance(other, TimeSeries):
-            return _xarray_with_attrs(
-                self._xa >= other.data_array(copy=False),
-                self.static_covariates,
-                self.hierarchy,
-                self.metadata,
-            )
-        else:
+    def __ge__(self, other) -> Self:
+        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            other = self._extract_values(other)
+        elif not isinstance(other, (int, float, np.integer)):
             raise_log(
                 TypeError(
-                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
+                    f"unsupported operand type(s) for >= : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
+        ts = self.copy()
+        np.greater_equal(ts._values, other, out=ts._values)
+        return ts
 
     def __str__(self):
-        return str(self._xa).replace("xarray.DataArray", "TimeSeries (DataArray)")
+        # return str(self._xa).replace("xarray.DataArray", "TimeSeries (DataArray)")
+        # TODO
+        raise NotImplementedError()
 
     def __repr__(self):
-        return self._xa.__repr__().replace("xarray.DataArray", "TimeSeries (DataArray)")
+        # return self._xa.__repr__().replace("xarray.DataArray", "TimeSeries (DataArray)")
+        # TODO
+        raise NotImplementedError()
 
     def _repr_html_(self):
-        return self._xa._repr_html_().replace(
-            "xarray.DataArray", "TimeSeries (DataArray)"
-        )
+        # return self._xa._repr_html_().replace(
+        #     "xarray.DataArray", "TimeSeries (DataArray)"
+        # )
+        # TODO
+        raise NotImplementedError()
 
     def __copy__(self, deep: bool = True):
         return self.copy()
 
     def __deepcopy__(self, memo):
-        return self.__class__(deepcopy(self._xa, memo))
+        # TODO
+        return self.__class__(
+            times=deepcopy(self._time_index, memo),
+            values=deepcopy(self._values, memo),
+            components=deepcopy(self._components, memo),
+            copy=False,
+            **deepcopy(self._attrs, memo),
+        )
 
     def __getitem__(
         self,
