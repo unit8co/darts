@@ -10,7 +10,9 @@ import pytest
 import xarray as xr
 from scipy.stats import kurtosis, skew
 
-from darts import TimeSeries, concatenate, slice_intersect
+from darts import TimeSeries as TimeSeriesOld
+from darts import TimeSeriesNP as TimeSeries
+from darts import concatenate, slice_intersect
 from darts.tests.conftest import POLARS_AVAILABLE
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 from darts.utils.utils import expand_arr, freqs, generate_index
@@ -30,6 +32,22 @@ class TestTimeSeries:
     pd_series1 = pd.Series(range(10), index=times)
     pd_series2 = pd.Series(range(5, 15), index=times)
     pd_series3 = pd.Series(range(15, 25), index=times)
+
+    times = times[:6].union(times[8:])[::-1]
+    times.name = "hello"
+    values = pd.concat([pd_series1[:6], pd_series1[8:]]).values[::-1]
+    series1old: TimeSeries = TimeSeriesOld.from_times_and_values(
+        values=values,
+        times=times,
+        fill_missing_dates=True,
+        # freq="D"
+    )
+    series1: TimeSeries = TimeSeries.from_times_and_values(
+        values=values,
+        times=times,
+        fill_missing_dates=True,
+        # freq="D"
+    )
     series1: TimeSeries = TimeSeries.from_series(pd_series1)
     series2: TimeSeries = TimeSeries.from_series(pd_series2)
     series3: TimeSeries = TimeSeries.from_series(pd_series3)
