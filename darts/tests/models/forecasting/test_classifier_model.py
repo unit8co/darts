@@ -738,8 +738,10 @@ class TestProbabilisticClassifierModels:
     sine_univariate5 = tg.sine_timeseries(length=100, value_phase=0.1963125) + 1
     sine_univariate6 = tg.sine_timeseries(length=100, value_phase=0.09815625) + 1
 
-    sine_univariate1_cat = sine_univariate1.map(lambda x: np.round(x))
-    sine_univariate2_cat = sine_univariate2.map(lambda x: np.round(x))
+    sine_univariate1_cat = sine_univariate1.map(lambda x: np.round(x))  # [0, 1, 2]
+    sine_univariate2_cat = sine_univariate2.map(
+        lambda x: np.where(np.round(x) >= 1, 1, 0)
+    )  # [0, 1]
     sine_univariate3_cat = sine_univariate3.map(lambda x: np.round(x))
 
     sine_multivariate1_cat = sine_univariate1_cat.stack(sine_univariate2_cat)
@@ -908,6 +910,30 @@ class TestProbabilisticClassifierModels:
         )
         assert pred == pred_likelihood
 
+    def class_probability_check_helper(
+        self, model, series_test, true_probas, accepted_rmse
+    ):
+        if not isinstance(series_test, list):
+            series_test = [series_test]
+
+        avg_probas = np.array([
+            predicted_ts.values()
+            for predicted_ts in model.predict(
+                n=1, series=series_test, predict_likelihood_parameters=True
+            )
+        ])
+        for i in range(1, len(series_test[0]) - 1):
+            probas = model.predict(
+                n=1,
+                series=[serie.split_after(i)[0] for serie in series_test],
+                predict_likelihood_parameters=True,
+            )
+            avg_probas += np.array([predicted_ts.values() for predicted_ts in probas])
+
+        avg_probas /= len(series_test[0]) - 1
+        rmse = np.mean((avg_probas - true_probas) ** 2, axis=2) ** 0.5
+        assert np.all(rmse <= accepted_rmse)
+
     @pytest.mark.parametrize(
         "clf_params",
         zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
@@ -949,17 +975,167 @@ class TestProbabilisticClassifierModels:
             df, time_col=None, value_cols=["random_test"]
         )
 
-        avg_probas = probas.values()
-        for i in range(1, len(series_test)):
-            avg_probas += model.predict(
-                n=1,
-                series=series_test.split_after(i)[0],
-                predict_likelihood_parameters=True,
-            ).values()
+        self.class_probability_check_helper(
+            model=model,
+            series_test=series_test,
+            true_probas=true_probas,
+            accepted_rmse=rmse_margin,
+        )
 
-        avg_probas /= 1 + len(series_test)
-        rmse = np.mean((avg_probas - true_probas) ** 2) ** 0.5
-        assert rmse <= rmse_margin
+    @pytest.mark.parametrize(
+        "clf_params",
+        zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
+    )
+    def test_multi_series_class_probabilities_are_valid(self, clf_params):
+        """Check class probabilties have correct shape and meaning"""
+
+        (clf, kwargs), rmse_margin = clf_params
+        model = clf(
+            lags=2,
+            **kwargs,
+        )
+
+        true_probas_component1 = np.array([0.1, 0.3, 0.6])
+        true_probas_component2 = np.array([0.7, 0.3])
+
+        true_labels_component1 = [0, 1, 2]
+        true_labels_component2 = [0, 1]
+
+        df = pd.DataFrame({
+            name: np.random.choice(
+                true_labels_comp,
+                size=100,
+                replace=True,
+                p=true_probas_comp,
+            )
+            for name, true_labels_comp, true_probas_comp in zip(
+                [
+                    "component1_s1",
+                    "component1_s1_test",
+                    "component2_s1",
+                    "component2_s1_test",
+                    "component1_s2",
+                    "component1_s2_test",
+                    "component2_s2",
+                    "component2_s2_test",
+                ],
+                [
+                    true_labels_component1,
+                    true_labels_component1,
+                    true_labels_component2,
+                    true_labels_component2,
+                ]
+                * 2,
+                [
+                    true_probas_component1,
+                    true_probas_component1,
+                    true_probas_component2,
+                    true_probas_component2,
+                ]
+                * 2,
+            )
+        })
+
+        series1 = TimeSeries.from_dataframe(
+            df, time_col=None, value_cols=["component1_s1", "component2_s1"]
+        )
+        series2 = TimeSeries.from_dataframe(
+            df, time_col=None, value_cols=["component1_s2", "component2_s2"]
+        )
+        model.fit([series1, series2])
+
+        series1_test = TimeSeries.from_dataframe(
+            df, time_col=None, value_cols=["component1_s1_test", "component2_s1_test"]
+        )
+        series2_test = TimeSeries.from_dataframe(
+            df, time_col=None, value_cols=["component1_s2_test", "component2_s2_test"]
+        )
+
+        series_test = [series1_test, series2_test]
+
+        # model_likelihood has ClassProbability likelihood
+        list_of_probas = model.predict(
+            n=1, series=series_test, predict_likelihood_parameters=True
+        )
+        # Sum of class proba is 1 (x2 component must be 2)
+        assert np.all([
+            p.sum(axis=1).values()[0][0] == pytest.approx(2) for p in list_of_probas
+        ])
+
+        # As many probabilties as classes
+        assert np.all([len(p.components) == 5 for p in list_of_probas])
+        assert np.all(model.class_labels[0] == true_labels_component1)
+        assert np.all(model.class_labels[1] == true_labels_component2)
+
+        true_probas = np.concatenate((true_probas_component1, true_probas_component2))
+
+        self.class_probability_check_helper(
+            model=model,
+            series_test=series_test,
+            true_probas=true_probas,
+            accepted_rmse=rmse_margin,
+        )
+
+    @pytest.mark.parametrize(
+        "clf_params",
+        zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
+    )
+    def test_multiivariate_class_probabilities_are_valid(self, clf_params):
+        """Check class probabilties have correct shape and meaning"""
+
+        (clf, kwargs), rmse_margin = clf_params
+        model = clf(
+            lags=2,
+            **kwargs,
+        )
+
+        true_probas_component1 = np.array([0.1, 0.3, 0.6])
+        true_probas_component2 = np.array([0.7, 0.3])
+
+        true_labels_component1 = [0, 1, 2]
+        true_labels_component2 = [0, 1]
+
+        df = pd.DataFrame({
+            "component_1": np.random.choice(
+                true_labels_component1, size=100, replace=True, p=true_probas_component1
+            ),
+            "component_2": np.random.choice(
+                true_labels_component2, size=100, replace=True, p=true_probas_component2
+            ),
+            "component_1_test": np.random.choice(
+                true_labels_component1, size=100, replace=True, p=true_probas_component1
+            ),
+            "component_2_test": np.random.choice(
+                true_labels_component2, size=100, replace=True, p=true_probas_component2
+            ),
+        })
+        series = TimeSeries.from_dataframe(
+            df, time_col=None, value_cols=["component_1", "component_2"]
+        )
+        model.fit(series)
+        # model_likelihood has ClassProbability likelihood
+        probas = model.predict(1, predict_likelihood_parameters=True)
+        # Sum of class proba is 1 (x2 component must be 2)
+        assert probas.sum(axis=1).values()[0][0] == pytest.approx(2)
+
+        # As many probabilties as classes
+        assert len(probas.components) == 5
+        # Class porbabilities have the correct ordering
+        assert np.all(probas.values()[1:] > probas.values()[:-1])
+        assert np.all(model.class_labels[0] == true_labels_component1)
+        assert np.all(model.class_labels[1] == true_labels_component2)
+
+        series_test = TimeSeries.from_dataframe(
+            df, time_col=None, value_cols=["component_1_test", "component_2_test"]
+        )
+        true_probas = np.concatenate((true_probas_component1, true_probas_component2))
+
+        self.class_probability_check_helper(
+            model=model,
+            series_test=series_test,
+            true_probas=true_probas,
+            accepted_rmse=rmse_margin,
+        )
 
     def test_warning_on_no_predict_proba(self, caplog):
         class NoPredictProbaModel:
@@ -1012,7 +1188,6 @@ class TestProbabilisticClassifierModels:
             "sine_p_2",
             "sine_1_p_0",
             "sine_1_p_1",
-            "sine_1_p_2",
         ]
 
         model = SKLearnClassifierModel(lags=1, output_chunk_length=2)
@@ -1032,5 +1207,4 @@ class TestProbabilisticClassifierModels:
         # predicted component names are correct
         preds = model.predict(n=2, predict_likelihood_parameters=True)
 
-        # Two components of 3 labels each => 6 probas
         assert np.all(preds.components == component_names)
