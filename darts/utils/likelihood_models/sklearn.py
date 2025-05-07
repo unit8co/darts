@@ -564,6 +564,23 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
                         self._index_first_param_per_component[1:],
                     )
                 ):
+                    # Some models have an approxmiation error, the probabilities are adjusted
+                    # if their total is below the 1e-7 tolerance threshold around 1.
+                    probabilities = model_output[
+                        output_idx, sample_idx, component_start:component_end
+                    ]
+                    total_proba = np.sum(probabilities)
+                    tolerance = 0.0000001
+                    if total_proba != 1:
+                        if total_proba > 1 + tolerance or total_proba < 1 - tolerance:
+                            raise_log(
+                                ValueError(
+                                    "The class probabilities returned by the model do not sum to one"
+                                )
+                            )
+                        difference = (1 - np.sum(probabilities)) / len(probabilities)
+                        probabilities += difference
+
                     preds[output_idx, sample_idx, component_idx] = self._rng.choice(
                         self._classes[output_idx],
                         p=model_output[

@@ -42,7 +42,7 @@ logger = get_logger(__name__)
 def process_model_list(classifiers):
     for clf, kwargs in classifiers:
         if issubclass(clf, BaseEstimator):
-            yield (SKLearnClassifierModel, {"model": clf(**kwargs)})
+            yield (SKLearnClassifierModel, {"model": clf(**kwargs), "random_state": 42})
         else:
             yield (clf, kwargs)
 
@@ -803,6 +803,19 @@ class TestProbabilisticClassifierModels:
         0.17,  # XGBClassifierModel
     ]
 
+    rmse_class_sample = [
+        0.08,  # LogisticRegression
+        0.16,  # KNeighborsClassifier
+        0.09,  # SVC
+        0.05,  # GaussianProcessClassifier
+        0.15,  # DecisionTreeClassifier
+        0.11,  # RandomForestClassifier
+        0.11,  # MLPClassifier
+        0.19,  # AdaBoostClassifier
+        0.14,  # GaussianNB
+        0.16,  # XGBClassifierModel
+    ]
+
     if lgbm_available:
         probabilistic_classifiers.append((
             LightGBMClassifierModel,
@@ -815,6 +828,7 @@ class TestProbabilisticClassifierModels:
             },
         ))
         rmse_class_proba.append(0.04)
+        rmse_class_sample.append(0.01)
 
     if cb_available:
         probabilistic_classifiers.append((
@@ -827,6 +841,7 @@ class TestProbabilisticClassifierModels:
             },
         ))
         rmse_class_proba.append(0.13)
+        rmse_class_sample.append(0.12)
 
     @pytest.mark.parametrize(
         "clf_params",
@@ -1208,3 +1223,30 @@ class TestProbabilisticClassifierModels:
         preds = model.predict(n=2, predict_likelihood_parameters=True)
 
         assert np.all(preds.components == component_names)
+
+    @pytest.mark.parametrize(
+        "clf_params",
+        zip(process_model_list(probabilistic_classifiers), rmse_class_sample),
+    )
+    def test_multi_sample_with_class_probabilities(
+        self,
+        clf_params,
+    ):
+        (clf, kwargs), model_rmse = clf_params
+        model = clf(lags=2, **kwargs)
+
+        true_probas = np.array([0.1, 0.3, 0.6])
+        true_labels = [0, 1, 2]
+        series = TimeSeries.from_values(
+            np.random.choice(true_labels, size=100, replace=True, p=true_probas),
+        )
+
+        model.fit(series)
+        prediction = model.predict(n=1, num_samples=100)
+        count = np.zeros(len(model.class_labels))
+        preds = prediction.all_values().flatten()
+        for i in preds:
+            count[int(i)] += 1
+        count /= len(preds)
+        rmse = np.mean((count - true_probas) ** 2) ** 0.5
+        assert rmse < model_rmse
