@@ -81,7 +81,7 @@ class MultiOutputMixin:
         if y.ndim == 1:
             raise_log(
                 ValueError(
-                    "`y` must have at least two dimensions for multi-output regression but has only one."
+                    "`y` must have at least two dimensions for multi-output but has only one."
                 ),
                 logger=logger,
             )

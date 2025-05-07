@@ -641,7 +641,24 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
     @staticmethod
     def _create_model(**kwargs):
         """Instantiate the underlying CatBoostClassifier model"""
-        return CatBoostClassifier(**kwargs)
+
+        # `CatBoostClassifier.predict` lacks a dimension when the task is binary classification compared to multi-class
+        # We override the predict function to unify its oztput shape, this is required for
+        # multivariate series with binary and multi-class classification target.
+        # Wrapping `CatBoostClassifier` is necessary as sklearn MultiOutput is using `sklearn.base.clone`
+        # which would ignores any modification to applied to a model instance.
+        class CatBoostClassifierWrapper(CatBoostClassifier):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self._wrapped_predict = super().predict
+
+            def predict(self, *args, **kwargs):
+                prediction = self._wrapped_predict(*args, **kwargs)
+                if len(prediction.shape) == 1:
+                    prediction = prediction.reshape(prediction.shape[0], 1)
+                return prediction
+
+        return CatBoostClassifierWrapper(**kwargs)
 
     def _set_likelihood(
         self,
