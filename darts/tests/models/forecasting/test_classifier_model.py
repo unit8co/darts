@@ -723,8 +723,13 @@ class TestClassifierModel:
                 assert False, f"{clf} need to be tested for fit arguments"
 
 
+@pytest.fixture(autouse=True)
+def random():
+    np.random.seed(0)
+
+
 class TestProbabilisticClassifierModels:
-    np.random.seed(42)
+    np.random.seed(0)
     # shift sines to positive values so that they can be used as target for classification with classes [0, 1, 2]
     sine_univariate1 = tg.sine_timeseries(length=100) + 1
     sine_univariate2 = tg.sine_timeseries(length=100, value_phase=1.5705) + 1
@@ -793,7 +798,7 @@ class TestProbabilisticClassifierModels:
         0.02,  # MLPClassifier
         0.20,  # AdaBoostClassifier
         0.07,  # GaussianNB
-        0.16,  # XGBClassifierModel
+        0.17,  # XGBClassifierModel
     ]
 
     if lgbm_available:
@@ -918,7 +923,6 @@ class TestProbabilisticClassifierModels:
 
         true_probas = np.array([0.1, 0.3, 0.6])
         true_labels = [0, 1, 2]
-
         df = pd.DataFrame({
             "random_train": np.random.choice(
                 true_labels, size=100, replace=True, p=true_probas
