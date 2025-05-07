@@ -50,9 +50,12 @@ class TestTimeSeriesMultivariate:
         assert np.all(series_test.to_dataframe().values == self.dataframe1.values)
 
         # Series cannot be lower than three without passing frequency as argument to constructor
+        df = self.dataframe1.copy(deep=True)
+        df.index = self.dataframe1.index.copy(deep=True)
+        df.index.freq = None
         with pytest.raises(ValueError):
-            TimeSeries(self.dataframe1.iloc[:2, :])
-        TimeSeries.from_dataframe(self.dataframe1.iloc[:2, :], freq="D")
+            TimeSeries.from_dataframe(df.iloc[:2, :])
+        TimeSeries.from_dataframe(df.iloc[:2, :], freq="D")
 
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
     def test_polars_creation(self):

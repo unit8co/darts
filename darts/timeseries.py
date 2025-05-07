@@ -5180,8 +5180,8 @@ class TimeSeries:
         observed_freqs = cls._observed_freq_integer_index(time_index)
         raise_if_not(
             len(observed_freqs) == 1,
-            f"Could not convert integer index to a pd.RangeIndex. Found non-unique step sizes/frequencies: "
-            f"{observed_freqs}. If any of those is the actual frequency, try passing it with fill_missing_dates=True "
+            f"Could not convert integer index to a `pd.RangeIndex`. Found non-unique step sizes/frequencies: "
+            f"`{observed_freqs}`. If any of those is the actual frequency, try passing it with fill_missing_dates=True "
             f"and freq=your_frequency.",
             logger,
         )

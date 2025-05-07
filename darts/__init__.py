@@ -8,8 +8,8 @@ import os
 import matplotlib as mpl
 from matplotlib import cycler
 
-from darts.timeseries import TimeSeries, concatenate, slice_intersect
-from darts.timeseries_np import TimeSeries as TimeSeriesNP
+# from darts.timeseries import TimeSeries, concatenate, slice_intersect
+from darts.timeseries_np import TimeSeries, concatenate, slice_intersect
 
 __version__ = "0.35.0"
 
