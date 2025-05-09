@@ -9,6 +9,7 @@ from typing import Optional
 import numpy as np
 
 from darts.logging import get_logger, raise_log
+from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models.base import (
     Likelihood,
     LikelihoodType,
@@ -412,16 +413,252 @@ class QuantileRegression(SKLearnLikelihood):
         )
 
 
-def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
-    """Check whether the likelihood is supported.
+class ClassProbabilityLikelihood(SKLearnLikelihood):
+    def __init__(
+        self,
+        n_outputs: int,
+        random_state: Optional[int] = None,
+    ):
+        """
+        Class probability likelihood.
+        Likelihood to predict the probability of each class for a forecasting classification task.
+
+        Parameters
+        ----------
+        n_outputs
+            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
+            `output_chunk_length`.
+        random_state
+            Optionally, control the randomness of the sampling.
+        """
+        super().__init__(
+            likelihood_type=LikelihoodType.ClassProbability,
+            n_outputs=n_outputs,
+            random_state=random_state,
+            parameter_names=[],
+        )
+        self._index_first_param_per_component: Optional[np.ndarray] = None
+
+    def fit(self, model):
+        """
+        Fits the likelihood to the model.
+
+        Parameters
+        ----------
+        model
+            The model to fit the likelihood to. The model is expected to be fitted and have a `class_labels` attribute.
+        """
+        if not hasattr(model, "class_labels"):
+            raise_log(
+                ValueError(
+                    "The model must have a `class_labels` attribute to fit the likelihood."
+                ),
+                logger,
+            )
+
+        # single-labels and single-model tasks should return a array of classes
+        # multi-labels or multi-models tasks should return a list of arraya of classes
+        # unify `class_labels` to a list of arrays of classes for simplicity
+        classes = model.class_labels
+        if not isinstance(classes, list):
+            classes = [classes]
+        self._classes = classes
+
+        # estimators/classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ...]
+        # Since classes are same across chunk for same component, we can just take the first chunk for each component
+        num_components = len(classes) // self._n_outputs
+
+        # index of the first parameter of each component in the likelihood parameters
+        # e.g. [0, 2, 4, 6] for 3 components with 2 parameters each
+        self._index_first_param_per_component = np.insert(
+            np.cumsum([
+                len(estimator_classes)
+                for estimator_classes in self._classes[:num_components]
+            ]),
+            0,
+            0,
+        )
+
+        self._parameter_names = [
+            f"p_{int(label)}" for i in range(num_components) for label in classes[i]
+        ]
+        return self
+
+    def component_names(self, input_series: TimeSeries) -> list[str]:
+        """Generates names for the parameters of the Likelihood."""
+        if self._index_first_param_per_component is None:
+            raise_log(
+                ValueError(
+                    "`component_names` requires the likelihood to be fitted "
+                    "but `ClassProbabilityLikelihood` is not fitted."
+                )
+            )
+        # format: <component_name>_p_<label>
+        return [
+            f"{component_name}_{parameter_name}"
+            for i, component_name in enumerate(input_series.components)
+            for parameter_name in self.parameter_names[
+                self._index_first_param_per_component[
+                    i
+                ] : self._index_first_param_per_component[i + 1]
+            ]
+        ]
+
+    def _estimator_predict(
+        self,
+        model,
+        x: np.ndarray,
+        **kwargs,
+    ) -> np.ndarray:
+        # list of length n_components * output_chunk_length of numpy arrays of shape (n_samples*n_series, n_classes)
+        model_output = model.model.predict_proba(x, **kwargs)
+        if not isinstance(model_output, list):
+            model_output = [model_output]
+
+        # shape: (output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        # n_likelihood_parameters is the sum of the number of classes for each component
+        class_proba = np.zeros((
+            self._n_outputs,
+            model_output[0].shape[0],
+            self.num_parameters,
+        ))
+
+        # ordered first by _n_outputs then by component: [comp0_chunk0, comp1_chunk0, ..]
+        n_component = len(model_output) // self._n_outputs
+        # filling the class_proba array with the predicted probabilities
+        for i, params_proba in enumerate(model_output):
+            component_index = i % n_component
+            output_index = i // n_component
+            class_proba[
+                output_index,
+                :,
+                self._index_first_param_per_component[
+                    component_index
+                ] : self._index_first_param_per_component[component_index + 1],
+            ] = params_proba
+
+        # shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        # n_likelihood_parameters is the sum of the number of classes for each component
+        # n_likelihood_parameters are ordered as in component_names:
+        # [comp0_l1, comp0_l2, comp1_l1, comp1_l2, comp1_l3,...]
+        # should be accessed through _index_first_param_per_component (for comp1 => 2)
+        return class_proba
+
+    def sample(self, model_output: np.ndarray) -> np.ndarray:
+        """
+        Samples a prediction from the likelihood distribution and the predicted parameters.
+        """
+        # shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        n_output, n_samples, _ = model_output.shape
+
+        n_component = len(self._classes) // self._n_outputs
+
+        # shape (output_chunk_length, n_series * n_samples, n_components)
+        preds = np.empty((n_output, n_samples, n_component), dtype=int)
+
+        for output_idx in range(n_output):
+            for sample_idx in range(n_samples):
+                for component_idx, (component_start, component_end) in enumerate(
+                    zip(
+                        self._index_first_param_per_component[:-1],
+                        self._index_first_param_per_component[1:],
+                    )
+                ):
+                    # Some models have an approxmiation error, the probabilities are adjusted
+                    # if their total is below the 1e-7 tolerance threshold around 1.
+                    probabilities = model_output[
+                        output_idx, sample_idx, component_start:component_end
+                    ]
+                    total_proba = np.sum(probabilities)
+                    tolerance = 0.0000001
+                    if total_proba != 1:
+                        if total_proba > 1 + tolerance or total_proba < 1 - tolerance:
+                            raise_log(
+                                ValueError(
+                                    "The class probabilities returned by the model do not sum to one"
+                                )
+                            )
+                        difference = (1 - np.sum(probabilities)) / len(probabilities)
+                        probabilities += difference
+
+                    preds[output_idx, sample_idx, component_idx] = self._rng.choice(
+                        self._classes[output_idx],
+                        p=model_output[
+                            output_idx, sample_idx, component_start:component_end
+                        ],
+                    )
+
+        # reshape to (n_series * n_samples, output_chunk_length, n_components)
+        return preds.transpose(1, 0, 2)
+
+    def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
+        """
+        Returns the distribution parameters as a array, extracted from the raw model outputs.
+        """
+        # reshape to (n_series * n_samples, output_chunk_length, n_likelihood_parameters)
+        return model_output.transpose(1, 0, 2)
+
+    def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
+        """
+        Gets the median prediction per component extracted from the model output.
+        """
+        # shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)
+        n_output, n_samples, n_params = model_output.shape
+        # shape (output_chunk_length, n_series * n_samples, n_components)
+        n_component = len(self._classes) // self._n_outputs
+        preds = np.empty((n_output, n_samples, n_component), dtype=int)
+
+        for component_idx, (component_start, component_end) in enumerate(
+            zip(
+                self._index_first_param_per_component[:-1],
+                self._index_first_param_per_component[1:],
+            )
+        ):
+            # shape (output_chunk_length, n_series * n_samples)
+            indices = np.argmax(
+                model_output[:, :, component_start:component_end], axis=2
+            )
+
+            preds[:, :, component_idx] = self._classes[component_idx][indices]
+
+        # reshape to (n_series * n_samples, output_chunk_length, n_components)
+        return preds.transpose(1, 0, 2)
+
+
+def _get_likelihood(
+    likelihood: Optional[str],
+    n_outputs: int,
+    available_likelihoods: list[LikelihoodType],
+    random_state: Optional[int] = None,
+    quantiles: Optional[list[float]] = None,
+) -> Optional[SKLearnLikelihood]:
+    """Get the `Likelihood` object for `SKLearnModel`.
 
     Parameters
     ----------
     likelihood
-        The likelihood name. Must be one of ('gaussian', 'poisson', 'quantile').
+        The likelihood name. Must be one of `available_likelihoods` type value or `None`.
+    n_outputs
+        The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
+        `output_chunk_length`.
     available_likelihoods
-        A list of supported likelihood names.
+        The list of available likelihood types for the model.
+    random_state
+        Optionally, control the randomness of the sampling.
+    quantiles
+        Optionally, a list of quantiles. Only effective for `likelihood='quantile'`.
+
     """
+
+    if likelihood is None:
+        return None
+
+    # Convert LikelihoodType to string
+    available_likelihoods = [
+        likelihood.value if isinstance(likelihood, LikelihoodType) else likelihood
+        for likelihood in available_likelihoods
+    ]
+
     if likelihood not in available_likelihoods:
         raise_log(
             ValueError(
@@ -430,30 +667,7 @@ def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
             logger=logger,
         )
 
-
-def _get_likelihood(
-    likelihood: Optional[str],
-    n_outputs: int,
-    random_state: Optional[int],
-    quantiles: Optional[list[float]],
-) -> Optional[SKLearnLikelihood]:
-    """Get the `Likelihood` object for `SKLearnModel`.
-
-    Parameters
-    ----------
-    likelihood
-        The likelihood name. Must be one of ('gaussian', 'poisson', 'quantile').
-    n_outputs
-        The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
-        `output_chunk_length`.
-    random_state
-        Optionally, control the randomness of the sampling.
-    quantiles
-        Optionally, a list of quantiles. Only effective for `likelihood='quantile'`.
-    """
-    if likelihood is None:
-        return None
-    elif likelihood == "gaussian":
+    if likelihood == "gaussian":
         return GaussianLikelihood(n_outputs=n_outputs, random_state=random_state)
     elif likelihood == "poisson":
         return PoissonLikelihood(n_outputs=n_outputs, random_state=random_state)
@@ -461,10 +675,7 @@ def _get_likelihood(
         return QuantileRegression(
             n_outputs=n_outputs, random_state=random_state, quantiles=quantiles
         )
-    else:
-        raise_log(
-            ValueError(
-                f"Invalid `likelihood='{likelihood}'`. Must be one of ('gaussian', 'poisson', 'quantile')"
-            ),
-            logger=logger,
+    elif likelihood == LikelihoodType.ClassProbability.value:
+        return ClassProbabilityLikelihood(
+            n_outputs=n_outputs, random_state=random_state
         )
