@@ -591,6 +591,7 @@ class SKLearnModel(GlobalForecastingModel):
         val_future_covariates: Optional[Sequence[TimeSeries]],
         val_sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: int,
+        stride: int,
     ) -> dict:
         """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
         validation set. This method can be overridden if the model requires a different logic to add the eval set."""
@@ -601,6 +602,7 @@ class SKLearnModel(GlobalForecastingModel):
             max_samples_per_ts=max_samples_per_ts,
             sample_weight=val_sample_weight,
             last_static_covariates_shape=self._static_covariates_shape,
+            stride=stride,
         )
         # create validation sets for MultiOutputRegressor
         if val_labels.ndim == 2 and isinstance(self.model, MultiOutputRegressor):
@@ -624,6 +626,7 @@ class SKLearnModel(GlobalForecastingModel):
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
         sample_weight: Optional[Union[TimeSeries, str]] = None,
+        stride: int = 1,
         last_static_covariates_shape: Optional[tuple[int, int]] = None,
     ):
         (
@@ -648,6 +651,7 @@ class SKLearnModel(GlobalForecastingModel):
             check_inputs=False,
             concatenate=False,
             sample_weight=sample_weight,
+            stride=stride,
         )
 
         expected_nb_feat = (
@@ -709,6 +713,7 @@ class SKLearnModel(GlobalForecastingModel):
         future_covariates: Sequence[TimeSeries],
         max_samples_per_ts: int,
         sample_weight: Optional[Union[Sequence[TimeSeries], str]],
+        stride: int,
         val_series: Optional[Sequence[TimeSeries]] = None,
         val_past_covariates: Optional[Sequence[TimeSeries]] = None,
         val_future_covariates: Optional[Sequence[TimeSeries]] = None,
@@ -726,6 +731,7 @@ class SKLearnModel(GlobalForecastingModel):
             max_samples_per_ts=max_samples_per_ts,
             sample_weight=sample_weight,
             last_static_covariates_shape=None,
+            stride=stride,
         )
 
         if self.supports_val_set and val_series is not None:
@@ -736,6 +742,7 @@ class SKLearnModel(GlobalForecastingModel):
                 val_future_covariates=val_future_covariates,
                 val_sample_weight=val_sample_weight,
                 max_samples_per_ts=max_samples_per_ts,
+                stride=stride,
             )
 
         # only use `sample_weight` if model supports it
@@ -776,6 +783,7 @@ class SKLearnModel(GlobalForecastingModel):
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        stride: int = 1,
         **kwargs,
     ):
         """
@@ -809,6 +817,10 @@ class SKLearnModel(GlobalForecastingModel):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
+        stride
+            The number of time steps between consecutive samples, applied starting from the end of the series. The same
+            stride will be applied to both the training and evaluation set (if supplied and supported). This should be
+            used with caution as it might introduce bias in the forecasts.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
@@ -971,6 +983,7 @@ class SKLearnModel(GlobalForecastingModel):
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
             max_samples_per_ts=max_samples_per_ts,
+            stride=stride,
             **kwargs,
         )
         return self
@@ -1012,11 +1025,11 @@ class SKLearnModel(GlobalForecastingModel):
             If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
+        show_warnings
+            Optionally, control whether warnings are shown. Not effective for all models.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
-        show_warnings
-            Optionally, control whether warnings are shown. Not effective for all models.
         """
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
