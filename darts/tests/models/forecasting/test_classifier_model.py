@@ -262,11 +262,7 @@ class TestClassifierModel:
         clf, kwargs = clf_params
         # only one estimator see the last labels of the series thus the estimator due to output_chunk_length=2
         # for the same component won't see the same labels
-        df = pd.DataFrame({
-            "comp1": np.array([0, 0, 0, 1, 2]),
-            "comp2": np.array([0, 0, 0, 1, 3]),
-        })
-        series = TimeSeries.from_dataframe(df, time_col=None, value_cols=["comp1"])
+        series = TimeSeries.from_values(np.array([0, 0, 0, 1, 2]), columns=["comp1"])
         model = clf(lags=1, output_chunk_length=2, **kwargs)
 
         with pytest.raises(ValueError) as err:
@@ -276,21 +272,12 @@ class TestClassifierModel:
             " series being too short or to the periodicity in the target series matching the number of estimator."
         )
 
-        # if same labels per component it does not raise an error
-        df = pd.DataFrame({
-            "comp1": np.array([0, 0, 0, 1, 1]),
-            "comp2": np.array([0, 0, 1, 2, 0]),
-        })
-        series = TimeSeries.from_dataframe(df, time_col=None, value_cols=["comp1"])
-        model.fit(series=series)
+        # if only one estimator due to multi_models=False, then there are no issue
+        single_model = clf(lags=1, output_chunk_length=2, multi_models=False, **kwargs)
+        single_model.fit(series=series)
 
-        # if multi_model=False then this is not an issue
-        df = pd.DataFrame({
-            "comp1": np.array([0, 0, 0, 1, 2]),
-            "comp2": np.array([0, 0, 0, 1, 3]),
-        })
-        series = TimeSeries.from_dataframe(df, time_col=None, value_cols=["comp1"])
-        model = clf(lags=1, output_chunk_length=2, multi_models=False, **kwargs)
+        # if same labels per component it does not raise an error
+        series = TimeSeries.from_values(np.array([0, 0, 0, 1, 1]), columns=["comp1"])
         model.fit(series=series)
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
@@ -547,20 +534,26 @@ class TestClassifierModel:
             multi_models=multi_models,
             **kwargs,
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             # testing lags_past_covariates None but past_covariates during training
             model_instance.fit(
                 series=self.sine_univariate1_cat,
                 past_covariates=self.sine_multivariate1,
                 future_covariates=self.sine_multivariate1,
             )
+        assert str(err.value).startswith(
+            "`past_covariates` not None in `fit()` method call"
+        )
 
         model_instance = model_cls(
             lags_past_covariates=3, multi_models=multi_models, **kwargs
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             # testing lags_past_covariates but no past_covariates during fit
             model_instance.fit(series=self.sine_univariate1_cat)
+        assert str(err.value).startswith(
+            "`past_covariates` is None in `fit()` method call"
+        )
 
         # testing future_covariates
         model_instance = model_cls(
@@ -569,13 +562,16 @@ class TestClassifierModel:
             multi_models=multi_models,
             **kwargs,
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             # testing lags_future_covariates None but future_covariates during training
             model_instance.fit(
                 series=self.sine_univariate1_cat,
                 past_covariates=self.sine_multivariate1,
                 future_covariates=self.sine_multivariate1,
             )
+        assert str(err.value).startswith(
+            "`future_covariates` not None in `fit()` method call"
+        )
 
         model_instance = model_cls(
             lags_past_covariates=4,
@@ -583,12 +579,15 @@ class TestClassifierModel:
             multi_models=multi_models,
             **kwargs,
         )
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             # testing lags_future_covariates but no future_covariates during fit
             model_instance.fit(
                 series=self.sine_univariate1_cat,
                 past_covariates=self.sine_multivariate1,
             )
+        assert str(err.value).startswith(
+            "`future_covariates` is None in `fit()` method call"
+        )
 
         # testing input_dim
         model_instance = model_cls(
@@ -605,8 +604,9 @@ class TestClassifierModel:
             "future": None,
         }
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError) as err:
             prediction = model_instance.predict(n=len(test_y) + 2)
+        assert str(err.value).startswith("The `past_covariates` are not long enough.")
 
         # while it should work with n = 1
         prediction = model_instance.predict(n=1)
@@ -649,6 +649,7 @@ class TestClassifierModel:
             SVC,
             GaussianProcessClassifier,
         ] or type(model.model) in [LogisticRegression]:
+            # Model specific error message
             with pytest.raises(ValueError):
                 model.fit(
                     series=self.sine_univariate1_cat - self.sine_univariate1_cat,
@@ -728,48 +729,62 @@ def random():
     np.random.seed(0)
 
 
+def generate_random_series_with_probabilities(
+    multi_variate: bool, multi_series: bool, length=100
+):
+    """
+    Generate categorical series with specific probabilites for each class
+    """
+    probas_component1 = np.array([0.1, 0.3, 0.6])
+    labels_component1 = [0, 1, 2]
+
+    probas_component2 = np.array([0.7, 0.3]) if multi_variate else None
+    labels_component2 = [0, 1] if multi_variate else None
+
+    columns = ["component1", "component2"] if multi_variate else ["component1"]
+
+    def generate_samples():
+        array = np.random.choice(
+            labels_component1, size=length * 2, replace=True, p=probas_component1
+        )
+
+        if multi_variate:
+            array = np.vstack((
+                array,
+                np.random.choice(
+                    labels_component2,
+                    size=length * 2,
+                    replace=True,
+                    p=probas_component2,
+                ),
+            )).T
+        return array
+
+    series_train, series_test = TimeSeries.from_values(
+        generate_samples(), columns=columns
+    ).split_before(length)
+
+    if multi_series:
+        series2_train, series2_test = TimeSeries.from_values(
+            generate_samples(), columns=columns
+        ).split_before(length)
+        series_train = [series_train, series2_train]
+        series_test = [series_test, series2_test]
+
+    return (
+        series_train,
+        series_test,
+        probas_component1,
+        labels_component1,
+        probas_component2,
+        labels_component2,
+    )
+
+
 class TestProbabilisticClassifierModels:
-    np.random.seed(0)
-    # shift sines to positive values so that they can be used as target for classification with classes [0, 1, 2]
-    sine_univariate1 = tg.sine_timeseries(length=100) + 1
-    sine_univariate2 = tg.sine_timeseries(length=100, value_phase=1.5705) + 1
-    sine_univariate3 = tg.sine_timeseries(length=100, value_phase=0.78525) + 1
-    sine_univariate4 = tg.sine_timeseries(length=100, value_phase=0.392625) + 1
-    sine_univariate5 = tg.sine_timeseries(length=100, value_phase=0.1963125) + 1
-    sine_univariate6 = tg.sine_timeseries(length=100, value_phase=0.09815625) + 1
-
-    sine_univariate1_cat = sine_univariate1.map(lambda x: np.round(x))  # [0, 1, 2]
-    sine_univariate2_cat = sine_univariate2.map(
-        lambda x: np.where(np.round(x) >= 1, 1, 0)
-    )  # [0, 1]
-    sine_univariate3_cat = sine_univariate3.map(lambda x: np.round(x))
-
-    sine_multivariate1_cat = sine_univariate1_cat.stack(sine_univariate2_cat)
-    sine_multivariate2_cat = sine_univariate1_cat.stack(sine_univariate3_cat)
-    sine_multivariate3_cat = sine_univariate2_cat.stack(sine_univariate3_cat)
-
-    sine_multivariate1 = sine_univariate2.stack(sine_univariate3)
-    sine_multivariate2 = sine_univariate1.stack(sine_univariate3)
-
-    sine_multiseries1_cat = [
-        sine_univariate1_cat,
-        sine_univariate2_cat,
-        sine_univariate3_cat,
-    ]
-    sine_multiseries1 = [sine_univariate4, sine_univariate5, sine_univariate6]
-
-    sine_multiseries_multivariate_cat = [
-        sine_multivariate1_cat,
-        sine_multivariate2_cat,
-        sine_multivariate3_cat,
-    ]
-
-    sine_multivariate_multiseries = [sine_multivariate1, sine_multivariate2]
-
     probabilistic_classifiers = [
         (LogisticRegression, {}),
         (KNeighborsClassifier, {"n_neighbors": 10}),
-        (SVC, {"gamma": 2, "C": 1, "random_state": 42, "probability": True}),
         (GaussianProcessClassifier, {"kernel": 1.0 * RBF(1.0), "random_state": 42}),
         (DecisionTreeClassifier, {"max_depth": 5, "random_state": 42}),
         (
@@ -793,7 +808,6 @@ class TestProbabilisticClassifierModels:
     rmse_class_proba = [
         0.07,  # LogisticRegression
         0.16,  # KNeighborsClassifier
-        0.06,  # SVC
         0.1,  # GaussianProcessClassifier
         0.27,  # DecisionTreeClassifier
         0.11,  # RandomForestClassifier
@@ -806,7 +820,6 @@ class TestProbabilisticClassifierModels:
     rmse_class_sample = [
         0.08,  # LogisticRegression
         0.16,  # KNeighborsClassifier
-        0.09,  # SVC
         0.05,  # GaussianProcessClassifier
         0.15,  # DecisionTreeClassifier
         0.11,  # RandomForestClassifier
@@ -870,7 +883,9 @@ class TestProbabilisticClassifierModels:
 
     @pytest.mark.parametrize(
         "clf_params",
-        process_model_list(probabilistic_classifiers),
+        product(
+            process_model_list(probabilistic_classifiers), [False, True], [False, True]
+        ),
     )
     def test_class_proba_likelihood_median_pred_is_same_than_no_likelihood(
         self, clf_params
@@ -878,52 +893,26 @@ class TestProbabilisticClassifierModels:
         # check that the model's prediction is the same with and without the likelihood
         # when predict_likelihood_parameters=False
         # Meaning _get_median_prediction on top on predict_proba produce the same output than the model predict
-        clf, kwargs = clf_params
-        model = clf(lags=2, **kwargs, likelihood=None)
-        model_likelihood = clf(
-            lags=2,
-            **kwargs,
+        (clf, kwargs), multi_series, multi_variate = clf_params
+
+        series_train, _, _, _, _, _ = generate_random_series_with_probabilities(
+            multi_series=multi_series, multi_variate=multi_variate
         )
 
-        model.fit(self.sine_univariate1_cat)
-        # model has no likelihood
+        model = clf(lags=2, **kwargs, likelihood=None)
+        model_likelihood = clf(lags=2, **kwargs)
+        model.fit(series_train)
+        model_likelihood.fit(series_train)
+        assert model_likelihood.predict(5, series_train) == model.predict(
+            5, series_train
+        )
+
         with pytest.raises(ValueError) as err:
-            model.predict(2, predict_likelihood_parameters=True)
+            model.predict(n=2, series=series_train, predict_likelihood_parameters=True)
         assert (
             str(err.value) == "`predict_likelihood_parameters=True` is only"
             " supported for probabilistic models fitted with a likelihood."
         )
-        # univariate series
-        model_likelihood.fit(self.sine_univariate1_cat)
-        assert model_likelihood.predict(5) == model.predict(5)
-
-        # multivariate series
-        model = model.untrained_model()
-        model_likelihood = model_likelihood.untrained_model()
-        model.fit(self.sine_multivariate1_cat)
-        model_likelihood.fit(self.sine_multivariate1_cat)
-        assert model_likelihood.predict(5) == model.predict(5)
-
-        # multiple univariate series
-        model = model.untrained_model()
-        model_likelihood = model_likelihood.untrained_model()
-        model.fit(self.sine_multiseries1_cat)
-        model_likelihood.fit(self.sine_multiseries1_cat)
-        assert model_likelihood.predict(
-            n=5, series=self.sine_multiseries1_cat
-        ) == model.predict(n=5, series=self.sine_multiseries1_cat)
-
-        # multiple multivariate series
-        # 3 series two variates each
-        model = model.untrained_model()
-        model_likelihood = model_likelihood.untrained_model()
-        model.fit(self.sine_multiseries_multivariate_cat)
-        model_likelihood.fit(self.sine_multiseries_multivariate_cat)
-        pred = model.predict(n=1, series=self.sine_multiseries_multivariate_cat)
-        pred_likelihood = model_likelihood.predict(
-            n=1, series=self.sine_multiseries_multivariate_cat
-        )
-        assert pred == pred_likelihood
 
     def class_probability_check_helper(
         self, model, series_test, true_probas, accepted_rmse
@@ -937,7 +926,7 @@ class TestProbabilisticClassifierModels:
                 n=1, series=series_test, predict_likelihood_parameters=True
             )
         ])
-        for i in range(1, len(series_test[0]) - 1):
+        for i in series_test[0].time_index[1:]:
             probas = model.predict(
                 n=1,
                 series=[serie.split_after(i)[0] for serie in series_test],
@@ -951,199 +940,73 @@ class TestProbabilisticClassifierModels:
 
     @pytest.mark.parametrize(
         "clf_params",
-        zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
+        product(
+            zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
+            [True, False],
+            [True, False],
+        ),
     )
-    def test_univariate_class_probabilities_are_valid(self, clf_params):
-        """Check class probabilties have correct shape and meaning"""
+    def test_class_probabilities_are_valid(self, clf_params):
+        """
+        Check class probabilties have correct shape and meaning in case of:
+        - single serie, univariate
+        - single serie, multivariate
+        - multi series, univariate
+        - mutli series, multivariate
+        Components of multi-variate do not have the same classes
+        """
 
-        (clf, kwargs), rmse_margin = clf_params
+        ((clf, kwargs), rmse_margin), multi_series, multi_variate = clf_params
         model = clf(
             lags=2,
             **kwargs,
         )
 
-        true_probas = np.array([0.1, 0.3, 0.6])
-        true_labels = [0, 1, 2]
-        df = pd.DataFrame({
-            "random_train": np.random.choice(
-                true_labels, size=100, replace=True, p=true_probas
-            ),
-            "random_test": np.random.choice(
-                true_labels, size=100, replace=True, p=true_probas
-            ),
-        })
-        series = TimeSeries.from_dataframe(
-            df, time_col=None, value_cols=["random_train"]
+        (
+            series_train,
+            series_test,
+            probas_component1,
+            labels_component1,
+            probas_component2,
+            labels_component2,
+        ) = generate_random_series_with_probabilities(
+            multi_series=multi_series, multi_variate=multi_variate
         )
-        model.fit(series)
-        # model_likelihood has ClassProbability likelihood
-        probas = model.predict(1, predict_likelihood_parameters=True)
-        # Sum of class proba is 1
-        assert probas.sum(axis=1).values()[0][0] == pytest.approx(1)
-        # As many probabilties as classes
-        assert len(probas.components) == 3
-        # Class porbabilities have the correct ordering
-        assert np.all(probas.values()[1:] > probas.values()[:-1])
-        assert np.all(model.class_labels == true_labels)
-
-        series_test = TimeSeries.from_dataframe(
-            df, time_col=None, value_cols=["random_test"]
-        )
-
-        self.class_probability_check_helper(
-            model=model,
-            series_test=series_test,
-            true_probas=true_probas,
-            accepted_rmse=rmse_margin,
-        )
-
-    @pytest.mark.parametrize(
-        "clf_params",
-        zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
-    )
-    def test_multi_series_class_probabilities_are_valid(self, clf_params):
-        """Check class probabilties have correct shape and meaning"""
-
-        (clf, kwargs), rmse_margin = clf_params
-        model = clf(
-            lags=2,
-            **kwargs,
-        )
-
-        true_probas_component1 = np.array([0.1, 0.3, 0.6])
-        true_probas_component2 = np.array([0.7, 0.3])
-
-        true_labels_component1 = [0, 1, 2]
-        true_labels_component2 = [0, 1]
-
-        df = pd.DataFrame({
-            name: np.random.choice(
-                true_labels_comp,
-                size=100,
-                replace=True,
-                p=true_probas_comp,
-            )
-            for name, true_labels_comp, true_probas_comp in zip(
-                [
-                    "component1_s1",
-                    "component1_s1_test",
-                    "component2_s1",
-                    "component2_s1_test",
-                    "component1_s2",
-                    "component1_s2_test",
-                    "component2_s2",
-                    "component2_s2_test",
-                ],
-                [
-                    true_labels_component1,
-                    true_labels_component1,
-                    true_labels_component2,
-                    true_labels_component2,
-                ]
-                * 2,
-                [
-                    true_probas_component1,
-                    true_probas_component1,
-                    true_probas_component2,
-                    true_probas_component2,
-                ]
-                * 2,
-            )
-        })
-
-        series1 = TimeSeries.from_dataframe(
-            df, time_col=None, value_cols=["component1_s1", "component2_s1"]
-        )
-        series2 = TimeSeries.from_dataframe(
-            df, time_col=None, value_cols=["component1_s2", "component2_s2"]
-        )
-        model.fit([series1, series2])
-
-        series1_test = TimeSeries.from_dataframe(
-            df, time_col=None, value_cols=["component1_s1_test", "component2_s1_test"]
-        )
-        series2_test = TimeSeries.from_dataframe(
-            df, time_col=None, value_cols=["component1_s2_test", "component2_s2_test"]
-        )
-
-        series_test = [series1_test, series2_test]
+        model.fit(series_train)
 
         # model_likelihood has ClassProbability likelihood
         list_of_probas = model.predict(
             n=1, series=series_test, predict_likelihood_parameters=True
         )
+
+        if not multi_series:
+            list_of_probas = [list_of_probas]
+
         # Sum of class proba is 1 (x2 component must be 2)
+        total_probas = len(
+            series_train.components if not multi_series else series_train[0].components
+        )
         assert np.all([
-            p.sum(axis=1).values()[0][0] == pytest.approx(2) for p in list_of_probas
+            p.sum(axis=1).values()[0][0] == pytest.approx(total_probas)
+            for p in list_of_probas
         ])
 
         # As many probabilties as classes
-        assert np.all([len(p.components) == 5 for p in list_of_probas])
-        assert np.all(model.class_labels[0] == true_labels_component1)
-        assert np.all(model.class_labels[1] == true_labels_component2)
-
-        true_probas = np.concatenate((true_probas_component1, true_probas_component2))
-
-        self.class_probability_check_helper(
-            model=model,
-            series_test=series_test,
-            true_probas=true_probas,
-            accepted_rmse=rmse_margin,
+        total_num_classes = len(labels_component1) + (
+            len(labels_component2) if multi_variate else 0
         )
+        assert np.all([len(p.components) == total_num_classes for p in list_of_probas])
+        if multi_variate:
+            assert np.all(model.class_labels[0] == labels_component1)
+            assert np.all(model.class_labels[1] == labels_component2)
+        else:
+            assert np.all(model.class_labels == labels_component1)
 
-    @pytest.mark.parametrize(
-        "clf_params",
-        zip(process_model_list(probabilistic_classifiers), rmse_class_proba),
-    )
-    def test_multiivariate_class_probabilities_are_valid(self, clf_params):
-        """Check class probabilties have correct shape and meaning"""
-
-        (clf, kwargs), rmse_margin = clf_params
-        model = clf(
-            lags=2,
-            **kwargs,
+        true_probas = (
+            np.concatenate((probas_component1, probas_component2))
+            if multi_variate
+            else probas_component1
         )
-
-        true_probas_component1 = np.array([0.1, 0.3, 0.6])
-        true_probas_component2 = np.array([0.7, 0.3])
-
-        true_labels_component1 = [0, 1, 2]
-        true_labels_component2 = [0, 1]
-
-        df = pd.DataFrame({
-            "component_1": np.random.choice(
-                true_labels_component1, size=100, replace=True, p=true_probas_component1
-            ),
-            "component_2": np.random.choice(
-                true_labels_component2, size=100, replace=True, p=true_probas_component2
-            ),
-            "component_1_test": np.random.choice(
-                true_labels_component1, size=100, replace=True, p=true_probas_component1
-            ),
-            "component_2_test": np.random.choice(
-                true_labels_component2, size=100, replace=True, p=true_probas_component2
-            ),
-        })
-        series = TimeSeries.from_dataframe(
-            df, time_col=None, value_cols=["component_1", "component_2"]
-        )
-        model.fit(series)
-        # model_likelihood has ClassProbability likelihood
-        probas = model.predict(1, predict_likelihood_parameters=True)
-        # Sum of class proba is 1 (x2 component must be 2)
-        assert probas.sum(axis=1).values()[0][0] == pytest.approx(2)
-
-        # As many probabilties as classes
-        assert len(probas.components) == 5
-        # Class porbabilities have the correct ordering
-        assert np.all(probas.values()[1:] > probas.values()[:-1])
-        assert np.all(model.class_labels[0] == true_labels_component1)
-        assert np.all(model.class_labels[1] == true_labels_component2)
-
-        series_test = TimeSeries.from_dataframe(
-            df, time_col=None, value_cols=["component_1_test", "component_2_test"]
-        )
-        true_probas = np.concatenate((true_probas_component1, true_probas_component2))
 
         self.class_probability_check_helper(
             model=model,
@@ -1197,27 +1060,31 @@ class TestProbabilisticClassifierModels:
             ])
 
     def test_class_probability_component_names(self):
+        series_train, _, _, _, _, _ = generate_random_series_with_probabilities(
+            multi_series=False, multi_variate=True
+        )
+
         component_names = [
-            "sine_p_0",
-            "sine_p_1",
-            "sine_p_2",
-            "sine_1_p_0",
-            "sine_1_p_1",
+            "component1_p_0",
+            "component1_p_1",
+            "component1_p_2",
+            "component2_p_0",
+            "component2_p_1",
         ]
 
         model = SKLearnClassifierModel(lags=1, output_chunk_length=2)
 
         # component_names before fit throws an error
         with pytest.raises(ValueError) as err:
-            model.likelihood.component_names(self.sine_multivariate1_cat)
+            model.likelihood.component_names(series_train)
         assert (
             str(err.value) == "`component_names` requires the likelihood to be fitted "
             "but `ClassProbabilityLikelihood` is not fitted."
         )
 
         # once fitted, component_names are correct
-        model.fit(self.sine_multivariate1_cat)
-        model.likelihood.component_names(self.sine_multivariate1_cat) == component_names
+        model.fit(series_train)
+        assert model.likelihood.component_names(series_train) == component_names
 
         # predicted component names are correct
         preds = model.predict(n=2, predict_likelihood_parameters=True)
@@ -1232,6 +1099,9 @@ class TestProbabilisticClassifierModels:
         self,
         clf_params,
     ):
+        """
+        The distribution of samples corresponds to the distribution of labels in the TS
+        """
         (clf, kwargs), model_rmse = clf_params
         model = clf(lags=2, **kwargs)
 
@@ -1242,8 +1112,18 @@ class TestProbabilisticClassifierModels:
         )
 
         model.fit(series)
+
+        # predict_likelihood_parameters is not supported with multiple samples
+        with pytest.raises(ValueError) as err:
+            model.predict(n=1, num_samples=2, predict_likelihood_parameters=True)
+        assert (
+            str(err.value)
+            == "`predict_likelihood_parameters=True` is only supported for `num_samples=1`, received 2."
+        )
+
         prediction = model.predict(n=1, num_samples=100)
         count = np.zeros(len(model.class_labels))
+
         preds = prediction.all_values().flatten()
         for i in preds:
             count[int(i)] += 1
