@@ -4632,9 +4632,11 @@ class TimeSeries:
             if ax is None:
                 ax = plt.gca()
 
-        for i, c in enumerate(self._xa.component[:n_components_to_plot]):
+        # TODO: migrate from xarray plotting to something else
+        data_array = self.data_array(copy=False)
+        for i, c in enumerate(data_array.component[:n_components_to_plot]):
             comp_name = str(c.values)
-            comp = self._xa.sel(component=c)
+            comp = data_array.sel(component=c)
 
             if comp.sample.size > 1:
                 if central_quantile == "mean":
@@ -4706,7 +4708,7 @@ class TimeSeries:
                     )
 
         ax.legend()
-        ax.set_title(title if title is not None else self._xa.name)
+        ax.set_title(title if title is not None else data_array.name)
         return ax
 
     def with_columns_renamed(
@@ -5582,21 +5584,23 @@ class TimeSeries:
         return ts
 
     def __str__(self):
-        # return str(self._xa).replace("xarray.DataArray", "TimeSeries (DataArray)")
-        # TODO
-        raise NotImplementedError()
+        return str(self.data_array(copy=False)).replace(
+            "xarray.DataArray", "TimeSeries (DataArray)"
+        )
 
     def __repr__(self):
-        # return self._xa.__repr__().replace("xarray.DataArray", "TimeSeries (DataArray)")
-        # TODO
-        raise NotImplementedError()
+        return (
+            self.data_array(copy=False)
+            .__repr__()
+            .replace("xarray.DataArray", "TimeSeries (DataArray)")
+        )
 
     def _repr_html_(self):
-        # return self._xa._repr_html_().replace(
-        #     "xarray.DataArray", "TimeSeries (DataArray)"
-        # )
-        # TODO
-        raise NotImplementedError()
+        return (
+            self.data_array(copy=False)
+            ._repr_html_()
+            .replace("xarray.DataArray", "TimeSeries (DataArray)")
+        )
 
     def __copy__(self, deep: bool = True):
         return self.copy()
