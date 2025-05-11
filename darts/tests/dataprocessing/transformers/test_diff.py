@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from darts import TimeSeries
+from darts import concatenate as darts_concat
 from darts.dataprocessing.transformers import Diff
-from darts.timeseries import TimeSeries
-from darts.timeseries import concatenate as darts_concat
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 from darts.utils.utils import freqs
 
@@ -62,7 +62,11 @@ class TestDiff:
         yields the original linear series.
         """
         lin_series = linear_timeseries(start_value=1, end_value=10, length=50)
-        quad_series = TimeSeries(lin_series.data_array().cumsum(axis=0))
+        quad_series = TimeSeries(
+            times=lin_series.time_index,
+            values=lin_series.all_values().cumsum(axis=0),
+            components=lin_series.components,
+        )
         for dropna in (False, True):
             diff = Diff(lags=1, dropna=dropna)
             diff.fit(quad_series)

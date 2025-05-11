@@ -5,8 +5,8 @@ Utils for filling missing values
 
 from typing import Optional, Union
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

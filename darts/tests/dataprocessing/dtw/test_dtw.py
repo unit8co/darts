@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from darts import TimeSeries
 from darts.dataprocessing import dtw
 from darts.metrics import dtw_metric, mae, mape
-from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 
 

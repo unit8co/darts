@@ -8,6 +8,7 @@ from typing import Any, Union
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers.fittable_data_transformer import (
     FittableDataTransformer,
 )
@@ -15,7 +16,6 @@ from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_if, raise_if_not
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

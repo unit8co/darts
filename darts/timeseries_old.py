@@ -78,12 +78,9 @@ else:
 
 logger = get_logger(__name__)
 
-# dimension names in the array
+# dimension names in the DataArray
 # the "time" one can be different, if it has a name in the underlying Series/DataFrame.
 DIMS = ("time", "component", "sample")
-TIME_AX = 0
-COMP_AX = 1
-SMPL_AX = 2
 AXES = {"time": 0, "component": 1, "sample": 2}
 
 VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
@@ -92,28 +89,11 @@ DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 HIERARCHY_TAG = "hierarchy"
 METADATA_TAG = "metadata"
 
-# TODO:
-# - check time index handling in `from_dataframe`, probably apply to `__init__`
-# - check mutability
-# - remove other than `raise_log`
-
 
 class TimeSeries:
-    def __init__(
-        self,
-        times: Union[pd.DatetimeIndex, pd.RangeIndex, pd.Index],
-        values: np.ndarray,
-        fill_missing_dates: Optional[bool] = False,
-        freq: Optional[Union[str, int]] = None,
-        components: Optional[pd._typing.Axes] = None,
-        fillna_value: Optional[float] = None,
-        static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
-        hierarchy: Optional[dict] = None,
-        metadata: Optional[dict] = None,
-        copy=True,
-    ):
-        """Create a `TimeSeries`.
-
+    def __init__(self, xa: xr.DataArray, copy=True):
+        """
+        Create a TimeSeries from a (well-formed) DataArray.
         It is recommended to use the factory methods to create TimeSeries instead.
 
         See Also
@@ -128,119 +108,35 @@ class TimeSeries:
         TimeSeries.from_csv : Create from a CSV file.
         TimeSeries.from_json : Create from a JSON file.
         TimeSeries.from_xarray : Create from an :class:`xarray.DataArray`.
-
-        Parameters
-        ----------
-        times
-            A pandas DateTimeIndex, RangeIndex, or Index that can be converted to a RangeIndex representing the time
-            axis for the time series. It is better if the index has no holes; alternatively setting
-            `fill_missing_dates` can in some cases solve these issues (filling holes with NaN, or with the provided
-            `fillna_value` numeric value, if any).
-        values
-            A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
-            and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
-            should be (time, component), and in the latter case (time, component, sample).
-        fill_missing_dates
-            Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
-            with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
-            provided timestamps. See :meth:`_fill_missing_dates() <TimeSeries._fill_missing_dates>` for more info.
-        freq
-            Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
-            to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
-            If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
-            supported frequencies).
-            If an integer, represents the step size of the pandas Index or pandas RangeIndex.
-        components
-            Optionally, some column names to use for the second `values` dimension.
-        fillna_value
-            Optionally, a numeric value to fill missing values (NaNs) with.
-        static_covariates
-            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
-            DataFrame. If a Series, the index represents the static variables. The covariates are globally 'applied'
-            to all components of the TimeSeries. If a DataFrame, the columns represent the static variables and the
-            rows represent the components of the uni/multivariate TimeSeries. If a single-row DataFrame, the covariates
-            are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
-            rows must match the number of components of the TimeSeries (in this case, the number of columns in
-            ``values``). This adds control for component-specific static covariates.
-        hierarchy
-            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
-            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
-            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
-            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
-            be encoded as follows.
-
-            .. highlight:: python
-            .. code-block:: python
-
-                hierarchy={
-                    "d1r1": ["d1", "r1"],
-                    "d1r2": ["d1", "r2"],
-                    "d2r1": ["d2", "r1"],
-                    "d2r2": ["d2", "r2"],
-                    "d1": ["total"],
-                    "d2": ["total"],
-                    "r1": ["total"],
-                    "r2": ["total"]
-                }
-            ..
-            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
-            different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
-        metadata
-            Optionally, a dictionary with metadata to be added to the TimeSeries.
-        copy
-            Whether to copy the `times`, `values`, and `components` objects. It is highly recommended to leave
-            `copy=True`, as downstream tasks might mutate the original values. Darts internally leverages `copy=False`
-            for performance boosts when possible and with the guarantee that the original data remains unaffected.
-
-        Returns
-        -------
-        TimeSeries
-            A TimeSeries constructed from the inputs.
-
-        Examples
-        --------
-        >>> import numpy as np
-        >>> from darts import TimeSeries
-        >>> from darts.utils.utils import generate_index
-        >>> # create values and times with daily frequency
-        >>> vals, times = np.arange(3), generate_index("2020-01-01", length=3, freq="D")
-        >>> series = TimeSeries(times=times, values=vals)
-        >>> series.shape
-        (3, 1, 1)
         """
-        if not (
-            isinstance(times, VALID_INDEX_TYPES)
-            or np.issubdtype(times.dtype, np.integer)
-        ):
+        if not isinstance(xa, xr.DataArray):
             raise_log(
                 ValueError(
-                    "the `times` argument must be a `pandas.RangeIndex`, or `pandas.DateTimeIndex`. Use "
-                    "TimeSeries.from_values() if you want to use an automatic `RangeIndex`.",
+                    "Data must be provided as an xarray DataArray instance. "
+                    "If you need to create a TimeSeries from another type "
+                    "(e.g. a DataFrame), look at TimeSeries factory methods "
+                    "(e.g. TimeSeries.from_dataframe(), "
+                    "TimeSeries.from_xarray(), TimeSeries.from_values()"
+                    "TimeSeries.from_times_and_values(), etc...)."
                 ),
-                logger=logger,
+                logger,
+            )
+        if len(xa.shape) != 3:
+            raise_log(
+                ValueError(
+                    f"TimeSeries require DataArray of dimensionality 3 ({DIMS})."
+                ),
+                logger,
             )
 
-        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
-        if isinstance(times, pd.DatetimeIndex) and times.tz is not None:
-            logger.warning(
-                "The `times` argument was associated with a timezone, which is currently not supported "
-                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
-                f"`ts.time_index.tz_localize({times.tz})` when exporting the results."
-                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
-                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
-                "original timezone."
+        # Ideally values should be np.float, otherwise certain functionalities like diff()
+        # relying on np.nan (which is a float) won't work very properly.
+        if not np.issubdtype(xa.values.dtype, np.number):
+            raise_log(
+                ValueError("The time series must contain numeric values only."), logger
             )
-            times = times.tz_localize(None)
 
-        # avoid copying if data is already np.ndarray:
-        values = np.array(values) if not isinstance(values, np.ndarray) else values
-
-        # optionally, cast values to float
-        val_dtype = values.dtype
-        if not np.issubdtype(val_dtype, np.floating):
-            values = values.astype(np.float64)
+        val_dtype = xa.values.dtype
         if not (
             np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)
         ):
@@ -250,115 +146,62 @@ class TimeSeries:
                 "point numbers before using TimeSeries."
             )
 
-        # ideally, values should be np.float, otherwise certain functionalities like diff()
-        # relying on np.nan (which is a float) won't work very properly.
-        if not np.issubdtype(values.dtype, np.number):
-            raise_log(
-                ValueError("The `values` must contain numeric values only."), logger
-            )
-
-        values = expand_arr(values, ndim=len(DIMS))
-        if len(values.shape) != 3:
+        if xa.dims[-2:] != DIMS[-2:]:
+            # The first dimension represents the time and may be named differently.
             raise_log(
                 ValueError(
-                    f"TimeSeries require a `values` array that has or can be expanded to "
-                    f"3 dimensions ({DIMS})."
+                    f"The last two dimensions of the DataArray must be named {DIMS[-2:]}"
                 ),
                 logger,
             )
 
-        if not len(times) == len(values):
-            raise_log(
-                ValueError("The time index and values must have to same length."),
-                logger,
-            )
-
-        if components is None:
-            components = pd.Index([str(idx) for idx in range(values.shape[COMP_AX])])
-        elif isinstance(components, str):
-            components = pd.Index([components])
-        elif not isinstance(components, pd.Index):
-            components = pd.Index(components)
-
-        if len(components) != values.shape[COMP_AX]:
+        # check that columns/component names are unique
+        components = xa.get_index(DIMS[1])
+        if not len(set(components)) == len(components):
             raise_log(
                 ValueError(
-                    "The number of provided components must match the number of "
-                    "components from `values` (`values.shape[1]`). Expected "
-                    f"number of components: `{values.shape[1]}`, received: `{len(components)}`."
+                    f"The components (columns) names must be unique. Provided: {components}"
                 ),
-                logger=logger,
+                logger,
             )
-
-        if copy:
-            times = deepcopy(times)
-            values = values.copy()
-            components = components.copy()
-
-            if isinstance(times, pd.DatetimeIndex):
-                # DatetimeIndex has mutable freq with shallow copy
-                times.freq = deepcopy(times.freq)
-
-        # clean component (column) names if needed (when names are not unique, or not strings)
-        if len(set(components)) != len(components) or any([
-            not isinstance(s, str) for s in components
-        ]):
-            components = _clean_components(components)
-
-        if times.name is None:
-            times.name = DIMS[0]
-        if components.name is None:
-            components.name = DIMS[1]
-
-        has_datetime_index = isinstance(times, pd.DatetimeIndex)
-        has_range_index = isinstance(times, pd.RangeIndex)
-        has_integer_index = not (has_datetime_index or has_range_index)
-
-        has_frequency = (
-            has_datetime_index and times.freq is not None
-        ) or has_range_index
-
-        if not has_frequency:
-            # can only be `pd.DatetimeIndex` or int `pd.Index` (not `pd.RangeIndex`)
-            if fill_missing_dates:
-                # optionally fill missing dates
-                times, values = self._fill_missing_dates(
-                    times=times, values=values, freq=freq
-                )
-            elif freq is not None:
-                # using the provided `freq`
-                times, values = self._restore_from_frequency(
-                    times=times, values=values, freq=freq
-                )
-            elif has_integer_index:
-                # integer `pd.Index` and no `freq` is provided; try convert it to pd.RangeIndex
-                times, values = self._restore_range_indexed(times=times, values=values)
-            else:
-                # `pd.DatetimeIndex`, and no `freq` provided; sort and see later if frequency can be inferred
-                times, values = self._sort_index(times=times, values=values)
-
-        if fillna_value is not None:
-            values[np.isnan(values)] = fillna_value
 
         # how the time dimension is named; we convert hashable to string
-        self._time_dim = str(times.name)
-        self._time_index = times
-        self._has_datetime_index = has_datetime_index
-        self._components = components
-        self._values = values
+        self._time_dim = str(xa.dims[0])
 
-        if has_datetime_index:
-            # frequency must be known or it can be inferred
-            freq = times.freq
-            if freq is not None:
-                self._freq = freq
+        # The following sorting returns a copy, which we are relying on.
+        # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
+        # https://github.com/pydata/xarray/issues/5466
+        # We sort only if the time axis is not already sorted (monotonically increasing).
+        self._xa = self._sort_index(xa, copy=copy)
+        self._time_index = self._xa.get_index(self._time_dim)
+
+        if not isinstance(self._time_index, VALID_INDEX_TYPES):
+            raise_log(
+                ValueError(
+                    "The time dimension of the DataArray must be indexed either with a DatetimeIndex "
+                    "or with an RangeIndex."
+                ),
+                logger,
+            )
+
+        self._has_datetime_index = isinstance(self._time_index, pd.DatetimeIndex)
+
+        if self._has_datetime_index:
+            # store original freq (see bug of sortby() above).
+            freq_tmp = xa.get_index(self._time_dim).freq
+
+            # if original frequency is known and positive (n > 0 -> increasing time index),
+            # it is guaranteed that original array was sorted and new freq must be the same.
+            # otherwise, infer the frequency from the sorted array
+            if freq_tmp is not None and freq_tmp.n > 0:
+                self._freq = freq_tmp
             else:
-                self._freq = to_offset(times.inferred_freq)
+                self._freq = to_offset(self._xa.get_index(self._time_dim).inferred_freq)
 
             if self._freq is None:
                 raise_log(
                     ValueError(
-                        "The time index is missing the `freq` attribute, and the frequency "
+                        "The time index of the provided DataArray is missing the freq attribute, and the frequency "
                         "could not be directly inferred. This probably comes from inconsistent date frequencies with "
                         "missing dates. If you know the actual frequency, try setting `fill_missing_dates=True, "
                         "freq=actual_frequency`. If not, try setting `fill_missing_dates=True, freq=None` to see if a "
@@ -368,11 +211,15 @@ class TimeSeries:
                 )
 
             self._freq_str: str = self._freq.freqstr
+
+            # reset freq inside the xarray index (see bug of sortby() above).
+            self._xa.get_index(self._time_dim).freq = self._freq
         else:
             self._freq: int = self._time_index.step
             self._freq_str = None
 
         # check static covariates
+        static_covariates = self._xa.attrs.get(STATIC_COV_TAG, None)
         if not (
             isinstance(static_covariates, (pd.Series, pd.DataFrame))
             or static_covariates is None
@@ -424,6 +271,7 @@ class TimeSeries:
                 )
 
         # prepare metadata
+        metadata = self._xa.attrs.get(METADATA_TAG, None)
         if metadata is not None and not isinstance(metadata, dict):
             raise_log(
                 ValueError(
@@ -433,6 +281,7 @@ class TimeSeries:
             )
 
         # handle hierarchy
+        hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
         self._top_level_component = None
         self._bottom_level_components = None
         if hierarchy is not None:
@@ -494,11 +343,8 @@ class TimeSeries:
                 c for c in self.components if c in bottom_level
             ]
 
-        self._attrs = {
-            STATIC_COV_TAG: static_covariates,
-            HIERARCHY_TAG: hierarchy,
-            METADATA_TAG: metadata,
-        }
+        # store static covariates, hierarchy and metadata in attributes (potentially storing None)
+        self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy, metadata)
 
     """
     Factory Methods
@@ -576,17 +422,100 @@ class TimeSeries:
         >>> series.shape
         (3, 1, 1)
         """
-        return cls(
-            times=xa.get_index(xa.dims[TIME_AX]),
-            values=xa.values,
-            fill_missing_dates=fill_missing_dates,
-            freq=freq,
-            components=xa.get_index(xa.dims[COMP_AX]),
-            fillna_value=fillna_value,
-            static_covariates=xa.attrs.get(STATIC_COV_TAG),
-            hierarchy=xa.attrs.get(HIERARCHY_TAG),
-            metadata=xa.attrs.get(METADATA_TAG),
-        )
+        xa_index = xa.get_index(xa.dims[0])
+
+        has_datetime_index = isinstance(xa_index, pd.DatetimeIndex)
+        has_range_index = isinstance(xa_index, pd.RangeIndex)
+        has_integer_index = not (has_datetime_index or has_range_index)
+
+        has_frequency = (
+            has_datetime_index and xa_index.freq is not None
+        ) or has_range_index
+
+        # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a RangeIndex)
+        if fill_missing_dates:
+            xa_ = cls._fill_missing_dates(xa, freq=freq)
+        # provided index does not have a freq; using the provided freq
+        elif (
+            (has_datetime_index or has_integer_index)
+            and freq is not None
+            and not has_frequency
+        ):
+            xa_ = cls._restore_xarray_from_frequency(xa, freq=freq)
+        # index is an integer index and no freq is provided; try convert it to pd.RangeIndex
+        elif has_integer_index and freq is None:
+            xa_ = cls._integer_to_range_indexed_xarray(xa)
+        else:
+            xa_ = xa
+        if fillna_value is not None:
+            xa_ = xa_.fillna(fillna_value)
+
+        # clean components (columns) names if needed (if names are not unique, or not strings)
+        components = xa_.get_index(DIMS[1])
+        if len(set(components)) != len(components) or any([
+            not isinstance(s, str) for s in components
+        ]):
+
+            def _clean_component_list(columns) -> list[str]:
+                # return a list of string containing column names
+                # make each column name unique in case some columns have the same names
+                clist = columns.to_list()
+
+                # convert everything to string if needed
+                for i, column in enumerate(clist):
+                    if not isinstance(column, str):
+                        clist[i] = str(column)
+
+                has_duplicate = len(set(clist)) != len(clist)
+                while has_duplicate:
+                    # we may have to loop several times (e.g. we could have columns ["0", "0_1", "0"] and not
+                    # noticing when renaming the last "0" into "0_1" that "0_1" already exists...)
+                    name_to_occurence = defaultdict(int)
+                    for i, column in enumerate(clist):
+                        name_to_occurence[clist[i]] += 1
+
+                        if name_to_occurence[clist[i]] > 1:
+                            clist[i] = clist[i] + f"_{name_to_occurence[clist[i]] - 1}"
+
+                    has_duplicate = len(set(clist)) != len(clist)
+
+                return clist
+
+            time_index_name = xa_.dims[0]
+            columns_list = _clean_component_list(components)
+
+            # Note: an option here could be to also rename the component names in the static covariates
+            # and/or hierarchy, if any. However, we decide not to do so as those are directly dependent on the
+            # component names to work properly, so in case there's any name conflict it's better solved
+            # by the user than handled by silent renaming, which can change the way things work.
+
+            # TODO: is there a way to just update the component index without re-creating a new DataArray?
+            # -> Answer: Yes, but it's slower: e.g.:
+            # ```
+            # xa_ = xa_.assign_coords(
+            #     {
+            #         time_index_name: xa_.get_index(time_index_name),
+            #         DIMS[1]: columns_list
+            #     }
+            # )
+            # ```
+            xa_ = xr.DataArray(
+                xa_.values,
+                dims=xa_.dims,
+                coords={
+                    time_index_name: xa_.get_index(time_index_name),
+                    DIMS[1]: columns_list,
+                },
+                attrs=xa_.attrs,
+            )
+
+        # We cast the array to float
+        if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(
+            xa_.values.dtype, np.float64
+        ):
+            return cls(xa_)
+        else:
+            return cls(xa_.astype(np.float64))
 
     @classmethod
     def from_csv(
@@ -679,8 +608,10 @@ class TimeSeries:
         >>> from darts import TimeSeries
         >>> TimeSeries.from_csv("data.csv", time_col="time")
         """
+
+        df = pd.read_csv(filepath_or_buffer=filepath_or_buffer, **kwargs)
         return cls.from_dataframe(
-            df=pd.read_csv(filepath_or_buffer=filepath_or_buffer, **kwargs),
+            df=df,
             time_col=time_col,
             value_cols=value_cols,
             fill_missing_dates=fill_missing_dates,
@@ -804,7 +735,6 @@ class TimeSeries:
         df = nw.from_native(df, eager_only=True, pass_through=False)
         time_zone = None
 
-        # TODO: probably apply the time_index logic to __init__
         # get values
         if value_cols is None:
             series_df = df.drop(time_col) if time_col else df
@@ -832,8 +762,8 @@ class TimeSeries:
                             "The provided integer time index column contains duplicate values."
                         )
                     )
-                # Temporarily use an integer `pd.Index` to sort the values; later replaced with
-                # a `pd.RangeIndex` in `__init__()`
+                # Temporarily use an integer Index to sort the values, and replace by a
+                # RangeIndex in `TimeSeries.from_xarray()`
                 time_index = pd.Index(time_col_vals)
 
             elif isinstance(time_col_vals.dtype, nw.String):
@@ -900,16 +830,22 @@ class TimeSeries:
         if not time_index.name:
             time_index.name = time_col if time_col else DIMS[0]
 
-        return cls(
-            times=time_index,
-            values=series_df.to_numpy()[:, :, np.newaxis],
+        xa = xr.DataArray(
+            series_df.to_numpy()[:, :, np.newaxis],
+            dims=(time_index.name,) + DIMS[-2:],
+            coords={time_index.name: time_index, DIMS[1]: series_df.columns},
+            attrs={
+                STATIC_COV_TAG: static_covariates,
+                HIERARCHY_TAG: hierarchy,
+                METADATA_TAG: metadata,
+            },
+        )
+
+        return cls.from_xarray(
+            xa=xa,
             fill_missing_dates=fill_missing_dates,
             freq=freq,
-            components=series_df.columns,
             fillna_value=fillna_value,
-            static_covariates=static_covariates,
-            hierarchy=hierarchy,
-            metadata=metadata,
         )
 
     @classmethod
@@ -1292,7 +1228,7 @@ class TimeSeries:
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         columns
-            Optionally, some column names to use for the second `values` dimension.
+            Columns to be used by the underlying pandas DataFrame.
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
         static_covariates
@@ -1346,16 +1282,49 @@ class TimeSeries:
         >>> series.shape
         (3, 1, 1)
         """
-        return cls(
-            times=times,
-            values=values,
+        raise_if_not(
+            isinstance(times, VALID_INDEX_TYPES)
+            or np.issubdtype(times.dtype, np.integer),
+            "the `times` argument must be a RangeIndex, or a DateTimeIndex. Use "
+            "TimeSeries.from_values() if you want to use an automatic RangeIndex.",
+        )
+
+        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+        if isinstance(times, pd.DatetimeIndex) and times.tz is not None:
+            logger.warning(
+                "The `times` argument was associated with a timezone, which is currently not supported "
+                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                f"`ts.time_index.tz_localize({times.tz})` when exporting the results."
+                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                "original timezone."
+            )
+            times = times.tz_localize(None)
+
+        times_name = DIMS[0] if not times.name else times.name
+
+        # avoid copying if data is already np.ndarray:
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
+        values = expand_arr(values, ndim=len(DIMS))
+        coords = {times_name: times}
+        if columns is not None:
+            coords[DIMS[1]] = columns
+
+        xa = xr.DataArray(
+            values,
+            dims=(times_name,) + DIMS[-2:],
+            coords=coords,
+            attrs={
+                STATIC_COV_TAG: static_covariates,
+                HIERARCHY_TAG: hierarchy,
+                METADATA_TAG: metadata,
+            },
+        )
+        return cls.from_xarray(
+            xa=xa,
             fill_missing_dates=fill_missing_dates,
             freq=freq,
-            components=columns,
             fillna_value=fillna_value,
-            static_covariates=static_covariates,
-            hierarchy=hierarchy,
-            metadata=metadata,
         )
 
     @classmethod
@@ -1432,12 +1401,17 @@ class TimeSeries:
         >>> series.shape
         (3, 1, 1)
         """
-        return cls(
-            times=pd.RangeIndex(start=0, stop=len(values), step=1),
-            values=values,
+        time_index = pd.RangeIndex(0, len(values), 1)
+        values_ = (
+            np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
+        )
+
+        return cls.from_times_and_values(
+            times=time_index,
+            values=values_,
             fill_missing_dates=False,
-            freq=1,
-            components=columns,
+            freq=None,
+            columns=columns,
             fillna_value=fillna_value,
             static_covariates=static_covariates,
             hierarchy=hierarchy,
@@ -1512,8 +1486,9 @@ class TimeSeries:
         >>> series.shape
         (3, 1, 1)
         """
+        df = pd.read_json(StringIO(json_str), orient="split")
         return cls.from_dataframe(
-            df=pd.read_json(StringIO(json_str), orient="split"),
+            df,
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
@@ -1557,7 +1532,7 @@ class TimeSeries:
         The columns represent the static variables and the rows represent the components of the uni/multivariate
         series.
         """
-        return self._attrs.get(STATIC_COV_TAG, None)
+        return self._xa.attrs.get(STATIC_COV_TAG, None)
 
     @property
     def hierarchy(self) -> Optional[dict]:
@@ -1566,14 +1541,14 @@ class TimeSeries:
         If set, the hierarchy is encoded as a dictionary, whose keys are individual components
         and values are the set of parent(s) of these components in the hierarchy.
         """
-        return self._attrs.get(HIERARCHY_TAG, None)
+        return self._xa.attrs.get(HIERARCHY_TAG, None)
 
     @property
     def metadata(self) -> Optional[dict]:
         """
         The metadata of this TimeSeries, if any.
         """
-        return self._attrs.get(METADATA_TAG, None)
+        return self._xa.attrs.get(METADATA_TAG, None)
 
     @property
     def has_hierarchy(self) -> bool:
@@ -1617,19 +1592,19 @@ class TimeSeries:
         )
 
     @property
-    def shape(self) -> tuple[int, int, int]:
+    def shape(self) -> tuple[int]:
         """The shape of the series (n_timesteps, n_components, n_samples)."""
-        return self._values.shape
+        return self._xa.shape
 
     @property
     def n_samples(self) -> int:
         """Number of samples contained in the series."""
-        return self.shape[SMPL_AX]
+        return self.shape[AXES["sample"]]
 
     @property
     def n_components(self) -> int:
         """Number of components (dimensions) contained in the series."""
-        return self.shape[COMP_AX]
+        return self.shape[AXES["component"]]
 
     @property
     def width(self) -> int:
@@ -1639,12 +1614,12 @@ class TimeSeries:
     @property
     def n_timesteps(self) -> int:
         """Number of time steps in the series."""
-        return self.shape[TIME_AX]
+        return self.shape[AXES["time"]]
 
     @property
     def is_deterministic(self) -> bool:
         """Whether this series is deterministic."""
-        return self.shape[SMPL_AX] == 1
+        return self.shape[AXES["sample"]] == 1
 
     @property
     def is_stochastic(self) -> bool:
@@ -1659,7 +1634,7 @@ class TimeSeries:
     @property
     def is_univariate(self) -> bool:
         """Whether this series is univariate."""
-        return self.shape[COMP_AX] == 1
+        return self.shape[AXES["component"]] == 1
 
     @property
     def freq(self) -> Union[pd.DateOffset, int]:
@@ -1677,12 +1652,12 @@ class TimeSeries:
     @property
     def dtype(self):
         """The dtype of the series' values."""
-        return self._values.dtype
+        return self._xa.values.dtype
 
     @property
     def components(self) -> pd.Index:
         """The names of the components, as a Pandas Index."""
-        return self._components.copy()
+        return self._xa.get_index(DIMS[1]).copy()
 
     @property
     def columns(self) -> pd.Index:
@@ -1692,11 +1667,7 @@ class TimeSeries:
     @property
     def time_index(self) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
         """The time index of this time series."""
-        times = self._time_index.copy()
-        if isinstance(times, pd.DatetimeIndex):
-            # DatetimeIndex has mutable freq with shallow copy
-            times.freq = deepcopy(times.freq)
-        return times
+        return self._time_index.copy()
 
     @property
     def time_dim(self) -> str:
@@ -1809,13 +1780,7 @@ class TimeSeries:
         xarray.DataArray
             The xarray DataArray underlying this time series.
         """
-        xa = xr.DataArray(
-            self._values,
-            dims=(self._time_dim,) + DIMS[-2:],
-            coords={self._time_dim: self._time_index, DIMS[COMP_AX]: self._components},
-            attrs=self._attrs,
-        )
-        return xa.copy() if copy else xa
+        return self._xa.copy() if copy else self._xa
 
     def to_series(
         self,
@@ -1847,9 +1812,9 @@ class TimeSeries:
         if not backend.is_pandas():
             return self.to_dataframe(copy=copy, backend=backend, time_as_index=False)
 
-        data = self._values[:, 0, 0]
+        data = self._xa[:, 0, 0].values
         index = self._time_index
-        name = self._components[0]
+        name = self.components[0]
 
         if copy:
             data = data.copy()
@@ -1900,7 +1865,6 @@ class TimeSeries:
                 )
             time_as_index = False
 
-        values = self._values
         if not self.is_deterministic:
             if not suppress_warnings:
                 logger.warning(
@@ -1910,16 +1874,16 @@ class TimeSeries:
                     "adapted to stochastic TimeSeries like quantile_df()."
                 )
 
-            comp_name = list(self._components)
+            comp_name = list(self.components)
             samples = range(self.n_samples)
             columns = [
                 "_s".join((comp_name, str(sample_id)))
                 for comp_name, sample_id in itertools.product(comp_name, samples)
             ]
-            data = values.reshape(values.shape[0], len(columns))
+            data = self._xa.stack(data=(DIMS[1], DIMS[2])).values
         else:
-            columns = self._components
-            data = values[:, :, 0]
+            columns = self._xa.get_index(DIMS[1])
+            data = self._xa[:, :, 0].values
 
         time_index = self._time_index
 
@@ -1962,19 +1926,17 @@ class TimeSeries:
             The Pandas DataFrame containing the desired quantile for each component.
         """
         self._assert_stochastic()
-        if not 0 <= quantile <= 1:
-            raise_log(
-                ValueError(
-                    "The quantile values must be expressed as fraction (between 0 and 1 inclusive)."
-                ),
-                logger,
-            )
+        raise_if_not(
+            0 <= quantile <= 1,
+            "The quantile values must be expressed as fraction (between 0 and 1 inclusive).",
+            logger,
+        )
 
         # column names
         cnames = [s + f"_{quantile}" for s in self.columns]
 
         return pd.DataFrame(
-            data=np.quantile(self._values, q=quantile, axis=SMPL_AX),
+            self._xa.quantile(q=quantile, dim=DIMS[2]),
             index=self._time_index,
             columns=cnames,
         )
@@ -2005,28 +1967,31 @@ class TimeSeries:
             The TimeSeries containing the desired quantile for each component.
         """
         self._assert_stochastic()
-        if not 0 <= quantile <= 1:
-            raise_log(
-                ValueError(
-                    "The quantile values must be expressed as fraction (between 0 and 1 inclusive)."
-                ),
-                logger,
-            )
+        raise_if_not(
+            0 <= quantile <= 1,
+            "The quantile values must be expressed as fraction (between 0 and 1 inclusive).",
+            logger,
+        )
 
         # component names
         cnames = [f"{comp}_{quantile}" for comp in self.components]
 
-        values = np.quantile(
-            self._values,
+        new_data = np.quantile(
+            self._xa.values,
             q=quantile,
             axis=2,
             overwrite_input=False,
             keepdims=True,
             **kwargs,
         )
-        return self.__class__(
-            times=self._time_index, values=values, components=cnames, **self._attrs
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},
+            attrs=self._xa.attrs,
         )
+
+        return self.__class__(new_xa)
 
     def quantiles_df(self, quantiles: tuple[float] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
         """
@@ -2073,12 +2038,7 @@ class TimeSeries:
         TimeSeries
             A TimeSeries having the desired dtype.
         """
-        return self.__class__(
-            times=self._time_index,
-            values=self._values.astype(dtype),
-            components=self._components,
-            **self._attrs,
-        )
+        return self.__class__(self._xa.astype(dtype))
 
     def start_time(self) -> Union[pd.Timestamp, int]:
         """
@@ -2115,7 +2075,7 @@ class TimeSeries:
         """
         self._assert_univariate()
         self._assert_deterministic()
-        return float(self._values[0, 0, 0])
+        return float(self._xa[0, 0, 0])
 
     def last_value(self) -> float:
         """
@@ -2128,7 +2088,7 @@ class TimeSeries:
         """
         self._assert_univariate()
         self._assert_deterministic()
-        return float(self._values[-1, 0, 0])
+        return float(self._xa[-1, 0, 0])
 
     def first_values(self) -> np.ndarray:
         """
@@ -2140,7 +2100,7 @@ class TimeSeries:
             The first values of every component of this deterministic time series
         """
         self._assert_deterministic()
-        return self._values[0, :, 0].copy()
+        return self._xa.values[0, :, 0].copy()
 
     def last_values(self) -> np.ndarray:
         """
@@ -2152,7 +2112,7 @@ class TimeSeries:
             The last values of every component of this deterministic time series
         """
         self._assert_deterministic()
-        return self._values[-1, :, 0].copy()
+        return self._xa.values[-1, :, 0].copy()
 
     def values(self, copy: bool = True, sample: int = 0) -> np.ndarray:
         """
@@ -2171,18 +2131,16 @@ class TimeSeries:
         numpy.ndarray
             The values composing the time series.
         """
-        if self.is_deterministic and sample != 0:
-            raise_log(
-                ValueError(
-                    "This series contains one sample only (deterministic),"
-                    "so only sample=0 is accepted.",
-                ),
-                logger=logger,
-            )
-        values = self._values[:, :, sample]
+        raise_if(
+            self.is_deterministic and sample != 0,
+            "This series contains one sample only (deterministic),"
+            "so only sample=0 is accepted.",
+            logger,
+        )
         if copy:
-            values = values.copy()
-        return values
+            return np.copy(self._xa.values[:, :, sample])
+        else:
+            return self._xa.values[:, :, sample]
 
     def random_component_values(self, copy: bool = True) -> np.array:
         """
@@ -2201,10 +2159,10 @@ class TimeSeries:
             The values composing one sample taken at random from the time series.
         """
         sample = np.random.randint(low=0, high=self.n_samples)
-        values = self._values[:, :, sample]
         if copy:
-            values = values.copy()
-        return values
+            return np.copy(self._xa.values[:, :, sample])
+        else:
+            return self._xa.values[:, :, sample]
 
     def all_values(self, copy: bool = True) -> np.ndarray:
         """
@@ -2222,10 +2180,10 @@ class TimeSeries:
         numpy.ndarray
             The values composing the time series.
         """
-        values = self._values
         if copy:
-            values = values.copy()
-        return values
+            return np.copy(self._xa.values)
+        else:
+            return self._xa.values
 
     def univariate_values(self, copy: bool = True, sample: int = 0) -> np.ndarray:
         """
@@ -2246,10 +2204,10 @@ class TimeSeries:
         """
 
         self._assert_univariate()
-        values = self._values[:, 0, sample]
         if copy:
-            values = values.copy()
-        return values
+            return np.copy(self._xa[:, 0, sample].values)
+        else:
+            return self._xa[:, 0, sample].values
 
     def static_covariates_values(self, copy: bool = True) -> Optional[np.ndarray]:
         """
@@ -2293,20 +2251,13 @@ class TimeSeries:
             The series made of the first `size` points along the desired `axis`.
         """
 
-        axis = self._get_axis(axis)
-        display_n = min(size, self.shape[axis])
+        axis_str = self._get_dim_name(axis)
+        display_n = min(size, self._xa.sizes[axis_str])
 
-        if axis == TIME_AX:
+        if axis_str == self._time_dim:
             return self[:display_n]
-        elif axis == COMP_AX:
-            return self[self._components.tolist()[:display_n]]
         else:
-            return self.__class__(
-                times=self._time_index,
-                values=self._values[:, :, :display_n],
-                components=self._components,
-                **self._attrs,
-            )
+            return self.__class__(self._xa[{axis_str: range(display_n)}])
 
     def tail(
         self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0
@@ -2326,20 +2277,14 @@ class TimeSeries:
         TimeSeries
             The series made of the last `size` points along the desired `axis`.
         """
-        axis = self._get_axis(axis)
-        display_n = min(size, self.shape[axis])
 
-        if axis == TIME_AX:
+        axis_str = self._get_dim_name(axis)
+        display_n = min(size, self._xa.sizes[axis_str])
+
+        if axis_str == self._time_dim:
             return self[-display_n:]
-        elif axis == COMP_AX:
-            return self[self._components.tolist()[-display_n:]]
         else:
-            return self.__class__(
-                times=self._time_index,
-                values=self._values[:, :, -display_n:],
-                components=self._components,
-                **self._attrs,
-            )
+            return self.__class__(self._xa[{axis_str: range(-display_n, 0)}])
 
     def concatenate(
         self,
@@ -2476,13 +2421,7 @@ class TimeSeries:
         """
 
         # the xarray will be copied in the TimeSeries constructor.
-        return self.__class__(
-            times=self._time_index,
-            values=self._values,
-            components=self._components,
-            copy=True,
-            **self._attrs,
-        )
+        return self.__class__(self._xa)
 
     def get_index_at_point(
         self, point: Union[pd.Timestamp, float, int], after=True
@@ -2826,7 +2765,7 @@ class TimeSeries:
             a new series, containing the values of this series, over the time-span common to both time series.
         """
         if other.has_same_time_as(self):
-            return self.copy()
+            return self.__class__(self._xa)
         elif other.freq == self.freq and len(self) and len(other):
             start, end = self._slice_intersect_bounds(other)
             return self[start:end]
@@ -2926,20 +2865,23 @@ class TimeSeries:
         TimeSeries
             a new series based on the original where NaN-containing entries at start and end have been removed
         """
-        if self.is_probabilistic:
-            raise_log(
-                ValueError("`strip` cannot be applied to stochastic TimeSeries"), logger
-            )
-
-        first_finite_row, last_finite_row = _finite_rows_boundaries(
-            self.values(copy=False), how=how
+        raise_if(
+            self.is_probabilistic,
+            "`strip` cannot be applied to stochastic TimeSeries",
+            logger,
         )
 
-        return self.__class__(
-            times=self._time_index[first_finite_row : last_finite_row + 1],
-            values=self._values[first_finite_row : last_finite_row + 1],
-            components=self._components,
-            **self._attrs,
+        first_finite_row, last_finite_row = _finite_rows_boundaries(
+            self.values(), how=how
+        )
+
+        return self.__class__.from_times_and_values(
+            times=self.time_index[first_finite_row : last_finite_row + 1],
+            values=self.values()[first_finite_row : last_finite_row + 1],
+            columns=self.components,
+            static_covariates=self.static_covariates,
+            hierarchy=self.hierarchy,
+            metadata=self.metadata,
         )
 
     def longest_contiguous_slice(
@@ -2969,7 +2911,7 @@ class TimeSeries:
         --------
         TimeSeries.gaps : return the gaps in the TimeSeries
         """
-        if not (np.isnan(self._values)).any():
+        if not (np.isnan(self._xa)).any():
             return self.copy()
         stripped_series = self.strip()
         gaps = stripped_series.gaps(mode=mode)
@@ -3012,15 +2954,14 @@ class TimeSeries:
             A new TimeSeries, where the first value is `value_at_first_step` and other values
             have been scaled accordingly.
         """
-        if (self._values[0, :, :] == 0).any():
-            raise_log(ValueError("Cannot rescale with first value `0`."), logger)
-        coef = value_at_first_step / self._values[:1]
-        return self.__class__(
-            times=self._time_index,
-            values=self._values * coef,
-            components=self._components,
-            **self._attrs,
+
+        raise_if_not(
+            (self._xa[0, :, :] != 0).all(), "Cannot rescale with first value 0.", logger
         )
+        coef = value_at_first_step / self._xa.isel({self._time_dim: [0]})
+        coef = coef.values.reshape((self.n_components, self.n_samples))  # TODO: test
+        new_series = coef * self._xa
+        return self.__class__(new_series)
 
     def shift(self, n: int) -> Self:
         """
@@ -3064,12 +3005,8 @@ class TimeSeries:
             new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
             if new_time_index.freq is None:
                 new_time_index.freq = self.freq
-        return self.__class__(
-            times=new_time_index,
-            values=self._values,
-            components=self._components,
-            **self._attrs,
-        )
+        new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
+        return self.__class__(new_xa)
 
     def diff(
         self,
@@ -3102,31 +3039,25 @@ class TimeSeries:
         if not isinstance(periods, int) or periods < 1:
             raise_log(ValueError("'periods' must be an integer >= 1."), logger)
 
-        def _compute_diff(values_: np.ndarray, times_):
+        def _compute_diff(xa: xr.DataArray):
             # xarray doesn't support Pandas "period" so compute diff() ourselves
             if not dropna:
                 # In this case the new DataArray will have the same size and filled with NaNs
-                values_diff = values_.copy()
-                values_diff[:periods, :, :] = np.nan
-                values_diff[periods:, :, :] = (
-                    values_[periods:, :, :] - values_[:-periods, :, :]
+                new_xa_ = xa.copy()
+                new_xa_.values[:periods, :, :] = np.nan
+                new_xa_.values[periods:, :, :] = (
+                    xa.values[periods:, :, :] - xa.values[:-periods, :, :]
                 )
             else:
                 # In this case the new DataArray will be shorter
-                times_ = times_[periods:]
-                values_diff = values_[periods:, :, :].copy()
-                values_diff[:] = values_[periods:, :, :] - values_[:-periods, :, :]
-            return values_diff, times_
+                new_xa_ = xa[periods:, :, :].copy()
+                new_xa_.values = xa.values[periods:, :, :] - xa.values[:-periods, :, :]
+            return new_xa_
 
-        values, times = _compute_diff(self._values, self._time_index)
+        new_xa = _compute_diff(self._xa)
         for _ in range(n - 1):
-            values, times = _compute_diff(values, times)
-        return self.__class__(
-            times=times,
-            values=values,
-            components=self._components,
-            **self._attrs,
-        )
+            new_xa = _compute_diff(new_xa)
+        return self.__class__(new_xa)
 
     def cumsum(self) -> Self:
         """
@@ -3137,12 +3068,7 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries, with the cumulatively summed values.
         """
-        return self.__class__(
-            times=self._time_index,
-            values=self._values.cumsum(axis=0),
-            components=self._components,
-            **self._attrs,
-        )
+        return self.__class__(self._xa.copy().cumsum(axis=0))
 
     def has_same_time_as(self, other: Self) -> bool:
         """
@@ -3212,13 +3138,21 @@ class TimeSeries:
                 "Appended TimeSeries must start one (time) step after current one.",
                 logger,
             )
-        values = np.concatenate((self._values, other._values), axis=0)
-        times = self._time_index.append(other._time_index)
-        return self.__class__(
-            times=times,
-            values=values,
-            components=self._components,
-            **self._attrs,
+
+        other_xa = other.data_array()
+
+        new_xa = xr.DataArray(
+            np.concatenate((self._xa.values, other_xa.values), axis=0),
+            dims=self._xa.dims,
+            coords={
+                self._time_dim: self._time_index.append(other.time_index),
+                DIMS[1]: self.components,
+            },
+            attrs=self._xa.attrs,
+        )
+
+        return self.__class__.from_xarray(
+            new_xa, fill_missing_dates=True, freq=self._freq_str
         )
 
     def append_values(self, values: np.ndarray) -> Self:
@@ -3240,12 +3174,12 @@ class TimeSeries:
 
         values = np.array(values) if not isinstance(values, np.ndarray) else values
         values = expand_arr(values, ndim=len(DIMS))
-        if not values.shape[1:] == self.shape[1:]:
+        if not values.shape[1:] == self._xa.values.shape[1:]:
             raise_log(
                 ValueError(
                     f"The (expanded) values must have the same number of components and samples "
                     f"(second and third dims) as the series to append to. "
-                    f"Received shape: {values.shape}, expected: {self.shape}"
+                    f"Received shape: {values.shape}, expected: {self._xa.values.shape}"
                 ),
                 logger=logger,
             )
@@ -3258,8 +3192,12 @@ class TimeSeries:
         )
 
         return self.append(
-            self.__class__(
-                values=values, times=idx, components=self._components, **self._attrs
+            self.__class__.from_times_and_values(
+                values=values,
+                times=idx,
+                fill_missing_dates=False,
+                static_covariates=self.static_covariates,
+                metadata=self.metadata,
             )
         )
 
@@ -3282,13 +3220,10 @@ class TimeSeries:
         Timeseries.append : append (i.e. add to the end) another series along the time axis.
         TimeSeries.concatenate : concatenate another series along a given axis.
         """
-        if not isinstance(other, self.__class__):
-            raise_log(
-                ValueError(
-                    f"`other` to prepend must be a {self.__class__.__name__} object."
-                ),
-                logger,
-            )
+        raise_if_not(
+            isinstance(other, self.__class__),
+            f"`other` to prepend must be a {self.__class__.__name__} object.",
+        )
         return other.append(self)
 
     def prepend_values(self, values: np.ndarray) -> Self:
@@ -3310,12 +3245,12 @@ class TimeSeries:
 
         values = np.array(values) if not isinstance(values, np.ndarray) else values
         values = expand_arr(values, ndim=len(DIMS))
-        if not values.shape[1:] == self._values.shape[1:]:
+        if not values.shape[1:] == self._xa.values.shape[1:]:
             raise_log(
                 ValueError(
                     f"The (expanded) values must have the same number of components and samples "
                     f"(second and third dims) as the series to prepend to. "
-                    f"Received shape: {values.shape}, expected: {self._values.shape}"
+                    f"Received shape: {values.shape}, expected: {self._xa.values.shape}"
                 ),
                 logger=logger,
             )
@@ -3328,11 +3263,14 @@ class TimeSeries:
         )
 
         return self.prepend(
-            self.__class__(
-                times=idx,
+            self.__class__.from_times_and_values(
                 values=values,
-                components=self.columns,
-                **self._attrs,
+                times=idx,
+                fill_missing_dates=False,
+                static_covariates=self.static_covariates,
+                columns=self.columns,
+                hierarchy=self.hierarchy,
+                metadata=self.metadata,
             )
         )
 
@@ -3378,22 +3316,21 @@ class TimeSeries:
         """
         values = np.array(values) if not isinstance(values, np.ndarray) else values
         values = expand_arr(values, ndim=len(DIMS))
-        if values.shape[1] != self.shape[1]:
-            raise_log(
-                ValueError(
-                    "The new values must have the same number of components as the present series. "
-                    f"Received: {values.shape[1]}, expected: {self.shape[1]}"
-                ),
-                logger,
-            )
-        return self.__class__(
+        raise_if_not(
+            values.shape[1] == self._xa.values.shape[1],
+            "The new values must have the same number of components as the present series. "
+            f"Received: {values.shape[1]}, expected: {self._xa.values.shape[1]}",
+        )
+        return self.from_times_and_values(
             times=times,
             values=values,
             fill_missing_dates=fill_missing_dates,
             freq=freq,
-            components=self._components,
+            columns=self.columns,
             fillna_value=fillna_value,
-            **self._attrs,
+            static_covariates=self.static_covariates,
+            hierarchy=self.hierarchy,
+            metadata=self.metadata,
         )
 
     def with_values(self, values: np.ndarray) -> Self:
@@ -3413,20 +3350,20 @@ class TimeSeries:
         """
         values = np.array(values) if not isinstance(values, np.ndarray) else values
         values = expand_arr(values, ndim=len(DIMS))
-        if values.shape[:2] != self.shape[:2]:
-            raise_log(
-                ValueError(
-                    "The new values must have the same shape (time, components) as the present series. "
-                    f"Received: {values.shape[:2]}, expected: {self.shape[:2]}"
-                ),
-                logger,
-            )
-        return self.__class__(
-            times=self._time_index,
-            values=values,
-            components=self._components,
-            **self._attrs,
+        raise_if_not(
+            values.shape[:2] == self._xa.values.shape[:2],
+            "The new values must have the same shape (time, components) as the present series. "
+            f"Received: {values.shape[:2]}, expected: {self._xa.values.shape[:2]}",
         )
+
+        new_xa = xr.DataArray(
+            values,
+            dims=self._xa.dims,
+            coords=self._xa.coords,
+            attrs=self._xa.attrs,
+        )
+
+        return self.__class__(new_xa)
 
     def with_static_covariates(
         self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
@@ -3480,13 +3417,18 @@ class TimeSeries:
         linear              0.0           1.0
         linear_1            2.0           3.0
         """
+
         return self.__class__(
-            times=self._time_index,
-            values=self._values,
-            components=self._components,
-            static_covariates=covariates,
-            hierarchy=self.hierarchy,
-            metadata=self.metadata,
+            xr.DataArray(
+                self._xa.values,
+                dims=self._xa.dims,
+                coords=self._xa.coords,
+                attrs={
+                    STATIC_COV_TAG: covariates,
+                    HIERARCHY_TAG: self.hierarchy,
+                    METADATA_TAG: self.metadata,
+                },
+            )
         )
 
     def with_hierarchy(self, hierarchy: dict[str, Union[str, list[str]]]) -> Self:
@@ -3521,13 +3463,18 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with the given hierarchy.
         """
+
         return self.__class__(
-            times=self._time_index,
-            values=self._values,
-            components=self._components,
-            static_covariates=self.static_covariates,
-            hierarchy=hierarchy,
-            metadata=self.metadata,
+            xr.DataArray(
+                self._xa.values,
+                dims=self._xa.dims,
+                coords=self._xa.coords,
+                attrs={
+                    STATIC_COV_TAG: self.static_covariates,
+                    HIERARCHY_TAG: hierarchy,
+                    METADATA_TAG: self.metadata,
+                },
+            )
         )
 
     def with_metadata(self, metadata: Optional[dict]) -> Self:
@@ -3554,13 +3501,18 @@ class TimeSeries:
         >>> series.metadata
         {'name': 'my_series'}
         """
+
         return self.__class__(
-            times=self._time_index,
-            values=self._values,
-            components=self._components,
-            static_covariates=self.static_covariates,
-            hierarchy=self.hierarchy,
-            metadata=metadata,
+            xr.DataArray(
+                self._xa.values,
+                dims=self._xa.dims,
+                coords=self._xa.coords,
+                attrs={
+                    STATIC_COV_TAG: self.static_covariates,
+                    HIERARCHY_TAG: self.hierarchy,
+                    METADATA_TAG: metadata,
+                },
+            )
         )
 
     def stack(self, other: Self) -> Self:
@@ -3602,31 +3554,14 @@ class TimeSeries:
         if isinstance(col_names, str):
             col_names = [col_names]
 
-        comp_list = self._components.tolist()
-        if not all([x in comp_list for x in col_names]):
-            raise_log(
-                ValueError(
-                    "Some column names in `col_names` don't exist in the time series."
-                ),
-                logger,
-            )
-        indexer = []
-        for idx, col in enumerate(comp_list):
-            if col not in col_names:
-                indexer.append(idx)
-
-        return self.__class__(
-            times=self._time_index,
-            values=self._values[:, indexer],
-            components=self._components[indexer],
-            static_covariates=(
-                self.static_covariates.iloc[indexer]
-                if self.static_covariates is not None
-                else None
-            ),
-            hierarchy=None,
-            metadata=self.metadata,
+        raise_if_not(
+            all([(x in self.columns.to_list()) for x in col_names]),
+            "Some column names in col_names don't exist in the time series.",
+            logger,
         )
+
+        new_xa = self._xa.drop_sel({"component": col_names})
+        return self.__class__(new_xa)
 
     def univariate_component(self, index: Union[str, int]) -> Self:
         """
@@ -3826,7 +3761,7 @@ class TimeSeries:
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
 
-        resample = self.data_array(copy=False).resample(
+        resample = self._xa.resample(
             indexer={self._time_dim: freq},
             **kwargs,
         )
@@ -3841,7 +3776,7 @@ class TimeSeries:
                 new_xa = new_xa.astype(int)
         else:
             raise_log(ValueError(f"Unknown method: {method}"), logger)
-        return self.__class__.from_xarray(new_xa)
+        return self.__class__(new_xa)
 
     def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
         """
@@ -3917,39 +3852,34 @@ class TimeSeries:
                     logger,
                 )
 
+        new_xa = self._xa.copy()
         if num_args == 1:  # apply fn on values directly
-            values = fn(self._values)
+            new_xa.values = fn(self._xa.values)
+
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
             # go over shortest amount of iterations, either over time steps or components and samples
             if self.n_timesteps <= self.n_components * self.n_samples:
                 new_vals = np.vstack([
-                    np.expand_dims(
-                        fn(self.time_index[i], self._values[i, :, :]), axis=0
-                    )
+                    np.expand_dims(fn(self.time_index[i], self._xa[i, :, :]), axis=0)
                     for i in range(self.n_timesteps)
                 ])
             else:
                 new_vals = np.stack(
                     [
                         np.column_stack([
-                            fn(self.time_index, self._values[:, i, j])
+                            fn(self.time_index, self._xa[:, i, j])
                             for j in range(self.n_samples)
                         ])
                         for i in range(self.n_components)
                     ],
                     axis=1,
                 )
-            values = new_vals
+            new_xa.values = new_vals
 
         else:
             raise_log(ValueError("fn must have either one or two arguments"), logger)
 
-        return self.__class__(
-            times=self._time_index,
-            values=values,
-            components=self._components,
-            **self._attrs,
-        )
+        return self.__class__(new_xa)
 
     def window_transform(
         self,
@@ -4632,11 +4562,9 @@ class TimeSeries:
             if ax is None:
                 ax = plt.gca()
 
-        # TODO: migrate from xarray plotting to something else
-        data_array = self.data_array(copy=False)
-        for i, c in enumerate(data_array.component[:n_components_to_plot]):
+        for i, c in enumerate(self._xa.component[:n_components_to_plot]):
             comp_name = str(c.values)
-            comp = data_array.sel(component=c)
+            comp = self._xa.sel(component=c)
 
             if comp.sample.size > 1:
                 if central_quantile == "mean":
@@ -4708,7 +4636,7 @@ class TimeSeries:
                     )
 
         ax.legend()
-        ax.set_title(title if title is not None else data_array.name)
+        ax.set_title(title if title is not None else self._xa.name)
         return ax
 
     def with_columns_renamed(
@@ -4730,26 +4658,24 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries instance.
         """
+
         if isinstance(col_names, str):
             col_names = [col_names]
         if isinstance(col_names_new, str):
             col_names_new = [col_names_new]
 
-        if not all([(x in self._components.to_list()) for x in col_names]):
-            raise_log(
-                ValueError(
-                    "Some column names in col_names don't exist in the time series."
-                ),
-                logger,
-            )
+        raise_if_not(
+            all([(x in self.columns.to_list()) for x in col_names]),
+            "Some column names in col_names don't exist in the time series.",
+            logger,
+        )
 
-        if len(col_names) != len(col_names_new):
-            raise_log(
-                ValueError(
-                    "Length of col_names_new list should be equal to the length of col_names list."
-                ),
-                logger,
-            )
+        raise_if_not(
+            len(col_names) == len(col_names_new),
+            "Length of col_names_new list should be"
+            " equal to the length of col_names list.",
+            logger,
+        )
 
         old2new = {old: new for (old, new) in zip(col_names, col_names_new)}
 
@@ -4767,37 +4693,31 @@ class TimeSeries:
             }
         else:
             hierarchy = None
+        new_attrs = self._xa.attrs
+        new_attrs[HIERARCHY_TAG] = hierarchy
 
-        return self.__class__(
-            times=self._time_index,
-            values=self._values,
-            components=pd.Index(cols),
-            static_covariates=self.static_covariates,
-            hierarchy=hierarchy,
-            metadata=self.metadata,
+        new_xa = xr.DataArray(
+            self._xa.values,
+            dims=self._xa.dims,
+            coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cols)},
+            attrs=new_attrs,
         )
+
+        return self.__class__(new_xa)
 
     """
     Simple statistic and aggregation functions. Calculate various statistics over the samples of stochastic time series
     or aggregate over components/time for deterministic series.
     """
 
-    def _get_agg_dims(
-        self, new_cname: str, axis: int
-    ) -> tuple[Union[pd.DatetimeIndex, pd.RangeIndex], pd.Index]:
+    def _get_agg_coords(self, new_cname: str, axis: int) -> dict:
         """Helper function to rename reduced axis. Returns a dictionary containing the new coordinates"""
-
         if axis == 0:  # set time_index to first day
-            return self._time_index[0:1], self._components
+            return {self._xa.dims[0]: self.time_index[0:1], DIMS[1]: self.components}
         elif axis == 1:  # rename components
-            return self._time_index, pd.Index([new_cname])
+            return {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([new_cname])}
         elif axis == 2:  # do nothing
-            return self._time_index, self._components
-        else:
-            raise_log(
-                ValueError(f"Invalid `axis={axis}`. Must be one of `(1, 2, 3)`."),
-                logger,
-            )
+            return {self._xa.dims[0]: self.time_index, DIMS[1]: self.components}
 
     def mean(self, axis: int = 2) -> Self:
         """
@@ -4820,14 +4740,17 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with mean applied to the indicated axis.
         """
-        values = self._values.mean(axis=axis, keepdims=True)
-        times, components = self._get_agg_dims("components_mean", axis)
-        return self.__class__(
-            times=times,
-            values=values,
-            components=components,
-            **(self._attrs if axis != 1 else dict()),
+        new_data = self._xa.values.mean(axis=axis, keepdims=True)
+
+        new_coords = self._get_agg_coords("components_mean", axis)
+
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
+        return self.__class__(new_xa)
 
     def median(self, axis: int = 2) -> Self:
         """
@@ -4850,16 +4773,18 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with median applied to the indicated axis.
         """
-        values = np.median(
-            self._values, axis=axis, overwrite_input=False, keepdims=True
+        new_data = np.median(
+            self._xa.values, axis=axis, overwrite_input=False, keepdims=True
         )
-        times, components = self._get_agg_dims("components_median", axis)
-        return self.__class__(
-            times=times,
-            values=values,
-            components=components,
-            **(self._attrs if axis != 1 else dict()),
+        new_coords = self._get_agg_coords("components_median", axis)
+
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
+        return self.__class__(new_xa)
 
     def sum(self, axis: int = 2) -> Self:
         """
@@ -4882,14 +4807,17 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with sum applied to the indicated axis.
         """
-        values = self._values.sum(axis=axis, keepdims=True)
-        times, components = self._get_agg_dims("components_sum", axis)
-        return self.__class__(
-            times=times,
-            values=values,
-            components=components,
-            **(self._attrs if axis != 1 else dict()),
+        new_data = self._xa.values.sum(axis=axis, keepdims=True)
+
+        new_coords = self._get_agg_coords("components_sum", axis)
+
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
+        return self.__class__(new_xa)
 
     def min(self, axis: int = 2) -> Self:
         """
@@ -4912,14 +4840,17 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with min applied to the indicated axis.
         """
-        values = self._values.min(axis=axis, keepdims=True)
-        times, components = self._get_agg_dims("components_min", axis)
-        return self.__class__(
-            times=times,
-            values=values,
-            components=components,
-            **(self._attrs if axis != 1 else dict()),
+
+        new_data = self._xa.values.min(axis=axis, keepdims=True)
+        new_coords = self._get_agg_coords("components_min", axis)
+
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
+        return self.__class__(new_xa)
 
     def max(self, axis: int = 2) -> Self:
         """
@@ -4942,14 +4873,16 @@ class TimeSeries:
         TimeSeries
             A new TimeSeries with max applied to the indicated axis.
         """
-        values = self._values.max(axis=axis, keepdims=True)
-        times, components = self._get_agg_dims("components_max", axis)
-        return self.__class__(
-            times=times,
-            values=values,
-            components=components,
-            **(self._attrs if axis != 1 else dict()),
+        new_data = self._xa.values.max(axis=axis, keepdims=True)
+        new_coords = self._get_agg_coords("components_max", axis)
+
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
+        return self.__class__(new_xa)
 
     def var(self, ddof: int = 1) -> Self:
         """
@@ -4970,8 +4903,11 @@ class TimeSeries:
             The TimeSeries containing the variance for each component.
         """
         self._assert_stochastic()
-        vals = self._values.var(axis=2, ddof=ddof, keepdims=True)
-        return self.with_values(vals)
+        new_data = self._xa.values.var(axis=2, ddof=ddof, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
+        return self.__class__(new_xa)
 
     def std(self, ddof: int = 1) -> Self:
         """
@@ -4992,8 +4928,11 @@ class TimeSeries:
             The TimeSeries containing the standard deviation for each component.
         """
         self._assert_stochastic()
-        vals = self._values.std(axis=2, ddof=ddof, keepdims=True)
-        return self.with_values(vals)
+        new_data = self._xa.values.std(axis=2, ddof=ddof, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
+        return self.__class__(new_xa)
 
     def skew(self, **kwargs) -> Self:
         """
@@ -5013,8 +4952,11 @@ class TimeSeries:
             The TimeSeries containing the skew for each component.
         """
         self._assert_stochastic()
-        vals = np.expand_dims(skew(self._values, axis=2, **kwargs), axis=2)
-        return self.with_values(vals)
+        new_data = np.expand_dims(skew(self._xa.values, axis=2, **kwargs), axis=2)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
+        return self.__class__(new_xa)
 
     def kurtosis(self, **kwargs) -> Self:
         """
@@ -5034,8 +4976,11 @@ class TimeSeries:
             The TimeSeries containing the kurtosis for each component.
         """
         self._assert_stochastic()
-        vals = np.expand_dims(kurtosis(self._values, axis=2, **kwargs), axis=2)
-        return self.with_values(vals)
+        new_data = np.expand_dims(kurtosis(self._xa.values, axis=2, **kwargs), axis=2)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
+        return self.__class__(new_xa)
 
     def quantile(self, quantile: float, **kwargs) -> Self:
         """
@@ -5068,9 +5013,10 @@ class TimeSeries:
     Dunder methods
     """
 
-    def _extract_values(
+    def _combine_arrays(
         self,
         other: Union[Self, xr.DataArray, np.ndarray],
+        combine_fn: Callable[[np.ndarray, np.ndarray], np.ndarray],
     ) -> Self:
         """
         This is a helper function that allows us to combine this series with another one,
@@ -5078,13 +5024,13 @@ class TimeSeries:
         """
 
         if isinstance(other, TimeSeries):
-            other_vals = other._values
+            other_vals = other.data_array(copy=False).values
         elif isinstance(other, xr.DataArray):
             other_vals = other.values
         else:
             other_vals = other
 
-        t, c, s = self.shape
+        t, c, s = self._xa.shape
         other_shape = other_vals.shape
         if not (
             # can combine arrays if shapes are equal (t, c, s)
@@ -5102,15 +5048,14 @@ class TimeSeries:
                 ),
                 logger=logger,
             )
-        return other_vals
+        new_xa = self._xa.copy()
+        new_xa.values = combine_fn(new_xa.values, other_vals)
+        return self.__class__(new_xa)
 
     @classmethod
     def _fill_missing_dates(
-        cls,
-        times: pd.DatetimeIndex,
-        values: np.ndarray,
-        freq: Optional[Union[str, int]] = None,
-    ) -> tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]:
+        cls, xa: xr.DataArray, freq: Optional[Union[str, int]] = None
+    ) -> xr.DataArray:
         """Return an xarray DataArray instance with missing dates inserted from an input xarray DataArray.
         The first dimension of the input DataArray `xa` has to be the time dimension.
 
@@ -5131,7 +5076,7 @@ class TimeSeries:
             If `xa`'s DateTimeIndex contains less than 3 elements;
             if no unique frequency can be inferred from `xa`'s DateTimeIndex;
             if the resampled DateTimeIndex does not contain all dates from `xa` (see
-                :meth:`_restore_from_frequency() <TimeSeries._restore_from_frequency>`)
+                :meth:`_restore_xarray_from_frequency() <TimeSeries._restore_xarray_from_frequency>`)
 
         Returns
         -------
@@ -5140,34 +5085,36 @@ class TimeSeries:
         """
 
         if freq is not None:
-            return cls._restore_from_frequency(times=times, values=values, freq=freq)
+            return cls._restore_xarray_from_frequency(xa, freq)
 
-        if len(times) <= 2:
-            raise_log(
-                ValueError(
-                    "Input time series must be of (length>=3) when fill_missing_dates=True and freq=None."
-                ),
-                logger,
-            )
+        raise_if(
+            len(xa) <= 2,
+            "Input time series must be of (length>=3) when fill_missing_dates=True and freq=None.",
+            logger,
+        )
 
-        times, values = cls._sort_index(times=times, values=values)
+        time_dim = xa.dims[0]
+        sorted_xa = cls._sort_index(xa, copy=False)
+        time_index: Union[pd.Index, pd.RangeIndex, pd.DatetimeIndex] = (
+            sorted_xa.get_index(time_dim)
+        )
 
-        if isinstance(times, pd.DatetimeIndex):
+        if isinstance(time_index, pd.DatetimeIndex):
             has_datetime_index = True
-            observed_freqs = cls._observed_freq_datetime_index(times)
+            observed_freqs = cls._observed_freq_datetime_index(time_index)
         else:  # integer index (non RangeIndex)
             has_datetime_index = False
-            observed_freqs = cls._observed_freq_integer_index(times)
+            observed_freqs = cls._observed_freq_integer_index(time_index)
 
-        if not len(observed_freqs) == 1:
-            offset_alias_info = (
-                (
-                    " For more information about frequency aliases, read "
-                    "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
-                )
-                if has_datetime_index
-                else ""
+        offset_alias_info = (
+            (
+                " For more information about frequency aliases, read "
+                "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
             )
+            if has_datetime_index
+            else ""
+        )
+        if not len(observed_freqs) == 1:
             raise_log(
                 ValueError(
                     f"Could not observe an inferred frequency. An explicit frequency must be evident over a span of "
@@ -5182,17 +5129,17 @@ class TimeSeries:
 
         freq = observed_freqs.pop()
 
-        return cls._restore_from_frequency(times=times, values=values, freq=freq)
+        return cls._restore_xarray_from_frequency(sorted_xa, freq)
 
     @staticmethod
-    def _sort_index(
-        times, values
-    ) -> tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]:
+    def _sort_index(xa: xr.DataArray, copy: bool = True) -> xr.DataArray:
         """Sorts an xarray by its time dimension index (only if it is not already monotonically increasing)."""
-        if times.is_monotonic_increasing:
-            return times, values
-        times, idx_sorted = times.sort_values(return_indexer=True)
-        return times, values[idx_sorted]
+        time_dim = xa.dims[0]
+        return (
+            (xa.copy() if copy else xa)
+            if xa.get_index(time_dim).is_monotonic_increasing
+            else xa.sortby(time_dim)
+        )
 
     @staticmethod
     def _observed_freq_datetime_index(index: pd.DatetimeIndex) -> set:
@@ -5222,37 +5169,44 @@ class TimeSeries:
         return set(index[1:] - index[:-1])
 
     @classmethod
-    def _restore_range_indexed(
-        cls, times, values
-    ) -> tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]:
+    def _integer_to_range_indexed_xarray(cls, xa: xr.DataArray) -> xr.DataArray:
         """If possible, converts an integer indexed xarray DataArray to a range indexed (pd.RangeIndex) DataArray.
         Otherwise, raises an error. An integer Index can be converted to a pd.RangeIndex, if the sorted integer index
         has a constant step size.
         """
-        times, values = cls._sort_index(times=times, values=values)
-        observed_freqs = cls._observed_freq_integer_index(times)
-        if len(observed_freqs) != 1:
-            raise_log(
-                ValueError(
-                    f"Could not convert integer index to a `pd.RangeIndex`. Found non-unique step sizes/frequencies: "
-                    f"`{observed_freqs}`. If any of those is the actual frequency, try passing it with "
-                    f"`fill_missing_dates=True` and `freq=your_frequency`."
-                ),
-                logger=logger,
-            )
-        freq = observed_freqs.pop()
-        times = pd.RangeIndex(
-            start=min(times),
-            stop=max(times) + freq,
-            step=freq,
-            name=times.name,
+        time_dim = xa.dims[0]
+        sorted_xa = cls._sort_index(xa, copy=False)
+        time_index = sorted_xa.get_index(time_dim)
+        observed_freqs = cls._observed_freq_integer_index(time_index)
+        raise_if_not(
+            len(observed_freqs) == 1,
+            f"Could not convert integer index to a `pd.RangeIndex`. Found non-unique step sizes/frequencies: "
+            f"`{observed_freqs}`. If any of those is the actual frequency, try passing it with fill_missing_dates=True "
+            f"and freq=your_frequency.",
+            logger,
         )
-        return times, values
+        freq = observed_freqs.pop()
+        idx = pd.RangeIndex(
+            start=min(time_index),
+            stop=max(time_index) + freq,
+            step=freq,
+            name=time_index.name,
+        )
+        coords = {
+            str(xa.dims[0]): idx,
+            str(xa.dims[1]): xa.coords[DIMS[1]],
+        }
+        return xr.DataArray(
+            data=sorted_xa.data,
+            dims=xa.dims,
+            coords=coords,
+            attrs=xa.attrs,
+        )
 
     @classmethod
-    def _restore_from_frequency(
-        cls, times, values, freq: Union[str, int]
-    ) -> tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]:
+    def _restore_xarray_from_frequency(
+        cls, xa: xr.DataArray, freq: Union[str, int]
+    ) -> xr.DataArray:
         """Return an xarray DataArray instance that is resampled from an input xarray DataArray `xa` with frequency
         `freq`. `freq` should be the inferred or actual frequency of `xa`. All data from `xa` is maintained in the
         output DataArray at the corresponding dates. Any missing dates from `xa` will be inserted into the returned
@@ -5283,28 +5237,32 @@ class TimeSeries:
         xarray DataArray
             xarray DataArray resampled from `xa` with `freq` including all data from `xa` and inserted missing dates
         """
-        times, values = cls._sort_index(times=times, values=values)
 
-        resampled_times = pd.Series(index=times, dtype="object")
-        if isinstance(times, pd.DatetimeIndex):
+        time_dim = xa.dims[0]
+        sorted_xa = cls._sort_index(xa, copy=False)
+
+        time_index = sorted_xa.get_index(time_dim)
+        resampled_time_index = pd.Series(index=time_index, dtype="object")
+        if isinstance(time_index, pd.DatetimeIndex):
             has_datetime_index = True
-            resampled_times = resampled_times.asfreq(freq)
+            resampled_time_index = resampled_time_index.asfreq(freq)
         else:  # integer index (non RangeIndex) -> resampled to RangeIndex
             has_datetime_index = False
-            resampled_times = resampled_times.reindex(
-                range(min(times), max(times) + freq, freq)
+            resampled_time_index = resampled_time_index.reindex(
+                range(min(time_index), max(time_index) + freq, freq)
             )
         # check if new time index with inferred frequency contains all input data
-        contains_all_data = times.isin(resampled_times.index).all()
-        if not contains_all_data:
-            offset_alias_info = (
-                (
-                    " For more information about frequency aliases, read "
-                    "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
-                )
-                if has_datetime_index
-                else ""
+        contains_all_data = time_index.isin(resampled_time_index.index).all()
+
+        offset_alias_info = (
+            (
+                " For more information about frequency aliases, read "
+                "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
             )
+            if has_datetime_index
+            else ""
+        )
+        if not contains_all_data:
             raise_log(
                 ValueError(
                     f"Could not correctly fill missing {'dates' if has_datetime_index else 'indices'} with the "
@@ -5314,164 +5272,143 @@ class TimeSeries:
                 ),
                 logger,
             )
+
+        coords = {
+            str(xa.dims[0]): resampled_time_index.index,
+            str(xa.dims[1]): xa.coords[DIMS[1]],
+        }
+
         # convert to float as for instance integer arrays cannot accept nans
         dtype = (
-            values.dtype
+            xa.dtype
             if (
-                np.issubdtype(values.dtype, np.float32)
-                or np.issubdtype(values.dtype, np.float64)
+                np.issubdtype(xa.values.dtype, np.float32)
+                or np.issubdtype(xa.values.dtype, np.float64)
             )
             else np.float64
         )
-        resampled_values = np.empty(
-            shape=((len(resampled_times),) + values.shape[1:]), dtype=dtype
+        resampled_xa = xr.DataArray(
+            data=np.empty(
+                shape=((len(resampled_time_index),) + xa.shape[1:]), dtype=dtype
+            ),
+            dims=xa.dims,
+            coords=coords,
+            attrs=xa.attrs,
         )
-        resampled_values[:] = np.nan
-        resampled_values[resampled_times.index.isin(times)] = values
-        return resampled_times.index, resampled_values
+        resampled_xa[:] = np.nan
+        resampled_xa[resampled_time_index.index.isin(time_index)] = sorted_xa.data
+        return resampled_xa
 
-    def _get_axis(self, axis: Union[int, str]) -> int:
+    def _get_dim_name(self, axis: Union[int, str]) -> str:
         if isinstance(axis, int):
-            if 0 <= axis <= 2:
-                return axis
+            if axis == 0:
+                return self._time_dim
+            elif axis == 1 or axis == 2:
+                return DIMS[axis]
             else:
-                raise_log(
-                    ValueError("If `axis` is an integer it must be between 0 and 2."),
-                    logger,
-                )
+                raise_if(True, "If `axis` is an integer it must be between 0 and 2.")
         else:
             known_dims = (self._time_dim,) + DIMS[1:]
-            if axis not in known_dims:
-                raise_log(
-                    ValueError(
-                        f"`axis` must be a known dimension of this series: {known_dims}"
-                    ),
-                    logger,
-                )
-            return known_dims.index(axis)
+            raise_if_not(
+                axis in known_dims,
+                f"`axis` must be a known dimension of this series: {known_dims}",
+            )
+            return axis
 
     def _get_dim(self, axis: Union[int, str]) -> int:
         if isinstance(axis, int):
-            if not 0 <= axis <= 2:
-                raise_log(
-                    ValueError("If `axis` is an integer it must be between 0 and 2."),
-                    logger,
-                )
+            raise_if_not(
+                0 <= axis <= 2, "If `axis` is an integer it must be between 0 and 2."
+            )
             return axis
         else:
             known_dims = (self._time_dim,) + DIMS[1:]
-            if axis not in known_dims:
-                raise_log(
-                    ValueError(
-                        f"`axis` must be a known dimension of this series: {known_dims}"
-                    ),
-                    logger,
-                )
+            raise_if_not(
+                axis in known_dims,
+                f"`axis` must be a known dimension of this series: {known_dims}",
+            )
             return known_dims.index(axis)
 
     def __eq__(self, other):
-        if not isinstance(other, TimeSeries):
-            return False
-
-        if self.shape != other.shape:
-            return False
-
-        if not self._time_index.equals(other._time_index):
-            return False
-
-        if not np.array_equal(self._values, other._values, equal_nan=True):
-            return False
-
-        if not self._components.equals(other._components):
-            return False
-
-        sc_self, sc_other = self.static_covariates, other.static_covariates
-        if (sc_self is not None) != (sc_other is not None):
-            return False
-        elif isinstance(sc_self, pd.DataFrame) and not sc_self.equals(sc_other):
-            return False
-
-        hr_self, hr_other = self.hierarchy, other.hierarchy
-        if (hr_self is not None) != (hr_other is not None):
-            return False
-        elif isinstance(hr_self, dict) and hr_self != hr_other:
-            return False
-
-        md_self, md_other = self.metadata, other.metadata
-        if (md_self is not None) != (md_other is not None):
-            return False
-        elif isinstance(md_self, dict) and md_self != md_other:
-            return False
-
-        return True
+        if isinstance(other, TimeSeries):
+            return self._xa.equals(other.data_array(copy=False))
+        return False
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __len__(self):
-        return len(self._values)
+        return len(self._xa)
 
     def __add__(self, other):
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            other = self._extract_values(other)
-        elif not isinstance(other, (int, float, np.integer)):
+        if isinstance(other, (int, float, np.integer)):
+            xa_ = _xarray_with_attrs(
+                self._xa + other, self.static_covariates, self.hierarchy, self.metadata
+            )
+            return self.__class__(xa_)
+        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            return self._combine_arrays(other, lambda s1, s2: s1 + s2)
+        else:
             raise_log(
                 TypeError(
                     f"unsupported operand type(s) for + or add(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.add(ts._values, other, out=ts._values)
-        return ts
 
     def __radd__(self, other):
         return self + other
 
     def __sub__(self, other):
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            other = self._extract_values(other)
-        elif not isinstance(other, (int, float, np.integer)):
+        if isinstance(other, (int, float, np.integer)):
+            xa_ = _xarray_with_attrs(
+                self._xa - other, self.static_covariates, self.hierarchy, self.metadata
+            )
+            return self.__class__(xa_)
+        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            return self._combine_arrays(other, lambda s1, s2: s1 - s2)
+        else:
             raise_log(
                 TypeError(
                     f"unsupported operand type(s) for - or sub(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.subtract(ts._values, other, out=ts._values)
-        return ts
 
     def __rsub__(self, other):
         return other + (-self)
 
     def __mul__(self, other):
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            other = self._extract_values(other)
-        elif not isinstance(other, (int, float, np.integer)):
+        if isinstance(other, (int, float, np.integer)):
+            xa_ = _xarray_with_attrs(
+                self._xa * other, self.static_covariates, self.hierarchy, self.metadata
+            )
+            return self.__class__(xa_)
+        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+            return self._combine_arrays(other, lambda s1, s2: s1 * s2)
+        else:
             raise_log(
                 TypeError(
                     f"unsupported operand type(s) for * or mul(): '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.multiply(ts._values, other, out=ts._values)
-        return ts
 
     def __rmul__(self, other):
         return self * other
 
     def __pow__(self, n):
         if isinstance(n, (int, float, np.integer)):
-            if n < 0:
-                raise_log(
-                    ValueError("Attempted to raise a series to a negative power."),
-                    logger,
-                )
-            n = float(n)
-        elif isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
-            n = self._extract_values(n)  # elementwise power
+            raise_if(n < 0, "Attempted to raise a series to a negative power.", logger)
+            xa_ = _xarray_with_attrs(
+                self._xa ** float(n),
+                self.static_covariates,
+                self.hierarchy,
+                self.metadata,
+            )
+            return self.__class__(xa_)
+        if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
+            return self._combine_arrays(n, lambda s1, s2: s1**s2)  # elementwise power
         else:
             raise_log(
                 TypeError(
@@ -5479,21 +5416,28 @@ class TimeSeries:
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.power(ts._values, n, out=ts._values)
-        return ts
 
     def __truediv__(self, other):
         if isinstance(other, (int, float, np.integer)):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
+            xa_ = _xarray_with_attrs(
+                self._xa / other, self.static_covariates, self.hierarchy, self.metadata
+            )
+            return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            other = self._extract_values(other)
-            if (other == 0).any():
+            if isinstance(other, TimeSeries):
+                other_vals = other.data_array(copy=False).values
+            elif isinstance(other, xr.DataArray):
+                other_vals = other.values
+            else:
+                other_vals = other
+            if not (other_vals != 0).all():
                 raise_log(
                     ZeroDivisionError("Cannot divide by a TimeSeries with a value 0."),
                     logger,
                 )
+            return self._combine_arrays(other_vals, lambda s1, s2: s1 / s2)
         else:
             raise_log(
                 TypeError(
@@ -5502,118 +5446,118 @@ class TimeSeries:
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.divide(ts._values, other, out=ts._values)
-        return ts
 
     def __rtruediv__(self, n):
         return n * (self ** (-1))
 
     def __abs__(self):
-        ts = self.copy()
-        np.absolute(ts._values, out=ts._values)
-        return ts
+        return self.__class__(abs(self._xa))
 
     def __neg__(self):
-        ts = self.copy()
-        np.negative(ts._values, out=ts._values)
-        return ts
+        return self.__class__(-self._xa)
 
     def __contains__(self, ts: Union[int, pd.Timestamp]) -> bool:
         return ts in self.time_index
 
     def __round__(self, n=None):
-        ts = self.copy()
-        np.round(ts._values, n, out=ts._values)
-        return ts
+        return self.__class__(self._xa.round(n))
 
-    def __lt__(self, other) -> Self:
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            other = self._extract_values(other)
-        elif not isinstance(other, (int, float, np.integer)):
+    def __lt__(self, other) -> xr.DataArray:
+        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
+            return _xarray_with_attrs(
+                self._xa < other, self.static_covariates, self.hierarchy, self.metadata
+            )
+        elif isinstance(other, TimeSeries):
+            return _xarray_with_attrs(
+                self._xa < other.data_array(copy=False),
+                self.static_covariates,
+                self.hierarchy,
+                self.metadata,
+            )
+        else:
             raise_log(
                 TypeError(
                     f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.less(ts._values, other, out=ts._values)
-        return ts
 
-    def __gt__(self, other) -> Self:
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            other = self._extract_values(other)
-        elif not isinstance(other, (int, float, np.integer)):
+    def __gt__(self, other) -> xr.DataArray:
+        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
+            return _xarray_with_attrs(
+                self._xa > other, self.static_covariates, self.hierarchy, self.metadata
+            )
+        elif isinstance(other, TimeSeries):
+            return _xarray_with_attrs(
+                self._xa > other.data_array(copy=False),
+                self.static_covariates,
+                self.hierarchy,
+                self.metadata,
+            )
+        else:
             raise_log(
                 TypeError(
-                    f"unsupported operand type(s) for > : '{type(self).__name__}' and '{type(other).__name__}'."
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.greater(ts._values, other, out=ts._values)
-        return ts
 
-    def __le__(self, other) -> Self:
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            other = self._extract_values(other)
-        elif not isinstance(other, (int, float, np.integer)):
+    def __le__(self, other) -> xr.DataArray:
+        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
+            return _xarray_with_attrs(
+                self._xa <= other, self.static_covariates, self.hierarchy, self.metadata
+            )
+        elif isinstance(other, TimeSeries):
+            return _xarray_with_attrs(
+                self._xa <= other.data_array(copy=False),
+                self.static_covariates,
+                self.hierarchy,
+                self.metadata,
+            )
+        else:
             raise_log(
                 TypeError(
-                    f"unsupported operand type(s) for <= : '{type(self).__name__}' and '{type(other).__name__}'."
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.less_equal(ts._values, other, out=ts._values)
-        return ts
 
-    def __ge__(self, other) -> Self:
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            other = self._extract_values(other)
-        elif not isinstance(other, (int, float, np.integer)):
+    def __ge__(self, other) -> xr.DataArray:
+        if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
+            return _xarray_with_attrs(
+                self._xa >= other, self.static_covariates, self.hierarchy, self.metadata
+            )
+        elif isinstance(other, TimeSeries):
+            return _xarray_with_attrs(
+                self._xa >= other.data_array(copy=False),
+                self.static_covariates,
+                self.hierarchy,
+                self.metadata,
+            )
+        else:
             raise_log(
                 TypeError(
-                    f"unsupported operand type(s) for >= : '{type(self).__name__}' and '{type(other).__name__}'."
+                    f"unsupported operand type(s) for < : '{type(self).__name__}' and '{type(other).__name__}'."
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.greater_equal(ts._values, other, out=ts._values)
-        return ts
 
     def __str__(self):
-        return str(self.data_array(copy=False)).replace(
-            "xarray.DataArray", "TimeSeries (DataArray)"
-        )
+        return str(self._xa).replace("xarray.DataArray", "TimeSeries (DataArray)")
 
     def __repr__(self):
-        return (
-            self.data_array(copy=False)
-            .__repr__()
-            .replace("xarray.DataArray", "TimeSeries (DataArray)")
-        )
+        return self._xa.__repr__().replace("xarray.DataArray", "TimeSeries (DataArray)")
 
     def _repr_html_(self):
-        return (
-            self.data_array(copy=False)
-            ._repr_html_()
-            .replace("xarray.DataArray", "TimeSeries (DataArray)")
+        return self._xa._repr_html_().replace(
+            "xarray.DataArray", "TimeSeries (DataArray)"
         )
 
     def __copy__(self, deep: bool = True):
         return self.copy()
 
     def __deepcopy__(self, memo):
-        # TODO
-        return self.__class__(
-            times=deepcopy(self._time_index, memo),
-            values=deepcopy(self._values, memo),
-            components=deepcopy(self._components, memo),
-            copy=False,
-            **deepcopy(self._attrs, memo),
-        )
+        return self.__class__(deepcopy(self._xa, memo))
 
     def __getitem__(
         self,
@@ -5672,6 +5616,22 @@ class TimeSeries:
                     logger,
                 )
 
+        def _set_freq_in_xa(xa_in: xr.DataArray, freq=None):
+            # mutates the DataArray to make sure it contains the freq
+            if isinstance(xa_in.get_index(self._time_dim), pd.DatetimeIndex):
+                if freq is None:
+                    freq = xa_in.get_index(self._time_dim).inferred_freq
+                if freq is not None:
+                    xa_in.get_index(self._time_dim).freq = freq
+                else:
+                    xa_in.get_index(self._time_dim).freq = self._freq
+
+        def _get_freq(xa_in: xr.DataArray):
+            if self._has_datetime_index:
+                return xa_in.get_index(self._time_dim).freq
+            else:
+                return xa_in.get_index(self._time_dim).step
+
         adapt_covs_on_component = (
             True
             if self.has_static_covariates and len(self.static_covariates) > 1
@@ -5679,34 +5639,31 @@ class TimeSeries:
         )
 
         # handle DatetimeIndex and RangeIndex:
-        if isinstance(key, (pd.DatetimeIndex, pd.RangeIndex)):
-            is_dti = isinstance(key, pd.DatetimeIndex)
-            _check_dt() if is_dti else _check_range()
-            times = self._time_index
+        if isinstance(key, pd.DatetimeIndex):
+            _check_dt()
+            xa_ = self._xa.sel({self._time_dim: key})
 
-            if len(key) == 0:
-                # keep original frequency in case of empty index
-                times = self._time_index[:0]
-                values = self._values[:0]
-            else:
-                idx = times.get_indexer(key)
-                if (idx < 0).any():
-                    raise_log(KeyError("Not all indices found in time index."), logger)
-                times = self._time_index[idx]
-                values = self._values[idx]
+            # indexing may discard the freq, so we restore it...
+            # if the DateTimeIndex already has an associated freq, use it
+            # otherwise key.freq is None and the freq will be inferred
+            _set_freq_in_xa(xa_, key.freq)
 
-                # make sure the frequency is transferred
-                if is_dti:
-                    times.freq = key.freq
-                else:
-                    # `get_indexer()` converts `RangeIndex` into regular `Index`
-                    times = pd.RangeIndex(
-                        start=times[0], stop=times[-1] + key.step, step=key.step
-                    )
+            return self.__class__(xa_)
+        elif isinstance(key, pd.RangeIndex):
+            _check_range()
+            idx_ = key
+            if not len(key) and self.freq != key.step:
+                # keep original step size in case of empty range index
+                idx_ = pd.RangeIndex(step=self.freq)
 
-            return self.__class__(
-                times=times, values=values, components=self.components, **self._attrs
-            )
+            xa_ = self._xa.sel({self._time_dim: idx_})
+
+            # sel() gives us an Int64Index. We have to set the RangeIndex.
+            # see: https://github.com/pydata/xarray/issues/6256
+            xa_ = xa_.assign_coords({self.time_dim: idx_})
+
+            return self.__class__(xa_)
+
         # handle slices:
         elif isinstance(key, slice):
             if key.start is None and key.stop is None:
@@ -5719,163 +5676,152 @@ class TimeSeries:
                         logger=logger,
                     )
                 else:
-                    return self.__class__(
-                        times=self._time_index[key],
-                        values=self._values[key],
-                        components=self.components,
-                        **self._attrs,
-                    )
+                    xa_ = self._xa.isel({self._time_dim: key})
+                    if _get_freq(xa_) is None:
+                        # indexing discarded the freq; we restore it
+                        freq = key.step * self.freq if key.step else self.freq
+                        _set_freq_in_xa(xa_, freq)
+                    return self.__class__(xa_)
             elif isinstance(key.start, str) or isinstance(key.stop, str):
+                xa_ = self._xa.sel({DIMS[1]: key})
                 # selecting components discards the hierarchy, if any
-                idx = self._components.get_indexer(pd.Index([key.start, key.stop]))
-                if (idx < 0).any():
-                    raise_log(
-                        KeyError("Not all components found in time index."), logger
-                    )
-                indexer = slice(idx[0], idx[-1] + 1)
-                values = self._values[:, indexer]
-                components = self._components[indexer]
-                static_covariates = self.static_covariates
-                return self.__class__(
-                    times=self._time_index,
-                    values=values,
-                    components=components,
-                    static_covariates=(
-                        static_covariates[indexer]
+                xa_ = _xarray_with_attrs(
+                    xa_,
+                    (
+                        xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
                         if adapt_covs_on_component
-                        else static_covariates
+                        else xa_.attrs[STATIC_COV_TAG]
                     ),
-                    hierarchy=None,
-                    metadata=self.metadata,
+                    None,
+                    xa_.attrs[METADATA_TAG],
                 )
+                return self.__class__(xa_)
             elif isinstance(key.start, (int, np.int64)) or isinstance(
                 key.stop, (int, np.int64)
             ):
-                return self.__class__(
-                    times=self._time_index[key],
-                    values=self._values[key],
-                    components=self.components,
-                    **self._attrs,
-                )
+                xa_ = self._xa.isel({self._time_dim: key})
+                if _get_freq(xa_) is None:
+                    # indexing discarded the freq; we restore it
+                    freq = key.step * self.freq if key.step else self.freq
+                    _set_freq_in_xa(xa_, freq)
+                return self.__class__(xa_)
             elif isinstance(key.start, pd.Timestamp) or isinstance(
                 key.stop, pd.Timestamp
             ):
-                if key.step is not None and key.step <= 0:
-                    raise_log(
-                        ValueError(
-                            "Indexing a `TimeSeries` with a `slice` of `step<=0` (reverse) is not "
-                            "possible since `TimeSeries` must have a monotonically increasing time index."
-                        ),
-                        logger=logger,
-                    )
                 _check_dt()
-                start_time = self.start_time()
-
-                if key.start is not None:
-                    start = n_steps_between(
-                        end=key.start, start=start_time, freq=self.freq
-                    )
-                    if start < 0:
-                        # shift start a round-multip of `step` ahead until it lies within the index
-                        start = 0 if key.step is None else start % key.step
-                else:
-                    start = 0
-
-                if key.stop is not None:
-                    end = n_steps_between(
-                        end=key.stop, start=start_time, freq=self.freq
-                    )
-                else:
-                    end = len(self) - 1
-                key = slice(start, end + 1, key.step)
-                return self.__class__(
-                    times=self._time_index[key],
-                    values=self._values[key],
-                    components=self.components,
-                    **self._attrs,
-                )
+                xa_ = self._xa.sel({self._time_dim: key})
+                if _get_freq(xa_) is None:
+                    # indexing discarded the freq; we restore it
+                    freq = key.step * self.freq if key.step else self.freq
+                    _set_freq_in_xa(xa_, freq)
+                return self.__class__(xa_)
 
         # handle simple types:
         elif isinstance(key, str):
-            col_idx = self._components.get_loc(key)
-            static_covariates = self.static_covariates
-            return self.__class__(
-                times=self._time_index,
-                values=self._values[:, col_idx : col_idx + 1],
-                components=self._components[col_idx : col_idx + 1],
-                static_covariates=(
-                    static_covariates.loc[[key]]
+            # have to put key in a list not to drop the dimension
+            xa_ = self._xa.sel({DIMS[1]: [key]})
+            # selecting components discards the hierarchy, if any
+            xa_ = _xarray_with_attrs(
+                xa_,
+                (
+                    xa_.attrs[STATIC_COV_TAG].loc[[key]]
                     if adapt_covs_on_component
-                    else static_covariates
+                    else xa_.attrs[STATIC_COV_TAG]
                 ),
-                hierarchy=None,
-                metadata=self.metadata,
+                None,
+                xa_.attrs[METADATA_TAG],
             )
+            return self.__class__(xa_)
         elif isinstance(key, (int, np.int64)):
-            key = slice(key, key + 1 if key != -1 else None)
-            ts = self.__class__(
-                times=self._time_index[key],
-                values=self._values[key],
-                components=self.components,
-                **self._attrs,
-            )
-            if len(ts) == 0:
-                raise_log(IndexError("Integer index out of range."), logger)
-            return ts
+            xa_ = self._xa.isel({self._time_dim: [key]})
+
+            # restore a RangeIndex if needed:
+            time_idx = xa_.get_index(self._time_dim)
+            if pd.api.types.is_integer_dtype(time_idx) and not isinstance(
+                time_idx, pd.RangeIndex
+            ):
+                xa_ = xa_.assign_coords({
+                    self._time_dim: pd.RangeIndex(
+                        start=time_idx[0],
+                        stop=time_idx[0] + self.freq,
+                        step=self.freq,
+                    )
+                })
+            # indexing may discard the freq, so we restore it...
+            _set_freq_in_xa(xa_, freq=self.freq)
+            return self.__class__(xa_)
         elif isinstance(key, pd.Timestamp):
             _check_dt()
-            key = self._time_index.get_loc(key)
-            key = slice(key, key + 1)
-            return self.__class__(
-                times=self._time_index[key],
-                values=self._values[key],
-                components=self.components,
-                **self._attrs,
-            )
+
+            # indexing may discard the freq, so we restore it...
+            xa_ = self._xa.sel({self._time_dim: [key]})
+            _set_freq_in_xa(xa_, self.freq)
+            return self.__class__(xa_)
 
         # handle lists:
         if isinstance(key, list):
             if all(isinstance(s, str) for s in key):
                 # when string(s) are provided, we consider it as (a list of) component(s)
-                indexer = self._components.get_indexer(key)
-                if (indexer < 0).any():
-                    raise_log(
-                        KeyError("Not all components found in time index."), logger
-                    )
-                values = self._values[:, indexer]
-                components = self._components[indexer]
-                static_covariates = self.static_covariates
-                return self.__class__(
-                    times=self._time_index,
-                    values=values,
-                    components=components,
-                    static_covariates=(
-                        static_covariates.iloc[indexer]
+                xa_ = self._xa.sel({DIMS[1]: key})
+                xa_ = _xarray_with_attrs(
+                    xa_,
+                    (
+                        xa_.attrs[STATIC_COV_TAG].loc[key]
                         if adapt_covs_on_component
-                        else static_covariates
+                        else xa_.attrs[STATIC_COV_TAG]
                     ),
-                    hierarchy=None,
-                    metadata=self.metadata,
+                    None,
+                    xa_.attrs[METADATA_TAG],
                 )
+                return self.__class__(xa_)
             elif all(isinstance(i, (int, np.int64)) for i in key):
-                return self.__class__(
-                    times=self._time_index[key],
-                    values=self._values[key],
-                    components=self._components,
-                    **self._attrs,
-                )
+                xa_ = self._xa.isel({self._time_dim: key})
+
+                # indexing may discard the freq, so we restore it...
+                _set_freq_in_xa(xa_)
+
+                orig_idx = self.time_index
+                if isinstance(orig_idx, pd.RangeIndex):
+                    # We have to restore a RangeIndex. But first we need to
+                    # check the list is corresponding to a RangeIndex.
+                    min_idx, max_idx = min(key), max(key)
+                    if (
+                        not key[0] == min_idx
+                        and key[-1] == max_idx
+                        and max_idx + 1 - min_idx == len(key)
+                    ):
+                        raise_log(
+                            ValueError(
+                                "Indexing a TimeSeries with a list requires the list to "
+                                "contain monotonically increasing integers with no gap."
+                            ),
+                            logger=logger,
+                        )
+                    new_idx = orig_idx[min_idx : max_idx + 1]
+                    xa_ = xa_.assign_coords({self._time_dim: new_idx})
+
+                return self.__class__(xa_)
 
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()
-                key = self._time_index.get_indexer(key)
-                return self.__class__(
-                    times=self._time_index[key],
-                    values=self._values[key],
-                    components=self._components,
-                    **self._attrs,
-                )
+
+                # indexing may discard the freq, so we restore it...
+                xa_ = self._xa.sel({self._time_dim: key})
+                _set_freq_in_xa(xa_)
+                return self.__class__(xa_)
 
         raise_log(IndexError("The type of your index was not matched."), logger)
+
+
+def _xarray_with_attrs(xa_, static_covariates, hierarchy, metadata):
+    """Return an DataArray instance with static covariates and hierarchy stored in the array's attributes.
+    Warning: This is an inplace operation (mutable) and should only be called from within TimeSeries construction
+    or to restore static covariates, hierarchy and metadata after operations in which they did not get transferred.
+    """
+    xa_.attrs[STATIC_COV_TAG] = static_covariates
+    xa_.attrs[HIERARCHY_TAG] = hierarchy
+    xa_.attrs[METADATA_TAG] = metadata
+    return xa_
 
 
 def _concat_static_covs(series: Sequence[TimeSeries]) -> Optional[pd.DataFrame]:
@@ -5998,39 +5944,33 @@ def concatenate(
         elif axis == DIMS[2]:
             axis = 2
         else:
-            if len(set(time_dims)) != 1 or axis != time_dims[0]:
-                raise_log(
-                    ValueError(
-                        "Unrecognised `axis` name. If `axis` denotes the time axis, all provided "
-                        "series must have the same time axis name (if that is not the case, try providing "
-                        "`axis=0` to concatenate along time dimension)."
-                    ),
-                    logger,
-                )
+            raise_if_not(
+                len(set(time_dims)) == 1 and axis == time_dims[0],
+                "Unrecognised `axis` name. If `axis` denotes the time axis, all provided "
+                "series must have the same time axis name (if that is not the case, try providing "
+                "`axis=0` to concatenate along time dimension).",
+            )
             axis = 0
 
-    vals = [ts.all_values(copy=False) for ts in series]
+    # At this point all series are supposed to have same time dim name
+    time_dim_name = time_dims[0]
 
-    component_axis_equal = len({ts.shape[COMP_AX] for ts in series}) == 1
-    sample_axis_equal = len({ts.shape[SMPL_AX] for ts in series}) == 1
+    da_sequence = [ts.data_array(copy=False) for ts in series]
 
-    times = series[0]._time_index
-    components = series[0].components
-    static_covariates = series[0].static_covariates
-    hierarchy = series[0].hierarchy
+    component_axis_equal = len({ts.width for ts in series}) == 1
+    sample_axis_equal = len({ts.n_samples for ts in series}) == 1
+
     metadata = None if drop_metadata else series[0].metadata
 
-    vals = np.concatenate(vals, axis=axis)
     if axis == 0:
         # time
-        if not (component_axis_equal and sample_axis_equal):
-            raise_log(
-                ValueError(
-                    "when concatenating along time dimension, the component and sample dimensions of all "
-                    "provided series must match."
-                ),
-                logger,
-            )
+        raise_if(
+            (not (component_axis_equal and sample_axis_equal)),
+            "when concatenating along time dimension, the component and sample dimensions of all "
+            "provided series must match.",
+        )
+
+        da_concat = xr.concat(da_sequence, dim=time_dim_name)
 
         # check, if timeseries are consecutive
         consecutive_time_axes = True
@@ -6040,68 +5980,86 @@ def concatenate(
                 break
 
         if not consecutive_time_axes:
-            if not ignore_time_axis:
-                raise_log(
-                    ValueError(
-                        "When concatenating over time axis, all series need to be contiguous "
-                        "in the time dimension. Use `ignore_time_axis=True` to override "
-                        "this behavior and concatenate the series by extending the time axis "
-                        "of the first series."
-                    ),
-                    logger,
-                )
-
-        times = generate_index(
-            start=series[0].start_time(),
-            freq=series[0].freq,
-            length=len(vals),
-            name=times.name,
-        )
-    else:
-        if ignore_time_axis:
-            time_axes_ok = len({len(ts) for ts in series}) == 1
-        else:
-            time_axes_ok = all([
-                ts.has_same_time_as(ts_next)
-                for ts, ts_next in zip(series[0:-1], series[1:])
-            ])
-
-        if (
-            (not time_axes_ok)
-            or (axis == 1 and not sample_axis_equal)
-            or (axis == 2 and not component_axis_equal)
-        ):
-            raise_log(
-                ValueError(
-                    "When concatenating along component or sample dimensions, all the series must have the same time "
-                    "axes (unless `ignore_time_axis` is True), or time axes of same lengths (if `ignore_time_axis` is "
-                    "True), and all series must have the same number of samples (if concatenating along component "
-                    "dimension), or the same number of components (if concatenating along sample dimension)."
-                ),
-                logger,
+            raise_if_not(
+                ignore_time_axis,
+                "When concatenating over time axis, all series need to be contiguous "
+                "in the time dimension. Use `ignore_time_axis=True` to override "
+                "this behavior and concatenate the series by extending the time axis "
+                "of the first series.",
             )
+
+            tindex = generate_index(
+                start=series[0].start_time(),
+                freq=series[0].freq_str,
+                length=da_concat.shape[0],
+            )
+
+            da_concat = da_concat.assign_coords({time_dim_name: tindex})
+            da_concat = _xarray_with_attrs(
+                da_concat, series[0].static_covariates, series[0].hierarchy, metadata
+            )
+
+    else:
+        time_axes_equal = all(
+            list(
+                map(
+                    lambda t: t[0].has_same_time_as(t[1]), zip(series[0:-1], series[1:])
+                )
+            )
+        )
+        time_axes_ok = (
+            time_axes_equal
+            if not ignore_time_axis
+            else len({len(ts) for ts in series}) == 1
+        )
+
+        raise_if_not(
+            (
+                time_axes_ok
+                and (
+                    (axis == 1 and sample_axis_equal)
+                    or (axis == 2 and component_axis_equal)
+                )
+            ),
+            "When concatenating along component or sample dimensions, all the series must have the same time "
+            "axes (unless `ignore_time_axis` is True), or time axes of same lengths (if `ignore_time_axis` is "
+            "True), and all series must have the same number of samples (if concatenating along component "
+            "dimension), or the same number of components (if concatenating along sample dimension).",
+        )
+
+        # we concatenate raw values using Numpy because not all series might have the same time axes
+        # and joining using xarray.concatenate() won't work in some cases
+        concat_vals = np.concatenate([da.values for da in da_sequence], axis=axis)
 
         if axis == 1:
             # When concatenating along component dimension, we have to re-create a component index
             # we rely on the factory method of TimeSeries to disambiguate names later on if needed.
-            components = pd.Index([
+            component_index = pd.Index([
                 c for cl in [ts.components for ts in series] for c in cl
             ])
             static_covariates = (
                 _concat_static_covs(series)
                 if not ignore_static_covariates
-                else static_covariates
+                else series[0].static_covariates
             )
             hierarchy = None if drop_hierarchy else _concat_hierarchy(series)
+        else:
+            component_index = da_sequence[0].get_index(DIMS[1])
+            static_covariates = series[0].static_covariates
+            hierarchy = series[0].hierarchy
 
-    return series[0].__class__(
-        times=times,
-        values=vals,
-        components=components,
-        static_covariates=static_covariates,
-        hierarchy=hierarchy,
-        metadata=metadata,
-    )
+        da_concat = xr.DataArray(
+            concat_vals,
+            dims=(time_dim_name,) + DIMS[-2:],
+            coords={time_dim_name: series[0].time_index, DIMS[1]: component_index},
+            attrs={
+                STATIC_COV_TAG: static_covariates,
+                HIERARCHY_TAG: hierarchy,
+                METADATA_TAG: metadata,
+            },
+        )
+
+    return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)
 
 
 def slice_intersect(series: Sequence[TimeSeries]) -> list[TimeSeries]:
@@ -6177,24 +6135,3 @@ def _finite_rows_boundaries(
     last_finite_row = len(finite_rows) - finite_rows[::-1].argmax() - 1
 
     return first_finite_row, last_finite_row
-
-
-def _clean_components(components: pd.Index) -> pd.Index:
-    """Returns a `pd.Index` with unique string component / column names"""
-    # convert everything to string if needed
-    clist = [(col if isinstance(col, str) else str(col)) for col in components]
-
-    has_duplicate = len(set(clist)) != len(clist)
-    while has_duplicate:
-        # we may have to loop several times (e.g. we could have components ["0", "0_1", "0"] and not
-        # noticing when renaming the last "0" into "0_1" that "0_1" already exists...)
-        name_to_occurence = defaultdict(int)
-        for i in range(len(clist)):
-            name_to_occurence[clist[i]] += 1
-
-            if name_to_occurence[clist[i]] > 1:
-                clist[i] = clist[i] + f"_{name_to_occurence[clist[i]] - 1}"
-
-        has_duplicate = len(set(clist)) != len(clist)
-
-    return pd.Index(clist)

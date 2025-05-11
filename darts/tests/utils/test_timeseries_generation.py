@@ -95,8 +95,8 @@ class TestTimeSeriesGeneration:
                 value_amplitude=value_amplitude,
                 value_y_offset=value_y_offset,
             )
-            assert (sine_ts <= value_y_offset + value_amplitude).all().all()
-            assert (sine_ts >= value_y_offset - value_amplitude).all().all()
+            assert (sine_ts <= value_y_offset + value_amplitude).all_values().all()
+            assert (sine_ts >= value_y_offset - value_amplitude).all_values().all()
             assert len(sine_ts) == length_assert
 
         for length_assert in [1, 2, 5, 10, 100]:

@@ -10,10 +10,8 @@ import pytest
 import xarray as xr
 from scipy.stats import kurtosis, skew
 
+from darts import TimeSeries, concatenate, slice_intersect
 from darts.tests.conftest import POLARS_AVAILABLE
-
-# from darts.timeseries import TimeSeries, concatenate, slice_intersect
-from darts.timeseries_np import TimeSeries, concatenate, slice_intersect
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 from darts.utils.utils import expand_arr, freqs, generate_index
 
@@ -2151,7 +2149,7 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             ts.to_csv("blah.csv")
 
-    @patch("darts.timeseries_np.TimeSeries.to_dataframe")
+    @patch("darts.timeseries.TimeSeries.to_dataframe")
     def test_to_csv_deterministic(self, pddf_mock):
         ts = TimeSeries(
             times=pd.date_range("2000-01-01", periods=10),
@@ -2162,7 +2160,7 @@ class TestTimeSeries:
         ts.to_csv("test.csv")
         pddf_mock.assert_called_once()
 
-    @patch("darts.timeseries_np.TimeSeries.to_dataframe")
+    @patch("darts.timeseries.TimeSeries.to_dataframe")
     def test_to_csv_stochastic(self, pddf_mock):
         ts = TimeSeries(
             times=pd.date_range("2000-01-01", periods=10),

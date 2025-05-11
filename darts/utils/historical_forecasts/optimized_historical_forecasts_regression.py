@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
+from darts import TimeSeries
 from darts.logging import get_logger
-from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import (

@@ -22,11 +22,11 @@ else:
 import numpy as np
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers import MissingValuesFiller
-from darts.timeseries import TimeSeries
 
 
 class TestMissingValuesFiller:

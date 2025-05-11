@@ -14,12 +14,12 @@ from typing import Any, Optional
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
 from darts.logging import get_logger, raise_if_not
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
