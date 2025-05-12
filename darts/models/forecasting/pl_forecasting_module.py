@@ -410,6 +410,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 with_static_covs=False if self.predict_likelihood_parameters else True,
                 with_hierarchy=False if self.predict_likelihood_parameters else True,
                 pred_start=pred_start,
+                copy=False,
             )
             for batch_idx, (input_series, pred_start) in enumerate(
                 zip(batch_input_series, batch_pred_starts)

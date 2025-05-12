@@ -607,6 +607,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             with_static_covs=with_static_covs,
             with_hierarchy=with_hierarchy,
             pred_start=pred_start,
+            copy=False,
         )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
