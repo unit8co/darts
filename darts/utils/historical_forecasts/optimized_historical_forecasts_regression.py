@@ -178,13 +178,14 @@ def _optimized_historical_forecasts_last_points_only(
             )
 
         forecasts_list.append(
-            TimeSeries.from_times_and_values(
+            TimeSeries(
                 times=times,
                 values=forecast,
-                columns=forecast_components,
+                components=forecast_components,
                 static_covariates=series_.static_covariates,
                 hierarchy=series_.hierarchy,
                 metadata=series_.metadata,
+                copy=False,
             )
         )
     return forecasts_list
@@ -362,13 +363,14 @@ def _optimized_historical_forecasts_all_points(
             range(0, forecast.shape[0] * stride, stride)
         ):
             forecasts_.append(
-                TimeSeries.from_times_and_values(
+                TimeSeries(
                     times=new_times[step_fct : step_fct + forecast_horizon],
                     values=forecast[idx_ftc],
-                    columns=forecast_components,
+                    components=forecast_components,
                     static_covariates=series_.static_covariates,
                     hierarchy=series_.hierarchy,
                     metadata=series_.metadata,
+                    copy=False,
                 )
             )
 

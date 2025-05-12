@@ -1253,14 +1253,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             if last_points_only and last_points_values:
                 forecasts_list.append(
-                    TimeSeries.from_times_and_values(
-                        generate_index(
+                    TimeSeries(
+                        times=generate_index(
                             start=last_points_times[0],
                             end=last_points_times[-1],
                             freq=series_.freq * stride,
                         ),
-                        np.array(last_points_values),
-                        columns=(
+                        values=np.array(last_points_values),
+                        components=(
                             forecast_components
                             if forecast_components is not None
                             else series_.columns
@@ -1276,6 +1276,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             else None
                         ),
                         metadata=series_.metadata,
+                        copy=False,
                     )
                 )
             else:

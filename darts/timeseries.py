@@ -288,10 +288,6 @@ class TimeSeries:
             values = values.copy()
             components = components.copy()
 
-            if isinstance(times, pd.DatetimeIndex):
-                # DatetimeIndex has mutable freq with shallow copy
-                times.freq = deepcopy(times.freq)
-
         # clean component (column) names if needed (when names are not unique, or not strings)
         if len(set(components)) != len(components) or any([
             not isinstance(s, str) for s in components
@@ -345,6 +341,7 @@ class TimeSeries:
             freq = times.freq
             if freq is None:
                 freq = to_offset(times.inferred_freq)
+                times.freq = freq
 
             if freq is None:
                 raise_log(
@@ -359,7 +356,6 @@ class TimeSeries:
                 )
 
             freq_str: Optional[str] = freq.freqstr
-            times.freq = freq
         else:
             freq: int = times.step
             freq_str = None

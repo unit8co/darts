@@ -129,7 +129,7 @@ def _optimized_historical_forecasts(
         preds = predictions[pred_idx_start:pred_idx_end]
         if last_points_only:
             # torch predictions come with the entire horizon: we extract last values
-            preds = TimeSeries.from_times_and_values(
+            preds = TimeSeries(
                 times=generate_index(
                     start=preds[0].end_time(),
                     length=len(preds),
@@ -138,10 +138,11 @@ def _optimized_historical_forecasts(
                 values=np.concatenate(
                     [p.all_values(copy=False)[-1:, :, :] for p in preds], axis=0
                 ),
-                columns=preds[0].columns,
+                components=preds[0].columns,
                 static_covariates=preds[0].static_covariates,
                 hierarchy=preds[0].hierarchy,
                 metadata=preds[0].metadata,
+                copy=False,
             )
         forecasts_list.append(preds)
     return forecasts_list
