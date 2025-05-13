@@ -1976,7 +1976,7 @@ class _ClassifierMixin:
         *args,
         **kwargs,
     ):
-        super().fit(
+        self = super().fit(
             *args,
             **kwargs,
         )
@@ -2003,6 +2003,7 @@ class _ClassifierMixin:
                             f"{[estimator_classes for estimator_classes in classes[i::num_components]]}"
                         )
                     )
+        return self
 
     @property
     def class_labels(self):
