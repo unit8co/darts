@@ -29,7 +29,10 @@ from darts.models.forecasting.xgboost import XGBClassifierModel
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import _get_likelihood
+from darts.utils.likelihood_models.sklearn import (
+    ClassProbabilityLikelihood,
+    _get_likelihood,
+)
 from darts.utils.multioutput import MultiOutputClassifier
 from darts.utils.utils import NotImportedModule
 
@@ -900,7 +903,10 @@ class TestProbabilisticClassifierModels:
         )
 
         model = clf(lags=2, **kwargs, likelihood=None)
+        assert model.likelihood is None
         model_likelihood = clf(lags=2, **kwargs)
+        assert isinstance(model_likelihood.likelihood, ClassProbabilityLikelihood)
+
         model.fit(series_train)
         model_likelihood.fit(series_train)
         assert model_likelihood.predict(5, series_train) == model.predict(
@@ -979,8 +985,21 @@ class TestProbabilisticClassifierModels:
             n=1, series=series_test, predict_likelihood_parameters=True
         )
 
+        list_of_probas2 = (
+            model.untrained_model()
+            .fit(series_train)
+            .predict(n=1, series=series_test, predict_likelihood_parameters=True)
+        )
+
         if not multi_series:
             list_of_probas = [list_of_probas]
+            list_of_probas2 = [list_of_probas2]
+
+        # Probability are reproducible
+        assert np.all([
+            np.allclose(p1.all_values(), p2.all_values())
+            for p1, p2 in zip(list_of_probas, list_of_probas2)
+        ])
 
         # Sum of class proba is 1 (x2 component must be 2)
         total_probas = len(
@@ -1095,10 +1114,7 @@ class TestProbabilisticClassifierModels:
         "clf_params",
         zip(process_model_list(probabilistic_classifiers), rmse_class_sample),
     )
-    def test_multi_sample_with_class_probabilities(
-        self,
-        clf_params,
-    ):
+    def test_multi_sample_with_class_probabilities(self, clf_params):
         """
         The distribution of samples corresponds to the distribution of labels in the TS
         """
@@ -1130,3 +1146,13 @@ class TestProbabilisticClassifierModels:
         count /= len(preds)
         rmse = np.mean((count - true_probas) ** 2) ** 0.5
         assert rmse < model_rmse
+
+        # reproducible samples when call order is the same (and also with transferable series)
+        model = model.untrained_model().fit(series)
+        preds_2 = model.predict(n=1, num_samples=100, series=series).all_values()
+        assert (preds == preds_2).all()
+
+        # different samples when call order changes
+        preds_3 = model.predict(n=1, num_samples=100).all_values()
+        with pytest.raises(AssertionError):
+            np.testing.assert_array_almost_equal(preds_2, preds_3)
