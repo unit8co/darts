@@ -544,9 +544,10 @@ class TestSKLearnModels:
         with pytest.raises(ValueError):
             model(lags=None, lags_future_covariates={}, multi_models=mode)
 
-    @pytest.mark.parametrize("mode", [True, False])
-    def test_training_data_creation(self, mode):
+    @pytest.mark.parametrize("config", product([True, False], [1, 2]))
+    def test_training_data_creation(self, config):
         """testing _get_training_data function"""
+        mode, stride = config
         # lags defined using lists of integers
         model_instance = SKLearnModel(
             lags=self.lags_1["target"],
@@ -555,20 +556,28 @@ class TestSKLearnModels:
             multi_models=mode,
         )
 
-        max_samples_per_ts = 17
+        if stride == 2:
+            # stride == 2 with max samples == 9 should end up at the same last
+            # sample as stride ==1 and max samples == 17
+            max_samples_per_ts = 9
+        else:
+            max_samples_per_ts = 17
 
         training_samples, training_labels, _ = model_instance._create_lagged_data(
             series=self.target_series,
             past_covariates=self.past_covariates,
             future_covariates=self.future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            stride=stride,
         )
 
         # checking number of dimensions
         assert len(training_samples.shape) == 2  # samples, features
         assert len(training_labels.shape) == 2  # samples, components (multivariate)
         assert training_samples.shape[0] == training_labels.shape[0]
-        assert training_samples.shape[0] == len(self.target_series) * max_samples_per_ts
+        assert training_samples.shape[0] == (
+            len(self.target_series) * max_samples_per_ts
+        )
         assert (
             training_samples.shape[1]
             == len(self.lags_1["target"]) * self.target_series[0].width
@@ -2134,11 +2143,12 @@ class TestSKLearnModels:
                 else []
             ),
             [False, True],
+            [1, 3],
         ),
     )
     def test_val_set(self, config):
         """Test whether the evaluation set parameters are passed to the wrapped regression model."""
-        (model_cls, model_kwargs, model_loc, model_import), use_weights = config
+        (model_cls, model_kwargs, model_loc, model_import), use_weights, stride = config
         module_name, model_name = model_import.split(".")
         # mocking `fit` loses function signature. MultiOutputRegressor checks the function signature
         # internally, so we have to overwrite the mocked function signature with the original one.
@@ -2148,10 +2158,16 @@ class TestSKLearnModels:
         with patch(f"darts.models.forecasting.{model_loc}.fit") as fit_patch:
             fit_patch.__signature__ = fit_sig
             self.helper_check_val_set(
-                model_cls, model_kwargs, fit_patch, use_weights=use_weights
+                model_cls,
+                model_kwargs,
+                fit_patch,
+                use_weights=use_weights,
+                stride=stride,
             )
 
-    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch, use_weights):
+    def helper_check_val_set(
+        self, model_cls, model_kwargs, fit_patch, use_weights, stride
+    ):
         series1 = tg.sine_timeseries(length=10, column_name="tg_1")
         series2 = tg.sine_timeseries(length=10, column_name="tg_2") / 2 + 10
         series = series1.stack(series2)
@@ -2195,6 +2211,7 @@ class TestSKLearnModels:
                 val_past_covariates=pc,
                 val_future_covariates=fc["fc1"],
                 early_stopping_rounds=2,
+                stride=stride,
                 **weights_kwargs,
             )
         msg_expected = (
@@ -2212,6 +2229,7 @@ class TestSKLearnModels:
                 val_series=[series, series["tg_1"]],
                 val_past_covariates=[pc, pc],
                 val_future_covariates=[fc, fc["fc1"]],
+                stride=stride,
                 early_stopping_rounds=2,
                 **weights_kwargs,
             )
@@ -2229,18 +2247,21 @@ class TestSKLearnModels:
             val_past_covariates=pc,
             val_future_covariates=fc,
             early_stopping_rounds=2,
+            stride=stride,
             **weights_kwargs,
         )
         # fit called 6 times (3 quantiles * 2 target features)
         assert fit_patch.call_count == 6
 
         X_train, y_train = fit_patch.call_args[0]
+        assert len(X_train) == len(y_train) == 6 // stride
 
         # check weights in training set
         weight_train = None
         if use_weights:
             assert "sample_weight" in fit_patch.call_args[1]
             weight_train = fit_patch.call_args[1]["sample_weight"]
+            assert len(weight_train) == 6 // stride
 
         # check eval set
         eval_set_name, eval_weight_name = model.val_set_params
@@ -2257,17 +2278,21 @@ class TestSKLearnModels:
 
             assert isinstance(eval_set, Pool)
             X, y = eval_set.get_features(), eval_set.get_label()
+            assert len(X) == len(y) == 6 // stride
             if use_weights:
                 weight = np.array(eval_set.get_weight())
+                assert len(weight) == 6 // stride
 
         else:
             assert isinstance(eval_set, tuple) and len(eval_set) == 2
             X, y = eval_set
+            assert len(X) == len(y) == 6 // stride
             if use_weights:
                 assert eval_weight_name in fit_patch.call_args[1]
                 weight = fit_patch.call_args[1][eval_weight_name]
                 assert isinstance(weight, list)
                 weight = weight[0]
+                assert len(weight) == 6 // stride
 
         # check same number of features for each dataset
         assert X.shape[1:] == X_train.shape[1:]

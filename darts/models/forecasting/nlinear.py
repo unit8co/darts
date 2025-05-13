@@ -3,20 +3,19 @@ N-Linear
 ------
 """
 
-from typing import Optional
-
 import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 
-class _NLinearModule(PLMixedCovariatesModule):
+class _NLinearModule(PLForecastingModule):
     """
     NLinear module
     """
@@ -108,16 +107,18 @@ class _NLinearModule(PLMixedCovariatesModule):
             )
 
     @io_processor
-    def forward(
-        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ):
+    def forward(self, x_in: PLModuleInput):
         """
         x_in
-            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
-            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+            comes as tuple `(x, x_future, x_static)` where `x` is the past target, past covariates and
+            historic future covariate chunk and `x_future` is the (non-historic) future chunk.
+            Input dimensions are `(n_samples, n_time_steps, n_variables)`
         """
         x, x_future, x_static = x_in  # x: (batch, in_len, in_dim)
+        # we clone `x`, to avoid value mutation from normalization when performing auto-regression
+        x = x.clone()
         batch, _, _ = x.shape
+        seq_last = None
 
         if self.shared_weights:
             # discard covariates, to ensure that in_dim == out_dim
@@ -125,7 +126,7 @@ class _NLinearModule(PLMixedCovariatesModule):
             x = x.permute(0, 2, 1)  # (batch, out_dim, in_len)
 
             if self.normalize:
-                seq_last = x[:, :, -1:].detach()  # (batch, out_dim, 1)
+                seq_last = x[:, :, -1:].detach().clone()  # (batch, out_dim, 1)
                 x = x - seq_last
 
             x = self.layer(x)  # (batch, out_dim, out_len * nr_params)
@@ -140,10 +141,11 @@ class _NLinearModule(PLMixedCovariatesModule):
             x = x.permute(0, 2, 1, 3)
         else:
             if self.normalize:
-                # get last values only for target features
-                seq_last = x[:, -1:, : self.output_dim].detach().clone()
-                # normalize the target features only (ignore the covariates)
-                x[:, :, : self.output_dim] = x[:, :, : self.output_dim] - seq_last
+                # get last values for all x but not future covariates
+                past_dim = self.input_dim - self.future_cov_dim
+                seq_last = x[:, -1:, :past_dim].detach().clone()
+                # normalize the input
+                x[:, :, :past_dim] -= seq_last
 
             x = self.layer(x.view(batch, -1))  # (batch, out_len * out_dim * nr_params)
             x = x.view(
@@ -171,10 +173,12 @@ class _NLinearModule(PLMixedCovariatesModule):
                     batch, self.output_chunk_length, self.output_dim * self.nr_params
                 )
 
-            x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
             if self.normalize:
-                # model only forecasts target components, no need to slice
-                x = x + seq_last.view(seq_last.shape + (1,))
+                # Reverse the normalization for the target
+                x = x + seq_last[:, :, : self.output_dim]
+
+            x = x.view(batch, self.output_chunk_length, self.output_dim, self.nr_params)
+
         return x
 
 
@@ -186,7 +190,7 @@ class NLinearModel(MixedCovariatesTorchModel):
         output_chunk_shift: int = 0,
         shared_weights: bool = False,
         const_init: bool = True,
-        normalize: bool = False,
+        normalize: bool = True,
         use_static_covariates: bool = True,
         **kwargs,
     ):
@@ -230,7 +234,10 @@ class NLinearModel(MixedCovariatesTorchModel):
             initialization is used (default='True').
         normalize
             Whether to apply the simple "normalization" proposed in the paper, which consists
-            in subtracting the last value of the input sequence from the input sequence. Default: False.
+            in subtracting the last value of the input sequence from the input sequence. This is applied for the target
+            series and past covariates, but not future covariates because it would defeat the use of encoders (see
+            `add_encoders`). Without normalization, the models behaves like the simple Linear model proposed in the
+            paper. Default: True.
 
             .. note::
                 This cannot be applied to probabilistic models.
@@ -424,32 +431,34 @@ class NLinearModel(MixedCovariatesTorchModel):
             "normalize = True cannot be used with probabilistic NLinearModel",
         )
 
-    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
-        # samples are made of
-        # (past_target, past_covariates, historic_future_covariates,
-        #  future_covariates, static_covariates, future_target)
-
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
+        (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
+            train_sample
+        )
         raise_if(
             self.shared_weights
-            and (train_sample[1] is not None or train_sample[2] is not None),
-            "Covariates have been provided, but the model has been built with shared_weights=True."
-            + "Please set shared_weights=False to use covariates.",
+            and (past_covariates is not None or future_covariates is not None),
+            "Covariates have been provided, but the model has been built with `shared_weights=True`."
+            + "Please set `shared_weights=False` to use covariates.",
         )
 
-        input_dim = train_sample[0].shape[1] + sum(
+        input_dim = past_target.shape[1] + sum(
             # add past covariates dim and historic future covariates dim, if present
-            train_sample[i].shape[1] if train_sample[i] is not None else 0
-            for i in (1, 2)
+            cov.shape[1] if cov is not None else 0
+            for cov in (past_covariates, future_covariates)
         )
-        future_cov_dim = train_sample[3].shape[1] if train_sample[3] is not None else 0
+        future_cov_dim = (
+            future_covariates.shape[1] if future_covariates is not None else 0
+        )
 
-        if train_sample[4] is None:
+        if static_covariates is None:
             static_cov_dim = 0
         else:
             # account for component-specific or shared static covariates representation
-            static_cov_dim = train_sample[4].shape[0] * train_sample[4].shape[1]
+            static_cov_dim = static_covariates.shape[0] * static_covariates.shape[1]
 
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
 
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
@@ -464,10 +473,6 @@ class NLinearModel(MixedCovariatesTorchModel):
             normalize=self.normalize,
             **self.pl_module_params,
         )
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
 
     @property
     def supports_static_covariates(self) -> bool:
