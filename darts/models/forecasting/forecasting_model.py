@@ -1178,6 +1178,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             past_covariates=past_covariates_,
                             future_covariates=future_covariates_,
                             sample_weight=sample_weight_,
+                            verbose=verbose,
                             **fit_kwargs,
                         )
                     else:
