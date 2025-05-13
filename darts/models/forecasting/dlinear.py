@@ -3,21 +3,16 @@ D-Linear
 --------
 """
 
-from typing import Optional
-
 import torch
 import torch.nn as nn
 
 from darts.logging import raise_if
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-
-MixedCovariatesTrainTensorType = tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 
 class _MovingAvg(nn.Module):
@@ -61,7 +56,7 @@ class _SeriesDecomp(nn.Module):
         return res, moving_mean
 
 
-class _DLinearModule(PLMixedCovariatesModule):
+class _DLinearModule(PLForecastingModule):
     """
     DLinear module
     """
@@ -155,9 +150,7 @@ class _DLinearModule(PLMixedCovariatesModule):
             )
 
     @io_processor
-    def forward(
-        self, x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ):
+    def forward(self, x_in: PLModuleInput):
         """
         x_in
             comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
@@ -469,34 +462,34 @@ class DLinearModel(MixedCovariatesTorchModel):
         self.const_init = const_init
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(
-        self, train_sample: MixedCovariatesTrainTensorType
-    ) -> torch.nn.Module:
-        # samples are made of
-        # (past_target, past_covariates, historic_future_covariates,
-        #  future_covariates, static_covariates, future_target)
-
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
+        (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
+            train_sample
+        )
         raise_if(
             self.shared_weights
-            and (train_sample[1] is not None or train_sample[2] is not None),
-            "Covariates have been provided, but the model has been built with shared_weights=True. "
-            "Please set shared_weights=False to use covariates.",
+            and (past_covariates is not None or future_covariates is not None),
+            "Covariates have been provided, but the model has been built with `shared_weights=True`. "
+            "Please set `shared_weights=False` to use covariates.",
         )
 
-        input_dim = train_sample[0].shape[1] + sum(
+        input_dim = past_target.shape[1] + sum(
             # add past covariates dim and historic future covariates dim, if present
-            train_sample[i].shape[1] if train_sample[i] is not None else 0
-            for i in (1, 2)
+            cov.shape[1] if cov is not None else 0
+            for cov in (past_covariates, future_covariates)
         )
-        future_cov_dim = train_sample[3].shape[1] if train_sample[3] is not None else 0
+        future_cov_dim = (
+            future_covariates.shape[1] if future_covariates is not None else 0
+        )
 
-        if train_sample[4] is None:
+        if static_covariates is None:
             static_cov_dim = 0
         else:
             # account for component-specific or shared static covariates representation
-            static_cov_dim = train_sample[4].shape[0] * train_sample[4].shape[1]
+            static_cov_dim = static_covariates.shape[0] * static_covariates.shape[1]
 
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         return _DLinearModule(
@@ -510,10 +503,6 @@ class DLinearModel(MixedCovariatesTorchModel):
             const_init=self.const_init,
             **self.pl_module_params,
         )
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
 
     @property
     def supports_static_covariates(self) -> bool:
