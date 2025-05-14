@@ -93,7 +93,6 @@ HIERARCHY_TAG = "hierarchy"
 METADATA_TAG = "metadata"
 
 # TODO:
-# - check time index handling in `from_dataframe`, probably apply to `__init__`
 # - check mutability
 # - remove other than `raise_log`
 
@@ -306,6 +305,22 @@ class TimeSeries:
         has_frequency = (
             has_datetime_index and times.freq is not None
         ) or has_range_index
+
+        if has_datetime_index:
+            time_zone = times.tz
+            if time_zone is not None:
+                # TODO: potential to use time zone-aware index since `TimeSeries` was refactored
+                #  to use numpy as backend
+                # force time-index to be timezone naive
+                times = times.tz_localize(None)
+                logger.warning(
+                    "The provided DatetimeIndex was associated with a timezone, which is currently. "
+                    "To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                    f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
+                    "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                    "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                    "original timezone."
+                )
 
         if not has_frequency:
             # can only be `pd.DatetimeIndex` or int `pd.Index` (not `pd.RangeIndex`)
@@ -886,8 +901,8 @@ class TimeSeries:
         # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
         if time_zone is not None:
             logger.warning(
-                "The provided DatetimeIndex was associated with a timezone, which is currently not supported "
-                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                "The provided DatetimeIndex was associated with a timezone, which is currently not supported. "
+                "To avoid unexpected behaviour, the tz information was removed. Consider calling "
                 f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
                 "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
                 "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
