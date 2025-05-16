@@ -2093,6 +2093,43 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             ts.to_csv("test.csv")
 
+    @pytest.mark.parametrize("config", [True, False])
+    def test_schema(self, config):
+        if config:
+            times = pd.date_range("2000-01-01", periods=3, freq="2d", name="idx_test")
+        else:
+            times = pd.RangeIndex(start=0, stop=2 * 3, step=2, name="idx_test")
+
+        values = np.zeros((len(times), 2, 1))
+        components = pd.Index(["a", "b"])
+        static_covariates = pd.DataFrame({"sc1": [0.5]})
+        hierarchy = {"a": ["b"]}
+        metadata = {"metadata": "test"}
+        ts = TimeSeries.from_times_and_values(
+            times=times,
+            values=values,
+            columns=components,
+            static_covariates=static_covariates,
+            hierarchy=hierarchy,
+            metadata=metadata,
+        )
+
+        schema_expected = {
+            "time_freq": ts.freq,
+            "time_name": ts.time_index.name,
+            "columns": ts.components,
+            "static_covariates": ts.static_covariates,
+            "hierarchy": ts.hierarchy,
+            "metadata": ts.metadata,
+        }
+        schema_actual = ts.schema(copy=True)
+
+        for k, v_exp in schema_expected.items():
+            if isinstance(v_exp, (pd.DataFrame, pd.Index)):
+                assert schema_actual[k].equals(v_exp)
+            else:
+                assert schema_actual[k] == v_exp
+
 
 class TestTimeSeriesConcatenate:
     #
