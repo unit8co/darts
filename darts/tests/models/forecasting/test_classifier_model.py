@@ -33,8 +33,12 @@ from darts.utils.likelihood_models.sklearn import (
     ClassProbabilityLikelihood,
     _get_likelihood,
 )
-from darts.utils.multioutput import MultiOutputClassifier
-from darts.utils.utils import NotImportedModule
+from darts.utils.multioutput import (
+    MultiOutputClassifier,
+    MultiOutputRegressor,
+    get_multioutput_estimator_cls,
+)
+from darts.utils.utils import ModelType, NotImportedModule
 
 lgbm_available = not isinstance(LightGBMClassifierModel, NotImportedModule)
 cb_available = not isinstance(CatBoostClassifierModel, NotImportedModule)
@@ -726,6 +730,25 @@ class TestClassifierModel:
             else:
                 assert False, f"{clf} need to be tested for fit arguments"
 
+    def test_get_multioutput_estimator_cls(self):
+        assert (
+            get_multioutput_estimator_cls(ModelType.FORECASTING_CLASSIFIER)
+            == MultiOutputClassifier
+        )
+        assert (
+            get_multioutput_estimator_cls(ModelType.FORECASTING_REGRESSOR)
+            == MultiOutputRegressor
+        )
+
+        with pytest.raises(ValueError) as err:
+            get_multioutput_estimator_cls(model_type="not_a_correct_model_type")
+        assert (
+            str(err.value)
+            == "Model type must be one of ['ModelType.FORECASTING_REGRESSOR', 'ModelType.FORECASTING_CLASSIFIER']"
+            " to be supported by multioutput wrapper."
+            "'not_a_correct_model_type' received instead."
+        )
+
 
 @pytest.fixture(autouse=True)
 def random():
@@ -1034,7 +1057,7 @@ class TestProbabilisticClassifierModels:
             accepted_rmse=rmse_margin,
         )
 
-    def test_warning_on_no_predict_proba(self, caplog):
+    def test_bad_behavior_model_properties(self, caplog):
         class NoPredictProbaModel:
             def fit(*args):
                 pass
@@ -1077,6 +1100,79 @@ class TestProbabilisticClassifierModels:
                 )
                 for message in caplog.messages
             ])
+
+        class NoClassLabelsModel:
+            def fit(*args):
+                pass
+
+            def predict(*args):
+                pass
+
+            def predict_proba(*args):
+                pass
+
+            def __sklearn_tags__(self):
+                return Tags(estimator_type="classifier", target_tags=None)
+
+        model = NoClassLabelsModel()
+        likelihood = ClassProbabilityLikelihood(n_outputs=1, random_state=42)
+        with pytest.raises(ValueError) as err:
+            likelihood.fit(model)
+        assert (
+            str(err.value)
+            == "The model must have a `class_labels` attribute to fit the likelihood."
+        )
+
+        class NotSummingToOneProbasModel:
+            def __init__(self, gap_to_one: int):
+                self.gap_to_one = gap_to_one
+
+            def fit(*args):
+                pass
+
+            def predict(*args):
+                pass
+
+            def predict_proba(self, *args):
+                return np.array([[0.3, 0.2, 0.5], [0.3, 0.2, 0.5]]) - (
+                    self.gap_to_one / 3
+                )
+
+            @property
+            def class_labels(self):
+                return np.array([0, 1, 2])
+
+            def __sklearn_tags__(self):
+                return Tags(estimator_type="classifier", target_tags=None)
+
+        tolerance = 0.0000001
+
+        # difference is smaller than tolerance, probability will be adjusted to sum up to one
+        small_diff_model = NotSummingToOneProbasModel(tolerance / 2)
+        small_diff_model.model = small_diff_model
+        likelihood.fit(small_diff_model)
+        likelihood.predict(
+            small_diff_model,
+            np.array([0]),
+            num_samples=2,
+            predict_likelihood_parameters=False,
+        )
+
+        # difference is larger than tolerance, error is raised
+        large_diff_model = NotSummingToOneProbasModel(tolerance * 2)
+        large_diff_model.model = large_diff_model
+        likelihood.fit(large_diff_model)
+        with pytest.raises(ValueError) as err:
+            likelihood.predict(
+                large_diff_model,
+                np.array([0]),
+                num_samples=2,
+                predict_likelihood_parameters=False,
+            )
+        assert (
+            str(err.value)
+            == "The class probabilities returned by the model do not sum to one"
+        )
 
     def test_class_probability_component_names(self):
         series_train, _, _, _, _, _ = generate_random_series_with_probabilities(
