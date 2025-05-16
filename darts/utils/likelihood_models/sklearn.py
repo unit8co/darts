@@ -550,39 +550,42 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         # shape (output_chunk_length, n_series * n_samples, n_components)
         preds = np.empty((n_output, n_samples, n_component), dtype=int)
 
-        for output_idx in range(n_output):
-            for sample_idx in range(n_samples):
-                for component_idx, (component_start, component_end) in enumerate(
-                    zip(
-                        self._index_first_param_per_component[:-1],
-                        self._index_first_param_per_component[1:],
+        # Some models have an approximation error, the probabilities are adjusted
+        # if their total is below the 1e-7 tolerance threshold around 1.
+        for component_idx, (component_start, component_end) in enumerate(
+            zip(
+                self._index_first_param_per_component[:-1],
+                self._index_first_param_per_component[1:],
+            )
+        ):
+            component_probabilities = model_output[:, :, component_start:component_end]
+            total_proba = component_probabilities.sum(
+                axis=2
+            )  # shape  (n_output, n_samples)
+            difference = np.ones((n_output, n_samples)) - total_proba
+            tolerance = 1e-7
+            if np.any(np.abs(difference) > tolerance):
+                raise_log(
+                    ValueError(
+                        "The class probabilities returned by the model do not sum to one"
                     )
-                ):
-                    # Some models have an approximation error, the probabilities are adjusted
-                    # if their total is below the 1e-7 tolerance threshold around 1.
-                    probabilities = model_output[
-                        output_idx, sample_idx, component_start:component_end
-                    ]
-                    total_proba = np.sum(probabilities)
-                    tolerance = 0.0000001
-                    if total_proba != 1:
-                        if total_proba > 1 + tolerance or total_proba < 1 - tolerance:
-                            raise_log(
-                                ValueError(
-                                    "The class probabilities returned by the model do not sum to one"
-                                )
-                            )
-                        difference = (1 - np.sum(probabilities)) / len(probabilities)
-                        probabilities += difference
+                )
 
-                    preds[output_idx, sample_idx, component_idx] = self._rng.choice(
-                        self._classes[output_idx],
-                        p=model_output[
-                            output_idx, sample_idx, component_start:component_end
-                        ],
-                    )
+            component_probabilities += (
+                difference[:, :, np.newaxis] / component_probabilities.shape[2]
+            )
 
-        # reshape to (n_series * n_samples, output_chunk_length, n_components)
+            # argmax stops at the first True
+            # first time the random sample is greater than cumulative probability
+            # [0.2, 0.1, 0.5, 0.2] -> [0.2, 0.3, 0.8, 1]
+            # random: 0.7 -> idx = 2, this outcomes has 0.5 probability of happening
+            sampled_idx = np.argmax(
+                self._rng.uniform(0, 1, size=(difference.shape))[:, :, np.newaxis]
+                < np.cumsum(component_probabilities, axis=2),
+                axis=2,
+            )
+            preds[:, :, component_idx] = np.take(self._classes, sampled_idx)
+
         return preds.transpose(1, 0, 2)
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
