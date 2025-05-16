@@ -612,14 +612,14 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         >>> pred = model.predict(6)
         >>> pred.values()
         array([[0.],
-                [0.],
-                [0.],
-                [1.],
-                [1.],
-                [1.]])
+               [0.],
+               [0.],
+               [1.],
+               [1.],
+               [1.]])
         """
 
-        # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
+        # likelihood always set to ClassProbability as it's the only supported classification likelihood
         # this allow users to predict class probabilities,
         # by setting `predict_likelihood_parameters`to `True` in `predict()`
         super().__init__(
@@ -645,17 +645,14 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         """Instantiate the underlying CatBoostClassifier model"""
 
         # `CatBoostClassifier.predict` lacks a dimension when the task is binary classification compared to multi-class
-        # We override the predict function to unify its oztput shape, this is required for
+        # We override the predict function to unify its output shape, this is required for
         # multivariate series with binary and multi-class classification target.
         # Wrapping `CatBoostClassifier` is necessary as sklearn MultiOutput is using `sklearn.base.clone`
         # which would ignores any modification to applied to a model instance.
-        class CatBoostClassifierWrapper(CatBoostClassifier):
-            def __init__(self, *args, **kwargs):
-                super().__init__(*args, **kwargs)
-                self._wrapped_predict = super().predict
 
+        class CatBoostClassifierWrapper(CatBoostClassifier):
             def predict(self, *args, **kwargs):
-                prediction = self._wrapped_predict(*args, **kwargs)
+                prediction = super().predict(*args, **kwargs)
                 if len(prediction.shape) == 1:
                     prediction = prediction.reshape(prediction.shape[0], 1)
                 return prediction

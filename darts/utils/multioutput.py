@@ -166,8 +166,7 @@ def get_multioutput_estimator_cls(model_type: ModelType) -> type[MultiOutputMixi
     else:
         raise_log(
             ValueError(
-                "Model type must be one of ['ModelType.FORECASTING_REGRESSOR', 'ModelType.FORECASTING_CLASSIFIER'] "
-                "to be supported by multioutput wrapper."
-                f"'{model_type}' received instead."
+                "Model type must be one of `[ModelType.FORECASTING_REGRESSOR, ModelType.FORECASTING_CLASSIFIER]`. "
+                f"Received: `{model_type}`."
             )
         )

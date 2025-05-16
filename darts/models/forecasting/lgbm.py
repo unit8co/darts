@@ -231,12 +231,6 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         multi_models: bool,
         quantiles: Optional[list[float]] = None,
     ):
-        # parse likelihood
-        if likelihood is not None:
-            self.kwargs["objective"] = likelihood
-            if likelihood == LikelihoodType.Quantile.value:
-                self._model_container = _QuantileModelContainer()
-
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
@@ -244,6 +238,12 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             quantiles=quantiles,
             available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
         )
+
+        # parse likelihood
+        if likelihood is not None:
+            self.kwargs["objective"] = likelihood
+            if likelihood == LikelihoodType.Quantile.value:
+                self._model_container = _QuantileModelContainer()
 
     def fit(
         self,
@@ -521,11 +521,11 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
         >>> pred = model.predict(6)
         >>> pred.values()
         array([[0.],
-                [0.],
-                [0.],
-                [1.],
-                [1.],
-                [0.]])
+               [0.],
+               [0.],
+               [1.],
+               [1.],
+               [0.]])
         """
 
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood

@@ -14,6 +14,7 @@ try:
     from darts.models.forecasting.lgbm import LightGBMClassifierModel, LightGBMModel
 except ModuleNotFoundError:
     LightGBMModel = NotImportedModule(module_name="LightGBM", warn=False)
+    LightGBMClassifierModel = NotImportedModule(module_name="LightGBM", warn=False)
 
 # Forecasting
 from darts.models.forecasting.arima import ARIMA
@@ -93,6 +94,8 @@ try:
     )
 except ModuleNotFoundError:
     CatBoostModel = NotImportedModule(module_name="CatBoost", warn=False)
+    CatBoostClassifierModel = NotImportedModule(module_name="CatBoost", warn=False)
+
 
 try:
     from darts.models.forecasting.sf_auto_arima import AutoARIMA
@@ -126,6 +129,7 @@ try:
     from darts.models.forecasting.xgboost import XGBClassifierModel, XGBModel
 except ImportError:
     XGBModel = NotImportedModule(module_name="XGBoost")
+    XGBClassifierModel = NotImportedModule(module_name="XGBoost")
 
 # Filtering
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter

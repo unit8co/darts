@@ -1984,36 +1984,39 @@ class _ClassifierMixin:
     Mixin for sklearn-like classification forecasting models
     """
 
+    multi_models: bool
+    _output_chunk_length: int
+    class_labels: Union[list[np.ndarray], np.ndarray]
+    model: Any
+
     def fit(
         self,
         *args,
         **kwargs,
     ):
-        self = super().fit(
+        super().fit(
             *args,
             **kwargs,
         )
 
         classes = self.class_labels
-        # means multiple model have seen sub-part of the same compoents
-        # thus we need to make sure they have seeen the same classes during trainig
+        # means multiple models have seen sub-part of the same components
+        # thus we need to make sure they have seen the same classes during training
         if self.multi_models and self._output_chunk_length > 1:
             num_components = len(classes) // self._output_chunk_length
 
             # classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ..]
-            output_chunk_length = len(classes) // num_components
-            for i in range(output_chunk_length):
+            for i in range(self._output_chunk_length):
                 if any(
                     not np.array_equal(classes[i], estimator_classes)
                     for estimator_classes in classes[i::num_components]
                 ):
                     raise_log(
                         ValueError(
-                            "Models for the same target component were not trained on the same classes. "
-                            "This might be due to target series being too short or "
-                            "to the periodicity in the target series matching the number of estimator.\n"
-                            f"For component {i} classes are: "
-                            f"{[estimator_classes for estimator_classes in classes[i::num_components]]}"
+                            "Estimators for the same target component received different class labels "
+                            "during training. In most cases this occurs for shorter target series. "
+                            f"For component `{i}`, the observed classes for each step in the output chunk are: "
+                            f"`{[estimator_classes for estimator_classes in classes[i::num_components]]}`"
                         )
                     )
         return self
@@ -2024,7 +2027,12 @@ class _ClassifierMixin:
         classes = getattr(self.model, "classes_", None)
         if classes is None:
             return None
-        return self.model.classes_
+        # single-labels and single-model tasks should return a array of classes
+        # multi-labels or multi-models tasks should return a list of arraya of classes
+        # unify `class_labels` to a list of arrays of classes for simplicity
+        if not isinstance(classes, list):
+            classes = [classes]
+        return classes
 
     def _validate_lags(
         self,
@@ -2219,7 +2227,7 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
                     "to activate support for probabilistic forecasting."
                 )
             else:
-                message += "Probabilistic forecasting support not available."
+                message += "Probabilistic forecasting support deactivated."
             logger.warning(message)
             likelihood = None
 

@@ -237,7 +237,7 @@ class XGBModel(SKLearnModel):
             available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
         )
         if likelihood is not None:
-            if likelihood in {LikelihoodType.Poisson.value}:
+            if likelihood == LikelihoodType.Poisson.value:
                 self.kwargs["objective"] = f"count:{likelihood}"
             else:  # quantile
                 self.kwargs["objective"] = "reg:quantileerror"
@@ -494,21 +494,19 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
         >>> # predict 6 "will rain" values using the 12 past values of pressure and temperature,
         >>> # as well as the 6 pressure values corresponding to the forecasted period
         >>> model = XGBClassifierModel(
-        >>>     lags=12,
         >>>     lags_past_covariates=12,
         >>>     lags_future_covariates=[0,1,2,3,4,5],
         >>>     output_chunk_length=6,
-        >>>     verbose=-1
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
         >>> pred.values()
         array([[0.],
-                [0.],
-                [0.],
-                [1.],
-                [0.],
-                [0.]])
+               [0.],
+               [0.],
+               [1.],
+               [1.],
+               [1.]])
         """
 
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood

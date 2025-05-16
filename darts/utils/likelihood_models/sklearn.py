@@ -438,6 +438,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
             parameter_names=[],
         )
         self._index_first_param_per_component: Optional[np.ndarray] = None
+        self._classes: list[np.ndarray] = None
 
     def fit(self, model):
         """
@@ -456,17 +457,11 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
                 logger,
             )
 
-        # single-labels and single-model tasks should return a array of classes
-        # multi-labels or multi-models tasks should return a list of arraya of classes
-        # unify `class_labels` to a list of arrays of classes for simplicity
-        classes = model.class_labels
-        if not isinstance(classes, list):
-            classes = [classes]
-        self._classes = classes
+        self._classes = model.class_labels
 
         # estimators/classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ...]
         # Since classes are same across chunk for same component, we can just take the first chunk for each component
-        num_components = len(classes) // self._n_outputs
+        num_components = len(self._classes) // self._n_outputs
 
         # index of the first parameter of each component in the likelihood parameters
         # e.g. [0, 2, 4, 6] for 3 components with 2 parameters each
@@ -480,7 +475,9 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         )
 
         self._parameter_names = [
-            f"p_{int(label)}" for i in range(num_components) for label in classes[i]
+            f"p_{int(label)}"
+            for i in range(num_components)
+            for label in self._classes[i]
         ]
         return self
 
@@ -488,10 +485,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         """Generates names for the parameters of the Likelihood."""
         if self._index_first_param_per_component is None:
             raise_log(
-                ValueError(
-                    "`component_names` requires the likelihood to be fitted "
-                    "but `ClassProbabilityLikelihood` is not fitted."
-                )
+                ValueError("`component_names` requires the likelihood to be fitted.")
             )
         # format: <component_name>_p_<label>
         return [
@@ -564,7 +558,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
                         self._index_first_param_per_component[1:],
                     )
                 ):
-                    # Some models have an approxmiation error, the probabilities are adjusted
+                    # Some models have an approximation error, the probabilities are adjusted
                     # if their total is below the 1e-7 tolerance threshold around 1.
                     probabilities = model_output[
                         output_idx, sample_idx, component_start:component_end
@@ -600,7 +594,8 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
 
     def _get_median_prediction(self, model_output: np.ndarray) -> np.ndarray:
         """
-        Gets the median prediction per component extracted from the model output.
+        Gets the class label with highest predicted probability per component extracted
+         from the model output.
         """
         # shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)
         n_output, n_samples, n_params = model_output.shape
@@ -667,11 +662,11 @@ def _get_likelihood(
             logger=logger,
         )
 
-    if likelihood == "gaussian":
+    if likelihood == LikelihoodType.Gaussian.value:
         return GaussianLikelihood(n_outputs=n_outputs, random_state=random_state)
-    elif likelihood == "poisson":
+    elif likelihood == LikelihoodType.Poisson.value:
         return PoissonLikelihood(n_outputs=n_outputs, random_state=random_state)
-    elif likelihood == "quantile":
+    elif likelihood == LikelihoodType.Quantile.value:
         return QuantileRegression(
             n_outputs=n_outputs, random_state=random_state, quantiles=quantiles
         )

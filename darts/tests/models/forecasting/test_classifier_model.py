@@ -212,9 +212,11 @@ class TestClassifierModel:
         model.fit(
             series=self.sine_univariate1_cat, past_covariates=self.sine_univariate1
         )
-        # classes_ is a numpy array
-        assert isinstance(model.class_labels, np.ndarray)
-        assert ([0, 1, 2] == model.class_labels).all()
+        # classes_ is a list of numpy array
+        assert isinstance(model.class_labels, list)
+        assert len(model.class_labels) == 1
+        assert isinstance(model.class_labels[0], np.ndarray)
+        assert ([0, 1, 2] == model.class_labels[0]).all()
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_multiclass_class_labels(self, clf_params):
@@ -275,8 +277,8 @@ class TestClassifierModel:
         with pytest.raises(ValueError) as err:
             model.fit(series=series)
         assert str(err.value).startswith(
-            "Models for the same target component were not trained on the same classes. This might be due to target"
-            " series being too short or to the periodicity in the target series matching the number of estimator."
+            "Estimators for the same target component received different class labels "
+            "during training. In most cases this occurs for shorter target series. "
         )
 
         # if only one estimator due to multi_models=False, then there are no issue
@@ -744,9 +746,8 @@ class TestClassifierModel:
             get_multioutput_estimator_cls(model_type="not_a_correct_model_type")
         assert (
             str(err.value)
-            == "Model type must be one of ['ModelType.FORECASTING_REGRESSOR', 'ModelType.FORECASTING_CLASSIFIER']"
-            " to be supported by multioutput wrapper."
-            "'not_a_correct_model_type' received instead."
+            == "Model type must be one of `[ModelType.FORECASTING_REGRESSOR, ModelType.FORECASTING_CLASSIFIER]`. "
+            "Received: `not_a_correct_model_type`."
         )
 
 
@@ -1038,11 +1039,9 @@ class TestProbabilisticClassifierModels:
             len(labels_component2) if multi_variate else 0
         )
         assert np.all([len(p.components) == total_num_classes for p in list_of_probas])
+        assert np.all(model.class_labels[0] == labels_component1)
         if multi_variate:
-            assert np.all(model.class_labels[0] == labels_component1)
             assert np.all(model.class_labels[1] == labels_component2)
-        else:
-            assert np.all(model.class_labels == labels_component1)
 
         true_probas = (
             np.concatenate((probas_component1, probas_component2))
@@ -1073,7 +1072,7 @@ class TestProbabilisticClassifierModels:
             assert any([
                 message.startswith(
                     "`model` has no method with name `predict_proba()`. "
-                    "Probabilistic forecasting support not available."
+                    "Probabilistic forecasting support deactivated."
                 )
                 for message in caplog.messages
             ])
@@ -1140,7 +1139,7 @@ class TestProbabilisticClassifierModels:
 
             @property
             def class_labels(self):
-                return np.array([0, 1, 2])
+                return [np.array([0, 1, 2])]
 
             def __sklearn_tags__(self):
                 return Tags(estimator_type="classifier", target_tags=None)
@@ -1193,8 +1192,7 @@ class TestProbabilisticClassifierModels:
         with pytest.raises(ValueError) as err:
             model.likelihood.component_names(series_train)
         assert (
-            str(err.value) == "`component_names` requires the likelihood to be fitted "
-            "but `ClassProbabilityLikelihood` is not fitted."
+            str(err.value) == "`component_names` requires the likelihood to be fitted."
         )
 
         # once fitted, component_names are correct
@@ -1234,7 +1232,7 @@ class TestProbabilisticClassifierModels:
         )
 
         prediction = model.predict(n=1, num_samples=100)
-        count = np.zeros(len(model.class_labels))
+        count = np.zeros(len(model.class_labels[0]))
 
         preds = prediction.all_values().flatten()
         for i in preds:
