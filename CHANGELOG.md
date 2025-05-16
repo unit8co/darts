@@ -18,8 +18,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🟠 Renamed `RandomForest` to `RandomForestModel`. Using `RandomForest` will raise a depraction warning.
   - 🔴 Renamed `RegressionModelWithCategoricalCovariates` to `SKLearnModelWithCategoricalCovariates`. Removed `RegressionModelWithCategoricalCovariates`
 - Improvements to `TorchForecastingModel`: [#2802](https://github.com/unit8co/darts/pull/2802) by [Dennis Bader](https://github.com/dennisbader).
-  - Drastically improved prediction speed which is now up to 5.4 times as fast before. Using `n_jobs>1` now significantly boosts efficiency. This affects `predict()`, `historcial_forecasts()`, `backtest()`, `gridsearch()` and `residuals()`. The highest boost can be observed when calling historical forecasts, backtest, or residuals with `last_points_only=False`.
-  - Added parameter `values_only` to method `predict_from_dataset()` which will return a tuple of (prediction `np.ndarray`, target series schema, prediction start time) instead of `TimeSeries` objects.
+  - Drastically improved prediction speed which is now up to 5.4 times as fast before. This affects `predict()`, `historcial_forecasts()`, `backtest()`, `gridsearch()` and `residuals()`.
+  - Added parameter `values_only` to method `predict_from_dataset()` which will return a tuple of (prediction `np.ndarray`, target series schema, prediction start time) instead of `TimeSeries` objects. This allows to completely bypass `TimeSeries` for model inference with custom datasets.
 - 🔴 Improvements to `TorchForecastingModel` datasets: [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
   - We simplified the training and inference datasets. Instead of having covariates specific datasets, the new datasets now support all combinations of covariates natively:
     - `ShiftedTorchTrainingDataset` (replaces all `*ShiftedDataset`)
