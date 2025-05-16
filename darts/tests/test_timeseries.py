@@ -2170,6 +2170,58 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             ts.to_csv("test.csv")
 
+    def test_mutability(self):
+        shape = (5, 3, 2)
+        n = 5 * 3 * 2
+        idx = pd.RangeIndex(stop=5)
+        vals = np.arange(n, dtype=np.float32).reshape(shape)
+        # copy of original data (any mutations afterwards do not affect the original data)
+        ts = TimeSeries(times=idx, values=vals, copy=True)
+        ts_copy = ts.copy()
+
+        # copy of values
+        vals_ = ts.all_values(copy=True)
+        vals_[:] = 0.0
+        assert (vals_ == 0.0).all()
+        assert np.array_equal(ts.all_values(), np.arange(n).reshape(shape))
+        # original values are the same
+        assert np.array_equal(vals, np.arange(n).reshape(shape))
+        assert ts == ts_copy
+
+        # mutating values of a copies series leaves original series unchanged
+        ts2 = ts.copy()
+        vals_ = ts2.all_values(copy=False)
+        vals_[:] = 0.0
+        assert (vals_ == 0.0).all()
+        # copied series has mutated values
+        assert (ts2.all_values() == 0.0).all()
+        # original values are still the same
+        assert np.array_equal(vals, np.arange(n).reshape(shape))
+        assert np.array_equal(ts.all_values(), np.arange(n).reshape(shape))
+        assert ts == ts_copy
+        assert ts2 != ts_copy
+
+        # view of original data (any mutations afterwards affect the original data)
+        ts = TimeSeries(times=idx, values=vals, copy=False)
+
+        # copy of values
+        vals_ = ts.all_values(copy=True)
+        vals_[:] = 0.0
+        assert (vals_ == 0.0).all()
+        assert np.array_equal(ts.all_values(), np.arange(n).reshape(shape))
+        # original values are the same
+        assert np.array_equal(vals, np.arange(n).reshape(shape))
+        assert ts == ts_copy
+
+        # mutable values
+        vals_ = ts.all_values(copy=False)
+        vals_[:] = 0.0
+        assert (vals_ == 0.0).all()
+        assert (ts.all_values() == 0.0).all()
+        # original values are updated
+        assert (vals == 0.0).all()
+        assert ts != ts_copy
+
 
 class TestTimeSeriesConcatenate:
     #
