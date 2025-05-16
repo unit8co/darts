@@ -8,9 +8,9 @@ from typing import Any, Optional
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
-from darts.timeseries import TimeSeries
 from darts.utils.utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)

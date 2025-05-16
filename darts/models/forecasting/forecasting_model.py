@@ -42,13 +42,12 @@ else:
 import numpy as np
 import pandas as pd
 
-from darts import metrics
+from darts import TimeSeries, metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.metrics import METRIC_TYPE
-from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
@@ -608,6 +607,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             with_static_covs=with_static_covs,
             with_hierarchy=with_hierarchy,
             pred_start=pred_start,
+            copy=False,
         )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
@@ -1253,14 +1253,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             if last_points_only and last_points_values:
                 forecasts_list.append(
-                    TimeSeries.from_times_and_values(
-                        generate_index(
+                    TimeSeries(
+                        times=generate_index(
                             start=last_points_times[0],
                             end=last_points_times[-1],
                             freq=series_.freq * stride,
                         ),
-                        np.array(last_points_values),
-                        columns=(
+                        values=np.array(last_points_values),
+                        components=(
                             forecast_components
                             if forecast_components is not None
                             else series_.columns
@@ -1276,6 +1276,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             else None
                         ),
                         metadata=series_.metadata,
+                        copy=False,
                     )
                 )
             else:

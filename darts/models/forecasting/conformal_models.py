@@ -1288,6 +1288,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     ),
                     with_static_covs=not predict_likelihood_parameters,
                     with_hierarchy=False,
+                    copy=False,
                 )
             else:
                 for idx, pred in inner_iterator:
@@ -1300,6 +1301,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                         time_index=pred._time_index,
                         with_static_covs=not predict_likelihood_parameters,
                         with_hierarchy=False,
+                        copy=False,
                     )
                     cp_preds.append(cp_pred)
             cp_hfcs.append(cp_preds)

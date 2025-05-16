@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 from statsforecast.models import AutoARIMA as SFAutoARIMA
 
+from darts import TimeSeries
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
 from darts.logging import get_logger
 from darts.metrics import mape
@@ -43,7 +44,6 @@ from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import (
     ModelMode,
