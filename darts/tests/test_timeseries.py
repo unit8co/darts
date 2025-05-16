@@ -2638,11 +2638,6 @@ class TestTimeSeriesHeadTail:
         values=np.random.rand(10, 10, 10),
         components=["comp_" + str(i) for i in range(10)],
     )
-    # ts = TimeSeries.from_times_and_values(
-    #     times=pd.date_range("2000-01-01", periods=10),
-    #     values=np.random.rand(10, 10, 10),
-    #     columns=["comp_" + str(i) for i in range(10)],
-    # )
 
     def test_head_sunny_day_time_axis(self):
         result = self.ts.head()
@@ -2978,11 +2973,6 @@ class TestSimpleStatistics:
         values=values,
         components=["a", "b"],
     )
-    # ts = TimeSeries.from_times_and_values(
-    #     times=pd.date_range("2000-01-01", periods=10),
-    #     values=np.random.rand(10, 10, 10),
-    #     columns=["comp_" + str(i) for i in range(10)],
-    # )
 
     def test_mean(self):
         for axis in range(3):

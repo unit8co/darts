@@ -42,4 +42,4 @@ u8plots_mplstyle = {
 if os.getenv("DARTS_CONFIGURE_MATPLOTLIB", "1") != "0":
     mpl.rcParams.update(u8plots_mplstyle)
 
-__all__ = ["TimeSeries", "TimeSeriesNP", "concatenate", "slice_intersect"]
+__all__ = ["TimeSeries", "concatenate", "slice_intersect"]

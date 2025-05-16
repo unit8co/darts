@@ -87,9 +87,6 @@ DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 HIERARCHY_TAG = "hierarchy"
 METADATA_TAG = "metadata"
 
-# TODO:
-# - check mutability
-
 
 class TimeSeries:
     def __init__(
@@ -183,9 +180,9 @@ class TimeSeries:
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
-            Whether to copy the `times`, `values`, and `components` objects. It is highly recommended to leave
-            `copy=True`, as downstream tasks might mutate the original values. Darts internally leverages `copy=False`
-            for performance boosts when possible and with the guarantee that the original data remains unaffected.
+            Whether to copy the `times`, `values`, and `components` objects. Setting `copy=False` should be used with
+            care, as downstream tasks might mutate the original values. Darts internally leverages `copy=False` for
+            performance boosts when possible and with the guarantee that the original data remains unaffected.
 
         Returns
         -------
@@ -810,7 +807,6 @@ class TimeSeries:
         df = nw.from_native(df, eager_only=True, pass_through=False)
         time_zone = None
 
-        # TODO: probably apply the time_index logic to __init__
         # get values
         if value_cols is None:
             series_df = df.drop(time_col) if time_col else df
@@ -1442,7 +1438,7 @@ class TimeSeries:
             times=pd.RangeIndex(start=0, stop=len(values), step=1),
             values=values,
             fill_missing_dates=False,
-            freq=1,
+            freq=None,
             components=columns,
             fillna_value=fillna_value,
             static_covariates=static_covariates,
@@ -5667,7 +5663,6 @@ class TimeSeries:
         return self.copy()
 
     def __deepcopy__(self, memo):
-        # TODO
         return self.__class__(
             times=deepcopy(self._time_index, memo),
             values=deepcopy(self._values, memo),

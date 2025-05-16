@@ -849,6 +849,8 @@ def _build_forecast_series_from_schema(
     likelihood_component_names_fn
         A function to compute the likelihood parameter component names. Only effective when
         `predict_likelihood_parameters=True`.
+    copy
+        If set to `True`, a copy of the input series is made. Otherwise, the input series is used as a view.
 
     Returns
     -------
