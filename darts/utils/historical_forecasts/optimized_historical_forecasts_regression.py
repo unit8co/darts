@@ -51,7 +51,7 @@ def _optimized_historical_forecasts_last_points_only(
         )
         freq = series_.freq
         forecast_components = (
-            model.likelihood.component_names(series_)
+            model.likelihood.component_names(series=series_)
             if predict_likelihood_parameters
             else series_.columns
         )
@@ -223,7 +223,7 @@ def _optimized_historical_forecasts_all_points(
         )
         freq = series_.freq
         forecast_components = (
-            model.likelihood.component_names(series_)
+            model.likelihood.component_names(series=series_)
             if predict_likelihood_parameters
             else series_.columns
         )

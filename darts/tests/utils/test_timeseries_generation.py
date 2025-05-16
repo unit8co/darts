@@ -7,6 +7,7 @@ import pytest
 from darts import TimeSeries
 from darts.utils.timeseries_generation import (
     ONE_INDEXED_FREQS,
+    _build_forecast_series_from_schema,
     autoregressive_timeseries,
     constant_timeseries,
     datetime_attribute_timeseries,
@@ -633,3 +634,58 @@ class TestTimeSeriesGeneration:
         self.helper_routine(
             index_weeks_ext, "week_of_year", vals_exp=vals_exp, one_hot=True
         )
+
+    @pytest.mark.parametrize("is_dt", [True, False])
+    def test_build_forecast_series_from_schema(self, is_dt):
+        components = ["total", "b"]
+        if is_dt:
+            idx = pd.date_range("2000-01-01", freq="d", periods=3)
+        else:
+            idx = pd.RangeIndex(start=0, stop=3, step=1)
+        vals = np.zeros((len(idx), len(components)))
+
+        series = TimeSeries.from_times_and_values(
+            times=idx,
+            values=vals,
+            columns=components,
+            static_covariates=pd.DataFrame({"sc1": [1.0]}),
+            metadata={"md1": "dummy1"},
+            hierarchy={"b": ["total"]},
+        )
+
+        # building a forecast series from values, schema and start being the same, yields identical `TimeSeries`
+        series_new = _build_forecast_series_from_schema(
+            values=vals,
+            schema=series.schema(),
+            pred_start=series.start_time(),
+            predict_likelihood_parameters=False,
+        )
+
+        assert series_new == series
+
+        # `predict_likelihood_parameters` requires a function to generate the component names
+        with pytest.raises(ValueError) as exc:
+            _build_forecast_series_from_schema(
+                values=vals,
+                schema=series.schema(),
+                pred_start=series.start_time(),
+                predict_likelihood_parameters=True,
+                likelihood_component_names_fn=None,
+            )
+        assert str(exc.value) == (
+            "Must pass `likelihood_component_names_fn` with `predict_likelihood_parameters=True`"
+        )
+
+        # creating some dummy likelihood parameter names should be represented as columns in the new series
+        def components_f(*args, **kwargs):
+            return ["new1", "new2"]
+
+        series_new = _build_forecast_series_from_schema(
+            values=vals,
+            schema=series.schema(),
+            pred_start=series.start_time(),
+            predict_likelihood_parameters=True,
+            likelihood_component_names_fn=components_f,
+        )
+        series_renamed = series.with_columns_renamed(["total", "b"], ["new1", "new2"])
+        assert series_new == series_renamed

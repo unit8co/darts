@@ -12,7 +12,6 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 import torchmetrics
-from joblib import Parallel, delayed
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_log
@@ -24,7 +23,6 @@ from darts.utils.data.torch_datasets.utils import (
     TorchTrainingBatch,
 )
 from darts.utils.likelihood_models.torch import TorchLikelihood
-from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -210,7 +208,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_num_samples: Optional[int] = None
         self.pred_roll_size: Optional[int] = None
         self.pred_batch_size: Optional[int] = None
-        self.pred_n_jobs: Optional[int] = None
         self.predict_likelihood_parameters: Optional[bool] = None
         self.pred_mc_dropout: Optional[bool] = None
 
@@ -333,7 +330,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         batch
             output of Darts' :class:`TorchInferenceDataset` - tuple of ``(past target, past cov,
-            future past cov, historic future cov, future cov, static cov, input `TimeSeries`,
+            future past cov, historic future cov, future cov, static cov, target series schema,
             prediction start time step)``
         batch_idx
             the batch index of the current batch
@@ -341,8 +338,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
             the dataloader index
         """
         # batch has elements (past target, past cov, future past cov, historic future cov, future cov,
-        # static cov, target `TimeSeries`, pred start time)
-        input_data_tuple, batch_input_series, batch_pred_starts = (
+        # static cov, target series schema, pred start time)
+        input_data_tuple, batch_series_schemas, batch_pred_starts = (
             batch[:-2],
             batch[-2],
             batch[-1],
@@ -397,26 +394,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # concatenate the batch of samples, to form self.pred_num_samples samples
         batch_predictions = torch.cat(batch_predictions, dim=0)
         batch_predictions = batch_predictions.cpu().detach().numpy()
-
-        ts_forecasts = Parallel(n_jobs=self.pred_n_jobs)(
-            delayed(_build_forecast_series)(
-                [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
-                input_series,
-                custom_columns=(
-                    self.likelihood.component_names(input_series)
-                    if self.predict_likelihood_parameters
-                    else None
-                ),
-                with_static_covs=False if self.predict_likelihood_parameters else True,
-                with_hierarchy=False if self.predict_likelihood_parameters else True,
-                pred_start=pred_start,
-                copy=False,
-            )
-            for batch_idx, (input_series, pred_start) in enumerate(
-                zip(batch_input_series, batch_pred_starts)
-            )
+        return (
+            batch_predictions,
+            batch_series_schemas,
+            batch_pred_starts,
         )
-        return ts_forecasts
 
     def set_predict_parameters(
         self,
@@ -424,7 +406,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         num_samples: int,
         roll_size: int,
         batch_size: int,
-        n_jobs: int,
         predict_likelihood_parameters: bool,
         mc_dropout: bool,
     ) -> None:
@@ -433,7 +414,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_num_samples = num_samples
         self.pred_roll_size = roll_size
         self.pred_batch_size = batch_size
-        self.pred_n_jobs = n_jobs
         self.predict_likelihood_parameters = predict_likelihood_parameters
         self.pred_mc_dropout = mc_dropout
 

@@ -30,16 +30,6 @@ class TestTimeSeries:
     pd_series1 = pd.Series(range(10), index=times)
     pd_series2 = pd.Series(range(5, 15), index=times)
     pd_series3 = pd.Series(range(15, 25), index=times)
-
-    # times = times[:6].union(times[8:])[::-1]
-    # times.name = "hello"
-    # values = pd.concat([pd_series1[:6], pd_series1[8:]]).values[::-1]
-    # series1: TimeSeries = TimeSeries.from_times_and_values(
-    #     values=values,
-    #     times=times,
-    #     fill_missing_dates=True,
-    #     # freq="D"
-    # )
     series1: TimeSeries = TimeSeries.from_series(pd_series1)
     series2: TimeSeries = TimeSeries.from_series(pd_series2)
     series3: TimeSeries = TimeSeries.from_series(pd_series3)
@@ -2170,6 +2160,43 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             ts.to_csv("test.csv")
 
+    @pytest.mark.parametrize("config", [True, False])
+    def test_schema(self, config):
+        if config:
+            times = pd.date_range("2000-01-01", periods=3, freq="2d", name="idx_test")
+        else:
+            times = pd.RangeIndex(start=0, stop=2 * 3, step=2, name="idx_test")
+
+        values = np.zeros((len(times), 2, 1))
+        components = pd.Index(["a", "b"])
+        static_covariates = pd.DataFrame({"sc1": [0.5]})
+        hierarchy = {"a": ["b"]}
+        metadata = {"metadata": "test"}
+        ts = TimeSeries.from_times_and_values(
+            times=times,
+            values=values,
+            columns=components,
+            static_covariates=static_covariates,
+            hierarchy=hierarchy,
+            metadata=metadata,
+        )
+
+        schema_expected = {
+            "time_freq": ts.freq,
+            "time_name": ts.time_index.name,
+            "columns": ts.components,
+            "static_covariates": ts.static_covariates,
+            "hierarchy": ts.hierarchy,
+            "metadata": ts.metadata,
+        }
+        schema_actual = ts.schema(copy=True)
+
+        for k, v_exp in schema_expected.items():
+            if isinstance(v_exp, (pd.DataFrame, pd.Index)):
+                assert schema_actual[k].equals(v_exp)
+            else:
+                assert schema_actual[k] == v_exp
+
     def test_mutability(self):
         shape = (5, 3, 2)
         n = 5 * 3 * 2
@@ -2212,15 +2239,6 @@ class TestTimeSeries:
         # original values are the same
         assert np.array_equal(vals, np.arange(n).reshape(shape))
         assert ts == ts_copy
-
-        # mutable values
-        vals_ = ts.all_values(copy=False)
-        vals_[:] = 0.0
-        assert (vals_ == 0.0).all()
-        assert (ts.all_values() == 0.0).all()
-        # original values are updated
-        assert (vals == 0.0).all()
-        assert ts != ts_copy
 
 
 class TestTimeSeriesConcatenate:
