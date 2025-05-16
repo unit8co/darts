@@ -10,7 +10,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
-
+- Added support for classification forecasting for SKLearn-like forecasting models. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+ - Implemented `SklearnClassifierModel`to support any sklearn-like classifier model.
+ - Implemented `LightGBMClassifierModel`, `XGBClassifierModel` and `CatBoostClassifierModel` relying on classification abilities of the respectice librairies.
+ - Implemented `ClassProbabilityLikelihood` and set it as the default likelihood for classifiers to predict class probabilities when `predict_likelihood_parameters`is set in `predict`call.
 - Added support for training `RegressionModel` and `TorchForecastingModel` with stridden training samples by passing parameter `stride` to `fit()`. This allows to reduce the size of the training set or apply elaborate training scenarios. [#2624](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
 - Improvements `NLinearModel`: Default value for `normalize` changed from `False` to `True` to reflect the source paper. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Renamed some regression models for consistency and clarity reasons. [#2774](https://github.com/unit8co/darts/pull/2774) by [Jonas Blanc](https://github.com/jonasblanc).
@@ -37,7 +40,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
-
+- Added support for classification forecasting for SKLearn-like forecasting models. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+ - Refactored `RegressionModelWithCategoricalCovariates` into `RegressionModelWithCategoricalFeatures` to support categorical target.
+ - Refactored `MultiOutputRegressor` into `MultiOutputMixin`and added `MultiOutputClassifier` to support classifier.
 - Moved all torch dataset related modules from `darts.utils.data.*` to `darts.utils.data.torch_datasets.*`. The objects can still be imported as before with `from darts.utils.data import ...`
 - Moved tabularization module from `darts.utils.data.tabularization` into `darts.utils.data.tabularization.tabularization`. The objects can still be imported as before with `from darts.utils.data.tabularization import ...` [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
 
