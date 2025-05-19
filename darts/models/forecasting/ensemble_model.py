@@ -15,13 +15,13 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
+from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     GlobalForecastingModel,
     LocalForecastingModel,
 )
-from darts.timeseries import TimeSeries, concatenate
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import TORCH_AVAILABLE
 

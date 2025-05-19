@@ -44,6 +44,7 @@ import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.utils.validation import has_fit_parameter
 
+from darts import TimeSeries
 from darts.logging import (
     get_logger,
     raise_deprecation_warning,
@@ -52,7 +53,6 @@ from darts.logging import (
     raise_log,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
     create_lagged_component_names,

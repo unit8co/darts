@@ -12,9 +12,9 @@ import pandas as pd
 from nfoursid.kalman import Kalman
 from nfoursid.nfoursid import NFourSID
 
+from darts import TimeSeries
 from darts.logging import raise_if, raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
-from darts.timeseries import TimeSeries
 
 
 class KalmanFilter(FilteringModel, ABC):

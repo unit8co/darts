@@ -13,9 +13,9 @@ import torch
 import torch.nn as nn
 import torchmetrics
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.components.layer_norm_variants import RINorm
-from darts.timeseries import TimeSeries
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
     TorchBatch,

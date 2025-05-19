@@ -10,13 +10,13 @@ from typing import Optional, Union
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     LocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
