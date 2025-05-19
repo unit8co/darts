@@ -5584,7 +5584,7 @@ class TimeSeries:
         np.round(ts._values, n, out=ts._values)
         return ts
 
-    def __lt__(self, other) -> Self:
+    def __lt__(self, other) -> np.ndarray:
         if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
@@ -5594,11 +5594,9 @@ class TimeSeries:
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.less(ts._values, other, out=ts._values)
-        return ts
+        return np.less(self._values, other)
 
-    def __gt__(self, other) -> Self:
+    def __gt__(self, other) -> np.ndarray:
         if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
@@ -5608,11 +5606,9 @@ class TimeSeries:
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.greater(ts._values, other, out=ts._values)
-        return ts
+        return np.greater(self._values, other)
 
-    def __le__(self, other) -> Self:
+    def __le__(self, other) -> np.ndarray:
         if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
@@ -5622,11 +5618,9 @@ class TimeSeries:
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.less_equal(ts._values, other, out=ts._values)
-        return ts
+        return np.less_equal(self._values, other)
 
-    def __ge__(self, other) -> Self:
+    def __ge__(self, other) -> np.ndarray:
         if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
@@ -5636,9 +5630,7 @@ class TimeSeries:
                 ),
                 logger,
             )
-        ts = self.copy()
-        np.greater_equal(ts._values, other, out=ts._values)
-        return ts
+        return np.greater_equal(self._values, other)
 
     def __str__(self):
         return str(self.data_array(copy=False)).replace(

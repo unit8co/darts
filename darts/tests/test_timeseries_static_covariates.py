@@ -748,20 +748,21 @@ class TestTimeSeriesStaticCovariate:
         self.helper_test_transfer(tag, ts, ts - 3)
 
         # conditions
-        self.helper_test_transfer(tag, ts, ts < 3)
-        self.helper_test_transfer(tag, ts, ts >= 3)
-        self.helper_test_transfer(tag, ts, ts > 3)
-        self.helper_test_transfer(tag, ts, ts >= 3)
+        self.helper_test_transfer_np(tag, ts, ts > 3)
+        self.helper_test_transfer_np(tag, ts, ts >= 3)
+        self.helper_test_transfer_np(tag, ts, ts < 3)
+        self.helper_test_transfer_np(tag, ts, ts <= 3)
 
         # arithmetics with non-series (left) and series (right)
         self.helper_test_transfer(tag, ts, 3 * ts)
         self.helper_test_transfer(tag, ts, 3 + ts)
         self.helper_test_transfer(tag, ts, 3 - ts)
+
         # conditions
-        self.helper_test_transfer(tag, ts, 3 > ts)
-        self.helper_test_transfer(tag, ts, 3 >= ts)
-        self.helper_test_transfer(tag, ts, 3 < ts)
-        self.helper_test_transfer(tag, ts, 3 <= ts)
+        self.helper_test_transfer_np(tag, ts, 3 > ts)
+        self.helper_test_transfer_np(tag, ts, 3 >= ts)
+        self.helper_test_transfer_np(tag, ts, 3 < ts)
+        self.helper_test_transfer_np(tag, ts, 3 <= ts)
 
         # arithmetics with two series
         self.helper_test_transfer(tag, ts, ts / ts)
@@ -769,11 +770,12 @@ class TestTimeSeriesStaticCovariate:
         self.helper_test_transfer(tag, ts, ts**ts)
         self.helper_test_transfer(tag, ts, ts + ts)
         self.helper_test_transfer(tag, ts, ts - ts)
+
         # conditions
-        self.helper_test_transfer(tag, ts, ts > ts)
-        self.helper_test_transfer(tag, ts, ts >= ts)
-        self.helper_test_transfer(tag, ts, ts < ts)
-        self.helper_test_transfer(tag, ts, ts <= ts)
+        self.helper_test_transfer_np(tag, ts, ts > ts)
+        self.helper_test_transfer_np(tag, ts, ts >= ts)
+        self.helper_test_transfer_np(tag, ts, ts < ts)
+        self.helper_test_transfer_np(tag, ts, ts <= ts)
 
         # other operations
         self.helper_test_transfer(tag, ts, abs(ts))
@@ -856,6 +858,12 @@ class TestTimeSeriesStaticCovariate:
             assert ts_new.static_covariates.equals(ts.static_covariates)
         else:  # metadata
             assert ts_new.metadata == ts.metadata
+
+    @staticmethod
+    def helper_test_transfer_np(tag, ts, values):
+        """static cov and metadata are not transferred when performing value comparisons. Output is a `np.ndarray`"""
+        assert isinstance(values, np.ndarray)
+        assert values.shape == ts.shape
 
     @staticmethod
     def helper_test_transfer_values(tag, ts, ts_new):

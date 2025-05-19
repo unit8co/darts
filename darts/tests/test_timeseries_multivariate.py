@@ -6,7 +6,17 @@ import pytest
 
 from darts import TimeSeries
 from darts.tests.conftest import POLARS_AVAILABLE
-from darts.tests.test_timeseries import TestTimeSeries
+from darts.tests.test_timeseries import (
+    helper_test_append,
+    helper_test_append_values,
+    helper_test_drop,
+    helper_test_intersect,
+    helper_test_prepend,
+    helper_test_prepend_values,
+    helper_test_shift,
+    helper_test_slice,
+    helper_test_split,
+)
 from darts.utils.utils import freqs
 
 if POLARS_AVAILABLE:
@@ -113,35 +123,35 @@ class TestTimeSeriesMultivariate:
         )
 
     def test_slice(self):
-        TestTimeSeries.helper_test_slice(self, self.series1)
+        helper_test_slice(self.series1)
 
     def test_split(self):
-        TestTimeSeries.helper_test_split(self, self.series1)
+        helper_test_split(self.series1)
 
     def test_drop(self):
-        TestTimeSeries.helper_test_drop(self, self.series1)
+        helper_test_drop(self.series1)
 
     @pytest.mark.parametrize(
         "config", itertools.product(["D", "2D", 1, 2], [False, True])
     )
     def test_intersect(self, config):
         freq, mixed_freq = config
-        TestTimeSeries.helper_test_intersect(freq, mixed_freq, is_univariate=False)
+        helper_test_intersect(freq, mixed_freq, is_univariate=False)
 
     def test_shift(self):
-        TestTimeSeries.helper_test_shift(self, self.series1)
+        helper_test_shift(self.series1)
 
     def test_append(self):
-        TestTimeSeries.helper_test_append(self, self.series1)
+        helper_test_append(self.series1)
 
     def test_append_values(self):
-        TestTimeSeries.helper_test_append_values(self, self.series1)
+        helper_test_append_values(self.series1)
 
     def test_prepend(self):
-        TestTimeSeries.helper_test_prepend(self, self.series1)
+        helper_test_prepend(self.series1)
 
     def test_prepend_values(self):
-        TestTimeSeries.helper_test_prepend_values(self, self.series1)
+        helper_test_prepend_values(self.series1)
 
     def test_strip(self):
         dataframe1 = pd.DataFrame(

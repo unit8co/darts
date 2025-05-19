@@ -96,8 +96,8 @@ class TestTimeSeriesGeneration:
                 value_amplitude=value_amplitude,
                 value_y_offset=value_y_offset,
             )
-            assert (sine_ts <= value_y_offset + value_amplitude).all_values().all()
-            assert (sine_ts >= value_y_offset - value_amplitude).all_values().all()
+            assert (sine_ts <= value_y_offset + value_amplitude).all()
+            assert (sine_ts >= value_y_offset - value_amplitude).all()
             assert len(sine_ts) == length_assert
 
         for length_assert in [1, 2, 5, 10, 100]:
@@ -643,12 +643,12 @@ class TestTimeSeriesGeneration:
         else:
             idx = pd.RangeIndex(start=0, stop=3, step=1)
         vals = np.zeros((len(idx), len(components)))
-
+        static_covs = pd.DataFrame({"sc1": [1.0]})
         series = TimeSeries.from_times_and_values(
             times=idx,
             values=vals,
             columns=components,
-            static_covariates=pd.DataFrame({"sc1": [1.0]}),
+            static_covariates=static_covs,
             metadata={"md1": "dummy1"},
             hierarchy={"b": ["total"]},
         )
@@ -688,4 +688,12 @@ class TestTimeSeriesGeneration:
             likelihood_component_names_fn=components_f,
         )
         series_renamed = series.with_columns_renamed(["total", "b"], ["new1", "new2"])
+        # static covariates and hierarchy are not transferred due to `components_f`
+        assert series_new.hierarchy is None
+        assert series_new.static_covariates is None
+        assert series_new != series_renamed
+
+        # adding information back yields equality
+        series_new = series_new.with_static_covariates(static_covs)
+        series_new = series_new.with_hierarchy({"new2": ["new1"]})
         assert series_new == series_renamed
