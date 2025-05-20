@@ -168,13 +168,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self.encoders = self.initialize_encoders(default=True)
 
     @abstractmethod
-    def fit(self, series: TimeSeries) -> "ForecastingModel":
+    def fit(self, series: TimeSeries, verbose=False) -> "ForecastingModel":
         """Fit/train the model on the provided series.
 
         Parameters
         ----------
         series
             A target time series. The model will be trained to forecast this time series.
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
 
         Returns
         -------
@@ -2891,7 +2893,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
         return None, None, False, False, None, None
 
     @abstractmethod
-    def fit(self, series: TimeSeries) -> "LocalForecastingModel":
+    def fit(self, series: TimeSeries, verbose: bool = False) -> "LocalForecastingModel":
         super().fit(series)
         series._assert_deterministic()
 
@@ -2952,6 +2954,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        verbose: bool = False,
     ) -> "GlobalForecastingModel":
         """Fit/train the model on (potentially multiple) series.
 
@@ -2974,6 +2977,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             be used by some models as an input. The covariate(s) may or may not be multivariate, but if multiple
             covariates are provided they must have the same number of components. If `future_covariates` is provided,
             it must contain the same number of series as `series`.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
 
         Returns
         -------
@@ -3175,7 +3180,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     All implementations must implement the :func:`_fit()` and :func:`_predict()` methods.
     """
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None, verbose: bool = False):
         """Fit/train the model on the (single) provided series.
 
         Optionally, a future covariates series can be provided as well.
@@ -3188,6 +3193,8 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             A time series of future-known covariates. This time series will not be forecasted, but can be used by
             some models as an input. It must contain at least the same time steps/indices as the target `series`.
             If it is longer than necessary, it will be automatically trimmed.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
 
         Returns
         -------

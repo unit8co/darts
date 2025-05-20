@@ -784,6 +784,7 @@ class SKLearnModel(GlobalForecastingModel):
         n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         stride: int = 1,
+        verbose: bool = False,
         **kwargs,
     ):
         """
@@ -821,6 +822,8 @@ class SKLearnModel(GlobalForecastingModel):
             The number of time steps between consecutive samples, applied starting from the end of the series. The same
             stride will be applied to both the training and evaluation set (if supplied and supported). This should be
             used with caution as it might introduce bias in the forecasts.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
