@@ -220,7 +220,9 @@ class TestLocalForecastingModels:
         model, _ = config
         if not isinstance(model, SKLearnModel):
             assert isinstance(model, LocalForecastingModel)
-        prediction = model.fit(self.ts_gaussian, verbose=False).predict(self.forecasting_horizon)
+        prediction = model.fit(self.ts_gaussian, verbose=False).predict(
+            self.forecasting_horizon
+        )
         assert len(prediction) == self.forecasting_horizon
 
     @pytest.mark.parametrize("config", models)

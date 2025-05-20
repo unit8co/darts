@@ -757,7 +757,7 @@ class SKLearnModel(GlobalForecastingModel):
                 )
 
         # Unmask verbose keyword if models supports it (e.g. catboost)
-        if _verbose_fit:= kwargs.pop("_verbose_fit", None) is not None:
+        if _verbose_fit := kwargs.pop("_verbose_fit", None) is not None:
             kwargs["verbose"] = _verbose_fit
 
         self.model.fit(

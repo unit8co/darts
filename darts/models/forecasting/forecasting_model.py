@@ -3180,7 +3180,12 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
     All implementations must implement the :func:`_fit()` and :func:`_predict()` methods.
     """
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None, verbose: bool = False):
+    def fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: bool = False,
+    ):
         """Fit/train the model on the (single) provided series.
 
         Optionally, a future covariates series can be provided as well.

@@ -119,7 +119,12 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
             )
         return series
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None, verbose: bool = False,):
+    def fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: bool = False,
+    ):
         # for VARIMA we need to process target `series` before calling
         # TransferableFutureCovariatesLocalForecastingModel's fit() method
         self._last_values = (
