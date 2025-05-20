@@ -756,6 +756,10 @@ class SKLearnModel(GlobalForecastingModel):
                     "`fit()` method does not support it."
                 )
 
+        # Unmask verbose keyword if models supports it (e.g. catboost)
+        if _verbose_fit := kwargs.pop("_verbose_fit", None) is not None:
+            kwargs["verbose"] = _verbose_fit
+
         self.model.fit(
             training_samples, training_labels, **sample_weight_kwargs, **kwargs
         )
@@ -784,6 +788,7 @@ class SKLearnModel(GlobalForecastingModel):
         n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         stride: int = 1,
+        verbose: bool = False,
         **kwargs,
     ):
         """
@@ -821,6 +826,8 @@ class SKLearnModel(GlobalForecastingModel):
             The number of time steps between consecutive samples, applied starting from the end of the series. The same
             stride will be applied to both the training and evaluation set (if supplied and supported). This should be
             used with caution as it might introduce bias in the forecasts.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """

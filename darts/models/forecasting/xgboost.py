@@ -278,7 +278,7 @@ class XGBModel(SKLearnModel):
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
         **kwargs
-            Additional kwargs passed to `xgb.XGBRegressor.fit()`
+            Additional kwargs passed to `xgb.XGBRegressor.fit()`, e.g. `verbose`.
         """
         # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
         #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html

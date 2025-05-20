@@ -101,7 +101,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.model = None
         np.random.seed(random_state)
 
-    def fit(self, series: TimeSeries):
+    def fit(self, series: TimeSeries, verbose: bool = False):
         super().fit(series)
         self._assert_univariate(series)
         series = self.training_series

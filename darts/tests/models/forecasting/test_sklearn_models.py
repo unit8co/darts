@@ -1098,7 +1098,9 @@ class TestSKLearnModels:
         # auto-regression but past_covariates does not extend enough in the future
         with pytest.raises(ValueError):
             model_instance = model(lags=4, lags_past_covariates=4, multi_models=mode)
-            model_instance.fit(series=series, past_covariates=sine_multivariate1)
+            model_instance.fit(
+                series=series, past_covariates=sine_multivariate1, verbose=False
+            )
             model_instance.predict(n=10)
 
         # inconsistent number of components in series Sequence[TimeSeries]
