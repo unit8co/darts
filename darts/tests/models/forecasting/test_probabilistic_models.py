@@ -10,11 +10,14 @@ from darts.metrics import mae
 from darts.models import (
     ARIMA,
     TBATS,
+    VARIMA,
     CatBoostModel,
     ConformalNaiveModel,
     ExponentialSmoothing,
+    KalmanForecaster,
     LightGBMModel,
     LinearRegressionModel,
+    Prophet,
     XGBModel,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
@@ -69,7 +72,7 @@ conformal_forecaster._fit_called = True
 
 # model_cls, model_kwargs, err_univariate, err_multivariate
 models_cls_kwargs_errs = [
-    (ExponentialSmoothing, {}, 0.3, None),
+    (ExponentialSmoothing, {"random_state": 42}, 0.3, None),
     (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03, None),
     (
         TBATS,
@@ -240,22 +243,45 @@ class TestProbabilisticModels:
     num_samples = 5
 
     constant_noisy_ts_short = constant_noisy_ts[:30]
+    constant_noisy_multivar_ts_short = constant_noisy_multivar_ts[:30]
+
+    extra_configs = [
+        (ExponentialSmoothing, {"random_state": 42}, 0.3, None),
+        (VARIMA, {"random_state": 42}, 0.03, None),
+        (Prophet, {"random_state": 42}, 0.03, None),
+        (KalmanForecaster, {"random_state": 42}, 0.03, None),
+        (
+            LinearRegressionModel,
+            {
+                "lags": 12,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.5, 0.9],
+                "random_state": 42,
+            },
+            0.04,
+            0.04,
+        ),
+    ]
 
     @pytest.mark.slow
-    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
     def test_fit_predict_determinism(self, config):
         model_cls, model_kwargs, _, _ = config
         if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
             fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
         else:
             fit_kwargs = {}
+        if model_cls.__name__ == "VARIMA":
+            series = self.constant_noisy_multivar_ts_short
+        else:
+            series = self.constant_noisy_ts_short
         # whether the first predictions of two models initiated with the same random state are the same
         model = model_cls(**model_kwargs)
-        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
+        model.fit(series, **fit_kwargs)
         pred1 = model.predict(n=10, num_samples=2).values()
 
         model = model_cls(**model_kwargs)
-        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
+        model.fit(series, **fit_kwargs)
         pred2 = model.predict(n=10, num_samples=2).values()
 
         assert (pred1 == pred2).all()
@@ -263,6 +289,50 @@ class TestProbabilisticModels:
         # test whether the next prediction of the same model is different
         pred3 = model.predict(n=10, num_samples=2).values()
         assert (pred2 != pred3).any()
+
+        # test whether two consecutive predictions with a random_state specified are the same
+        pred4 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred5 = model.predict(n=10, num_samples=2, random_state=38).values()
+        assert (pred4 == pred5).all()
+
+        # additional tests :
+        model = model_cls(**model_kwargs)
+        model.fit(series, **fit_kwargs)
+        pred6 = model.predict(n=10, num_samples=2).values()
+        pred7 = model.predict(n=10, num_samples=2).values()
+
+        model = model_cls(**model_kwargs)
+        model.fit(series, **fit_kwargs)
+        pred8 = model.predict(n=10, num_samples=2).values()
+        pred9 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred10 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred11 = model.predict(n=10, num_samples=2).values()
+
+        assert (pred6 != pred7).any()
+        assert (pred8 == pred6).all()
+        assert (pred9 == pred10).all()
+        assert (pred11 == pred7).all()
+
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
+    def test_fit_predict_randomized(self, config):
+        model_cls, model_kwargs, _, _ = config
+        model_kwargs = {k: v for k, v in model_kwargs.items() if k != "random_state"}
+        if model_cls.__name__ == "VARIMA":
+            series = self.constant_noisy_multivar_ts_short
+        else:
+            series = self.constant_noisy_ts_short
+        if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
+            fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
+        else:
+            fit_kwargs = {}
+        model = model_cls(**model_kwargs)
+        model.fit(series, **fit_kwargs)
+        pred1 = model.predict(n=10, num_samples=2).values()
+
+        model.fit(series, **fit_kwargs)
+        pred2 = model.predict(n=10, num_samples=2).values()
+
+        assert (pred1 != pred2).any()
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_probabilistic_forecast_accuracy_univariate(self, config):

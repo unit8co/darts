@@ -251,6 +251,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts calibrated quantile intervals (or samples from calibrated intervals) for `n` time steps after the
@@ -307,6 +308,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             If set to `True`, generates the quantile predictions directly. Only supported with `num_samples = 1`.
         show_warnings
             Whether to show warnings related auto-regression and past covariates usage.
+        random_state
+            Controls the randomness of the predictions.
         **kwargs
             Optional keyword arguments that will passed to the underlying forecasting model's `predict()` and
             `historical_forecasts()` methods.
@@ -380,6 +383,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
         )
         # convert historical forecasts output to simple forecast / prediction
         if called_with_single_series:
@@ -1037,6 +1041,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Generate calibrated historical forecasts.
 

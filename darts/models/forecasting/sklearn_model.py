@@ -998,6 +998,7 @@ class SKLearnModel(GlobalForecastingModel):
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
@@ -1027,6 +1028,8 @@ class SKLearnModel(GlobalForecastingModel):
             Default: ``False``
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
+        random_state
+            Controls the randomness of the predictions.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
@@ -1216,7 +1219,11 @@ class SKLearnModel(GlobalForecastingModel):
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict(
-                X, num_samples, predict_likelihood_parameters, **kwargs
+                X,
+                num_samples,
+                predict_likelihood_parameters,
+                random_state=random_state,
+                **kwargs,
             )
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
@@ -1255,6 +1262,7 @@ class SKLearnModel(GlobalForecastingModel):
         x: np.ndarray,
         num_samples: int,
         predict_likelihood_parameters: bool,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> np.ndarray:
         """Generate predictions.
@@ -1270,6 +1278,7 @@ class SKLearnModel(GlobalForecastingModel):
                 x=x,
                 num_samples=num_samples,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
                 **kwargs,
             )
 

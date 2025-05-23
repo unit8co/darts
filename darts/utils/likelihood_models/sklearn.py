@@ -14,12 +14,13 @@ from darts.utils.likelihood_models.base import (
     LikelihoodType,
     quantile_names,
 )
-from darts.utils.utils import _check_quantiles
+from darts.utils.utils import _check_quantiles, random_method
 
 logger = get_logger(__name__)
 
 
 class SKLearnLikelihood(Likelihood, ABC):
+    @random_method
     def __init__(
         self,
         likelihood_type: LikelihoodType,
@@ -42,7 +43,6 @@ class SKLearnLikelihood(Likelihood, ABC):
             Optionally, control the randomness of the sampling.
         """
         self._n_outputs = n_outputs
-        self._rng = np.random.default_rng(seed=random_state)
         super().__init__(
             likelihood_type=likelihood_type,
             parameter_names=parameter_names,
@@ -56,6 +56,7 @@ class SKLearnLikelihood(Likelihood, ABC):
         x: np.ndarray,
         num_samples: int,
         predict_likelihood_parameters: bool,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> np.ndarray:
         """
@@ -74,6 +75,8 @@ class SKLearnLikelihood(Likelihood, ABC):
             If set to `True`, generates likelihood parameter predictions instead of sampling from the
             likelihood model / distribution. Only supported with `num_samples = 1` and
             `n<=output_chunk_length`.
+        random_state
+            Controls the randomness of the predictions.
         kwargs
             Some kwargs passed to the underlying estimator's `predict()` method.
         """
@@ -83,10 +86,14 @@ class SKLearnLikelihood(Likelihood, ABC):
         elif num_samples == 1:
             return self._get_median_prediction(model_output)
         else:
-            return self.sample(model_output)
+            return self.sample(model_output, random_state=random_state)
 
     @abstractmethod
-    def sample(self, model_output: np.ndarray) -> np.ndarray:
+    def sample(
+        self,
+        model_output: np.ndarray,
+        random_state: Optional[int] = None,
+    ) -> np.ndarray:
         """
         Samples a prediction from the likelihood distribution and the predicted parameters.
         """
@@ -152,13 +159,18 @@ class GaussianLikelihood(SKLearnLikelihood):
             random_state=random_state,
         )
 
-    def sample(self, model_output: np.ndarray) -> np.ndarray:
+    @random_method
+    def sample(
+        self,
+        model_output: np.ndarray,
+        random_state: Optional[int] = None,
+    ) -> np.ndarray:
         # shape (n_components * output_chunk_length, n_series * n_samples, 2)
         # [mu, sigma] on the last dimension, grouped by component
         n_entries, n_samples, n_params = model_output.shape
 
         # get samples (n_components * output_chunk_length, n_series * n_samples)
-        samples = self._rng.normal(
+        samples = np.random.normal(
             model_output[:, :, 0],  # mean
             model_output[:, :, 1],  # variance
         )
@@ -244,9 +256,12 @@ class PoissonLikelihood(SKLearnLikelihood):
             random_state=random_state,
         )
 
-    def sample(self, model_output: np.ndarray) -> np.ndarray:
+    @random_method
+    def sample(
+        self, model_output: np.ndarray, random_state: Optional[int] = None
+    ) -> np.ndarray:
         # shape (n_series * n_samples, output_chunk_length, n_components)
-        return self._rng.poisson(lam=model_output).astype(float)
+        return np.random.poisson(lam=model_output).astype(float)
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
         # lambdas on the last dimension, grouped by component
@@ -318,14 +333,19 @@ class QuantileRegression(SKLearnLikelihood):
         )
         self.ignore_attrs_equality += ["_median_idx"]
 
-    def sample(self, model_output: np.ndarray) -> np.ndarray:
+    @random_method
+    def sample(
+        self,
+        model_output: np.ndarray,
+        random_state: Optional[int] = None,
+    ) -> np.ndarray:
         # model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
         # sample uniformly between [0, 1] (for each batch example) and return the
         # linear interpolation between the fitted quantiles closest to the sampled value.
         k, n_times, n_components, n_quantiles = model_output.shape
 
         # obtain samples
-        probs = self._rng.uniform(
+        probs = np.random.uniform(
             size=(
                 k,
                 n_times,

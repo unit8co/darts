@@ -4008,6 +4008,29 @@ class TestProbabilisticSKLearnModels:
         pred3 = model.predict(n=10, num_samples=2).values()
         assert (pred2 != pred3).any()
 
+        # test whether two consecutive predictions with a random_state specified are the same
+        pred4 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred5 = model.predict(n=10, num_samples=2, random_state=38).values()
+        assert (pred4 == pred5).all()
+
+        # additional tests :
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_multivar_ts)
+        pred6 = model.predict(n=10, num_samples=2).values()
+        pred7 = model.predict(n=10, num_samples=2).values()
+
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_multivar_ts)
+        pred8 = model.predict(n=10, num_samples=2).values()
+        pred9 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred10 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred11 = model.predict(n=10, num_samples=2).values()
+
+        assert (pred6 != pred7).any()
+        assert (pred8 == pred6).all()
+        assert (pred9 == pred10).all()
+        assert (pred11 == pred7).all()
+
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_probabilistic_forecast_accuracy_univariate(self, config):
         (model_cls, model_kwargs, err), mode = config
