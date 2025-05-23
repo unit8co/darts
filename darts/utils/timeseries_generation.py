@@ -5,7 +5,7 @@ Utils for time series generation
 
 import math
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import holidays
 import numpy as np
@@ -13,6 +13,7 @@ import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.timeseries import HIERARCHY_TAG, METADATA_TAG, STATIC_COV_TAG
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -799,6 +800,68 @@ def _build_forecast_series(
         static_covariates=input_series.static_covariates if with_static_covs else None,
         hierarchy=input_series.hierarchy if with_hierarchy else None,
         metadata=input_series.metadata,
+    )
+
+
+def _build_forecast_series_from_schema(
+    values: np.ndarray,
+    schema: dict[str, Any],
+    pred_start: Union[pd.Timestamp, int],
+    predict_likelihood_parameters: bool,
+    likelihood_component_names_fn: Optional[Callable] = None,
+) -> TimeSeries:
+    """
+    Builds a forecast time series from predicted values and `TimeSeries` schema starting at `pred_start`.
+
+    Parameters
+    ----------
+    values
+        Forecasted values, can be either the target(s) or parameters of the likelihood model
+    schema
+        Schema of the predicted target `TimeSeries`.
+    pred_start
+        The prediction start time.
+    predict_likelihood_parameters
+        Whether the values represent predicted likelihood parameters.
+    likelihood_component_names_fn
+        A function to compute the likelihood parameter component names. Only effective when
+        `predict_likelihood_parameters=True`.
+
+    Returns
+    -------
+    TimeSeries
+        A new TimeSeries instance.
+    """
+    time_index = generate_index(
+        start=pred_start,
+        freq=schema["time_freq"],
+        length=len(values),
+        name=schema["time_name"],
+    )
+    if predict_likelihood_parameters:
+        if likelihood_component_names_fn is None:
+            raise_log(
+                ValueError(
+                    "Must pass `likelihood_component_names_fn` with "
+                    "`predict_likelihood_parameters=True`"
+                ),
+                logger=logger,
+            )
+        columns = likelihood_component_names_fn(components=schema["columns"])
+        static_covariates = None
+        hierarchy = None
+    else:
+        columns = schema["columns"]
+        static_covariates = schema[STATIC_COV_TAG]
+        hierarchy = schema[HIERARCHY_TAG]
+
+    return TimeSeries.from_times_and_values(
+        times=time_index,
+        values=values,
+        columns=columns,
+        static_covariates=static_covariates,
+        hierarchy=hierarchy,
+        metadata=schema[METADATA_TAG],
     )
 
 
