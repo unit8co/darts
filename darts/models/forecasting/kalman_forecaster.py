@@ -21,16 +21,19 @@ from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 
 
 class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
         dim_x: int = 1,
         kf: Optional[Kalman] = None,
         add_encoders: Optional[dict] = None,
+        random_state: Optional[int] = None,
     ):
         """Kalman filter Forecaster
 
@@ -133,6 +136,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         series = series if series is not None else self.training_series
         return super().predict(n, series, future_covariates, num_samples, **kwargs)
 
+    @random_method
     def _predict(
         self,
         n: int,
@@ -142,6 +146,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         super()._predict(
             n, series, historic_future_covariates, future_covariates, num_samples

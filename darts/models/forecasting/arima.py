@@ -19,7 +19,7 @@ if sys.version_info >= (3, 10):
 else:
     from typing_extensions import TypeAlias
 
-import numpy as np
+from sklearn.utils import check_random_state
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
 from darts.logging import get_logger
@@ -27,6 +27,7 @@ from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 
@@ -35,6 +36,7 @@ IntOrIntSequence: TypeAlias = Union[int, Sequence[int]]
 
 
 class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
         p: IntOrIntSequence = 12,
@@ -133,11 +135,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self.seasonal_order = seasonal_order
         self.trend = trend
         self.model = None
-        self._random_state = (
-            random_state
-            if random_state is None
-            else np.random.RandomState(random_state)
-        )
+        self._random_state = check_random_state(random_state)
 
     @property
     def supports_multivariate(self) -> bool:
@@ -162,6 +160,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         return self
 
+    @random_method
     def _predict(
         self,
         n: int,
@@ -171,6 +170,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         if num_samples > 1 and self.trend:
             logger.warning(
@@ -180,7 +180,12 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             )
 
         super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
+            n,
+            series,
+            historic_future_covariates,
+            future_covariates,
+            num_samples,
+            random_state=random_state,
         )
 
         # updating statsmodels results object state with the new ts and covariates
@@ -202,11 +207,15 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 ),
             )
         else:
+            if random_state is not None:
+                rng = check_random_state(random_state)
+            else:
+                rng = self._random_state
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                random_state=self._random_state,
+                random_state=rng,
                 anchor="end",
                 exog=(
                     future_covariates.values(copy=False) if future_covariates else None

@@ -1495,6 +1495,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
@@ -1567,7 +1568,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Default: ``False``.
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
-
+        random_state
+            Controls the randomness of the predictions.
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
@@ -1644,6 +1646,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             dataloader_kwargs=dataloader_kwargs,
             mc_dropout=mc_dropout,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
         )
 
         return predictions[0] if called_with_single_series else predictions
@@ -1662,6 +1665,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs: Optional[dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
     ) -> Sequence[TimeSeries]:
         """
         This method allows for predicting with a specific :class:`darts.utils.data.TorchInferenceDataset` instance.
@@ -1712,6 +1716,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
+        random_state
+            Controls the randomness of the predictions.
 
         Returns
         -------

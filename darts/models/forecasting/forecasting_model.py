@@ -3236,6 +3236,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
@@ -3260,7 +3261,8 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
-
+        random_state
+            Controls the randomness of the predictions.
         Returns
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
@@ -3306,6 +3308,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             future_covariates=future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
             **kwargs,
         )
 
@@ -3317,6 +3320,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
@@ -3538,6 +3542,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.

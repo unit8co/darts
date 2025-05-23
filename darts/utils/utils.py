@@ -694,10 +694,17 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
     @wraps(decorated)
     def decorator(self, *args, **kwargs):
         if "random_state" in kwargs.keys():
-            # get random state for first time from model constructor
-            self._random_instance = check_random_state(
-                kwargs["random_state"]
-            ).get_state()
+            if hasattr(self, "_random_instance") and kwargs["random_state"] is not None:
+                random_instance = check_random_state(kwargs["random_state"]).get_state()
+
+                # handle the randomness
+                np.random.set_state(random_instance)
+                result = decorated(self, *args, **kwargs)
+                return result
+            elif not hasattr(self, "_random_instance"):
+                self._random_instance = check_random_state(
+                    kwargs["random_state"]
+                ).get_state()
         elif not hasattr(self, "_random_instance"):
             # get random state for first time from other method
             self._random_instance = check_random_state(
