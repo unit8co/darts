@@ -225,7 +225,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
 
         comp_names_out = None
         if predict_likelihood_parameters:
-            comp_names_out = self.likelihood.component_names(series)
+            comp_names_out = self.likelihood.component_names(series=series)
 
         return _build_forecast_series(
             points_preds=pred_vals,

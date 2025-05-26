@@ -1264,7 +1264,7 @@ class SKLearnModel(GlobalForecastingModel):
                 points_preds=row,
                 input_series=input_tgt,
                 custom_components=(
-                    self.likelihood.component_names(input_tgt)
+                    self.likelihood.component_names(series=input_tgt)
                     if predict_likelihood_parameters
                     else None
                 ),
