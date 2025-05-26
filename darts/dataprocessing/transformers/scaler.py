@@ -124,7 +124,13 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
 
         transformed_vals = Scaler.unstack_samples(tr_out, series=series)
 
-        return series.with_values(transformed_vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=transformed_vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @staticmethod
     def ts_inverse_transform(
@@ -135,7 +141,13 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         tr_out = transformer.inverse_transform(Scaler.stack_samples(series))
         inv_transformed_vals = Scaler.unstack_samples(tr_out, series=series)
 
-        return series.with_values(inv_transformed_vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=inv_transformed_vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @staticmethod
     def ts_fit(

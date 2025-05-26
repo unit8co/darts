@@ -73,4 +73,10 @@ class GaussianProcessFilter(FilteringModel):
 
         filtered_values = filtered_values.reshape(len(times), -1, num_samples)
 
-        return series.with_values(filtered_values)
+        return TimeSeries(
+            times=series.time_index,
+            values=filtered_values,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )

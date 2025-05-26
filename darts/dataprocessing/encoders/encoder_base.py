@@ -873,10 +873,13 @@ class SequentialEncoderTransformer:
             self._update_mask(covariates)
             if any(self.transform_mask):
                 # fit the transformer on all encoded values by concatenating multi-series input encodings
+                vals = np.concatenate([cov.values() for cov in covariates])
                 self.transformer.fit(
-                    series=TimeSeries.from_values(
-                        np.concatenate([cov.values() for cov in covariates]),
-                        columns=covariates[0].components,
+                    series=TimeSeries(
+                        times=pd.RangeIndex(stop=len(vals)),
+                        values=vals,
+                        components=covariates[0].components,
+                        copy=False,
                     ),
                     component_mask=self.transform_mask,
                 )

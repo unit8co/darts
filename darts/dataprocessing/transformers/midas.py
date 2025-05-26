@@ -483,10 +483,11 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             drop_static_covariates=drop_static_covariates,
             inverse_transform=inverse_transform,
         )
-        return TimeSeries.from_times_and_values(
+        return TimeSeries(
             times=time_index,
             values=arr,
-            columns=cols,
+            components=cols,
             static_covariates=static_covariates,
             metadata=series.metadata,
+            copy=False,
         )

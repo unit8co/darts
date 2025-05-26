@@ -227,7 +227,13 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 to_undiff[i::lag, :, :] = np.cumsum(to_undiff[i::lag, :, :], axis=0)
             vals[cutoff:, :, :] = to_undiff
         vals = Diff.unapply_component_mask(series, vals, component_mask)
-        return series.with_values(vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @staticmethod
     def _get_component_mask(kwargs, dropna):

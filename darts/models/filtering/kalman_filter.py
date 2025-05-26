@@ -240,4 +240,10 @@ class KalmanFilter(FilteringModel, ABC):
                     mean_vec, cov_matrix, size=num_samples
                 ).T
 
-        return series.with_values(sampled_outputs)
+        return TimeSeries(
+            times=series.time_index,
+            values=sampled_outputs,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )

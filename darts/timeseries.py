@@ -4463,15 +4463,16 @@ class TimeSeries:
                     for k, v in self.hierarchy.items()
                 }
 
-        transformed_time_series = TimeSeries.from_times_and_values(
+        transformed_time_series = TimeSeries(
             times=new_index,
             values=resulting_transformations.values.reshape(
                 len(new_index), -1, n_samples
             ),
-            columns=new_columns,
+            components=new_columns,
             static_covariates=self.static_covariates,
             hierarchy=new_hierarchy,
             metadata=self.metadata,
+            copy=False,
         )
 
         return transformed_time_series

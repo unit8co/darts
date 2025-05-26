@@ -501,7 +501,7 @@ class BaseDataTransformer(ABC):
             if return_ts:
                 out = series.copy()
             else:
-                out = [series_.all_values() for series_ in series]
+                out = [series_.all_values(copy=True) for series_ in series]
             return out[0] if called_with_single_series else out
 
         if not (
@@ -526,7 +526,7 @@ class BaseDataTransformer(ABC):
             if return_ts:
                 out_ = series_[series_.columns[component_mask].tolist()]
             else:
-                out_ = series_.all_values(copy=False)[:, component_mask, :]
+                out_ = series_.all_values(copy=True)[:, component_mask, :]
             out.append(out_)
         return out[0] if called_with_single_series else out
 
@@ -584,12 +584,14 @@ class BaseDataTransformer(ABC):
                     ),
                     logger=logger,
                 )
-            unmasked = series_.all_values()
             if isinstance(vals_, TimeSeries):
-                unmasked[:, component_mask, :] = vals_.all_values()
-                # Remove timepoints not present in transformed data:
-                unmasked = series_.slice_intersect(vals_).with_values(unmasked)
+                # remove timepoints not present in transformed data (returns a copy)
+                unmasked = series_.slice_intersect(vals_)
+                # populate with new values
+                unmasked_vals = series_.all_values(copy=False)
+                unmasked_vals[:, component_mask, :] = vals_.all_values(copy=False)
             else:
+                unmasked = series_.all_values(copy=True)
                 unmasked[:, component_mask, :] = vals_
 
             out.append(unmasked)

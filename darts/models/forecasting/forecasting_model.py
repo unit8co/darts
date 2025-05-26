@@ -2294,14 +2294,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 elif (q is None and q_interval is None) and res.shape[
                     1
                 ] == fc.n_components:
-                    res = fc.with_values(res)
+                    res = TimeSeries(
+                        times=fc.time_index,
+                        values=res,
+                        components=fc.components,
+                        copy=False,
+                        **fc._attrs,
+                    )
                 else:
                     # quantile (interval) metrics created different number of components;
                     # create new series with unknown components
-                    res = TimeSeries.from_times_and_values(
-                        times=fc._time_index,
+                    res = TimeSeries(
+                        times=fc.time_index,
                         values=res,
-                        columns=comp_names,
+                        components=comp_names,
+                        copy=False,
                     )
                 res_list_out.append(res)
 
