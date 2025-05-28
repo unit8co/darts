@@ -1456,6 +1456,27 @@ class TestSKLearnModels:
         else:
             assert not isinstance(model.model, MultiOutputRegressor)
 
+    def test_model_representation(self):
+        """Check that model representation works with and without MultiOutputRegressor"""
+        model_1 = LinearRegressionModel(lags=4, output_chunk_length=1)
+        model_1.fit(series=self.sine_univariate1)
+        assert not isinstance(model_1.model, MultiOutputRegressor)
+
+        model_2 = XGBModel(
+            lags=4,
+            output_chunk_length=2,
+            multi_models=True,
+            likelihood="quantile",
+            quantiles=[0.1, 0.5, 0.9],
+            **xgb_test_params,
+        )
+        model_2.fit(series=self.sine_univariate1)
+        assert isinstance(model_2.model, MultiOutputRegressor)
+
+        for model in [model_1, model_2]:
+            assert model.__repr__().startswith(model.__class__.__name__)
+            assert model.__str__().startswith(model.model.__class__.__name__)
+
     def test_get_estimator_multi_models(self):
         """Craft training data so that estimator_[i].predict(X) == i + 1"""
 

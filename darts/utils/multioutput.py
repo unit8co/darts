@@ -26,19 +26,19 @@ class MultiOutputMixin:
 
     def __init__(
         self,
-        *args,
+        estimator,
         eval_set_name: Optional[str] = None,
         eval_weight_name: Optional[str] = None,
         output_chunk_length: Optional[int] = None,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
+        super().__init__(estimator=estimator, **kwargs)
+        # according to sklearn, set only attributes in `__init__` that are known before fitting;
+        # all other params at fitting time must have the suffix `"_"`
         self.eval_set_name_ = eval_set_name
         self.eval_weight_name_ = eval_weight_name
-        self.estimators_ = None
-        self.n_features_in_ = None
-        self.feature_names_in_ = None
         self._output_chunk_length = output_chunk_length
+
 
     def fit(self, X, y, sample_weight=None, **fit_params):
         """Fit the model to data, separately for each output variable.
@@ -100,8 +100,8 @@ class MultiOutputMixin:
             )
 
         fit_params_validated = _check_method_params(X, fit_params)
-        eval_set = fit_params_validated.pop(self.eval_set_name_, None)
-        eval_weight = fit_params_validated.pop(self.eval_weight_name_, None)
+        eval_set = fit_params_validated.pop(self.eval_set_name, None)
+        eval_weight = fit_params_validated.pop(self.eval_weight_name, None)
 
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
             delayed(_fit_estimator)(
@@ -111,11 +111,9 @@ class MultiOutputMixin:
                 sample_weight=sample_weight[:, i]
                 if sample_weight is not None
                 else None,
+                **({self.eval_set_name: [eval_set[i]]} if eval_set is not None else {}),
                 **(
-                    {self.eval_set_name_: [eval_set[i]]} if eval_set is not None else {}
-                ),
-                **(
-                    {self.eval_weight_name_: [eval_weight[i]]}
+                    {self.eval_weight_name: [eval_weight[i]]}
                     if eval_weight is not None
                     else {}
                 ),
