@@ -15,8 +15,8 @@ import pandas as pd
 from catboost import CatBoostRegressor, Pool
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import (
-    RegressionModelWithCategoricalCovariates,
+from darts.models.forecasting.sklearn_model import (
+    SKLearnModelWithCategoricalCovariates,
     _QuantileModelContainer,
 )
 from darts.timeseries import TimeSeries
@@ -29,7 +29,7 @@ from darts.utils.likelihood_models.sklearn import (
 logger = get_logger(__name__)
 
 
-class CatBoostModel(RegressionModelWithCategoricalCovariates):
+class CatBoostModel(SKLearnModelWithCategoricalCovariates):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -353,6 +353,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
         val_future_covariates: Optional[Sequence[TimeSeries]],
         val_sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: int,
+        stride: int,
     ) -> dict:
         # CatBoostRegressor requires sample weights to be passed with a validation set `Pool`
         kwargs = super()._add_val_set_to_kwargs(
@@ -362,6 +363,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
             val_future_covariates=val_future_covariates,
             val_sample_weight=val_sample_weight,
             max_samples_per_ts=max_samples_per_ts,
+            stride=stride,
         )
         val_set_name, val_weight_name = self.val_set_params
         val_sets = kwargs[val_set_name]
@@ -374,6 +376,7 @@ class CatBoostModel(RegressionModelWithCategoricalCovariates):
                     data=val_set[0],
                     label=val_set[1],
                     weight=val_weights[i] if val_weights is not None else None,
+                    cat_features=self._categorical_indices,
                 )
             )
         kwargs[val_set_name] = val_pools

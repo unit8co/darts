@@ -12,14 +12,14 @@ from darts.models import (
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
-    RandomForest,
+    RandomForestModel,
     RegressionEnsembleModel,
-    RegressionModel,
+    SKLearnModel,
     Theta,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.tests.models.forecasting.test_ensemble_models import _make_ts
-from darts.tests.models.forecasting.test_regression_models import train_test_split
+from darts.tests.models.forecasting.test_sklearn_models import train_test_split
 from darts.utils import timeseries_generation as tg
 
 if TORCH_AVAILABLE:
@@ -104,7 +104,7 @@ class TestRegressionEnsembleModels:
     def test_accepts_different_regression_models(self):
         regr1 = LinearRegression()
         regr2 = RandomForestRegressor()
-        regr3 = RandomForest(lags_future_covariates=[0])
+        regr3 = RandomForestModel(lags_future_covariates=[0])
 
         model0 = RegressionEnsembleModel(self.get_local_models(), 10)
         model1 = RegressionEnsembleModel(self.get_local_models(), 10, regr1)
@@ -118,7 +118,7 @@ class TestRegressionEnsembleModels:
 
     def test_accepts_one_model(self):
         regr1 = LinearRegression()
-        regr2 = RandomForest(lags_future_covariates=[0])
+        regr2 = RandomForestModel(lags_future_covariates=[0])
 
         model0 = RegressionEnsembleModel([self.get_local_models()[0]], 10)
         model1 = RegressionEnsembleModel([self.get_local_models()[0]], 10, regr1)
@@ -359,7 +359,7 @@ class TestRegressionEnsembleModels:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_univar(self):
         ensemble_models = self.get_global_models(output_chunk_length=10)
-        ensemble_models.append(RegressionModel(lags=1))
+        ensemble_models.append(SKLearnModel(lags=1))
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
         ensemble.fit(series=self.combined)
         ensemble.predict(10)
@@ -367,7 +367,7 @@ class TestRegressionEnsembleModels:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_multivar_no_covariates(self):
         ensemble_models = self.get_global_models(output_chunk_length=10)
-        ensemble_models.append(RegressionModel(lags=1))
+        ensemble_models.append(SKLearnModel(lags=1))
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
         ensemble.fit(self.seq1)
         ensemble.predict(10, self.seq1)
@@ -375,7 +375,7 @@ class TestRegressionEnsembleModels:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_train_predict_global_models_multivar_with_covariates(self):
         ensemble_models = self.get_global_models(output_chunk_length=10)
-        ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
+        ensemble_models.append(SKLearnModel(lags=1, lags_past_covariates=[-1]))
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
         ensemble.fit(self.seq1, self.cov1)
         ensemble.predict(10, self.seq2, self.cov2)
@@ -383,7 +383,7 @@ class TestRegressionEnsembleModels:
     def test_train_predict_models_with_future_covariates(self):
         ensemble_models = [
             LinearRegressionModel(lags=1, lags_future_covariates=[1]),
-            RandomForest(lags=1, lags_future_covariates=[1]),
+            RandomForestModel(lags=1, lags_future_covariates=[1]),
         ]
         ensemble = RegressionEnsembleModel(ensemble_models, 10)
         ensemble.fit(self.sine_series, future_covariates=self.ts_cov1)
@@ -499,7 +499,7 @@ class TestRegressionEnsembleModels:
                 random_state=self.RANDOM_SEED,
                 **tfm_kwargs,
             ),
-            RegressionModel(lags_past_covariates=[-1]),
+            SKLearnModel(lags_past_covariates=[-1]),
         ]
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
@@ -528,8 +528,8 @@ class TestRegressionEnsembleModels:
                 random_state=self.RANDOM_SEED,
                 **tfm_kwargs,
             ),
-            RegressionModel(lags_past_covariates=[-1]),
-            RegressionModel(lags_past_covariates=[-1]),
+            SKLearnModel(lags_past_covariates=[-1]),
+            SKLearnModel(lags_past_covariates=[-1]),
         ]
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
@@ -560,10 +560,10 @@ class TestRegressionEnsembleModels:
     def test_extreme_lags(self):
         # forecasting models do not use target lags
         train_n_points = 10
-        model1 = RandomForest(
+        model1 = RandomForestModel(
             lags_future_covariates=[0],
         )
-        model2 = RegressionModel(lags_past_covariates=3)
+        model2 = SKLearnModel(lags_past_covariates=3)
         model = RegressionEnsembleModel(
             forecasting_models=[model1, model2],
             regression_train_n_points=train_n_points,
@@ -572,10 +572,10 @@ class TestRegressionEnsembleModels:
         assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0, 0, None)
 
         # mix of all the lags
-        model3 = RandomForest(
+        model3 = RandomForestModel(
             lags_future_covariates=[-2, 5],
         )
-        model4 = RegressionModel(lags=[-7, -3], lags_past_covariates=3)
+        model4 = SKLearnModel(lags=[-7, -3], lags_past_covariates=3)
         model = RegressionEnsembleModel(
             forecasting_models=[model3, model4],
             regression_train_n_points=train_n_points,

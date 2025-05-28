@@ -7,32 +7,56 @@ from typing import Optional
 
 from statsforecast.models import AutoMFLES as SFAutoMFLES
 
-from darts import TimeSeries
 from darts.logging import get_logger
-from darts.models.forecasting.forecasting_model import (
-    FutureCovariatesLocalForecastingModel,
-)
+from darts.models.forecasting.sf_model import StatsForecastModel
 
 logger = get_logger(__name__)
 
 
-class AutoMFLES(FutureCovariatesLocalForecastingModel):
+class AutoMFLES(StatsForecastModel):
     def __init__(
-        self, *autoMFLES_args, add_encoders: Optional[dict] = None, **autoMFLES_kwargs
+        self,
+        *args,
+        add_encoders: Optional[dict] = None,
+        quantiles: Optional[list[float]] = None,
+        random_state: Optional[int] = None,
+        **kwargs,
     ):
-        """Auto-MFLES based on `Statsforecasts package
-        <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-MFLES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
 
         Automatically selects the best MFLES model from all feasible combinations of the parameters
-        `seasonality_weights`, `smoother`, `ma`, and `seasonal_period`. Selection is made using the sMAPE by default.
+        `seasonality_weights`, `smoother`, `ma`, and `seasonal_period`. Selection is made using the sMAPE metric by
+        default. We refer to the `StatsForecast documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#automfles>`_ for the exhaustive documentation
+        of the arguments.
 
-        We refer to the `statsforecast AutoMFLES documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#mfles>`_
-        for the exhaustive documentation of the arguments.
+        In addition to univariate deterministic forecasting, it comes with additional support:
+
+        - **Future covariates:** Use exogenous features to potentially improve predictive accuracy.
+
+        - **Probabilstic / Conformal forecasting:** Probabilstic forecasting can be performed using conformal
+          prediction. To activate it, simply set `prediction_intervals` at model creation. To generate probabilistic
+          forecasts, you can set the following parameters when calling
+          :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
+
+          - Forecast quantile values directly by setting `predict_likelihood_parameters=True`.
+
+          - Generate sampled forecasts from these quantiles by setting `num_samples >> 1`.
+
+        - **Transferable series forecasting:** Apply the fitted model to a new input `series` at prediction time.
+          Darts adds support by first fitting a copy of the model on the new series, and then using that model to
+          generate the corresponding forecast.
+
+        .. note::
+            Future covariates are not supported when the input series contain missing values.
+
+        .. note::
+            The first model call might take more time than all subsequent calls as the model relies on Numba and jit
+            compilation.
 
         Parameters
         ----------
-        autoMFLES_args
+        args
             Positional arguments for ``statsforecasts.models.AutoMFLES``.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
@@ -58,7 +82,12 @@ class AutoMFLES(FutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
-        autoMFLES_kwargs
+        quantiles
+            Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
+            with `num_samples > 1` or `predict_likelihood_parameters=True`.
+        random_state
+            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+        kwargs
             Keyword arguments for ``statsforecasts.models.AutoMFLES``.
 
         Examples
@@ -81,53 +110,14 @@ class AutoMFLES(FutureCovariatesLocalForecastingModel):
                [520.15305998],
                [593.38690019]])
         """
-        if "prediction_intervals" in autoMFLES_kwargs:
-            logger.warning(
-                "AutoMFLES does not support probabilistic forecasting. "
-                "`prediction_intervals` will be ignored."
-            )
-
-        super().__init__(add_encoders=add_encoders)
-        self.model = SFAutoMFLES(*autoMFLES_args, **autoMFLES_kwargs)
-
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
-        self._assert_univariate(series)
-        series = self.training_series
-        self.model.fit(
-            series.values(copy=False).flatten(),
-            X=future_covariates.values(copy=False) if future_covariates else None,
-        )
-        return self
-
-    def _predict(
-        self,
-        n: int,
-        future_covariates: Optional[TimeSeries] = None,
-        num_samples: int = 1,
-        verbose: bool = False,
-    ):
-        super()._predict(n, future_covariates, num_samples)
-        forecast_dict = self.model.predict(
-            h=n,
-            X=future_covariates.values(copy=False) if future_covariates else None,
-            level=None,
+        super().__init__(
+            model=SFAutoMFLES(*args, **kwargs),
+            quantiles=quantiles,
+            add_encoders=add_encoders,
+            random_state=random_state,
         )
 
-        return self._build_forecast_series(forecast_dict["mean"])
-
     @property
-    def supports_multivariate(self) -> bool:
-        return False
-
-    @property
-    def min_train_series_length(self) -> int:
-        return 10
-
-    @property
-    def _supports_range_index(self) -> bool:
+    def _supports_native_future_covariates(self) -> bool:
+        # StatsForecast didn't set the `use_exog=True` flag for AutoMFLES even though it supports it.
         return True
-
-    @property
-    def supports_probabilistic_prediction(self) -> bool:
-        return False

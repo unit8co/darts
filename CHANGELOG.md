@@ -5,32 +5,80 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.34.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.35.0...master)
 
 ### For users of the library:
 
 **Improved**
 
-- Added support for categorical covariate to  `CatBoostModel`. You can now define categorical components at model construction with parameters `categorical_*_covariates: List[str]` for past, future, and static covariates. [#2733](https://github.com/unit8co/darts/pull/2750) by [Jonas Blanc](https://github.com/jonasblanc).
-- Added new forecasting model: `AutoMFLES`, a simple time series method based on gradient boosting time series decomposition as proposed in [this repository](https://github.com/tblume1992/MFLES). This implementation is based on [AutoMFLES](https://nixtlaverse.nixtla.io/statsforecast/docs/models/mfles.html) from Nixtla's `statsforecasts` library. [#2747](https://github.com/unit8co/darts/pull/2747) by [Che Hang Ng](https://github.com/CheHangNg).
-- 🔴 Simplified all `StatsForecast*` model names by removing the `StatsForecast` part. [#2762](https://github.com/unit8co/darts/pull/2762) by [Dennis Bader](https://github.com/dennisbader).
-  - Renamed `StatsForecastAutoARIMA` to `AutoARIMA`
-  - Renamed `StatsForecastAutoCES` to `AutoCES`
-  - Renamed `StatsForecastAutoETS` to `AutoETS`
-  - Renamed `StatsForecastAutoTBATS` to `AutoTBATS`
-  - Renamed `StatsForecastAutoTheta` to `AutoTheta`
+- Added support for training `RegressionModel` and `TorchForecastingModel` with stridden training samples by passing parameter `stride` to `fit()`. This allows to reduce the size of the training set or apply elaborate training scenarios. [#2624](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
+- Improvements `NLinearModel`: Default value for `normalize` changed from `False` to `True` to reflect the source paper. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
+- Renamed some regression models for consistency and clarity reasons. [#2774](https://github.com/unit8co/darts/pull/2774) by [Jonas Blanc](https://github.com/jonasblanc).
+  - 🟠 Renamed `RegressionModel` to `SKLearnModel`. Using `RegressionModel` will raise a depraction warning.
+  - 🟠 Renamed `RandomForest` to `RandomForestModel`. Using `RandomForest` will raise a depraction warning.
+  - 🔴 Renamed `RegressionModelWithCategoricalCovariates` to `SKLearnModelWithCategoricalCovariates`. Removed `RegressionModelWithCategoricalCovariates`
+- Improvements to `TorchForecastingModel`: [#2802](https://github.com/unit8co/darts/pull/2802) by [Dennis Bader](https://github.com/dennisbader).
+  - Drastically improved prediction speed which is now up to 5.4 times as fast before. Using `n_jobs>1` now significantly boosts efficiency. This affects `predict()`, `historcial_forecasts()`, `backtest()`, `gridsearch()` and `residuals()`. The highest boost can be observed when calling historical forecasts, backtest, or residuals with `last_points_only=False`.
+  - Added parameter `values_only` to method `predict_from_dataset()` which will return a tuple of (prediction `np.ndarray`, target series schema, prediction start time) instead of `TimeSeries` objects.
+- 🔴 Improvements to `TorchForecastingModel` datasets: [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
+  - We simplified the training and inference datasets. Instead of having covariates specific datasets, the new datasets now support all combinations of covariates natively:
+    - `ShiftedTorchTrainingDataset` (replaces all `*ShiftedDataset`)
+    - `SequentialTorchTrainingDataset` (replaces all `*SequentialDataset`)
+    - `HorizonBasedTorchTrainingDataset` (replaces `HorizonBasedDataset`)
+    - `SequentialTorchInferenceDataset` (replaces all `*InferenceDataset`)
+  - All datasets now have uniform output:
+    - Training datasets: Tuple[past target, past cov, historic future cov, future cov, static cov, sample weight, future target].
+    - Inference datasets: Tuple[past target, past cov, future past cov, historic future cov, future cov, static cov, target series schema, pred start time]
+  - `HorizonBasedTorchTrainingDataset` now also supports future covariates.
+  - Added parameter `stride` to `*TorchTrainingDatset` to apply a stride between two consecutive training samples.  [#2624](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
+- Added method `schema()` to `TimeSeries` to extract the schema from a series. It contains information about the time index, columns, static covariates, hierarchy, and metadata. [#2802](https://github.com/unit8co/darts/pull/2802) by [Dennis Bader](https://github.com/dennisbader).
 
-**Removed / moved**
+**Fixed**
 
-- 🔴 Removed model `AutoARIMA`. To support `numpy>=2.0.0`, we unfortunately had to remove the `pmdarima` dependency. Use `StatsForecastAutoARIMA` instead. [#2734](https://github.com/unit8co/darts/pull/2734) by [Dennis Bader](https://github.com/dennisbader).
-- 🔴 Removed deprecated method `TimeSeries.pd_dataframe()`. Use `TimeSeries.to_dataframe()` instead. [#2733](https://github.com/unit8co/darts/pull/2733) by [Dennis Bader](https://github.com/dennisbader).
-- 🔴 Removed deprecated method `TimeSeries.pd_serise()`. Use `TimeSeries.to_series()` instead. [#2733](https://github.com/unit8co/darts/pull/2733) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed some issues in `NLinearModel` with `normalize=True` that resulted in decreased predictive accuracy. Using `shared_weights=True` and auto-regressive forecasting now work properly. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
+- Fixed a bug when training a `TorchForecastingModel`, where using certain `torchmetrics` that require a 2D model output (e.g. R2Score) raised an error. [He Weilin](https://github.com/cnhwl).
+- Fixed a bug with `SKLearnModel.__str__()` which raised an error when the model was wrapped by Darts' MultioutputRegressor. [#2811](https://github.com/unit8co/darts/pull/2811) by [Dennis Bader](https://github.com/dennisbader).
+
+**Dependencies**
+
+### For developers of the library:
+
+- Moved all torch dataset related modules from `darts.utils.data.*` to `darts.utils.data.torch_datasets.*`. The objects can still be imported as before with `from darts.utils.data import ...`
+- Moved tabularization module from `darts.utils.data.tabularization` into `darts.utils.data.tabularization.tabularization`. The objects can still be imported as before with `from darts.utils.data.tabularization import ...` [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
+
+## [0.35.0](https://github.com/unit8co/darts/tree/0.35.0) (2025-04-18)
+
+### For users of the library:
+
+**Improved**
+
+- 🚀🚀 Added **new forecasting models**:
+  - `AutoMFLES` : a simple time series method based on gradient boosting time series decomposition as proposed by Tyler Blume in [this repository](https://github.com/tblume1992/MFLES). Our implementation is based on [AutoMFLES](https://nixtlaverse.nixtla.io/statsforecast/docs/models/mfles.html) from Nixtla's `statsforecast` library. [#2747](https://github.com/unit8co/darts/pull/2747) by [Che Hang Ng](https://github.com/CheHangNg).
+  - `StatsForecastModel` : allows to use **any forecasting model from StatsForecast** (see [here](https://nixtlaverse.nixtla.io/statsforecast/index.html#models)) in Darts with support for future covariates, probabilistic forecasting (sampled, direct quantile, and / or conformal predictions), and transferable series forecasting. [#2770](https://github.com/unit8co/darts/pull/2770) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to forecasting models:
+  - 🚀 Added **support for categorical covariates** to  `CatBoostModel`. You can now define categorical components at model creation with parameters `categorical_*_covariates: List[str]` for past, future, and static covariates. [#2733](https://github.com/unit8co/darts/pull/2750) by [Jonas Blanc](https://github.com/jonasblanc).
+  - 🚀🔴 Extended the functionalities of and renamed several existing models. All models below now support **future covariates**, **probabilistic forecasting** (sampled, direct quantile, and / or conformal predictions), and **transferable series forecasting**: [#2762](https://github.com/unit8co/darts/pull/2762) and [#2770](https://github.com/unit8co/darts/pull/2770) by [Dennis Bader](https://github.com/dennisbader).
+    - `AutoARIMA` (old name `StatsForecastAutoARIMA`)
+    - `AutoETS` (old name `StatsForecastAutoETS`)
+    - `AutoCES` (old name `StatsForecastAutoCES`)
+    - `AutoTBATS` (old name `StatsForecastAutoTBATS`)
+    - `AutoTheta` (old name `StatsForecastAutoTheta`)
+    - `TBATS`
+    - `Croston`
+- Changes to `TimeSeries` : [#2733](https://github.com/unit8co/darts/pull/2733) by [Dennis Bader](https://github.com/dennisbader).
+  - 🟠 Removed deprecated method `TimeSeries.pd_dataframe()`. Use `TimeSeries.to_dataframe()` instead.
+  - 🟠 Removed deprecated method `TimeSeries.pd_serise()`. Use `TimeSeries.to_series()` instead.
 
 **Fixed**
 
 - Fixed a bug in `CatBoostModel` with `likelihood="gaussian"`, where predicting with `predict_likelihood_parameters=True` resulted in wrong ordering of the predicted parameters. [#2742](https://github.com/unit8co/darts/pull/2742) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
+
+- 🚀🚀 Added **support for NumPy 2.0 and higher**. To achieve this, we had to make the following adjustments to our dependencies. [#2771](https://github.com/unit8co/darts/pull/2771) by [Dennis Bader](https://github.com/dennisbader).
+  - 🔴 Changed `AutoARIMA` model backend from `pmdarima` to `statsforecast`. The model creation parameters are almost identical. For reference, see the [pmdarima docs](https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html) and [statsforecast docs](https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima). Additionally, the new implementation is more efficient and has improved probabilistic forecasting support, including conformal prediction. [#2734](https://github.com/unit8co/darts/pull/2734) by [Dennis Bader](https://github.com/dennisbader).
+  - 🔴 Changed `TBATS` model backend from `tbats` to `statsforecast`. The model creation parameters are almost identical. For reference, see the [tbats docs](https://github.com/intive-DataScience/tbats/blob/master/tbats/tbats/TBATS.py) and [statsforecast docs](https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tbats). Additionally, the new implementation is more efficient, comes with future covariates support and has improved probabilistic forecasting support. [#2781](https://github.com/unit8co/darts/pull/2781) by [Dennis Bader](https://github.com/dennisbader).
+  - 🔴 Removed `BATS` model. Use `TBATS` instead. [#2781](https://github.com/unit8co/darts/pull/2781) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
 

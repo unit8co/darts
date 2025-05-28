@@ -21,13 +21,13 @@ from darts.dataprocessing.transformers import (
 from darts.datasets import AirPassengersDataset
 from darts.models import (
     ARIMA,
-    AutoARIMA,
     CatBoostModel,
     ConformalNaiveModel,
     LightGBMModel,
     LinearRegressionModel,
     NaiveDrift,
     NaiveSeasonal,
+    Prophet,
 )
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
@@ -320,6 +320,8 @@ if TORCH_AVAILABLE:
 else:
     models_torch_cls_kwargs = []
 
+PROPHET_AVAILABLE = not isinstance(Prophet, NotImportedModule)
+
 
 class TestHistoricalforecast:
     np.random.seed(42)
@@ -439,6 +441,7 @@ class TestHistoricalforecast:
                 return None
             return NLinearModel(
                 input_chunk_length=3,
+                normalize=False,
                 likelihood=(
                     QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95]) if use_ll else None
                 ),
@@ -578,14 +581,14 @@ class TestHistoricalforecast:
             "Model prediction does not support `past_covariates`"
         )
 
+    @pytest.mark.skipif(not PROPHET_AVAILABLE, reason="requires prophet")
     def test_historical_forecasts_future_cov_local_models(self):
-        model = AutoARIMA()
-        assert model.min_train_series_length == 10
-        series = tg.sine_timeseries(length=11)
+        model = Prophet()
+        series = tg.sine_timeseries(length=model.min_train_series_length + 1)
         res = model.historical_forecasts(
             series, future_covariates=series, retrain=True, forecast_horizon=1
         )
-        # AutoARIMA has a minimum train length of 10, with horizon=1, we expect one forecast at last point
+        # series is one longer than min train series length, we expect one forecast at last point with horizon = 1
         # (series has length 11)
         assert len(res) == 1
         assert series.end_time() == res.time_index[0]

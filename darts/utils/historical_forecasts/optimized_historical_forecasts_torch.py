@@ -11,7 +11,7 @@ from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_boundaries,
     _process_predict_start_points_bounds,
 )
-from darts.utils.utils import generate_index
+from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 
 logger = get_logger(__name__)
 
@@ -93,10 +93,10 @@ def _optimized_historical_forecasts(
     ][0]
     super_predict_params = inspect.signature(super(tfm_cls, model).predict).parameters
     super(tfm_cls, model).predict(
-        forecast_horizon,
-        series,
-        past_covariates,
-        future_covariates,
+        n=forecast_horizon,
+        series=series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
         show_warnings=show_warnings,
@@ -104,44 +104,58 @@ def _optimized_historical_forecasts(
     )
 
     dataset = model._build_inference_dataset(
-        target=series,
         n=forecast_horizon,
+        series=series,
         past_covariates=past_covariates,
         future_covariates=future_covariates,
         stride=stride,
         bounds=bounds,
     )
 
-    predictions = model.predict_from_dataset(
-        forecast_horizon,
-        dataset,
+    # to avoid having to generate `TimeSeries` twice when `last_points_only=True`, we only
+    # return the values in that case
+    model_out = model.predict_from_dataset(
+        n=forecast_horizon,
+        dataset=dataset,
         verbose=verbose,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
+        values_only=last_points_only,
         **kwargs,
     )
 
-    # torch models return list of time series in order of historical forecasts: we reorder per time series
+    # torch model returns output in the order of the historical forecasts: we reorder per time series
     forecasts_list = []
+    likelihood_component_names_fn = (
+        model.likelihood.component_names if predict_likelihood_parameters else None
+    )
     for series_idx in range(len(series)):
         pred_idx_start = 0 if not series_idx else cum_lengths[series_idx - 1]
         pred_idx_end = cum_lengths[series_idx]
-        preds = predictions[pred_idx_start:pred_idx_end]
+
         if last_points_only:
-            # torch predictions come with the entire horizon: we extract last values
-            preds = TimeSeries.from_times_and_values(
-                times=generate_index(
-                    start=preds[0].end_time(),
-                    length=len(preds),
-                    freq=preds[0].freq * stride,
-                ),
-                values=np.concatenate(
-                    [p.all_values(copy=False)[-1:, :, :] for p in preds], axis=0
-                ),
-                columns=preds[0].columns,
-                static_covariates=preds[0].static_covariates,
-                hierarchy=preds[0].hierarchy,
-                metadata=preds[0].metadata,
+            # model output is tuple of (np.ndarray of predictions, series schemas, pred start times)
+            preds = model_out[0][pred_idx_start:pred_idx_end]
+            schema = model_out[1][pred_idx_start]
+            pred_start = model_out[2][pred_idx_start]
+
+            # predictions come with the entire horizon: we extract last values
+            preds = preds[:, -1]
+            pred_start += (forecast_horizon - 1) * schema["time_freq"]
+
+            # adjust frequency with stride
+            schema["time_freq"] *= stride
+
+            # predictions come with the entire horizon: we extract last values
+            preds = _build_forecast_series_from_schema(
+                values=preds,
+                schema=schema,
+                pred_start=pred_start,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                likelihood_component_names_fn=likelihood_component_names_fn,
             )
+        else:
+            # model output is already a sequence of forecasted `TimeSeries`
+            preds = model_out[pred_idx_start:pred_idx_end]
         forecasts_list.append(preds)
     return forecasts_list

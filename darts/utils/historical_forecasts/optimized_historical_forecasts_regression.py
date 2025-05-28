@@ -34,7 +34,7 @@ def _optimized_historical_forecasts_last_points_only(
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
-    Optimized historical forecasts for RegressionModel with last_points_only = True
+    Optimized historical forecasts for SKLearnModel with last_points_only = True
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
 
@@ -51,7 +51,7 @@ def _optimized_historical_forecasts_last_points_only(
         )
         freq = series_.freq
         forecast_components = (
-            model.likelihood.component_names(series_)
+            model.likelihood.component_names(series=series_)
             if predict_likelihood_parameters
             else series_.columns
         )
@@ -207,7 +207,7 @@ def _optimized_historical_forecasts_all_points(
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
-    Optimized historical forecasts for RegressionModel with last_points_only = False.
+    Optimized historical forecasts for SKLearnModel with last_points_only = False.
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
@@ -222,7 +222,7 @@ def _optimized_historical_forecasts_all_points(
         )
         freq = series_.freq
         forecast_components = (
-            model.likelihood.component_names(series_)
+            model.likelihood.component_names(series=series_)
             if predict_likelihood_parameters
             else series_.columns
         )

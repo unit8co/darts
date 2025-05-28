@@ -1,5 +1,6 @@
 import copy
 import itertools
+import math
 import os
 from typing import Any, Optional
 from unittest.mock import patch
@@ -30,6 +31,7 @@ from torchmetrics import (
     MeanAbsolutePercentageError,
     Metric,
     MetricCollection,
+    R2Score,
 )
 
 from darts.models import (
@@ -1249,9 +1251,7 @@ class TestTorchForecastingModel:
         ckpt_path = os.path.join(tmpdir_fn, f"{model_name}.pt")
         # barebone model
         model = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
-            n_epochs=1,
+            input_chunk_length=4, output_chunk_length=1, n_epochs=1, **tfm_kwargs
         )
         model.fit(ts_float32)
         model.save(ckpt_path)
@@ -1259,8 +1259,7 @@ class TestTorchForecastingModel:
 
         # identical model
         loading_model = DLinearModel(
-            input_chunk_length=4,
-            output_chunk_length=1,
+            input_chunk_length=4, output_chunk_length=1, **tfm_kwargs
         )
         loading_model.load_weights(ckpt_path)
         loading_model.fit(ts_float32)
@@ -1431,6 +1430,7 @@ class TestTorchForecastingModel:
         metric_collection = MetricCollection([
             MeanAbsolutePercentageError(),
             MeanAbsoluteError(),
+            R2Score(),
         ])
 
         model_kwargs = {
@@ -1479,6 +1479,7 @@ class TestTorchForecastingModel:
         metric_collection = MetricCollection([
             MeanAbsolutePercentageError(),
             MeanAbsoluteError(),
+            R2Score(),
         ])
         model_kwargs = {
             "logger": DummyLogger(),
@@ -2057,7 +2058,9 @@ class TestTorchForecastingModel:
                     cov_name + "_covariates": covs[cov_name + "_covariates"][:-1]
                 }
                 _ = model_fc_shift.predict(n=ocl, **add_covs)
-            assert f"provided {cov_name} covariates at dataset index" in str(err.value)
+            assert f"provided `{cov_name}_covariates` at series sequence index" in str(
+                err.value
+            )
 
     @pytest.mark.parametrize("config", itertools.product(models, [2, 3, 4]))
     def test_multi_ts_prediction(self, config):
@@ -2095,6 +2098,10 @@ class TestTorchForecastingModel:
         model_kwargs["pl_trainer_kwargs"]["fast_dev_run"] = False
         # create more than one batch sample as otherwise linear sample weight would always be `1.`
         ts = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+            + 1
+        ) + tg.sine_timeseries(
             length=model_kwargs["input_chunk_length"]
             + model_kwargs["output_chunk_length"]
             + 1
@@ -2177,7 +2184,7 @@ class TestTorchForecastingModel:
             model.fit(ts, sample_weight=ts[:-1])
         assert (
             str(err.value)
-            == "Missing sample weights; could not find sample weights in index value range: "
+            == "Invalid `sample_weight`; could not find values in index range: "
             "2000-01-11 00:00:00 - 2000-01-11 00:00:00."
         )
 
@@ -2198,7 +2205,7 @@ class TestTorchForecastingModel:
         assert (
             str(err.value)
             == "The number of components in `sample_weight` must either be `1` or match the "
-            "number of target series components `1`. (0-th series)"
+            "number of target series components `1` (at series sequence idx `0`)."
         )
         # with correct number it works
         model = model_cls(**model_kwargs)
@@ -2253,6 +2260,119 @@ class TestTorchForecastingModel:
             np.testing.assert_array_almost_equal(
                 pred.all_values(), pred_no_weight.all_values()
             )
+
+    def test_validate_predict_samples(self, tmpdir_fn):
+        model = self.helper_create_DLinearModel(work_dir=tmpdir_fn)
+
+        # train model with all features types
+        series = self.series.with_static_covariates(pd.DataFrame({"st1": [1.0]}))
+        # dummy past cov with more features
+        pc = series.stack(series)
+        # dummy future cov with even more features
+        fc = series.stack(pc)
+        model.fit(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+        )
+
+        # train sample has (past_target, past_covariates, historic_future_covariates, future_covariates,
+        # static covariates, future_target)
+        train_sample = model.train_sample
+        # predict sample has (past_target, past_covariates, future_past_covariates, historic_future_covariates,
+        # future_covariates, static_covariates, target series, prediction start time)
+        valid_sample = (
+            train_sample[:2]
+            + (None,)
+            + train_sample[2:-1]
+            + (series, series.end_time() + series.freq)
+        )
+
+        # valid sample works
+        model._validate_predict_sample(model.train_sample, valid_sample)
+
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(model.train_sample, valid_sample[:-1])
+        assert str(exc.value).startswith(
+            "Mismatch between number of training features `5` and prediction features `4`."
+        )
+
+        target_wrong_comp = np.empty((train_sample[0].shape[0], 2))
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(
+                model.train_sample, (target_wrong_comp,) + valid_sample[1:]
+            )
+        assert str(exc.value) == (
+            "The provided `series` must have equal number of components as the `series` used to train the model. "
+            "Received number of components: `2`, expected: `1`."
+        )
+
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(
+                model.train_sample, (None,) + valid_sample[1:]
+            )
+        assert str(exc.value).startswith(
+            "This model has been trained with `series`; some `series` "
+            "of matching dimensionality are needed for prediction."
+        )
+
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(
+                (None,) + model.train_sample[1:], valid_sample
+            )
+        assert str(exc.value).startswith(
+            "This model has been trained without `series`; No `series` "
+            "should be provided for prediction."
+        )
+
+        # incorrect number of pred features
+        pred_sample = [1.0, 1.0]
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(model.train_sample, pred_sample)
+        assert str(exc.value).startswith(
+            "Mismatch between number of training features `5` "
+            "and prediction features `2`."
+        )
+
+    def test_to_dtype(self, tmpdir_fn):
+        model = self.helper_create_DLinearModel(work_dir=tmpdir_fn)
+        model.fit(self.series[:24])
+
+        assert model.model.dtype is torch.float64
+        model.model.to_dtype(torch.float64)
+        assert model.model.dtype is torch.float64
+        model.model.to_dtype(torch.float32)
+        assert model.model.dtype is torch.float32
+        model.model.to_dtype(torch.float16)
+        assert model.model.dtype is torch.float16
+
+        with pytest.raises(ValueError) as exc:
+            model.model.to_dtype(np.float64)
+        assert str(exc.value).startswith(
+            "Trying to load dtype `<class 'numpy.float64'>`."
+        )
+
+    @pytest.mark.parametrize("stride", [1, 2])
+    def test_fit_with_stride(self, stride):
+        # mocking `fit_from_dataset` to check that `stride` was passed properly
+        icl, ocl = 5, 1
+        with patch(
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.fit_from_dataset"
+        ) as fit_patch:
+            model = DLinearModel(
+                input_chunk_length=5, output_chunk_length=1, n_epochs=1, **tfm_kwargs
+            )
+            # this should extract 3 samples with stride == 1
+            model.fit(
+                series=self.series[: icl + ocl + 2],
+                val_series=self.series[: icl + ocl + 2],
+                stride=stride,
+            )
+            input_args = fit_patch.call_args.args
+            train_set = input_args[0]
+            val_set = input_args[1]
+            assert len(train_set) == len(val_set) == math.ceil(3 / stride)
+            assert train_set.stride == val_set.stride == stride
 
     def helper_equality_encoders(
         self, first_encoders: dict[str, Any], second_encoders: dict[str, Any]

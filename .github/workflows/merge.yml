@@ -30,7 +30,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-13, ubuntu-latest]
+        os: [macos-14, ubuntu-latest]
         python-version: ['3.9', '3.11']
         flavour: ['core', 'torch', 'all']
 
@@ -59,7 +59,12 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "Install Darts Locally"
+        run: |
+          pip install .
 
       - name: "Run tests"
         run: |
@@ -80,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        example-name: [00-quickstart.ipynb, 01-multi-time-series-and-covariates.ipynb, 02-data-processing.ipynb, 03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 05-TCN-examples.ipynb, 06-Transformer-examples.ipynb, 07-NBEATS-examples.ipynb, 08-DeepAR-examples.ipynb, 09-DeepTCN-examples.ipynb, 10-Kalman-filter-examples.ipynb, 11-GP-filter-examples.ipynb, 12-Dynamic-Time-Warping-example.ipynb, 13-TFT-examples.ipynb, 15-static-covariates.ipynb, 16-hierarchical-reconciliation.ipynb, 18-TiDE-examples.ipynb, 19-EnsembleModel-examples.ipynb, 20-RegressionModel-examples.ipynb, 21-TSMixer-examples.ipynb, 22-anomaly-detection-examples.ipynb, 23-Conformal-Prediction-examples.ipynb]
+        example-name: [00-quickstart.ipynb, 01-multi-time-series-and-covariates.ipynb, 02-data-processing.ipynb, 03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 05-TCN-examples.ipynb, 06-Transformer-examples.ipynb, 07-NBEATS-examples.ipynb, 08-DeepAR-examples.ipynb, 09-DeepTCN-examples.ipynb, 10-Kalman-filter-examples.ipynb, 11-GP-filter-examples.ipynb, 12-Dynamic-Time-Warping-example.ipynb, 13-TFT-examples.ipynb, 15-static-covariates.ipynb, 16-hierarchical-reconciliation.ipynb, 18-TiDE-examples.ipynb, 19-EnsembleModel-examples.ipynb, 20-SKLearnModel-examples.ipynb, 21-TSMixer-examples.ipynb, 22-anomaly-detection-examples.ipynb, 23-Conformal-Prediction-examples.ipynb]
     steps:
       - name: "Clone repository"
         uses: actions/checkout@v4
@@ -115,9 +120,10 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Locally"
+      - name: "Install Darts Locally"
         run: |
           pip install .
 
@@ -166,9 +172,10 @@ jobs:
 
       - name: "Install libomp (for LightGBM)"
         run: |
+          chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Locally"
+      - name: "Install Darts Locally"
         run: |
           pip install .
 

@@ -1,3 +1,4 @@
+import os.path
 from itertools import product
 from typing import Optional
 
@@ -65,6 +66,12 @@ class TestOnnx:
 
         # model export
         model.to_onnx(onnx_filename)
+        assert os.path.exists(onnx_filename)
+        n_files = len(os.listdir(tmpdir_fn))
+
+        # check that saving default name works
+        model.to_onnx()
+        assert len(os.listdir(tmpdir_fn)) == n_files + 1
 
         # onnx model verification
         onnx_model = onnx.load(onnx_filename)
@@ -110,7 +117,8 @@ class TestOnnx:
         model.save(ckpt_filename, clean=clean)
 
         # load the entire checkpoint
-        model_loaded = model_cls.load(ckpt_filename)
+        load_kwargs = tfm_kwargs_dev if clean else {}
+        model_loaded = model_cls.load(ckpt_filename, **load_kwargs)
         pred = model_loaded.predict(
             n=2,
             series=self.ts_tg_with_static
