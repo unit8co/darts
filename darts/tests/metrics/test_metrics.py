@@ -8,7 +8,7 @@ import pytest
 import sklearn.metrics
 
 from darts import TimeSeries, concatenate
-from darts.metrics import metrics
+from darts.metrics import categorical_metrics, metrics
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
@@ -135,6 +135,21 @@ def metric_incs_qr(y_true, y_pred, q_interval=None, **kwargs):
     return res.reshape(len(y_pred), -1)
 
 
+def metric_acc(y_true, y_pred):
+    print(y_true.shape, y_pred.shape)
+    return sklearn.metrics.accuracy_score(y_true.flatten(), y_pred.flatten())
+
+
+def metric_bacc(y_true, y_pred):
+    return sklearn.metrics.balanced_accuracy_score(y_true.flatten(), y_pred.flatten())
+
+
+def metric_p(y_true, y_pred):
+    return sklearn.metrics.precision_score(
+        y_true.flatten(), y_pred.flatten(), average="micro"
+    )
+
+
 class TestMetrics:
     np.random.seed(42)
     pd_train = pd.Series(
@@ -239,6 +254,9 @@ class TestMetrics:
             (metrics.qr, True, {}),
             (metrics.mql, True, {}),
             (metrics.dtw_metric, False, {}),
+            (categorical_metrics.acc, False, {}),
+            (categorical_metrics.bacc, False, {}),
+            (categorical_metrics.p, False, {}),
         ],
     )
     def test_output_type_time_aggregated(self, config):
@@ -832,6 +850,9 @@ class TestMetrics:
                 (metrics.qr, True),
                 (metrics.mql, True),
                 (metrics.dtw_metric, False),
+                (categorical_metrics.acc, False),
+                (categorical_metrics.bacc, False),
+                (categorical_metrics.p, False),
             ],
             ["time", "component", "series"],
         ),
@@ -935,6 +956,9 @@ class TestMetrics:
             (metrics.qr, 0, True, {}),
             (metrics.mql, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
+            (categorical_metrics.acc, 1, False, {}),
+            (categorical_metrics.bacc, 1, False, {}),
+            (categorical_metrics.p, 1, False, {}),
         ],
     )
     def test_same(self, config):
@@ -1380,6 +1404,9 @@ class TestMetrics:
             (metrics.marre, "max", {}),
             (metrics.r2_score, "min", {}),
             (metrics.coefficient_of_variation, "max", {}),
+            (categorical_metrics.acc, "max", {}),
+            (categorical_metrics.bacc, "max", {}),
+            (categorical_metrics.p, "max", {}),
         ],
     )
     def test_multiple_ts(self, config):
@@ -1469,6 +1496,9 @@ class TestMetrics:
             (metrics.marre, metric_marre, {}, {}),
             (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
             (metrics.coefficient_of_variation, metric_cov, {}, {}),
+            (categorical_metrics.acc, metric_acc, {}, {}),
+            (categorical_metrics.bacc, metric_bacc, {}, {}),
+            (categorical_metrics.p, metric_p, {}, {}),
         ],
     )
     def test_metrics_deterministic(self, config):
