@@ -16,11 +16,11 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.api import VARMAX as staVARMA
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

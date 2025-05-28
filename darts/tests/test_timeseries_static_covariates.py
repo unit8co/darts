@@ -310,7 +310,7 @@ class TestTimeSeriesStaticCovariate:
                 value_cols="a",
             )
         assert str(err.value).startswith(
-            "The time index of the provided DataArray is missing the freq attribute"
+            "The time index is missing the `freq` attribute"
         )
 
     def test_from_group_dataframe_not_unique(self):
@@ -748,20 +748,20 @@ class TestTimeSeriesStaticCovariate:
         self.helper_test_transfer(tag, ts, ts - 3)
 
         # conditions
-        self.helper_test_transfer_xa(tag, ts, ts < 3)
-        self.helper_test_transfer_xa(tag, ts, ts >= 3)
-        self.helper_test_transfer_xa(tag, ts, ts > 3)
-        self.helper_test_transfer_xa(tag, ts, ts >= 3)
+        self.helper_test_transfer(tag, ts, ts < 3)
+        self.helper_test_transfer(tag, ts, ts >= 3)
+        self.helper_test_transfer(tag, ts, ts > 3)
+        self.helper_test_transfer(tag, ts, ts >= 3)
 
         # arithmetics with non-series (left) and series (right)
         self.helper_test_transfer(tag, ts, 3 * ts)
         self.helper_test_transfer(tag, ts, 3 + ts)
         self.helper_test_transfer(tag, ts, 3 - ts)
         # conditions
-        self.helper_test_transfer_xa(tag, ts, 3 > ts)
-        self.helper_test_transfer_xa(tag, ts, 3 >= ts)
-        self.helper_test_transfer_xa(tag, ts, 3 < ts)
-        self.helper_test_transfer_xa(tag, ts, 3 <= ts)
+        self.helper_test_transfer(tag, ts, 3 > ts)
+        self.helper_test_transfer(tag, ts, 3 >= ts)
+        self.helper_test_transfer(tag, ts, 3 < ts)
+        self.helper_test_transfer(tag, ts, 3 <= ts)
 
         # arithmetics with two series
         self.helper_test_transfer(tag, ts, ts / ts)
@@ -770,10 +770,10 @@ class TestTimeSeriesStaticCovariate:
         self.helper_test_transfer(tag, ts, ts + ts)
         self.helper_test_transfer(tag, ts, ts - ts)
         # conditions
-        self.helper_test_transfer_xa(tag, ts, ts > ts)
-        self.helper_test_transfer_xa(tag, ts, ts >= ts)
-        self.helper_test_transfer_xa(tag, ts, ts < ts)
-        self.helper_test_transfer_xa(tag, ts, ts <= ts)
+        self.helper_test_transfer(tag, ts, ts > ts)
+        self.helper_test_transfer(tag, ts, ts >= ts)
+        self.helper_test_transfer(tag, ts, ts < ts)
+        self.helper_test_transfer(tag, ts, ts <= ts)
 
         # other operations
         self.helper_test_transfer(tag, ts, abs(ts))
@@ -856,14 +856,6 @@ class TestTimeSeriesStaticCovariate:
             assert ts_new.static_covariates.equals(ts.static_covariates)
         else:  # metadata
             assert ts_new.metadata == ts.metadata
-
-    @staticmethod
-    def helper_test_transfer_xa(tag, ts, xa_new):
-        """static cov or metadata must be identical between xarray and TimeSeries"""
-        if tag == STATIC_COV_TAG:
-            assert xa_new.attrs[STATIC_COV_TAG].equals(ts.static_covariates)
-        else:  # metadata
-            assert xa_new.attrs[METADATA_TAG] == ts.metadata
 
     @staticmethod
     def helper_test_transfer_values(tag, ts, ts_new):

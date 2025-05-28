@@ -75,9 +75,11 @@ def constant_timeseries(
 
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.full(len(index), value, dtype=dtype)
-
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+    return TimeSeries(
+        times=index,
+        values=values,
+        components=pd.Index([column_name]),
+        copy=False,
     )
 
 
@@ -132,8 +134,11 @@ def linear_timeseries(
 
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.linspace(start_value, end_value, len(index), dtype=dtype)
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+    return TimeSeries(
+        times=index,
+        values=values,
+        components=pd.Index([column_name]),
+        copy=False,
     )
 
 
@@ -198,9 +203,11 @@ def sine_timeseries(
         + value_y_offset
     )
     values = f(values)
-
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+    return TimeSeries(
+        times=index,
+        values=values,
+        components=pd.Index([column_name]),
+        copy=False,
     )
 
 
@@ -274,9 +281,11 @@ def gaussian_timeseries(
 
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.random.normal(mean, std, size=len(index)).astype(dtype)
-
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+    return TimeSeries(
+        times=index,
+        values=values,
+        components=pd.Index([column_name]),
+        copy=False,
     )
 
 
@@ -329,9 +338,11 @@ def random_walk_timeseries(
 
     index = generate_index(start=start, end=end, freq=freq, length=length)
     values = np.cumsum(np.random.normal(mean, std, size=len(index)), dtype=dtype)
-
-    return TimeSeries.from_times_and_values(
-        index, values, freq=freq, columns=pd.Index([column_name])
+    return TimeSeries(
+        times=index,
+        values=values,
+        components=pd.Index([column_name]),
+        copy=False,
     )
 
 
@@ -398,9 +409,11 @@ def autoregressive_timeseries(
     for i in range(len(coef), len(coef) + len(index)):
         # calculate next time step as dot product of coefs with previous len(coef) time steps
         values[i] = np.dot(values[i - len(coef) : i], coef)
-
-    return TimeSeries.from_times_and_values(
-        index, values[len(coef) :], freq=freq, columns=pd.Index([column_name])
+    return TimeSeries(
+        times=index,
+        values=values[len(coef) :],
+        components=pd.Index([column_name]),
+        copy=False,
     )
 
 
@@ -530,8 +543,11 @@ def holidays_timeseries(
     )
     index_series = pd.Series(time_index, index=time_index)
     values = index_series.apply(lambda x: x in country_holidays).astype(dtype)
-    return TimeSeries.from_times_and_values(
-        time_index_ts, values, columns=pd.Index([column_name])
+    return TimeSeries(
+        times=time_index_ts,
+        values=values,
+        components=pd.Index([column_name]),
+        copy=False,
     )
 
 
@@ -735,9 +751,12 @@ def datetime_attribute_timeseries(
                 logger=logger,
             )
             values_df = pd.DataFrame({with_columns: values})
-
-    values_df.index = time_index_ts
-    return TimeSeries.from_dataframe(values_df).astype(dtype)
+    return TimeSeries(
+        times=time_index_ts,
+        values=values_df.values.astype(dtype),
+        components=values_df.columns,
+        copy=False,
+    )
 
 
 def _build_forecast_series(
@@ -748,6 +767,7 @@ def _build_forecast_series(
     with_hierarchy: bool = True,
     pred_start: Optional[Union[pd.Timestamp, int]] = None,
     time_index: Union[pd.DatetimeIndex, pd.RangeIndex] = None,
+    copy: bool = False,
 ) -> TimeSeries:
     """
     Builds a forecast time series starting after the end of an input time series, with the
@@ -769,6 +789,8 @@ def _build_forecast_series(
         Optionally, give a custom prediction start point. Only effective if `time_index` is `None`.
     time_index
         Optionally, the index to use for the forecast time series.
+    copy
+        If set to `True`, a copy of the input series is made. Otherwise, the input series is used as a view.
 
     Returns
     -------
@@ -791,15 +813,15 @@ def _build_forecast_series(
         if isinstance(points_preds, np.ndarray)
         else np.stack(points_preds, axis=2)
     )
-
-    return TimeSeries.from_times_and_values(
-        time_index,
-        values,
+    return TimeSeries(
+        times=time_index,
+        values=values,
         freq=input_series.freq_str,
-        columns=input_series.columns if custom_columns is None else custom_columns,
+        components=input_series.columns if custom_columns is None else custom_columns,
         static_covariates=input_series.static_covariates if with_static_covs else None,
         hierarchy=input_series.hierarchy if with_hierarchy else None,
         metadata=input_series.metadata,
+        copy=copy,
     )
 
 
@@ -809,6 +831,7 @@ def _build_forecast_series_from_schema(
     pred_start: Union[pd.Timestamp, int],
     predict_likelihood_parameters: bool,
     likelihood_component_names_fn: Optional[Callable] = None,
+    copy: bool = False,
 ) -> TimeSeries:
     """
     Builds a forecast time series from predicted values and `TimeSeries` schema starting at `pred_start`.
@@ -826,6 +849,8 @@ def _build_forecast_series_from_schema(
     likelihood_component_names_fn
         A function to compute the likelihood parameter component names. Only effective when
         `predict_likelihood_parameters=True`.
+    copy
+        If set to `True`, a copy of the input series is made. Otherwise, the input series is used as a view.
 
     Returns
     -------
@@ -855,13 +880,14 @@ def _build_forecast_series_from_schema(
         static_covariates = schema[STATIC_COV_TAG]
         hierarchy = schema[HIERARCHY_TAG]
 
-    return TimeSeries.from_times_and_values(
+    return TimeSeries(
         times=time_index,
         values=values,
-        columns=columns,
+        components=columns,
         static_covariates=static_covariates,
         hierarchy=hierarchy,
         metadata=schema[METADATA_TAG],
+        copy=copy,
     )
 
 

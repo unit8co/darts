@@ -53,7 +53,7 @@ class TestFourTheta:
         forecast_theta = theta.predict(20)
         forecast_fourtheta = fourtheta.predict(20)
         weighted_delta = (forecast_theta - forecast_fourtheta) / forecast_theta
-        assert (weighted_delta <= 3e-5).all().item()
+        assert (weighted_delta <= 3e-5).all_values().all().item()
 
     def test_best_model(self):
         random.seed(1)

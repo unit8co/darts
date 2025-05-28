@@ -7,13 +7,13 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
+from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 from darts.utils.utils import generate_index, n_steps_between
 
