@@ -20,6 +20,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🟠 Renamed `RegressionModel` to `SKLearnModel`. Using `RegressionModel` will raise a depraction warning.
   - 🟠 Renamed `RandomForest` to `RandomForestModel`. Using `RandomForest` will raise a depraction warning.
   - 🔴 Renamed `RegressionModelWithCategoricalCovariates` to `SKLearnModelWithCategoricalCovariates`. Removed `RegressionModelWithCategoricalCovariates`
+- Improvements to `TorchForecastingModel`: [#2802](https://github.com/unit8co/darts/pull/2802) by [Dennis Bader](https://github.com/dennisbader).
+  - Drastically improved prediction speed which is now up to 5.4 times as fast before. Using `n_jobs>1` now significantly boosts efficiency. This affects `predict()`, `historcial_forecasts()`, `backtest()`, `gridsearch()` and `residuals()`. The highest boost can be observed when calling historical forecasts, backtest, or residuals with `last_points_only=False`.
+  - Added parameter `values_only` to method `predict_from_dataset()` which will return a tuple of (prediction `np.ndarray`, target series schema, prediction start time) instead of `TimeSeries` objects.
 - 🔴 Improvements to `TorchForecastingModel` datasets: [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
   - We simplified the training and inference datasets. Instead of having covariates specific datasets, the new datasets now support all combinations of covariates natively:
     - `ShiftedTorchTrainingDataset` (replaces all `*ShiftedDataset`)
@@ -28,9 +31,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
     - `SequentialTorchInferenceDataset` (replaces all `*InferenceDataset`)
   - All datasets now have uniform output:
     - Training datasets: Tuple[past target, past cov, historic future cov, future cov, static cov, sample weight, future target].
-    - Inference datasets: Tuple[past target, past cov, future past cov, historic future cov, future cov, static cov, target TimeSeries, pred start time]
+    - Inference datasets: Tuple[past target, past cov, future past cov, historic future cov, future cov, static cov, target series schema, pred start time]
   - `HorizonBasedTorchTrainingDataset` now also supports future covariates.
   - Added parameter `stride` to `*TorchTrainingDatset` to apply a stride between two consecutive training samples.  [#2624](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
+- Added method `schema()` to `TimeSeries` to extract the schema from a series. It contains information about the time index, columns, static covariates, hierarchy, and metadata. [#2802](https://github.com/unit8co/darts/pull/2802) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
 

@@ -4,6 +4,7 @@ Likelihoods for `SKLearnModel`
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from typing import Optional
 
 import numpy as np
@@ -481,16 +482,28 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         ]
         return self
 
-    def component_names(self, input_series: TimeSeries) -> list[str]:
+    def component_names(
+        self,
+        series: Optional[TimeSeries] = None,
+        components: Optional[Sequence] = None,
+    ) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
         if self._index_first_param_per_component is None:
             raise_log(
                 ValueError("`component_names` requires the likelihood to be fitted.")
             )
+        if (series is not None) == (components is not None):
+            raise_log(
+                ValueError("Only one of `series` or `components` must be specified."),
+                logger=logger,
+            )
+        if series is not None:
+            components = series.components
+
         # format: <component_name>_p_<label>
         return [
             f"{component_name}_{parameter_name}"
-            for i, component_name in enumerate(input_series.components)
+            for i, component_name in enumerate(components)
             for parameter_name in self.parameter_names[
                 self._index_first_param_per_component[
                     i

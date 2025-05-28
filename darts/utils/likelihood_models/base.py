@@ -5,6 +5,9 @@ from typing import Optional, Union
 import pandas as pd
 
 from darts import TimeSeries
+from darts.logging import get_logger, raise_log
+
+logger = get_logger(__name__)
 
 
 class LikelihoodType(Enum):
@@ -61,10 +64,21 @@ class Likelihood:
         """Fits the likelihood to the model."""
         return self
 
-    def component_names(self, input_series: TimeSeries) -> list[str]:
+    def component_names(
+        self,
+        series: Optional[TimeSeries] = None,
+        components: Optional[Sequence] = None,
+    ) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
+        if (series is not None) == (components is not None):
+            raise_log(
+                ValueError("Only one of `series` or `components` must be specified."),
+                logger=logger,
+            )
+        if series is not None:
+            components = series.components
         return likelihood_component_names(
-            components=input_series.components, parameter_names=self.parameter_names
+            components=components, parameter_names=self.parameter_names
         )
 
     @property
