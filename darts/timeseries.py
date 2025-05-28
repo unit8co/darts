@@ -1592,7 +1592,7 @@ class TimeSeries:
         )
 
     @property
-    def shape(self) -> tuple[int]:
+    def shape(self) -> tuple[int, int, int]:
         """The shape of the series (n_timesteps, n_components, n_samples)."""
         return self._xa.shape
 
@@ -2019,7 +2019,7 @@ class TimeSeries:
 
         return self.__class__(new_xa)
 
-    def quantiles_df(self, quantiles: tuple[float] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
+    def quantiles_df(self, quantiles: tuple[float, ...] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
         """
         Return a Pandas DataFrame containing the desired quantiles of each component (over the samples).
 
