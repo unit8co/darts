@@ -916,7 +916,7 @@ class SKLearnModel(GlobalForecastingModel):
                 "eval_weight_name": val_weight_name,
                 "n_jobs": n_jobs_multioutput_wrapper,
             }
-            self.model = MultiOutputRegressor(self.model, **mor_kwargs)
+            self.model = MultiOutputRegressor(estimator=self.model, **mor_kwargs)
 
         if (
             not isinstance(self.model, MultiOutputRegressor)
