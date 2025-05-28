@@ -39,7 +39,6 @@ class MultiOutputMixin:
         self.eval_weight_name_ = eval_weight_name
         self._output_chunk_length = output_chunk_length
 
-
     def fit(self, X, y, sample_weight=None, **fit_params):
         """Fit the model to data, separately for each output variable.
 
