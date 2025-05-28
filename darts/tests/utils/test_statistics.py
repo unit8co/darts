@@ -76,6 +76,7 @@ class TestTimeSeries:
         assert tests[1][0]["ssr_ftest"][1] > 0.01
 
     def test_stationarity_tests(self):
+        np.random.seed(42)
         series_1 = constant_timeseries(start=0, end=9999).stack(
             constant_timeseries(start=0, end=9999)
         )

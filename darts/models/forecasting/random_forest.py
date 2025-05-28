@@ -42,6 +42,7 @@ class RandomForestModel(SKLearnModel):
         max_depth: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """Random Forest Model
@@ -181,6 +182,7 @@ class RandomForestModel(SKLearnModel):
             multi_models=multi_models,
             model=RandomForestRegressor(**kwargs),
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )
 
 

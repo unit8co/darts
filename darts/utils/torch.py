@@ -66,23 +66,31 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
 
     @wraps(decorated)
     def decorator(self, *args, **kwargs) -> T:
-        if "random_state" in kwargs.keys():
-            if hasattr(self, "_random_instance") and kwargs["random_state"] is not None:
-                random_instance = check_random_state(kwargs["random_state"])
-
-                with fork_rng():
-                    manual_seed(random_instance.randint(0, high=MAX_TORCH_SEED_VALUE))
-                    return decorated(self, *args, **kwargs)
-            elif not hasattr(self, "_random_instance"):
-                self._random_instance = check_random_state(kwargs["random_state"])
+        store_instance = False
+        random_instance = None
+        if "random_state" in kwargs.keys() and kwargs["random_state"] is not None:
+            # get random state from model constructor or `predict()`
+            random_instance = check_random_state(kwargs["random_state"])
+            if not hasattr(self, "_random_instance"):
+                # store random instance when called from model constructor
+                store_instance = True
         elif not hasattr(self, "_random_instance"):
             # get random state for first time from other method
-            self._random_instance = check_random_state(
+            store_instance = True
+            random_instance = check_random_state(
                 np.random.randint(0, high=MAX_NUMPY_SEED_VALUE)
             )
+
+        # if no random instance is provided, use the one stored in the class
+        if random_instance is None:
+            random_instance = self._random_instance
+
+        if store_instance:
+            self._random_instance = random_instance
+
         # handle the randomness
         with fork_rng():
-            manual_seed(self._random_instance.randint(0, high=MAX_TORCH_SEED_VALUE))
+            manual_seed(random_instance.randint(0, high=MAX_TORCH_SEED_VALUE))
             return decorated(self, *args, **kwargs)
 
     return decorator

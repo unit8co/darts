@@ -216,7 +216,6 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
-            random_state=random_state,
             quantiles=quantiles,
         )
 
@@ -237,6 +236,7 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
+            random_state=random_state,
         )
 
         # if no loss provided, get the default loss from the model

@@ -80,6 +80,9 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
+        random_state: int or None
+            Controls randomness in parameter initialization and optimization procedures to ensure reproducible model
+            forecasting results.
 
         Examples
         --------
@@ -109,7 +112,6 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self.q = q
         self.trend = trend
         self.model = None
-        self._random_state = check_random_state(random_state)
 
         assert d <= 1, "d > 1 not supported."
 
@@ -216,10 +218,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 ),
             )
         else:
-            if random_state is not None:
-                rng = check_random_state(random_state)
-            else:
-                rng = self._random_state
+            rng = check_random_state(random_state)
+
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,

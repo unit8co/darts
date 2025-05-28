@@ -105,6 +105,9 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
+        random_state: int or None
+            Controls randomness in parameter initialization and optimization procedures to ensure reproducible model
+            forecasting results.
 
         Examples
         --------
@@ -135,7 +138,6 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self.seasonal_order = seasonal_order
         self.trend = trend
         self.model = None
-        self._random_state = check_random_state(random_state)
 
     @property
     def supports_multivariate(self) -> bool:
@@ -207,10 +209,8 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 ),
             )
         else:
-            if random_state is not None:
-                rng = check_random_state(random_state)
-            else:
-                rng = self._random_state
+            rng = check_random_state(random_state)
+
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,

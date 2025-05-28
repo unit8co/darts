@@ -261,6 +261,7 @@ class EnsembleModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         is_single_series = isinstance(series, TimeSeries) or series is None
         # maximize covariate usage
@@ -278,6 +279,7 @@ class EnsembleModel(GlobalForecastingModel):
                     num_samples if model.supports_probabilistic_prediction else 1
                 ),
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
             )
             for model in self.forecasting_models
         ]
@@ -304,6 +306,7 @@ class EnsembleModel(GlobalForecastingModel):
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         # ensure forecasting models all rely on the same series during inference
         if series is None:
@@ -322,6 +325,7 @@ class EnsembleModel(GlobalForecastingModel):
             verbose=verbose,
             predict_likelihood_parameters=predict_likelihood_parameters,
             show_warnings=show_warnings,
+            random_state=random_state,
         )
 
         # for single-level ensemble, probabilistic forecast is obtained directly from forecasting models
@@ -343,6 +347,7 @@ class EnsembleModel(GlobalForecastingModel):
             future_covariates=future_covariates,
             num_samples=pred_num_samples,
             predict_likelihood_parameters=forecast_models_pred_likelihood_params,
+            random_state=random_state,
         )
 
         return self.ensemble(
@@ -350,6 +355,7 @@ class EnsembleModel(GlobalForecastingModel):
             series=series,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
         )
 
     @abstractmethod
@@ -359,6 +365,7 @@ class EnsembleModel(GlobalForecastingModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.
@@ -370,6 +377,8 @@ class EnsembleModel(GlobalForecastingModel):
         series
             Sequence of timeseries to predict on. Optional, since it only makes sense for sequences of timeseries -
             local models retain timeseries for prediction.
+        random_state
+            Controls the randomness of the predictions. Optional.
 
         Returns
         -------

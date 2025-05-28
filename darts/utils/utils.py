@@ -693,29 +693,36 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
 
     @wraps(decorated)
     def decorator(self, *args, **kwargs):
-        if "random_state" in kwargs.keys():
-            if hasattr(self, "_random_instance") and kwargs["random_state"] is not None:
-                random_instance = check_random_state(kwargs["random_state"]).get_state()
-
-                # handle the randomness
-                np.random.set_state(random_instance)
-                result = decorated(self, *args, **kwargs)
-                return result
-            elif not hasattr(self, "_random_instance"):
-                self._random_instance = check_random_state(
-                    kwargs["random_state"]
-                ).get_state()
+        store_instance = False
+        random_instance = None
+        temp_random_instance = False
+        if "random_state" in kwargs.keys() and kwargs["random_state"] is not None:
+            # get random state from model constructor or predict()
+            random_instance = check_random_state(kwargs["random_state"]).get_state()
+            temp_random_instance = True
+            if not hasattr(self, "_random_instance"):
+                # store random instance when called from model constructor
+                store_instance = True
         elif not hasattr(self, "_random_instance"):
             # get random state for first time from other method
-            self._random_instance = check_random_state(
+            store_instance = True
+            random_instance = check_random_state(
                 np.random.randint(0, high=MAX_NUMPY_SEED_VALUE)
             ).get_state()
 
+        # if no random instance is provided, use the one stored in the class
+        if random_instance is None:
+            random_instance = self._random_instance
+
+        if store_instance:
+            self._random_instance = random_instance
+
         # handle the randomness
-        np.random.set_state(self._random_instance)
+        np.random.set_state(random_instance)
         result = decorated(self, *args, **kwargs)
         # update the random state after the function call
-        self._random_instance = np.random.get_state()
+        if not temp_random_instance:
+            self._random_instance = np.random.get_state()
         return result
 
     return decorator

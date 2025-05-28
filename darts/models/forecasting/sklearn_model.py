@@ -67,6 +67,7 @@ from darts.utils.historical_forecasts import (
 from darts.utils.likelihood_models.sklearn import QuantileRegression, SKLearnLikelihood
 from darts.utils.multioutput import MultiOutputRegressor
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 
@@ -77,6 +78,7 @@ FUTURE_LAGS_TYPE = Union[
 
 
 class SKLearnModel(GlobalForecastingModel):
+    @random_method
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -88,6 +90,7 @@ class SKLearnModel(GlobalForecastingModel):
         model=None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        random_state: Optional[int] = None,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -178,6 +181,8 @@ class SKLearnModel(GlobalForecastingModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        random_state
+            Controls the randomness of the model initialization. Default: ``None``.
 
         Examples
         --------
@@ -988,6 +993,7 @@ class SKLearnModel(GlobalForecastingModel):
         )
         return self
 
+    @random_method
     def predict(
         self,
         n: int,
@@ -1278,7 +1284,6 @@ class SKLearnModel(GlobalForecastingModel):
                 x=x,
                 num_samples=num_samples,
                 predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
                 **kwargs,
             )
 
@@ -1482,6 +1487,7 @@ class SKLearnModelWithCategoricalCovariates(SKLearnModel, ABC):
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        random_state: Optional[int] = None,
     ):
         """
         Extension of `SKLearnModel` for regression models that support categorical covariates.
@@ -1590,6 +1596,7 @@ class SKLearnModelWithCategoricalCovariates(SKLearnModel, ABC):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )
 
         if categorical_static_covariates is not None and not use_static_covariates:
