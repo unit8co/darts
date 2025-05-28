@@ -35,9 +35,9 @@ class MultiOutputMixin:
         super().__init__(estimator=estimator, **kwargs)
         # according to sklearn, set only attributes in `__init__` that are known before fitting;
         # all other params at fitting time must have the suffix `"_"`
-        self.eval_set_name_ = eval_set_name
-        self.eval_weight_name_ = eval_weight_name
-        self._output_chunk_length = output_chunk_length
+        self.eval_set_name = eval_set_name
+        self.eval_weight_name = eval_weight_name
+        self.output_chunk_length = output_chunk_length
 
     def fit(self, X, y, sample_weight=None, **fit_params):
         """Fit the model to data, separately for each output variable.
