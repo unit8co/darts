@@ -28,6 +28,7 @@ class LikelihoodType(Enum):
     LogNormal = "lognormal"
     Weibull = "weibull"
     Quantile = "quantile"
+    ClassProbability = "classprobability"
 
 
 class Likelihood:
@@ -58,6 +59,10 @@ class Likelihood:
             "_parameter_names",
             "ignore_attrs_equality",
         ]
+
+    def fit(self, model):
+        """Fits the likelihood to the model."""
+        return self
 
     def component_names(
         self,
