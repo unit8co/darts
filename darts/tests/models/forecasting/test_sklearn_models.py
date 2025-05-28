@@ -3973,7 +3973,6 @@ class TestProbabilisticSKLearnModels:
             _ = _get_likelihood(
                 likelihood="does_not_exist",
                 n_outputs=1,
-                random_state=None,
                 quantiles=None,
             )
         assert (

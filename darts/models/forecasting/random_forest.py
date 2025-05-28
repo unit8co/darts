@@ -171,6 +171,7 @@ class RandomForestModel(SKLearnModel):
         self.kwargs = kwargs
         self.kwargs["n_estimators"] = self.n_estimators
         self.kwargs["max_depth"] = self.max_depth
+        self.kwargs["random_state"] = random_state
 
         super().__init__(
             lags=lags,
@@ -199,6 +200,7 @@ class RandomForest(RandomForestModel):
         max_depth: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """Random Forest Model
@@ -343,5 +345,6 @@ class RandomForest(RandomForestModel):
             max_depth=max_depth,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
             **kwargs,
         )

@@ -124,6 +124,7 @@ class GaussianLikelihood(SKLearnLikelihood):
     def __init__(
         self,
         n_outputs: int,
+        random_state: Optional[int] = None,
     ):
         """
         Gaussian distribution [1]_.
@@ -212,6 +213,7 @@ class PoissonLikelihood(SKLearnLikelihood):
     def __init__(
         self,
         n_outputs: int,
+        random_state: Optional[int] = None,
     ):
         """
         Poisson distribution [1]_.
@@ -261,6 +263,7 @@ class QuantileRegression(SKLearnLikelihood):
         self,
         n_outputs: int,
         quantiles: Optional[list[float]] = None,
+        random_state: Optional[int] = None,
     ):
         """
         Quantile Regression [1]_.
