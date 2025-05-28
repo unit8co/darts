@@ -575,7 +575,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
             total_proba = component_probabilities.sum(
                 axis=2
             )  # shape  (n_output, n_samples)
-            difference = np.ones((n_output, n_samples)) - total_proba
+            difference = 1 - total_proba
             tolerance = 1e-7
             if np.any(np.abs(difference) > tolerance):
                 raise_log(
@@ -593,8 +593,8 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
             # [0.2, 0.1, 0.5, 0.2] -> [0.2, 0.3, 0.8, 1]
             # random: 0.7 -> idx = 2, this outcomes has 0.5 probability of happening
             sampled_idx = np.argmax(
-                self._rng.uniform(0, 1, size=(difference.shape))[:, :, np.newaxis]
-                < np.cumsum(component_probabilities, axis=2),
+                self._rng.uniform(0, 1, size=difference.shape + (1,))
+                <= np.cumsum(component_probabilities, axis=2),
                 axis=2,
             )
 
