@@ -847,13 +847,13 @@ class TestProbabilisticClassifierModels:
     rmse_class_sample = [
         0.08,  # LogisticRegression
         0.16,  # KNeighborsClassifier
-        0.05,  # GaussianProcessClassifier
+        0.16,  # GaussianProcessClassifier
         0.15,  # DecisionTreeClassifier
-        0.11,  # RandomForestClassifier
+        0.17,  # RandomForestClassifier
         0.11,  # MLPClassifier
-        0.19,  # AdaBoostClassifier
+        0.2,  # AdaBoostClassifier
         0.14,  # GaussianNB
-        0.16,  # XGBClassifierModel
+        0.18,  # XGBClassifierModel
     ]
 
     if lgbm_available:
@@ -868,7 +868,7 @@ class TestProbabilisticClassifierModels:
             },
         ))
         rmse_class_proba.append(0.04)
-        rmse_class_sample.append(0.01)
+        rmse_class_sample.append(0.02)
 
     if cb_available:
         probabilistic_classifiers.append((
@@ -881,7 +881,7 @@ class TestProbabilisticClassifierModels:
             },
         ))
         rmse_class_proba.append(0.13)
-        rmse_class_sample.append(0.12)
+        rmse_class_sample.append(0.14)
 
     @pytest.mark.parametrize(
         "clf_params",
@@ -1206,22 +1206,30 @@ class TestProbabilisticClassifierModels:
 
     @pytest.mark.parametrize(
         "clf_params",
-        zip(process_model_list(probabilistic_classifiers), rmse_class_sample),
+        product(
+            zip(process_model_list(probabilistic_classifiers), rmse_class_sample),
+            [False, True],
+        ),
     )
     def test_multi_sample_with_class_probabilities(self, clf_params):
         """
         The distribution of samples corresponds to the distribution of labels in the TS
         """
-        (clf, kwargs), model_rmse = clf_params
+        ((clf, kwargs), model_rmse), multi_variate = clf_params
         model = clf(lags=2, **kwargs)
 
-        true_probas = np.array([0.1, 0.3, 0.6])
-        true_labels = [0, 1, 2]
-        series = TimeSeries.from_values(
-            np.random.choice(true_labels, size=100, replace=True, p=true_probas),
+        (
+            series_train,
+            _,
+            probas_component1,
+            _,
+            probas_component2,
+            _,
+        ) = generate_random_series_with_probabilities(
+            multi_series=False, multi_variate=multi_variate
         )
 
-        model.fit(series)
+        model.fit(series_train)
 
         # predict_likelihood_parameters is not supported with multiple samples
         with pytest.raises(ValueError) as err:
@@ -1231,22 +1239,168 @@ class TestProbabilisticClassifierModels:
             == "`predict_likelihood_parameters=True` is only supported for `num_samples=1`, received 2."
         )
 
-        prediction = model.predict(n=1, num_samples=100)
-        count = np.zeros(len(model.class_labels[0]))
-
-        preds = prediction.all_values().flatten()
-        for i in preds:
-            count[int(i)] += 1
-        count /= len(preds)
-        rmse = np.mean((count - true_probas) ** 2) ** 0.5
-        assert rmse < model_rmse
+        prediction = model.predict(n=5, num_samples=1000)
+        predictions_per_component = [prediction.all_values()[:, 0]]
+        probas_per_component = [probas_component1]
+        if multi_variate:
+            predictions_per_component.append(prediction.all_values()[:, 1])
+            probas_per_component.append(probas_component2)
+        for idx, (preds, probas, classes) in enumerate(
+            zip(predictions_per_component, probas_per_component, model.class_labels)
+        ):
+            preds = preds.flatten()
+            count = np.zeros(len(classes))
+            for i in preds:
+                count[int(i)] += 1
+            count /= len(preds)
+            rmse = np.mean((count - probas) ** 2) ** 0.5
+            assert rmse < model_rmse
 
         # reproducible samples when call order is the same (and also with transferable series)
-        model = model.untrained_model().fit(series)
-        preds_2 = model.predict(n=1, num_samples=100, series=series).all_values()
-        assert (preds == preds_2).all()
+        model = model.untrained_model().fit(series_train)
+        preds_2 = model.predict(n=5, num_samples=1000, series=series_train).all_values()
+        assert (prediction.all_values() == preds_2).all()
 
         # different samples when call order changes
-        preds_3 = model.predict(n=1, num_samples=100).all_values()
+        preds_3 = model.predict(n=5, num_samples=1000).all_values()
         with pytest.raises(AssertionError):
             np.testing.assert_array_almost_equal(preds_2, preds_3)
+
+    @pytest.mark.parametrize(
+        "params",
+        product(
+            [True, False],  # multi_variate
+            [True, False],  # multi_model
+        ),
+    )
+    def test_historical_forecast(self, params):
+        multi_model, multi_variate = params
+
+        series_train, _, _, _, _, _ = generate_random_series_with_probabilities(
+            multi_series=False, multi_variate=multi_variate
+        )
+
+        series_multi_variate, _, _, _, _, _ = generate_random_series_with_probabilities(
+            multi_series=False, multi_variate=True
+        )
+
+        # without covariate
+        model = SKLearnClassifierModel(
+            model=LogisticRegression(), lags=4, multi_models=multi_model
+        )
+        result = model.historical_forecasts(
+            series=series_train,
+            future_covariates=None,
+            start=0.8,
+            forecast_horizon=1,
+            stride=1,
+            retrain=True,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False,
+        )
+        assert len(result) == 21
+
+        # With past covariate
+        model = SKLearnClassifierModel(
+            model=LogisticRegression(),
+            lags=5,
+            lags_past_covariates=5,
+            multi_models=multi_model,
+        )
+        result = model.historical_forecasts(
+            series=series_train,
+            past_covariates=series_multi_variate,
+            start=0.8,
+            forecast_horizon=1,
+            stride=1,
+            retrain=True,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False,
+        )
+        assert len(result) == 21
+
+        # with past covariate and output_chunk_length
+        model = SKLearnClassifierModel(
+            model=LogisticRegression(),
+            lags=5,
+            lags_past_covariates=5,
+            output_chunk_length=5,
+            multi_models=multi_model,
+        )
+        result = model.historical_forecasts(
+            series=series_train,
+            past_covariates=series_multi_variate,
+            start=0.8,
+            forecast_horizon=1,
+            stride=1,
+            retrain=True,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False,
+        )
+        assert len(result) == 21
+
+        # forecast_horizon > output_chunk_length
+        model = SKLearnClassifierModel(
+            model=LogisticRegression(),
+            lags=5,
+            lags_past_covariates=5,
+            output_chunk_length=1,
+            multi_models=multi_model,
+        )
+        result = model.historical_forecasts(
+            series=series_train,
+            past_covariates=series_multi_variate,
+            start=0.8,
+            forecast_horizon=3,
+            stride=1,
+            retrain=True,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False,
+        )
+        assert len(result) == 19
+
+        # Likelihood parameters
+        model = SKLearnClassifierModel(
+            model=LogisticRegression(),
+            lags=5,
+            lags_past_covariates=5,
+            multi_models=multi_model,
+        )
+        result = model.historical_forecasts(
+            series=series_train,
+            past_covariates=series_multi_variate,
+            start=0.8,
+            forecast_horizon=1,
+            stride=1,
+            retrain=True,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False,
+            predict_likelihood_parameters=True,
+        )
+        assert len(result) == 21
+
+        # Sampled prediction
+        model = SKLearnClassifierModel(
+            model=LogisticRegression(),
+            lags=5,
+            lags_past_covariates=5,
+            multi_models=multi_model,
+        )
+        result = model.historical_forecasts(
+            series=series_train,
+            past_covariates=series_multi_variate,
+            start=0.8,
+            forecast_horizon=1,
+            stride=1,
+            retrain=True,
+            overlap_end=False,
+            last_points_only=True,
+            verbose=False,
+            num_samples=100,
+        )
+        assert len(result) == 21

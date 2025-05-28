@@ -584,7 +584,10 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
                 < np.cumsum(component_probabilities, axis=2),
                 axis=2,
             )
-            preds[:, :, component_idx] = np.take(self._classes, sampled_idx)
+
+            preds[:, :, component_idx] = np.take(
+                self._classes[component_idx], sampled_idx
+            )
 
         return preds.transpose(1, 0, 2)
 
