@@ -3073,7 +3073,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         show_warnings
             Whether to show warnings related auto-regression and past covariates usage.
         random_state
-            Controls the randomness of the predicitons.
+            Controls the randomness of the predictions.
 
         Returns
         -------
