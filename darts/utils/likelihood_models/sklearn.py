@@ -44,7 +44,7 @@ class SKLearnLikelihood(Likelihood, ABC):
             parameter_names=parameter_names,
         )
         # ignore additional attrs for equality tests
-        self.ignore_attrs_equality += ["_n_outputs", "_random_instance"]
+        self.ignore_attrs_equality += ["_n_outputs"]
 
     def predict(
         self,
@@ -124,7 +124,6 @@ class GaussianLikelihood(SKLearnLikelihood):
     def __init__(
         self,
         n_outputs: int,
-        random_state: Optional[int] = None,
     ):
         """
         Gaussian distribution [1]_.
@@ -213,7 +212,6 @@ class PoissonLikelihood(SKLearnLikelihood):
     def __init__(
         self,
         n_outputs: int,
-        random_state: Optional[int] = None,
     ):
         """
         Poisson distribution [1]_.
@@ -263,7 +261,6 @@ class QuantileRegression(SKLearnLikelihood):
         self,
         n_outputs: int,
         quantiles: Optional[list[float]] = None,
-        random_state: Optional[int] = None,
     ):
         """
         Quantile Regression [1]_.

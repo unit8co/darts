@@ -1572,6 +1572,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, control whether warnings are shown. Not effective for all models.
         random_state
             Controls the randomness of the predictions.
+
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]

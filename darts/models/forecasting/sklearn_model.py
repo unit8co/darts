@@ -182,7 +182,7 @@ class SKLearnModel(GlobalForecastingModel):
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
-            Controls the randomness of the model initialization. Default: ``None``.
+            Controls the model randomness for reproducible forecasting.
 
         Examples
         --------
@@ -993,7 +993,6 @@ class SKLearnModel(GlobalForecastingModel):
         )
         return self
 
-    @random_method
     def predict(
         self,
         n: int,
@@ -1263,6 +1262,7 @@ class SKLearnModel(GlobalForecastingModel):
 
         return predictions[0] if called_with_single_series else predictions
 
+    @random_method
     def _predict(
         self,
         x: np.ndarray,
@@ -1585,6 +1585,8 @@ class SKLearnModelWithCategoricalCovariates(SKLearnModel, ABC):
         categorical_static_covariates
             Optionally, string or list of strings specifying the static covariates that should be treated as
             categorical.
+        random_state
+            Controls the model randomness for reproducible forecasting.
         """
         super().__init__(
             lags=lags,
@@ -1814,6 +1816,7 @@ class RegressionModel(SKLearnModel):
         model=None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        random_state: Optional[int] = None,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -1907,6 +1910,8 @@ class RegressionModel(SKLearnModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        random_state
+            Controls the model randomness for reproducible forecasting.
 
         Examples
         --------

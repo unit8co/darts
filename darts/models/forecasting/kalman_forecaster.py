@@ -83,8 +83,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
                 }
             ..
         random_state
-            Controls randomness in parameter initialization and nois parameters. ``int`` or ``None``. Defaults to
-            ``None``.
+            Controls the model randomness for reproducible forecasting.
 
         Examples
         --------
@@ -123,7 +122,6 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
 
         return self
 
-    @random_method
     def predict(
         self,
         n: int,
@@ -139,8 +137,16 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         # we override `predict()` to pass a non-None `series`, so that historic_future_covariates
         # will be passed to `_predict()`
         series = series if series is not None else self.training_series
-        return super().predict(n, series, future_covariates, num_samples, **kwargs)
+        return super().predict(
+            n,
+            series,
+            future_covariates,
+            num_samples,
+            random_state=random_state,
+            **kwargs,
+        )
 
+    @random_method
     def _predict(
         self,
         n: int,

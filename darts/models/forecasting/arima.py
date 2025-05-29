@@ -106,8 +106,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 }
             ..
         random_state: int or None
-            Controls randomness in parameter initialization and optimization procedures to ensure reproducible model
-            forecasting results.
+            Controls the model randomness for reproducible forecasting.
 
         Examples
         --------

@@ -235,20 +235,6 @@ if TORCH_AVAILABLE:
         ),
     ]
 
-
-@pytest.mark.slow
-class TestProbabilisticModels:
-    np.random.seed(0)
-
-    constant_ts = tg.constant_timeseries(length=200, value=0.5)
-    constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
-    constant_multivar_ts = constant_ts.stack(constant_ts)
-    constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
-    num_samples = 5
-
-    constant_noisy_ts_short = constant_noisy_ts[:30]
-    constant_noisy_multivar_ts_short = constant_noisy_multivar_ts[:30]
-
     extra_configs = [
         (ExponentialSmoothing, {"random_state": 42}, 0.3, None),
         (VARIMA, {"random_state": 42}, 0.03, None),
@@ -267,28 +253,6 @@ class TestProbabilisticModels:
         ),
         (
             XGBModel,
-            {
-                "lags": 12,
-                "likelihood": "quantile",
-                "quantiles": [0.1, 0.5, 0.9],
-                "random_state": 42,
-            },
-            0.03,
-            None,
-        ),
-        (
-            CatBoostModel,
-            {
-                "lags": 12,
-                "likelihood": "quantile",
-                "quantiles": [0.1, 0.5, 0.9],
-                "random_state": 42,
-            },
-            0.03,
-            None,
-        ),
-        (
-            LightGBMModel,
             {
                 "lags": 12,
                 "likelihood": "quantile",
@@ -344,11 +308,55 @@ class TestProbabilisticModels:
                     quantiles=[0.1, 0.5, 0.9],
                     random_state=42,
                 ),
+                "regression_train_n_points": 3,
             },
             0.04,
             0.04,
         ),
     ]
+
+    if lgbm_available:
+        extra_configs += [
+            (
+                LightGBMModel,
+                {
+                    "lags": 12,
+                    "likelihood": "quantile",
+                    "quantiles": [0.1, 0.5, 0.9],
+                    "random_state": 42,
+                },
+                0.03,
+                None,
+            ),
+        ]
+    if cb_available:
+        extra_configs += [
+            (
+                CatBoostModel,
+                {
+                    "lags": 12,
+                    "likelihood": "quantile",
+                    "quantiles": [0.1, 0.5, 0.9],
+                    "random_state": 42,
+                },
+                0.03,
+                None,
+            ),
+        ]
+
+
+@pytest.mark.slow
+class TestProbabilisticModels:
+    np.random.seed(0)
+
+    constant_ts = tg.constant_timeseries(length=200, value=0.5)
+    constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
+    constant_multivar_ts = constant_ts.stack(constant_ts)
+    constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
+    num_samples = 5
+
+    constant_noisy_ts_short = constant_noisy_ts[:30]
+    constant_noisy_multivar_ts_short = constant_noisy_multivar_ts[:30]
 
     @pytest.mark.slow
     @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
@@ -358,8 +366,6 @@ class TestProbabilisticModels:
             fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
         else:
             fit_kwargs = {}
-        if issubclass(model_cls, RegressionEnsembleModel):
-            model_kwargs["regression_train_n_points"] = 3
         if issubclass(model_cls, VARIMA):
             series = self.constant_noisy_multivar_ts_short
         else:
@@ -395,8 +401,6 @@ class TestProbabilisticModels:
             series = self.constant_noisy_multivar_ts_short
         else:
             series = self.constant_noisy_ts_short
-        if issubclass(model_cls, RegressionEnsembleModel):
-            model_kwargs["regression_train_n_points"] = 3
         if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
             fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
         else:

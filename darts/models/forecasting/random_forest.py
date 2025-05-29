@@ -133,6 +133,8 @@ class RandomForestModel(SKLearnModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        random_state
+            Controls the model randomness for reproducible forecasting.
         **kwargs
             Additional keyword arguments passed to `sklearn.ensemble.RandomForestRegressor`.
 
@@ -294,6 +296,8 @@ class RandomForest(RandomForestModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        random_state
+            Controls the model randomness for reproducible forecasting.
         **kwargs
             Additional keyword arguments passed to `sklearn.ensemble.RandomForestRegressor`.
 

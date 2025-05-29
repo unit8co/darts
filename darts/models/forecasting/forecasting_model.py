@@ -356,7 +356,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
         random_state
-            Optionally, set the random state for predictions. Not effective for all models.
+            Controls the randomness of the predictions.
 
         Returns
         -------
@@ -3073,7 +3073,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         show_warnings
             Whether to show warnings related auto-regression and past covariates usage.
         random_state
-            Controls the randomness of the predicitons.
+            Controls the randomness of the predictions.
 
         Returns
         -------
@@ -3269,6 +3269,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             Optionally, control whether warnings are shown. Not effective for all models.
         random_state
             Controls the randomness of the predictions.
+
         Returns
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
@@ -3462,7 +3463,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
         random_state
-            Optionally, controls the randomness of the prediction. Not effective for all models.
+            Controls the randomness of the predictions.
 
         Returns
         -------
