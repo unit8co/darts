@@ -911,7 +911,7 @@ class SKLearnModel(GlobalForecastingModel):
                 "eval_weight_name": val_weight_name,
                 "n_jobs": n_jobs_multioutput_wrapper,
             }
-            self.model = MultiOutputRegressor(self.model, **mor_kwargs)
+            self.model = MultiOutputRegressor(estimator=self.model, **mor_kwargs)
 
         if (
             not isinstance(self.model, MultiOutputRegressor)
@@ -1236,7 +1236,7 @@ class SKLearnModel(GlobalForecastingModel):
                 points_preds=row,
                 input_series=input_tgt,
                 custom_components=(
-                    self.likelihood.component_names(input_tgt)
+                    self.likelihood.component_names(series=input_tgt)
                     if predict_likelihood_parameters
                     else None
                 ),
