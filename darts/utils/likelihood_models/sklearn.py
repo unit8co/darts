@@ -121,10 +121,7 @@ class SKLearnLikelihood(Likelihood, ABC):
 
 
 class GaussianLikelihood(SKLearnLikelihood):
-    def __init__(
-        self,
-        n_outputs: int,
-    ):
+    def __init__(self, n_outputs: int):
         """
         Gaussian distribution [1]_.
 
@@ -209,10 +206,7 @@ class GaussianLikelihood(SKLearnLikelihood):
 
 
 class PoissonLikelihood(SKLearnLikelihood):
-    def __init__(
-        self,
-        n_outputs: int,
-    ):
+    def __init__(self, n_outputs: int):
         """
         Poisson distribution [1]_.
 

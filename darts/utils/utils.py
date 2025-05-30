@@ -696,10 +696,10 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
         store_instance = True
         random_instance = None
         if "random_state" in kwargs.keys() and kwargs["random_state"] is not None:
-            # get random state from model constructor or predict()
+            # get random state from model constructor or `predict()`
             random_instance = check_random_state(kwargs["random_state"]).get_state()
             if hasattr(self, "_random_instance"):
-                # store random instance when called from model constructor
+                # do not store random instance when called from `predict()`
                 store_instance = False
         elif not hasattr(self, "_random_instance"):
             # get random state for first time from other method

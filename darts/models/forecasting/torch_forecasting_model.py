@@ -1571,7 +1571,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
         random_state
-            Controls the randomness of the predictions.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1721,7 +1721,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
         random_state
-            Controls the randomness of the predictions.
+            Controls the randomness of probabilistic predictions.
         values_only
             Whether to return the predicted values only. If `False`, will return `TimeSeries` objects. Otherwise, will
             return a tuple of `(np.ndarray, list[dict[str, Any]], list[Union[pd.Timestamp, int]])`. The first element

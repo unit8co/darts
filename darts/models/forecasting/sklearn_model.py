@@ -1034,7 +1034,7 @@ class SKLearnModel(GlobalForecastingModel):
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
         random_state
-            Controls the randomness of the predictions.
+            Controls the randomness of probabilistic predictions.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
@@ -1959,4 +1959,5 @@ class RegressionModel(SKLearnModel):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )

@@ -235,114 +235,117 @@ if TORCH_AVAILABLE:
         ),
     ]
 
-    extra_configs = [
-        (ExponentialSmoothing, {"random_state": 42}, 0.3, None),
-        (VARIMA, {"random_state": 42}, 0.03, None),
-        (Prophet, {"random_state": 42}, 0.03, None),
-        (KalmanForecaster, {"random_state": 42}, 0.03, None),
-        (
-            LinearRegressionModel,
-            {
-                "lags": 12,
-                "likelihood": "quantile",
-                "quantiles": [0.1, 0.5, 0.9],
-                "random_state": 42,
-            },
-            0.04,
-            0.04,
-        ),
-        (
-            XGBModel,
-            {
-                "lags": 12,
-                "likelihood": "quantile",
-                "quantiles": [0.1, 0.5, 0.9],
-                "random_state": 42,
-            },
-            0.03,
-            None,
-        ),
-        (
-            NaiveEnsembleModel,
-            {
-                "forecasting_models": [
-                    LinearRegressionModel(
-                        lags=2,
-                        likelihood="quantile",
-                        quantiles=[0.1, 0.5, 0.9],
-                        random_state=42,
-                    ),
-                    LinearRegressionModel(
-                        lags=4,
-                        likelihood="quantile",
-                        quantiles=[0.1, 0.5, 0.9],
-                        random_state=42,
-                    ),
-                ],
-            },
-            0.04,
-            0.04,
-        ),
-        (
-            RegressionEnsembleModel,
-            {
-                "forecasting_models": [
-                    LinearRegressionModel(
-                        lags=2,
-                        likelihood="quantile",
-                        random_state=42,
-                        quantiles=[0.1, 0.5, 0.9],
-                    ),
-                    LinearRegressionModel(
-                        lags=4,
-                        likelihood="quantile",
-                        random_state=42,
-                        quantiles=[0.1, 0.5, 0.9],
-                    ),
-                ],
-                "regression_model": LinearRegressionModel(
-                    lags=None,
-                    lags_past_covariates=None,
-                    lags_future_covariates=[0],
+extra_configs = [
+    (ExponentialSmoothing, {"random_state": 42}, 0.3, None),
+    (VARIMA, {"random_state": 42}, 0.03, None),
+    (Prophet, {"random_state": 42}, 0.03, None),
+    (KalmanForecaster, {"random_state": 42}, 0.03, None),
+    (
+        LinearRegressionModel,
+        {
+            "lags": 12,
+            "likelihood": "quantile",
+            "quantiles": [0.1, 0.5, 0.9],
+            "random_state": 42,
+        },
+        0.04,
+        0.04,
+    ),
+    (
+        XGBModel,
+        {
+            "lags": 12,
+            "likelihood": "quantile",
+            "quantiles": [0.1, 0.5, 0.9],
+            "random_state": 42,
+            **xgb_test_params,
+        },
+        0.03,
+        None,
+    ),
+    (
+        NaiveEnsembleModel,
+        {
+            "forecasting_models": [
+                LinearRegressionModel(
+                    lags=2,
                     likelihood="quantile",
                     quantiles=[0.1, 0.5, 0.9],
                     random_state=42,
                 ),
-                "regression_train_n_points": 3,
+                LinearRegressionModel(
+                    lags=4,
+                    likelihood="quantile",
+                    quantiles=[0.1, 0.5, 0.9],
+                    random_state=42,
+                ),
+            ],
+        },
+        0.04,
+        0.04,
+    ),
+    (
+        RegressionEnsembleModel,
+        {
+            "forecasting_models": [
+                LinearRegressionModel(
+                    lags=2,
+                    likelihood="quantile",
+                    random_state=42,
+                    quantiles=[0.1, 0.5, 0.9],
+                ),
+                LinearRegressionModel(
+                    lags=4,
+                    likelihood="quantile",
+                    random_state=42,
+                    quantiles=[0.1, 0.5, 0.9],
+                ),
+            ],
+            "regression_model": LinearRegressionModel(
+                lags=None,
+                lags_past_covariates=None,
+                lags_future_covariates=[0],
+                likelihood="quantile",
+                quantiles=[0.1, 0.5, 0.9],
+                random_state=42,
+            ),
+            "regression_train_n_points": 3,
+        },
+        0.04,
+        0.04,
+    ),
+]
+
+if lgbm_available:
+    extra_configs += [
+        (
+            LightGBMModel,
+            {
+                "lags": 12,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.5, 0.9],
+                "random_state": 42,
+                **lgbm_test_params,
             },
-            0.04,
-            0.04,
+            0.03,
+            None,
         ),
     ]
-
-    if lgbm_available:
-        extra_configs += [
-            (
-                LightGBMModel,
-                {
-                    "lags": 12,
-                    "likelihood": "quantile",
-                    "quantiles": [0.1, 0.5, 0.9],
-                    "random_state": 42,
-                },
-                0.03,
-                None,
-            ),
-        ]
-    if cb_available:
-        extra_configs += [
-            (
-                CatBoostModel,
-                {
-                    "lags": 12,
-                    "likelihood": "quantile",
-                    "quantiles": [0.1, 0.5, 0.9],
-                    "random_state": 42,
-                },
-                0.03,
-                None,
-            ),
-        ]
+if cb_available:
+    extra_configs += [
+        (
+            CatBoostModel,
+            {
+                "lags": 12,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.5, 0.9],
+                "random_state": 42,
+                **cb_test_params,
+            },
+            0.03,
+            None,
+        ),
+    ]
 
 
 @pytest.mark.slow

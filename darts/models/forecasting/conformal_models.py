@@ -309,7 +309,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         show_warnings
             Whether to show warnings related auto-regression and past covariates usage.
         random_state
-            Controls the randomness of the predictions.
+            Controls the randomness of probabilistic predictions.
         **kwargs
             Optional keyword arguments that will passed to the underlying forecasting model's `predict()` and
             `historical_forecasts()` methods.

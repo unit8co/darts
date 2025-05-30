@@ -378,7 +378,7 @@ class EnsembleModel(GlobalForecastingModel):
             Sequence of timeseries to predict on. Optional, since it only makes sense for sequences of timeseries -
             local models retain timeseries for prediction.
         random_state
-            Controls the randomness of the predictions.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
