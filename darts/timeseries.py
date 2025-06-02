@@ -2019,7 +2019,9 @@ class TimeSeries:
 
         return self.__class__(new_xa)
 
-    def quantiles_df(self, quantiles: tuple[float, ...] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
+    def quantiles_df(
+        self, quantiles: tuple[float, ...] = (0.1, 0.5, 0.9)
+    ) -> pd.DataFrame:
         """
         Return a Pandas DataFrame containing the desired quantiles of each component (over the samples).
 
