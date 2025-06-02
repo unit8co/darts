@@ -341,6 +341,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
@@ -354,6 +355,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -3029,6 +3032,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
@@ -3068,6 +3072,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             Default: ``False``
         show_warnings
             Whether to show warnings related auto-regression and past covariates usage.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -3079,7 +3085,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, random_state=random_state)
         if predict_likelihood_parameters:
             self._sanity_check_predict_likelihood_parameters(
                 n, self.output_chunk_length, num_samples
@@ -3236,6 +3242,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
@@ -3260,12 +3267,14 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, random_state=random_state)
         if predict_likelihood_parameters:
             self._sanity_check_predict_likelihood_parameters(
                 n, self.output_chunk_length, num_samples
@@ -3306,6 +3315,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             future_covariates=future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
             **kwargs,
         )
 
@@ -3317,6 +3327,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
@@ -3418,6 +3429,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         """If the `series` parameter is not set, forecasts values for `n` time steps after the end of the training
@@ -3450,6 +3462,8 @@ class TransferableFutureCovariatesLocalForecastingModel(
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -3497,6 +3511,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
             future_covariates=future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
             **kwargs,
         )
 
@@ -3538,6 +3553,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.

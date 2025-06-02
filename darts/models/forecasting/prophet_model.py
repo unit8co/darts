@@ -17,12 +17,14 @@ from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
 from darts.timeseries import TimeSeries
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
 class Prophet(FutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
         add_seasonalities: Optional[Union[dict, list[dict]]] = None,
@@ -41,6 +43,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
             ]
         ] = None,
+        random_state: Optional[int] = None,
         **prophet_kwargs,
     ):
         """Facebook Prophet
@@ -131,6 +134,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             - a number, for constant carrying capacities
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
             where each number indicates the carrying capacity at this index.
+        random_state
+            Controls the model randomness for reproducible forecasting.
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
@@ -257,6 +262,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         return self
 
+    @random_method
     def _predict(
         self,
         n: int,
@@ -264,6 +270,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         _ = self._check_seasonality_conditions(future_covariates=future_covariates)
