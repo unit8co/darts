@@ -469,30 +469,30 @@ class TestProbabilisticModels:
         assert (pred4 != pred5).any()
 
         # same test with optimized historical forecasts disabled
-        model = self.instantiate_model(model_cls, model_kwargs)
-        pred1 = model.historical_forecasts(
-            **kwargs_hist_forecast, enable_optimization=False
-        ).all_values()
-        pred2 = model.historical_forecasts(
-            **kwargs_hist_forecast, enable_optimization=False
-        ).all_values()
-        if issubclass(model_cls, ConformalNaiveModel):
+        if model.supports_optimized_historical_forecasts:
+            model = self.instantiate_model(model_cls, model_kwargs)
+            model.fit(series, **fit_kwargs)
+            kwargs_hist_forecast["retrain"] = False
+            pred1 = model.historical_forecasts(
+                **kwargs_hist_forecast, enable_optimization=True
+            ).all_values()
+            pred2 = model.historical_forecasts(
+                **kwargs_hist_forecast, enable_optimization=True
+            ).all_values()
             assert (pred2 != pred1).any()
-        else:
-            assert (pred2 == pred1).all()
 
-        pred3 = model.historical_forecasts(
-            **kwargs_hist_forecast, random_state=38, enable_optimization=False
-        ).all_values()
-        pred4 = model.historical_forecasts(
-            **kwargs_hist_forecast, random_state=38, enable_optimization=False
-        ).all_values()
-        assert (pred3 == pred4).all()
+            pred3 = model.historical_forecasts(
+                **kwargs_hist_forecast, random_state=38, enable_optimization=True
+            ).all_values()
+            pred4 = model.historical_forecasts(
+                **kwargs_hist_forecast, random_state=38, enable_optimization=True
+            ).all_values()
+            assert (pred3 == pred4).all()
 
-        pred5 = model.historical_forecasts(
-            **kwargs_hist_forecast, random_state=32, enable_optimization=False
-        ).all_values()
-        assert (pred4 != pred5).any()
+            pred5 = model.historical_forecasts(
+                **kwargs_hist_forecast, random_state=32, enable_optimization=True
+            ).all_values()
+            assert (pred4 != pred5).any()
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
     def test_fit_predict_randomized(self, config):
