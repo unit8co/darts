@@ -6,12 +6,14 @@ import numpy as np
 import pytest
 
 from darts import TimeSeries
+from darts.datasets import IceCreamHeaterDataset
 from darts.logging import get_logger
 from darts.metrics import mae
 from darts.models import (
     ARIMA,
     TBATS,
     VARIMA,
+    AutoARIMA,
     CatBoostModel,
     ConformalNaiveModel,
     EnsembleModel,
@@ -68,11 +70,16 @@ if TORCH_AVAILABLE:
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
 
+np.random.seed(0)
+constant_ts = tg.constant_timeseries(length=200, value=0.5)
+constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
+constant_noisy_ts_short = constant_noisy_ts[:31]
+
 # conformal models require a fitted base model
 # in tests below, the model is re-trained for new input series.
 # using a fake trained model should allow the same API with conformal models
 conformal_forecaster = LinearRegressionModel(lags=10, output_chunk_length=5)
-conformal_forecaster._fit_called = True
+conformal_forecaster.fit(constant_noisy_ts_short)
 
 # model_cls, model_kwargs, err_univariate, err_multivariate
 models_cls_kwargs_errs = [
@@ -241,6 +248,15 @@ extra_configs = [
     (Prophet, {"random_state": 42}, 0.03, None),
     (KalmanForecaster, {"random_state": 42}, 0.03, None),
     (
+        AutoARIMA,
+        {
+            "random_state": 42,
+            "season_length": 12,
+        },
+        0.04,
+        0.04,
+    ),
+    (
         LinearRegressionModel,
         {
             "lags": 12,
@@ -352,14 +368,17 @@ if cb_available:
 class TestProbabilisticModels:
     np.random.seed(0)
 
-    constant_ts = tg.constant_timeseries(length=200, value=0.5)
-    constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
+    constant_ts = constant_ts
+    constant_noisy_ts = constant_noisy_ts
     constant_multivar_ts = constant_ts.stack(constant_ts)
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
-    constant_noisy_ts_short = constant_noisy_ts[:30]
+    constant_noisy_ts_short = constant_noisy_ts_short
     constant_noisy_multivar_ts_short = constant_noisy_multivar_ts[:30]
+
+    ts_ice_heater = IceCreamHeaterDataset().load()
+    ts_ice_heater_short = ts_ice_heater[:31]
 
     @pytest.mark.slow
     @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
@@ -395,6 +414,83 @@ class TestProbabilisticModels:
         # predicting again without random state resumes original randomness
         pred6 = model.predict(n=10, num_samples=2).all_values()
         assert (pred6 == pred2).all()
+
+        pred7 = model.predict(n=10, num_samples=2, random_state=32).all_values()
+        assert (pred7 != pred5).any()
+
+    @pytest.mark.slow
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
+    def test_historical_forecast(self, config):
+        model_cls, model_kwargs, _, _ = config
+        if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
+            fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
+        else:
+            fit_kwargs = {}
+        if issubclass(model_cls, VARIMA):
+            series = self.ts_ice_heater_short
+        else:
+            series = self.constant_noisy_ts_short
+
+        kwargs_hist_forecast = {
+            "series": series,
+            "num_samples": 2,
+            "start": -1,
+            "forecast_horizon": 10,
+            "overlap_end": True,
+            "fit_kwargs": fit_kwargs,
+        }
+
+        # test that two consecutive historical forecasts without random state at `predict()` are equal
+        model = self.instantiate_model(model_cls, model_kwargs)
+        pred1 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+        pred2 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+        if issubclass(model_cls, ConformalNaiveModel):
+            # Conformal models are the exception since they are not retrained at each historical forecast
+            assert (pred2 != pred1).any()
+        else:
+            # check all equal
+            assert (pred2 == pred1).all()
+
+        # test whether two consecutive historical forecasts with a random_state specified are the same
+        pred3 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=38
+        ).all_values()
+        pred4 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=38
+        ).all_values()
+        assert (pred3 == pred4).all()
+
+        # test whether two consecutive historical forecasts with a different random_state specified are different
+        pred5 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=32
+        ).all_values()
+        assert (pred4 != pred5).any()
+
+        # same test with optimized historical forecasts disabled
+        model = self.instantiate_model(model_cls, model_kwargs)
+        pred1 = model.historical_forecasts(
+            **kwargs_hist_forecast, enable_optimization=False
+        ).all_values()
+        pred2 = model.historical_forecasts(
+            **kwargs_hist_forecast, enable_optimization=False
+        ).all_values()
+        if issubclass(model_cls, ConformalNaiveModel):
+            assert (pred2 != pred1).any()
+        else:
+            assert (pred2 == pred1).all()
+
+        pred3 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=38, enable_optimization=False
+        ).all_values()
+        pred4 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=38, enable_optimization=False
+        ).all_values()
+        assert (pred3 == pred4).all()
+
+        pred5 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=32, enable_optimization=False
+        ).all_values()
+        assert (pred4 != pred5).any()
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
     def test_fit_predict_randomized(self, config):

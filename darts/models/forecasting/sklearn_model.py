@@ -1396,6 +1396,7 @@ class SKLearnModel(GlobalForecastingModel):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
@@ -1433,6 +1434,7 @@ class SKLearnModel(GlobalForecastingModel):
                 show_warnings=show_warnings,
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
                 **kwargs,
             )
         else:
@@ -1450,6 +1452,7 @@ class SKLearnModel(GlobalForecastingModel):
                 show_warnings=show_warnings,
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
                 **kwargs,
             )
         return series2seq(hfc, seq_type_out=series_seq_type)

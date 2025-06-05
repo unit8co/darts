@@ -368,6 +368,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             show_warnings=False,
             predict_likelihood_parameters=False,
+            random_state=random_state,
             predict_kwargs=kwargs,
         )
         cal_preds = self._calibrate_forecasts(
@@ -416,6 +417,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Generates calibrated historical forecasts by simulating predictions at various points in time throughout the
         history of the provided (potentially multiple) `series`. This process involves retrospectively applying the
@@ -527,6 +529,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Optionally, some additional arguments passed to the model `predict()` method.
         sample_weight
             Currently ignored by conformal models.
+        random_state
+            Controls the model randomness for reproducible forecasting.
 
         Returns
         -------
@@ -581,6 +585,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             data_transformers=data_transformers,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
+            random_state=random_state,
         )
         calibrated_forecasts = self._calibrate_forecasts(
             series=series,
@@ -595,6 +600,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
         )
         return (
             calibrated_forecasts[0]
@@ -632,6 +638,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        random_state: Optional[int] = None,
     ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
         """Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
 
@@ -764,6 +771,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Optionally, some additional arguments passed to the model `predict()` method.
         sample_weight
             Currently ignored by conformal models.
+        random_state
+            Controls the model randomness for reproducible forecasting.
 
         Returns
         -------
@@ -814,6 +823,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             sample_weight=sample_weight,
+            random_state=random_state,
         )
 
     def residuals(
@@ -846,6 +856,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         values_only: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Compute the residuals that the model produced for historical forecasts on (potentially multiple) `series`.
 
@@ -985,6 +996,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Currently ignored by conformal models.
         values_only
             Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
+        random_state
+            Controls the model randomness for reproducible forecasting.
 
         Returns
         -------
@@ -1024,6 +1037,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             predict_kwargs=predict_kwargs,
             sample_weight=sample_weight,
             values_only=values_only,
+            random_state=random_state,
         )
 
     @random_method
