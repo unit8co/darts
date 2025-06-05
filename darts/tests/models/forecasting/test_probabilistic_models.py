@@ -69,6 +69,7 @@ if TORCH_AVAILABLE:
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
+prophet_available = not isinstance(Prophet, NotImportedModule)
 
 np.random.seed(0)
 constant_ts = tg.constant_timeseries(length=200, value=0.5)
@@ -245,7 +246,6 @@ if TORCH_AVAILABLE:
 extra_configs = [
     (ExponentialSmoothing, {"random_state": 42}, 0.3, None),
     (VARIMA, {"random_state": 42}, 0.03, None),
-    (Prophet, {"random_state": 42}, 0.03, None),
     (KalmanForecaster, {"random_state": 42}, 0.03, None),
     (
         AutoARIMA,
@@ -362,6 +362,8 @@ if cb_available:
             None,
         ),
     ]
+if prophet_available:
+    extra_configs += [(Prophet, {"random_state": 42}, 0.03, None)]
 
 
 @pytest.mark.slow
