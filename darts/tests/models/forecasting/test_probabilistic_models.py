@@ -494,6 +494,7 @@ class TestProbabilisticModels:
             ).all_values()
             assert (pred3 == pred4).all()
 
+            # test that another historical forecast with a different random_state specified is different
             pred5 = model.historical_forecasts(
                 **kwargs_hist_forecast, random_state=32, enable_optimization=True
             ).all_values()
