@@ -530,7 +530,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         sample_weight
             Currently ignored by conformal models.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
