@@ -226,7 +226,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         )
 
         # random state restored
-        np.random.set_state(random_instance)
+        np.random.set_state(random_state_)
 
         series = series if series is not None else self.training_series
 
