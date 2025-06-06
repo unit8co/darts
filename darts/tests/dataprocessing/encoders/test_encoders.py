@@ -169,6 +169,9 @@ class TestEncoder:
         encoder_args = {"cyclic": {"past": ["month"], "future": ["month", "month"]}}
         encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
 
+        series_copy = self.target_multi.copy()
+        covariates_copy = self.covariates_multi.copy()
+
         # ==> test training <==
         past_covs_train, future_covs_train = encoders.encode_train(
             target=self.target_multi,
@@ -220,12 +223,19 @@ class TestEncoder:
                 list(fc.components), [f"comp{i}" for i in range(len(fc.components))]
             )
 
+        # check that encoder did not mutate input series
+        assert self.target_multi == series_copy
+        assert self.covariates_multi == covariates_copy
+
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_encoder_sequence_inference(self):
         """Test `SequentialEncoder.encode_inference()` output"""
         # ==> test prediction <==
         encoder_args = {"cyclic": {"past": ["month"], "future": ["month"]}}
         encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
+
+        series_copy = self.target_multi.copy()
+        covariates_copy = self.covariates_multi.copy()
 
         # tests with n <= output_chunk_length
         # with supplying past and future covariates as input
@@ -237,6 +247,7 @@ class TestEncoder:
             expected_past_idx_ts=self.covariates_multi,
             expected_future_idx_ts=self.covariates_multi,
         )
+
         # without supplying covariates as input
         self.helper_sequence_encode_inference(
             encoders=encoders,
@@ -265,6 +276,10 @@ class TestEncoder:
             expected_past_idx_ts=self.inf_ts_long_past,
             expected_future_idx_ts=self.covariates_multi,
         )
+
+        # check that encoder did not mutate input series
+        assert self.target_multi == series_copy
+        assert self.covariates_multi == covariates_copy
 
     def helper_sequence_encode_inference(
         self,
@@ -885,6 +900,8 @@ class TestEncoder:
     def test_callable_encoder(self):
         """Test `CallableIndexEncoder`"""
         ts = tg.linear_timeseries(length=24, freq=freqs["YE"])
+        ts_copy = ts.copy()
+
         input_chunk_length = 12
         output_chunk_length = 6
 
@@ -939,6 +956,9 @@ class TestEncoder:
         # future covariates
         np.testing.assert_array_equal(year_index.year.values, fc.values()[:, 0])
 
+        # check that the input series is not modified
+        assert ts == ts_copy
+
     def test_transformer_single_series(self):
         def test_routine_cyclic(past_covs):
             for curve in ["sin", "cos"]:
@@ -968,6 +988,7 @@ class TestEncoder:
             freq=freqs["min"],
             column_name="cov_in",
         )
+        ts1_copy = ts1.copy()
         encoder_params = {
             "position": {"future": ["relative"]},
             "cyclic": {"past": ["minute"]},
@@ -996,6 +1017,8 @@ class TestEncoder:
         assert (
             abs(fc1["darts_enc_fc_pos_relative"].values(copy=False).max() - 1.0) < 10e-9
         )
+        # check that the input series is not modified
+        assert ts1 == ts1_copy
 
         # ===> validation set test <===
         ts2 = tg.linear_timeseries(
@@ -1367,6 +1390,8 @@ class TestEncoder:
         ts = tg.linear_timeseries(
             start=pd.Timestamp("2000-01-01 00:00:00"), length=48, freq="h"
         )
+        ts_copy = ts.copy()
+
         pc1, fc1 = encs.encode_train(ts)
         pc2, fc2 = encs.encode_inference(n=6, target=ts)
 
@@ -1380,3 +1405,6 @@ class TestEncoder:
             np.testing.assert_array_almost_equal(
                 np.roll(vals.values(), -1, axis=0)[:-1], vals_tz.values()[:-1]
             )
+
+        # check that the original time series is not modified
+        assert ts == ts_copy

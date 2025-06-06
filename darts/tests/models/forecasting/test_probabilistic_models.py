@@ -376,12 +376,16 @@ class TestProbabilisticModels:
         else:
             series = self.constant_noisy_ts_short
 
+        series_copy = series.copy()
         # test that two consecutive predictions without random state at `predict()` are different
         model = self.instantiate_model(model_cls, model_kwargs)
         model.fit(series, **fit_kwargs)
         pred1 = model.predict(n=10, num_samples=2).all_values()
         pred2 = model.predict(n=10, num_samples=2).all_values()
         assert (pred2 != pred1).any()
+
+        # check that fit predict did not mutate input series
+        assert series == series_copy
 
         # test that first prediction without same random state at model creation is identical to the previous model
         model = self.instantiate_model(model_cls, model_kwargs)

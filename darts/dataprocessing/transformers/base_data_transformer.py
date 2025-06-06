@@ -40,7 +40,7 @@ def component_masking(transformer_method):
                 series, component_mask, return_ts=True
             )
         else:
-            series_proc = series
+            series_proc = series.copy()
             if component_mask is not None:
                 kwargs["component_mask"] = component_mask
 

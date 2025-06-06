@@ -1036,6 +1036,8 @@ class TestSKLearnModels:
     def test_models_runnability(self, config):
         model, mode = config
         train_y, test_y = self.sine_univariate1.split_before(0.7)
+        series_copy = train_y.copy()
+
         # testing past covariates
         model_instance = model(lags=4, lags_past_covariates=None, multi_models=mode)
         with pytest.raises(ValueError):
@@ -1065,10 +1067,13 @@ class TestSKLearnModels:
             model_instance.fit(series=self.sine_univariate1)
 
         # testing input_dim
+        past_cov = self.sine_univariate1.stack(self.sine_univariate1)
+        past_cov_copy = past_cov.copy()
+
         model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
         model_instance.fit(
             series=train_y,
-            past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
+            past_covariates=past_cov,
         )
 
         assert model_instance.input_dim == {
@@ -1083,6 +1088,10 @@ class TestSKLearnModels:
         # while it should work with n = 1
         prediction = model_instance.predict(n=1)
         assert len(prediction) == 1
+
+        # check that fit predict did not mutate input series
+        assert train_y == series_copy
+        assert past_cov == past_cov_copy
 
     @pytest.mark.parametrize(
         "config",
@@ -3023,6 +3032,12 @@ class TestSKLearnModels:
             "future": {"future_covariates": fc},
             "mixed": {"past_covariates": pc, "future_covariates": fc},
         }
+        covariates_examples_copy = {
+            "past": {"past_covariates": pc.copy()},
+            "future": {"future_covariates": fc.copy()},
+            "mixed": {"past_covariates": pc.copy(), "future_covariates": fc.copy()},
+        }
+
         encoder_examples = {
             "past": {"datetime_attribute": {"past": ["hour"]}},
             "future": {"cyclic": {"future": ["hour"]}},
@@ -3146,6 +3161,9 @@ class TestSKLearnModels:
             _ = model.predict(n=1, series=ts, **covariates)
             _ = model.predict(n=3, series=ts, **covariates)
             _ = model.predict(n=8, series=ts, **covariates)
+
+        # check that fit predict did not mutate input series
+        assert covariates_examples == covariates_examples_copy
 
     @pytest.mark.parametrize("config", product([True, False], [True, False]))
     def test_encoders_from_covariates_input(self, config):
