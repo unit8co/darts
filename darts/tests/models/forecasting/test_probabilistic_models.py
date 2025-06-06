@@ -485,6 +485,7 @@ class TestProbabilisticModels:
             ).all_values()
             assert (pred2 != pred1).any()
 
+            # test whether two consecutive historical forecasts with a random_state specified are the same
             pred3 = model.historical_forecasts(
                 **kwargs_hist_forecast, random_state=38, enable_optimization=True
             ).all_values()
