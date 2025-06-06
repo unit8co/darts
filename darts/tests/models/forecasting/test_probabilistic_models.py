@@ -469,7 +469,7 @@ class TestProbabilisticModels:
         ).all_values()
         assert (pred4 != pred5).any()
 
-        # same test with optimized historical forecasts disabled
+        # same test with `retrain=False` and optimized historical forecasts
         if model.supports_optimized_historical_forecasts:
             model = self.instantiate_model(model_cls, model_kwargs)
             model.fit(series, **fit_kwargs)
