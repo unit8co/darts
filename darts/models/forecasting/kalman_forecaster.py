@@ -83,7 +83,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
                 }
             ..
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Examples
         --------

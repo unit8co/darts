@@ -835,7 +835,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed per time `series`.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1478,7 +1478,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed per time `series`.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1802,7 +1802,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If a string, then the weights are generated using built-in weighting functions. The available options are
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -2197,7 +2197,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         values_only
             Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------

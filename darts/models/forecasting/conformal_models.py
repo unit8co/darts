@@ -772,7 +772,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         sample_weight
             Currently ignored by conformal models.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -997,7 +997,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         values_only
             Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
