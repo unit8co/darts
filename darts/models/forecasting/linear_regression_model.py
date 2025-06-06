@@ -193,7 +193,6 @@ class LinearRegressionModel(SKLearnModel):
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
-            random_state=random_state,
             quantiles=quantiles,
         )
 
@@ -207,6 +206,7 @@ class LinearRegressionModel(SKLearnModel):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )
 
     def fit(

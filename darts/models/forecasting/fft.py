@@ -372,6 +372,7 @@ class FFT(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
         trend_forecast = np.array([

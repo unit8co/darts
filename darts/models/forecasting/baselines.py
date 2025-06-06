@@ -63,6 +63,7 @@ class NaiveMean(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
         forecast = np.tile(self.mean_val, (n, 1))
@@ -128,6 +129,7 @@ class NaiveSeasonal(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
@@ -178,6 +180,7 @@ class NaiveDrift(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
         first, last = (
@@ -249,6 +252,7 @@ class NaiveMovingAverage(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
 
@@ -356,6 +360,7 @@ class NaiveEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Average the `forecasting_models` predictions, component-wise"""
         raise_if(

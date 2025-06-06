@@ -32,11 +32,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `HorizonBasedTorchTrainingDataset` now also supports future covariates.
   - Added parameter `stride` to `*TorchTrainingDatset` to apply a stride between two consecutive training samples.  [#2624](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
 - Added method `schema()` to `TimeSeries` to extract the schema from a series. It contains information about the time index, columns, static covariates, hierarchy, and metadata. [#2802](https://github.com/unit8co/darts/pull/2802) by [Dennis Bader](https://github.com/dennisbader).
+- Added parameter `random_state` to `ForecastingModel.predict()` to control the randomness of probabilistic forecasts. [#2808](https://github.com/unit8co/darts/pull/2808) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
 
 **Fixed**
 
 - Fixed some issues in `NLinearModel` with `normalize=True` that resulted in decreased predictive accuracy. Using `shared_weights=True` and auto-regressive forecasting now work properly. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Fixed a bug when training a `TorchForecastingModel`, where using certain `torchmetrics` that require a 2D model output (e.g. R2Score) raised an error. [He Weilin](https://github.com/cnhwl).
+- Fixed a bug with `SKLearnModel.__str__()` which raised an error when the model was wrapped by Darts' MultioutputRegressor. [#2811](https://github.com/unit8co/darts/pull/2811) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 

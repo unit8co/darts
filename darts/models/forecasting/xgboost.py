@@ -206,7 +206,6 @@ class XGBModel(SKLearnModel):
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
-            random_state=random_state,
             quantiles=quantiles,
         )
 
@@ -220,6 +219,7 @@ class XGBModel(SKLearnModel):
             multi_models=multi_models,
             model=xgb.XGBRegressor(**self.kwargs),
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )
 
     def fit(

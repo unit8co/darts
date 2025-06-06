@@ -14,6 +14,7 @@ from typing import Optional
 
 import numpy as np
 import pandas as pd
+from sklearn.utils import check_random_state
 from statsmodels.tsa.api import VARMAX as staVARMA
 
 from darts import TimeSeries
@@ -21,11 +22,13 @@ from darts.logging import get_logger, raise_if
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 
 
 class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
         p: int = 1,
@@ -33,6 +36,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         q: int = 0,
         trend: Optional[str] = None,
         add_encoders: Optional[dict] = None,
+        random_state: Optional[int] = None,
     ):
         """VARIMA
 
@@ -76,6 +80,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
+        random_state: int or None
+            Controls the model randomness for reproducible forecasting.
 
         Examples
         --------
@@ -151,6 +157,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         self.model = m.fit(disp=0)
 
+    @random_method
     def _predict(
         self,
         n: int,
@@ -160,6 +167,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         if num_samples > 1 and self.trend:
             logger.warning(
@@ -209,10 +217,13 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 ),
             )
         else:
+            rng = check_random_state(random_state)
+
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
+                random_state=rng,
                 exog=(
                     future_covariates.values(copy=False) if future_covariates else None
                 ),

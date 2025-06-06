@@ -169,6 +169,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         super()._predict(
             n, series, historic_future_covariates, future_covariates, num_samples
