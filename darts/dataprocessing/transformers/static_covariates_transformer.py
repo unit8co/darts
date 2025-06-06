@@ -434,7 +434,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         mask_num: np.ndarray,
         mask_cat: np.ndarray,
         col_map_cat: dict[str, str],
-    ) -> pd.DataFrame:
+    ) -> TimeSeries:
         """
         Adds transformed static covariates back to original `TimeSeries`. The categorical component
         mapping is used to correctly name categorical components with a one-to-many mapping
@@ -467,5 +467,12 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             columns=static_cov_columns,
             index=series.static_covariates.index,
         )
-
-        return series.with_static_covariates(transformed_static_covs)
+        return TimeSeries(
+            times=series.time_index,
+            values=series.all_values(copy=False),
+            components=series.components,
+            static_covariates=transformed_static_covs,
+            hierarchy=series.hierarchy,
+            metadata=series.metadata,
+            copy=False,
+        )
