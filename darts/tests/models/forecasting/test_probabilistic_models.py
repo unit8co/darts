@@ -442,7 +442,7 @@ class TestProbabilisticModels:
             "fit_kwargs": fit_kwargs,
         }
 
-        # test that two consecutive historical forecasts with `retrain=True` and without random state at `predict()` 
+        # test that two consecutive historical forecasts with `retrain=True` and without random state at `predict()`
         # are equal due to the `random_state` set at model creation
         model = self.instantiate_model(model_cls, model_kwargs)
         pred1 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
@@ -474,8 +474,8 @@ class TestProbabilisticModels:
             model = self.instantiate_model(model_cls, model_kwargs)
             model.fit(series, **fit_kwargs)
 
-            # test that two consecutive historical forecasts with `retrain=False` and without random state at `predict()` 
-            # are different
+            # test that two consecutive historical forecasts with `retrain=False` and without random state at
+            # `predict()` are different
             kwargs_hist_forecast["retrain"] = False
             pred1 = model.historical_forecasts(
                 **kwargs_hist_forecast, enable_optimization=True
