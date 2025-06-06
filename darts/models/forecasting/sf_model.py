@@ -215,7 +215,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
 
         # a seed is manually set in AutoCES and AutoTheta forecast functions which impacts the current random state, so
         # here we save the current random state to restore if after getting quantiles
-        random_instance = np.random.get_state()
+        random_state_ = np.random.get_state()
 
         model_output = self._estimator_predict(
             n=n,
