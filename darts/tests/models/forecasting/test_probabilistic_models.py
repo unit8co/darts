@@ -473,6 +473,9 @@ class TestProbabilisticModels:
         if model.supports_optimized_historical_forecasts:
             model = self.instantiate_model(model_cls, model_kwargs)
             model.fit(series, **fit_kwargs)
+
+            # test that two consecutive historical forecasts with `retrain=False` and without random state at `predict()` 
+            # are different
             kwargs_hist_forecast["retrain"] = False
             pred1 = model.historical_forecasts(
                 **kwargs_hist_forecast, enable_optimization=True
