@@ -442,7 +442,8 @@ class TestProbabilisticModels:
             "fit_kwargs": fit_kwargs,
         }
 
-        # test that two consecutive historical forecasts without random state at `predict()` are equal
+        # test that two consecutive historical forecasts with `retrain=True` and without random state at `predict()` 
+        # are equal due to the `random_state` set at model creation
         model = self.instantiate_model(model_cls, model_kwargs)
         pred1 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
         pred2 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
