@@ -137,14 +137,15 @@ def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
         A TimeSeries, `series` with all missing values set to `fill`.
     """
 
-    return TimeSeries.from_times_and_values(
+    return TimeSeries(
         series.time_index,
         series.to_dataframe().fillna(value=fill),
         freq=series.freq,
-        columns=series.columns,
+        components=series.columns,
         static_covariates=series.static_covariates,
         hierarchy=series.hierarchy,
         metadata=series.metadata,
+        copy=False,
     )
 
 
@@ -175,10 +176,13 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
         interpolate_kwargs["limit_direction"] = "both"
     interpolate_kwargs["inplace"] = True
     series_temp.interpolate(**interpolate_kwargs)
-    return TimeSeries.from_dataframe(
-        series_temp,
+    return TimeSeries(
+        times=series_temp.index,
+        values=series_temp.values,
+        components=series_temp.columns,
         freq=series.freq,
         static_covariates=series.static_covariates,
         hierarchy=series.hierarchy,
         metadata=series.metadata,
+        copy=False,
     )

@@ -588,7 +588,7 @@ class BaseDataTransformer(ABC):
                 # remove timepoints not present in transformed data (returns a copy)
                 unmasked = series_.slice_intersect(vals_)
                 # populate with new values
-                unmasked_vals = series_.all_values(copy=False)
+                unmasked_vals = unmasked.all_values(copy=False)
                 unmasked_vals[:, component_mask, :] = vals_.all_values(copy=False)
             else:
                 unmasked = series_.all_values(copy=True)
