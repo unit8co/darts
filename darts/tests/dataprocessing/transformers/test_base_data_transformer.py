@@ -97,29 +97,22 @@ class TestBaseDataTransformer:
 
             return series.with_values(vals)
 
-    class MutatingDataTransformerMock(DataTransformerMock):
-        @staticmethod
-        def ts_transform(series, *args, **kwargs):
-            # mutate the input series in place:
-            vals = series.all_values(copy=False)
-            vals[:] = vals + 1.0
-            return TestBaseDataTransformer.DataTransformerMock.ts_transform(
-                series, *args, **kwargs
-            )
-
-    def test_input_transformed_single_series(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
+    def test_input_transformed_single_series(self, component_mask):
         """
         Tests for correct transformation of single series.
         """
         test_input = constant_timeseries(value=1, length=10)
+        test_input_copy = test_input.copy()
 
         mock = self.DataTransformerMock(scale=2, translation=10)
 
-        transformed = mock.transform(test_input)
+        transformed = mock.transform(test_input, component_mask=component_mask)
 
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
         assert transformed == expected
+        assert test_input == test_input_copy
 
     def test_input_transformed_multiple_series(self):
         """
@@ -246,22 +239,3 @@ class TestBaseDataTransformer:
         mock = self.DataTransformerMock(scale=2, translation=10, mask_components=False)
         transformed = mock.transform(test_input, component_mask=mask)
         assert transformed == expected
-
-    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
-    def test_input_series_immutable(self, component_mask):
-        """
-        Tests that transformation does not mutate the input series.
-        """
-        test_input = constant_timeseries(value=1, length=10)
-        test_input_copy = test_input.copy()
-
-        mock = self.MutatingDataTransformerMock(scale=2, translation=10)
-        transformed = mock.transform(test_input, component_mask=component_mask)
-
-        # transformer adds 1 to the test input series
-        # 2 * 2 (=input series + 1) + 10 = 12
-        expected = constant_timeseries(value=14, length=10)
-        assert transformed == expected
-
-        # check that input series is not mutated (the mutation happens on a copy of the input)
-        assert test_input == test_input_copy

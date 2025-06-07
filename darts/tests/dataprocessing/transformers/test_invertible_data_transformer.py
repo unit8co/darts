@@ -151,44 +151,29 @@ class TestInvertibleDataTransformer:
 
             return series.with_values(vals)
 
-    class MutatingDataTransformerMock(DataTransformerMock):
-        @staticmethod
-        def ts_transform(series, *args, **kwargs):
-            # mutate the input series in place:
-            vals = series.all_values(copy=False)
-            vals[:] = vals + 1.0
-            return TestInvertibleDataTransformer.DataTransformerMock.ts_transform(
-                series, *args, **kwargs
-            )
-
-        @staticmethod
-        def ts_inverse_transform(series, *args, **kwargs):
-            # mutate the input series in place:
-            series = (
-                TestInvertibleDataTransformer.DataTransformerMock.ts_inverse_transform(
-                    series, *args, **kwargs
-                )
-            )
-            vals = series.all_values(copy=False)
-            vals[:] = vals + 1.0
-            return series
-
-    def test_input_transformed_single_series(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
+    def test_input_transformed_single_series(self, component_mask):
         """
         Tests for correct (inverse) transformation of single series.
         """
         test_input = constant_timeseries(value=1, length=10)
+        test_input_copy = test_input.copy()
 
         mock = self.DataTransformerMock(scale=2, translation=10)
 
-        transformed = mock.transform(test_input)
-
+        transformed = mock.transform(test_input, component_mask=component_mask)
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
         assert transformed == expected
+        assert test_input == test_input_copy
 
         # Should get input back:
-        assert mock.inverse_transform(transformed) == test_input
+        transformed_copy = transformed.copy()
+        assert (
+            mock.inverse_transform(transformed, component_mask=component_mask)
+            == test_input
+        )
+        assert transformed == transformed_copy
 
     def test_input_transformed_multiple_series(self):
         """
@@ -436,24 +421,3 @@ class TestInvertibleDataTransformer:
         # Should get input back:
         inv = mock.inverse_transform(transformed, component_mask=mask)
         assert inv == test_input
-
-    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
-    def test_input_series_immutable(self, component_mask):
-        """
-        Tests that transformation does not mutate the input series.
-        """
-        test_input = constant_timeseries(value=1, length=10)
-        test_input_copy = test_input.copy()
-
-        # Don't have different params for different jobs:
-        mock = self.MutatingDataTransformerMock(
-            scale=2, translation=10, parallel_params=False
-        )
-        transformed = mock.transform(test_input, component_mask=component_mask)
-        # 2 * 2 + 10 = 14
-        assert transformed == constant_timeseries(value=14, length=10)
-
-        # mutating mock will not give the original values back; it's only here for checking input immutability
-        inv = mock.inverse_transform(transformed, component_mask=component_mask)
-        assert inv == test_input + 2.0
-        assert test_input == test_input_copy

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import MissingValuesFiller
@@ -24,10 +25,15 @@ class TestMissingValuesFiller:
         time, np.array(lin[0:10] + [np.nan] * 5 + lin[15:24] + [np.nan] * 5 + [lin[29]])
     )
 
-    def test_fill_const_series_with_const_value(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
+    def test_fill_const_series_with_const_value(self, component_mask):
+        series_copy = self.const_series_with_holes.copy()
         const_transformer = MissingValuesFiller(fill=2.0)
-        transformed = const_transformer.transform(self.const_series_with_holes)
+        transformed = const_transformer.transform(
+            self.const_series_with_holes, component_mask=component_mask
+        )
         assert self.const_series == transformed
+        assert self.const_series_with_holes == series_copy
 
     def test_fill_const_series_with_auto_value(self):
         auto_transformer = MissingValuesFiller()
