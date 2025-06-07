@@ -40,7 +40,7 @@ def component_masking(transformer_method):
                 series, component_mask, return_ts=True
             )
         else:
-            series_proc = series.copy()
+            series_proc = series
             if component_mask is not None:
                 kwargs["component_mask"] = component_mask
 
@@ -499,9 +499,9 @@ class BaseDataTransformer(ABC):
 
         if component_mask is None:
             if return_ts:
-                out = series.copy()
+                out = series
             else:
-                out = [series_.all_values(copy=True) for series_ in series]
+                out = [series_.all_values(copy=False) for series_ in series]
             return out[0] if called_with_single_series else out
 
         if not (
@@ -526,7 +526,7 @@ class BaseDataTransformer(ABC):
             if return_ts:
                 out_ = series_[series_.columns[component_mask].tolist()]
             else:
-                out_ = series_.all_values(copy=True)[:, component_mask, :]
+                out_ = series_.all_values(copy=False)[:, component_mask, :]
             out.append(out_)
         return out[0] if called_with_single_series else out
 
@@ -628,7 +628,7 @@ class BaseDataTransformer(ABC):
             by concatenating all of the samples of the `i`th component in `vals`.
         """
         if isinstance(vals, TimeSeries):
-            vals = vals.all_values()
+            vals = vals.all_values(copy=False)
         shape = vals.shape
         new_shape = (shape[0] * shape[2], shape[1])
         stacked = np.swapaxes(vals, 1, 2).reshape(new_shape)
