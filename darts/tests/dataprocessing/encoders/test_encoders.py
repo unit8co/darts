@@ -247,7 +247,6 @@ class TestEncoder:
             expected_past_idx_ts=self.covariates_multi,
             expected_future_idx_ts=self.covariates_multi,
         )
-
         # without supplying covariates as input
         self.helper_sequence_encode_inference(
             encoders=encoders,
