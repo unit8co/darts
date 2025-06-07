@@ -12,9 +12,9 @@ import pandas as pd
 from nfoursid.kalman import Kalman
 from nfoursid.nfoursid import NFourSID
 
+from darts import TimeSeries
 from darts.logging import raise_if, raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
-from darts.timeseries import TimeSeries
 
 
 class KalmanFilter(FilteringModel, ABC):
@@ -240,4 +240,10 @@ class KalmanFilter(FilteringModel, ABC):
                     mean_vec, cov_matrix, size=num_samples
                 ).T
 
-        return series.with_values(sampled_outputs)
+        return TimeSeries(
+            times=series.time_index,
+            values=sampled_outputs,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )

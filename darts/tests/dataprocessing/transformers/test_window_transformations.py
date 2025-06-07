@@ -650,6 +650,7 @@ class TestWindowTransformer:
             keep_non_transformed=True,
             forecasting_safe=True,
         )
+        input_series_copy = [s.copy() for s in self.sequence_det]
         transformed_ts_list = transformer.transform(self.sequence_det)
 
         assert len(transformed_ts_list) == 2
@@ -657,6 +658,7 @@ class TestWindowTransformer:
         assert transformed_ts_list[0].n_timesteps == self.series_multi_det.n_timesteps
         assert transformed_ts_list[1].n_components == 5
         assert transformed_ts_list[1].n_timesteps == self.series_multi_det.n_timesteps
+        assert self.sequence_det == input_series_copy
 
     def test_window_transformer_offset_parameter(self):
         """

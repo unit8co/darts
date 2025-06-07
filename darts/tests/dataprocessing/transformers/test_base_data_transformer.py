@@ -2,6 +2,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any, Union
 
 import numpy as np
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
@@ -96,19 +97,22 @@ class TestBaseDataTransformer:
 
             return series.with_values(vals)
 
-    def test_input_transformed_single_series(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
+    def test_input_transformed_single_series(self, component_mask):
         """
         Tests for correct transformation of single series.
         """
         test_input = constant_timeseries(value=1, length=10)
+        test_input_copy = test_input.copy()
 
         mock = self.DataTransformerMock(scale=2, translation=10)
 
-        transformed = mock.transform(test_input)
+        transformed = mock.transform(test_input, component_mask=component_mask)
 
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
         assert transformed == expected
+        assert test_input == test_input_copy
 
     def test_input_transformed_multiple_series(self):
         """

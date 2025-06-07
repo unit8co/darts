@@ -12,10 +12,10 @@ from typing import Optional, Union
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.ad.detectors.detectors import FittableDetector, _BoundedDetectorMixin
 from darts.ad.detectors.threshold_detector import ThresholdDetector
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

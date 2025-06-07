@@ -1725,3 +1725,19 @@ class TestAnomalyDetectionScorer:
             np.array([[8, 10, 12, 14, 15, 16, 17, 18, 19, 20]]).T,
         )
         assert aggreg_scores.time_index.equals(anomaly_scores.time_index)
+
+    def test_immutability(self):
+        """Check that the scorer does not mutate the input."""
+        scorer = KMeansScorer(window=1, component_wise=False)
+
+        series = self.train
+        input_series_copy = series.copy()
+
+        scorer.fit(series)
+        scorer.score(series)
+
+        scorer.fit_from_prediction(series, series - 1.0)
+        scorer.score_from_prediction(series, series - 1.0)
+
+        # Check that the original series is not modified
+        assert series == input_series_copy

@@ -1616,7 +1616,7 @@ class TestMetrics:
             # univariate
             non_nan_metric = metric(s1[:9] + 1, s2[:9], **kwargs)
             nan_s1 = s1.copy()
-            nan_s1._xa.values[-1, :, :] = np.nan
+            nan_s1._values[-1, :, :] = np.nan
             nan_metric = metric(nan_s1 + 1, s2, **kwargs)
             assert non_nan_metric == nan_metric
 
@@ -1628,7 +1628,7 @@ class TestMetrics:
             )
             nan_s11 = s11.copy()
             for s in nan_s11:
-                s._xa.values[-1, :, :] = np.nan
+                s._values[-1, :, :] = np.nan
             nan_metric = metric([s + 1 for s in nan_s11], s22, **kwargs)
             np.testing.assert_array_equal(non_nan_metric, nan_metric)
 

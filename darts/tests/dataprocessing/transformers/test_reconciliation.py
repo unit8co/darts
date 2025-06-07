@@ -193,6 +193,7 @@ class TestReconciliation:
         hierarchy = {"T1": ["T_sum"], "T2": ["T_sum"], "T3": ["T_sum"]}
         ts_1 = ts_1.with_hierarchy(hierarchy)
         ts_2 = ts_2.with_hierarchy(hierarchy)
+        series_input_copy = [ts_1.copy(), ts_2.copy()]
         assert_ts_are_equal(ts_1, ts_2)
 
         ts_1_reconc = TopDownReconciliator().fit_transform(ts_1)
@@ -209,3 +210,4 @@ class TestReconciliation:
         ts_2_reconc = BottomUpReconciliator().transform(ts_2)
 
         assert_ts_are_equal(ts_1_reconc, ts_2_reconc)
+        assert [ts_1, ts_2] == series_input_copy

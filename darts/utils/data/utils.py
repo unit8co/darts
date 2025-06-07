@@ -117,9 +117,10 @@ def _process_sample_weight(sample_weight, target_series):
 
         # create sequence of series for tabularization
         sample_weight = [
-            TimeSeries.from_times_and_values(
+            TimeSeries(
                 times=target_i.time_index,
                 values=weights[-len(target_i) :],
+                copy=False,
             )
             for target_i in target_series
         ]

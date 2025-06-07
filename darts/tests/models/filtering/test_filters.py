@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 from nfoursid import kalman, state_space
 from sklearn.gaussian_process.kernels import RBF, ExpSineSquared
 
@@ -11,15 +12,14 @@ from darts.models.filtering.moving_average_filter import MovingAverageFilter
 from darts.utils import timeseries_generation as tg
 
 
-class FilterBaseTestClass:
-    @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        np.random.seed(42)
+@pytest.fixture(scope="function")
+def fix_random_state():
+    """Fixture to fix the random state for tests."""
+    np.random.seed(42)
 
 
-class TestKalmanFilter(FilterBaseTestClass):
-    def test_kalman(self):
+class TestKalmanFilter:
+    def test_kalman(self, fix_random_state):
         """KalmanFilter test.
         Creates an increasing sequence of numbers, adds noise and
         assumes the kalman filter predicts values closer to real values
@@ -34,6 +34,7 @@ class TestKalmanFilter(FilterBaseTestClass):
             df, value_cols=["signal"]
         )
 
+        series_copy = testing_signal_with_noise_ts.copy()
         kf = KalmanFilter(dim_x=1)
         kf.fit(testing_signal_with_noise_ts)
         filtered_ts = kf.filter(testing_signal_with_noise_ts, num_samples=1)
@@ -46,19 +47,25 @@ class TestKalmanFilter(FilterBaseTestClass):
         assert filtered_ts.width == 1
         assert filtered_ts.n_samples == 1
 
-    def test_kalman_covariates(self):
+        # check that filter did not mutate input series
+        assert testing_signal_with_noise_ts == series_copy
+
+    def test_kalman_covariates(self, fix_random_state):
         kf = KalmanFilter(dim_x=2)
 
         series = tg.sine_timeseries(length=30, value_frequency=0.1)
         covariates = -series.copy()
+        covariates_copy = covariates.copy()
 
         kf.fit(series, covariates=covariates)
         prediction = kf.filter(series, covariates=covariates)
-
         assert prediction.width == 1
         assert prediction.n_samples == 1
 
-    def test_kalman_covariates_multivariate(self):
+        # check that filter did not mutate input series
+        assert covariates == covariates_copy
+
+    def test_kalman_covariates_multivariate(self, fix_random_state):
         kf = KalmanFilter(dim_x=3)
 
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
@@ -74,7 +81,7 @@ class TestKalmanFilter(FilterBaseTestClass):
         assert prediction.width == 2
         assert prediction.n_samples == 1
 
-    def test_kalman_multivariate(self):
+    def test_kalman_multivariate(self, fix_random_state):
         kf = KalmanFilter(dim_x=3)
 
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
@@ -87,7 +94,7 @@ class TestKalmanFilter(FilterBaseTestClass):
         assert prediction.width == 2
         assert prediction.n_samples == 1
 
-    def test_kalman_samples(self):
+    def test_kalman_samples(self, fix_random_state):
         kf = KalmanFilter(dim_x=1)
 
         series = tg.sine_timeseries(length=30, value_frequency=0.1)
@@ -98,7 +105,7 @@ class TestKalmanFilter(FilterBaseTestClass):
         assert prediction.width == 1
         assert prediction.n_samples == 10
 
-    def test_kalman_missing_values(self):
+    def test_kalman_missing_values(self, fix_random_state):
         sine = tg.sine_timeseries(
             length=100, value_frequency=0.05
         ) + 0.1 * tg.gaussian_timeseries(length=100)
@@ -117,7 +124,7 @@ class TestKalmanFilter(FilterBaseTestClass):
         # reconstruction error should be sufficiently small
         assert rmse(filtered_series, sine) < 0.1
 
-    def test_kalman_given_kf(self):
+    def test_kalman_given_kf(self, fix_random_state):
         nfoursid_ss = state_space.StateSpace(
             a=np.eye(2), b=np.ones((2, 1)), c=np.ones((1, 2)), d=np.ones((1, 1))
         )
@@ -134,16 +141,20 @@ class TestKalmanFilter(FilterBaseTestClass):
         assert prediction.n_samples == 1
 
 
-class TestMovingAverage(FilterBaseTestClass):
-    def test_moving_average_univariate(self):
+class TestMovingAverage:
+    def test_moving_average_univariate(self, fix_random_state):
         ma = MovingAverageFilter(window=3, centered=False)
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        series_copy = sine_ts.copy()
         sine_filtered = ma.filter(sine_ts)
         assert np.mean(np.abs(sine_ts.values())) > np.mean(
             np.abs(sine_filtered.values())
         )
 
-    def test_moving_average_multivariate(self):
+        # check that filter did not mutate input series
+        assert sine_ts == series_copy
+
+    def test_moving_average_multivariate(self, fix_random_state):
         ma = MovingAverageFilter(window=3)
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
         noise_ts = tg.gaussian_timeseries(length=30) * 0.1
@@ -158,8 +169,8 @@ class TestMovingAverage(FilterBaseTestClass):
         )
 
 
-class TestGaussianProcessFilter(FilterBaseTestClass):
-    def test_gaussian_process(self):
+class TestGaussianProcessFilter:
+    def test_gaussian_process(self, fix_random_state):
         """GaussianProcessFilter test.
         Creates a sine wave, adds noise and assumes the GP filter
         predicts values closer to real values
@@ -169,6 +180,7 @@ class TestGaussianProcessFilter(FilterBaseTestClass):
 
         noise = TimeSeries.from_values(np.random.normal(0, 0.4, len(testing_signal)))
         testing_signal_with_noise = testing_signal + noise
+        series_copy = testing_signal_with_noise.copy()
 
         kernel = ExpSineSquared(length_scale_bounds=(1e-3, 1e3))
         gpf = GaussianProcessFilter(
@@ -186,7 +198,10 @@ class TestGaussianProcessFilter(FilterBaseTestClass):
         median_prediction_diff = filtered_ts_median - testing_signal
         assert noise_diff.values().std() > median_prediction_diff.values().std()
 
-    def test_gaussian_process_multivariate(self):
+        # check that filter did not mutate input series
+        assert testing_signal_with_noise == series_copy
+
+    def test_gaussian_process_multivariate(self, fix_random_state):
         gpf = GaussianProcessFilter()
 
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
@@ -197,22 +212,10 @@ class TestGaussianProcessFilter(FilterBaseTestClass):
 
         assert prediction.width == 2
 
-    def test_gaussian_process_missing_values(self):
+    def test_gaussian_process_missing_values(self, fix_random_state):
         ts = TimeSeries.from_values(np.ones(6))
 
         kernel = RBF(length_scale_bounds=(1e-3, 1e10))
         gpf = GaussianProcessFilter(kernel=kernel)
         filtered_values = gpf.filter(ts).values()
         np.testing.assert_allclose(filtered_values, np.ones_like(filtered_values))
-
-
-if __name__ == "__main__":
-    TestKalmanFilter().test_kalman()
-    TestKalmanFilter().test_kalman_multivariate()
-    TestKalmanFilter().test_kalman_covariates()
-    TestKalmanFilter().test_kalman_covariates_multivariate()
-    TestKalmanFilter().test_kalman_samples()
-    TestKalmanFilter().test_kalman_given_kf()
-    TestMovingAverage().test_moving_average_univariate()
-    TestMovingAverage().test_moving_average_multivariate()
-    TestGaussianProcessFilter().test_gaussian_process()

@@ -499,9 +499,9 @@ class BaseDataTransformer(ABC):
 
         if component_mask is None:
             if return_ts:
-                out = series.copy()
+                out = series
             else:
-                out = [series_.all_values() for series_ in series]
+                out = [series_.all_values(copy=False) for series_ in series]
             return out[0] if called_with_single_series else out
 
         if not (
@@ -584,12 +584,14 @@ class BaseDataTransformer(ABC):
                     ),
                     logger=logger,
                 )
-            unmasked = series_.all_values()
             if isinstance(vals_, TimeSeries):
-                unmasked[:, component_mask, :] = vals_.all_values()
-                # Remove timepoints not present in transformed data:
-                unmasked = series_.slice_intersect(vals_).with_values(unmasked)
+                # remove timepoints not present in transformed data (returns a copy)
+                unmasked = series_.slice_intersect(vals_)
+                # populate with new values
+                unmasked_vals = unmasked.all_values(copy=False)
+                unmasked_vals[:, component_mask, :] = vals_.all_values(copy=False)
             else:
+                unmasked = series_.all_values(copy=True)
                 unmasked[:, component_mask, :] = vals_
 
             out.append(unmasked)
@@ -626,7 +628,7 @@ class BaseDataTransformer(ABC):
             by concatenating all of the samples of the `i`th component in `vals`.
         """
         if isinstance(vals, TimeSeries):
-            vals = vals.all_values()
+            vals = vals.all_values(copy=False)
         shape = vals.shape
         new_shape = (shape[0] * shape[2], shape[1])
         stacked = np.swapaxes(vals, 1, 2).reshape(new_shape)
