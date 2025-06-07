@@ -1220,13 +1220,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
                 # to support `predict()`
                 if len(train_series) == 0:
-                    train_series = TimeSeries.from_times_and_values(
+                    train_series = TimeSeries(
                         times=generate_index(
                             start=pred_time - 1 * series_.freq,
                             length=1,
                             freq=series_.freq,
                         ),
                         values=np.array([np.nan]),
+                        copy=False,
                     )
 
                 forecast = model._predict_wrapper(
@@ -1917,8 +1918,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     sample_weight=sample_weight,
                     **fit_kwargs,
                 )
-                fitted_values = TimeSeries.from_times_and_values(
-                    series.time_index, model.fitted_values
+                fitted_values = TimeSeries(
+                    times=series.time_index,
+                    values=model.fitted_values,
                 )
                 if data_transformers and "series" in data_transformers:
                     fitted_values = _apply_inverse_data_transformers(

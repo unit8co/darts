@@ -407,14 +407,12 @@ class NaiveEnsembleModel(EnsembleModel):
                 ),
             ].mean(axis=1)
 
-        return TimeSeries.from_times_and_values(
+        return TimeSeries(
             times=prediction.time_index,
             values=target_values,
-            freq=series.freq,
-            columns=series.components,
-            static_covariates=series.static_covariates,
-            hierarchy=series.hierarchy,
-            metadata=prediction.metadata,
+            components=series.components,
+            copy=False,
+            **series._attrs,
         )
 
     def _params_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
@@ -439,12 +437,12 @@ class NaiveEnsembleModel(EnsembleModel):
                 ),
             ].mean(axis=1)
 
-        return TimeSeries.from_times_and_values(
+        return TimeSeries(
             times=prediction.time_index,
             values=params_values,
-            freq=series.freq,
-            columns=prediction.components[: likelihood_n_params * n_components],
+            components=prediction.components[: likelihood_n_params * n_components],
             static_covariates=None,
             hierarchy=None,
             metadata=prediction.metadata,
+            copy=False,
         )

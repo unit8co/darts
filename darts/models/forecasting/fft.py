@@ -328,8 +328,9 @@ class FFT(LocalForecastingModel):
         detrended_values = series.univariate_values() - self.trend_function(
             range(len(series))
         )
-        detrended_series = TimeSeries.from_times_and_values(
-            series.time_index, detrended_values
+        detrended_series = TimeSeries(
+            times=series.time_index,
+            values=detrended_values,
         )
 
         # crop training set to match the seasonality of the first prediction point

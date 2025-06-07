@@ -163,13 +163,12 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         )
         time_index = self._generate_new_dates(n, input_series=series)
         placeholder_vals = np.zeros((n, self.training_series.width)) * np.nan
-        series_future = TimeSeries.from_times_and_values(
-            time_index,
-            placeholder_vals,
-            columns=self.training_series.columns,
-            static_covariates=self.training_series.static_covariates,
-            hierarchy=self.training_series.hierarchy,
-            metadata=self.training_series.metadata,
+        series_future = TimeSeries(
+            times=time_index,
+            values=placeholder_vals,
+            components=self.training_series.columns,
+            copy=False,
+            **self.training_series._attrs,
         )
 
         series = series.append(series_future)
