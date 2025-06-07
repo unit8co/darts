@@ -31,6 +31,7 @@ def _optimized_historical_forecasts(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
+    random_state: Optional[int] = None,
     **kwargs,
 ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -121,6 +122,7 @@ def _optimized_historical_forecasts(
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
         values_only=last_points_only,
+        random_state=random_state,
         **kwargs,
     )
 

@@ -81,7 +81,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 }
             ..
         random_state: int or None
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
