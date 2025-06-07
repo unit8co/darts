@@ -182,7 +182,7 @@ class SKLearnModel(GlobalForecastingModel):
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
-            Controls the randomness of probabilistic predictions.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -1589,7 +1589,7 @@ class SKLearnModelWithCategoricalCovariates(SKLearnModel, ABC):
             Optionally, string or list of strings specifying the static covariates that should be treated as
             categorical.
         random_state
-            Controls the randomness of probabilistic predictions.
+            Controls the randomness for reproducible forecasting.
         """
         super().__init__(
             lags=lags,
@@ -1914,7 +1914,7 @@ class RegressionModel(SKLearnModel):
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
-            Controls the randomness of probabilistic predictions.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------

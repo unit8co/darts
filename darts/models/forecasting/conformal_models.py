@@ -136,7 +136,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number
             of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).
         random_state
-            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+            Controls the randomness for reproducible forecasting.
         """
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(

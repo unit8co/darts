@@ -440,6 +440,8 @@ class TestProbabilisticModels:
             "forecast_horizon": 10,
             "overlap_end": True,
             "fit_kwargs": fit_kwargs,
+            "retrain": True,
+            "enable_optimization": False,
         }
 
         # test that two consecutive historical forecasts with `retrain=True` and without random state at `predict()`
@@ -477,26 +479,23 @@ class TestProbabilisticModels:
             # test that two consecutive historical forecasts with `retrain=False` and without random state at
             # `predict()` are different
             kwargs_hist_forecast["retrain"] = False
-            pred1 = model.historical_forecasts(
-                **kwargs_hist_forecast, enable_optimization=True
-            ).all_values()
-            pred2 = model.historical_forecasts(
-                **kwargs_hist_forecast, enable_optimization=True
-            ).all_values()
+            kwargs_hist_forecast["enable_optimization"] = True
+            pred1 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+            pred2 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
             assert (pred2 != pred1).any()
 
             # test whether two consecutive historical forecasts with a random_state specified are the same
             pred3 = model.historical_forecasts(
-                **kwargs_hist_forecast, random_state=38, enable_optimization=True
+                **kwargs_hist_forecast, random_state=38
             ).all_values()
             pred4 = model.historical_forecasts(
-                **kwargs_hist_forecast, random_state=38, enable_optimization=True
+                **kwargs_hist_forecast, random_state=38
             ).all_values()
             assert (pred3 == pred4).all()
 
             # test that another historical forecast with a different random_state specified is different
             pred5 = model.historical_forecasts(
-                **kwargs_hist_forecast, random_state=32, enable_optimization=True
+                **kwargs_hist_forecast, random_state=32
             ).all_values()
             assert (pred4 != pred5).any()
 

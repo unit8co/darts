@@ -135,7 +135,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
             where each number indicates the carrying capacity at this index.
         random_state
-            Controls the randomness of probabilistic predictions.
+            Controls the randomness for reproducible forecasting.
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:

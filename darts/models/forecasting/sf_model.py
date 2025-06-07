@@ -101,7 +101,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
         random_state
-            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------

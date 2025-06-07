@@ -106,7 +106,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 }
             ..
         random_state: int or None
-            Controls the randomness of probabilistic predictions.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
