@@ -327,9 +327,7 @@ class NLinearModel(MixedCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
