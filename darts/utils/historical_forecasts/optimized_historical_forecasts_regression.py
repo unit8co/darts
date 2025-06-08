@@ -31,6 +31,7 @@ def _optimized_historical_forecasts_last_points_only(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
+    random_state: Optional[int] = None,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -140,6 +141,7 @@ def _optimized_historical_forecasts_last_points_only(
             x=np.repeat(X, num_samples, axis=0),
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
             **kwargs,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
@@ -204,6 +206,7 @@ def _optimized_historical_forecasts_all_points(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
+    random_state: Optional[int] = None,
     **kwargs,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -310,6 +313,7 @@ def _optimized_historical_forecasts_all_points(
             x=np.repeat(X, num_samples, axis=0),
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
             **kwargs,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)

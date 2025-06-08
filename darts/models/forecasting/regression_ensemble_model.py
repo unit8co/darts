@@ -451,6 +451,7 @@ class RegressionEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
@@ -463,6 +464,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 future_covariates=prediction,
                 num_samples=num_samples,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
             )
             for serie, prediction in zip(series, predictions)
         ]

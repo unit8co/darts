@@ -136,7 +136,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number
             of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).
         random_state
-            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+            Controls the randomness for reproducible forecasting.
         """
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
@@ -251,6 +251,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts calibrated quantile intervals (or samples from calibrated intervals) for `n` time steps after the
@@ -307,6 +308,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             If set to `True`, generates the quantile predictions directly. Only supported with `num_samples = 1`.
         show_warnings
             Whether to show warnings related auto-regression and past covariates usage.
+        random_state
+            Controls the randomness of probabilistic predictions.
         **kwargs
             Optional keyword arguments that will passed to the underlying forecasting model's `predict()` and
             `historical_forecasts()` methods.
@@ -365,6 +368,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             show_warnings=False,
             predict_likelihood_parameters=False,
+            random_state=random_state,
             predict_kwargs=kwargs,
         )
         cal_preds = self._calibrate_forecasts(
@@ -380,6 +384,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
         )
         # convert historical forecasts output to simple forecast / prediction
         if called_with_single_series:
@@ -412,6 +417,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Generates calibrated historical forecasts by simulating predictions at various points in time throughout the
         history of the provided (potentially multiple) `series`. This process involves retrospectively applying the
@@ -523,6 +529,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Optionally, some additional arguments passed to the model `predict()` method.
         sample_weight
             Currently ignored by conformal models.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -577,6 +585,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             data_transformers=data_transformers,
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
+            random_state=random_state,
         )
         calibrated_forecasts = self._calibrate_forecasts(
             series=series,
@@ -591,6 +600,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             show_warnings=show_warnings,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
         )
         return (
             calibrated_forecasts[0]
@@ -628,6 +638,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        random_state: Optional[int] = None,
     ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
         """Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
 
@@ -760,6 +771,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Optionally, some additional arguments passed to the model `predict()` method.
         sample_weight
             Currently ignored by conformal models.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -810,6 +823,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             sample_weight=sample_weight,
+            random_state=random_state,
         )
 
     def residuals(
@@ -842,6 +856,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         values_only: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Compute the residuals that the model produced for historical forecasts on (potentially multiple) `series`.
 
@@ -981,6 +996,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Currently ignored by conformal models.
         values_only
             Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1020,6 +1037,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             predict_kwargs=predict_kwargs,
             sample_weight=sample_weight,
             values_only=values_only,
+            random_state=random_state,
         )
 
     @random_method
@@ -1037,6 +1055,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Generate calibrated historical forecasts.
 
