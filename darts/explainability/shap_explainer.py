@@ -529,12 +529,11 @@ class _RegressionShapExplainers:
         # Tree models
         "DecisionTreeRegressor": _ShapMethod.TREE,
         "ExtraTreeRegressor": _ShapMethod.TREE,
+        "RandomForestRegressor": _ShapMethod.TREE,
         # Ensemble model
         "AdaBoostRegressor": _ShapMethod.PERMUTATION,
         "BaggingRegressor": _ShapMethod.PERMUTATION,
-        "ExtraTreesRegressor": _ShapMethod.PERMUTATION,
         "HistGradientBoostingRegressor": _ShapMethod.PERMUTATION,
-        "RandomForestRegressor": _ShapMethod.PERMUTATION,
         "RidgeCV": _ShapMethod.PERMUTATION,
         "Ridge": _ShapMethod.PERMUTATION,
         # Linear models
