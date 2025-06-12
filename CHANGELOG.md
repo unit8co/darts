@@ -39,7 +39,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed some issues in `NLinearModel` with `normalize=True` that resulted in decreased predictive accuracy. Using `shared_weights=True` and auto-regressive forecasting now work properly. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Fixed a bug when training a `TorchForecastingModel`, where using certain `torchmetrics` that require a 2D model output (e.g. R2Score) raised an error. [He Weilin](https://github.com/cnhwl).
 - Fixed a bug with `SKLearnModel.__str__()` which raised an error when the model was wrapped by Darts' MultioutputRegressor. [#2811](https://github.com/unit8co/darts/pull/2811) by [Dennis Bader](https://github.com/dennisbader).
-- Fixed the default `_ShapMethod` for two tree based regression models (Random Forest and Extra Trees). [#2821](https://https://github.com/unit8co/darts/pull/2821) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
+- Fixed the default `_ShapMethod` for three tree based regression models (HistGradientBoostingRegressor, ExtraTreesRegressor and RandomForestRegressor). [#2821](https://https://github.com/unit8co/darts/pull/2821) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
 
 **Dependencies**
 
