@@ -15,7 +15,9 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
-from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import (
+    MixedCovariatesTorchModel,
+)
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 logger = get_logger(__name__)
@@ -26,12 +28,14 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         self,
         input_size: int,
         hidden_dim: int,
+        future_cov_dim: int,
         num_layers: int,
         target_size: int,
         nr_params: int,
         num_layers_out_fc: Optional[list] = None,
         dropout: float = 0.0,
         activation: str = "ReLU",
+        future_cov_integ: Optional[str] = None,
         **kwargs,
     ):
         """This class allows to create custom block RNN modules that can later be used with Darts'
@@ -76,12 +80,14 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         # Defining parameters
         self.input_size = input_size
         self.hidden_dim = hidden_dim
+        self.future_cov_dim = future_cov_dim
         self.num_layers = num_layers
         self.target_size = target_size
         self.nr_params = nr_params
         self.num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.dropout = dropout
         self.activation = activation
+        self.future_cov_integ = future_cov_integ
         self.out_len = self.output_chunk_length
 
     @io_processor
@@ -160,9 +166,23 @@ class _BlockRNNModule(CustomBlockRNNModule):
             dropout=self.dropout,
         )
 
+        # Should the output of the future cov projection should have hidden_dim dimension or
+        # n_future_cov dimension (input_size) ?
+        if self.future_cov_integ == "concat":
+            self.future_cov_proj_cat = nn.Linear(
+                self.future_cov_dim * self.out_len, self.future_cov_dim
+            )
+            last = self.hidden_dim + self.future_cov_dim
+        else:
+            if self.future_cov_integ == "add":
+                self.future_cov_proj_add = nn.Linear(
+                    self.future_cov_dim * self.out_len,
+                    self.out_len * self.target_size * self.nr_params,
+                )
+            last = self.hidden_dim
+
         # The RNN module is followed by a fully connected layer, which maps the last hidden layer
         # to the output of desired length
-        last = self.hidden_dim
         feats = []
         for index, feature in enumerate(
             self.num_layers_out_fc + [self.out_len * self.target_size * self.nr_params]
@@ -178,18 +198,34 @@ class _BlockRNNModule(CustomBlockRNNModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        x, _, _ = x_in
+        x_past, x_future, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
-        batch_size = x.size(0)
+        if x_future is not None:
+            start_future_cov = x_past.size(-1) - self.future_cov_dim
+            full_future_cov = torch.cat(
+                [x_past[:, 1:, start_future_cov:], x_future[:, :1, :]], dim=1
+            )
+            x_past[:, :, start_future_cov:] = full_future_cov
+        batch_size = x_past.size(0)
 
-        out, hidden = self.rnn(x)
+        # out is of size (batch_size, input_chunk_length, hidden_dim)
+        # hidden is of size (num_layers, batch_size, hidden_dim)
+        out, hidden = self.rnn(x_past)
 
         """ Here, we apply the FC network only on the last output point (at the last time step)
         """
         if self.name == "LSTM":
             hidden = hidden[0]
         predictions = hidden[-1, :, :]
+        if self.future_cov_integ == "concat":
+            x_future = x_future.reshape(batch_size, -1)
+            x_future = self.future_cov_proj_cat(x_future)
+            predictions = torch.cat([predictions, x_future], dim=1)
         predictions = self.fc(predictions)
+        if self.future_cov_integ == "add":
+            x_future = x_future.reshape(batch_size, -1)
+            encoded_cov = self.future_cov_proj_add(x_future)
+            predictions += encoded_cov
         predictions = predictions.view(
             batch_size, self.out_len, self.target_size, self.nr_params
         )
@@ -198,7 +234,7 @@ class _BlockRNNModule(CustomBlockRNNModule):
         return predictions
 
 
-class BlockRNNModel(PastCovariatesTorchModel):
+class BlockRNNModel(MixedCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -210,6 +246,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         hidden_fc_sizes: Optional[list] = None,
         dropout: float = 0.0,
         activation: str = "ReLU",
+        future_cov_integ: Optional[str] = None,
         **kwargs,
     ):
         """Block Recurrent Neural Network Model (RNNs).
@@ -454,18 +491,23 @@ class BlockRNNModel(PastCovariatesTorchModel):
         self.n_rnn_layers = n_rnn_layers
         self.dropout = dropout
         self.activation = activation
+        self.future_cov_integ = future_cov_integ
 
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
-        (past_target, past_covariates, _, _, _, _) = train_sample
-        input_dim = past_target.shape[1] + (
-            past_covariates.shape[1] if past_covariates is not None else 0
+        (past_target, past_covariates, _, future_covariates, _, _) = train_sample
+        input_dim = past_target.shape[1] + sum(
+            # add past covariates dim and historic future covariates dim, if present
+            cov.shape[1] if cov is not None else 0
+            for cov in (past_covariates, future_covariates)
         )
         output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
-
+        future_cov_dim = (
+            future_covariates.shape[1] if future_covariates is not None else 0
+        )
         kwargs = {}
         if isinstance(self.rnn_type_or_module, str):
             model_cls = _BlockRNNModule
@@ -477,10 +519,12 @@ class BlockRNNModel(PastCovariatesTorchModel):
             target_size=output_dim,
             nr_params=nr_params,
             hidden_dim=self.hidden_dim,
+            future_cov_dim=future_cov_dim,
             num_layers=self.n_rnn_layers,
             num_layers_out_fc=hidden_fc_sizes,
             dropout=self.dropout,
             activation=self.activation,
+            future_cov_integ=self.future_cov_integ,
             **self.pl_module_params,
             **kwargs,
         )
