@@ -180,9 +180,8 @@ class TimeSeries:
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
-            Whether to copy the `times`, `values`, and `components` objects. Setting `copy=False` should be used with
-            care, as downstream tasks might mutate the original values. Darts internally leverages `copy=False` for
-            performance boosts when possible and with the guarantee that the original data remains unaffected.
+            Whether to copy the `times`, `values`, and `components` objects. If `copy=False`, mutating the series data
+            will affect the original data.
 
         Returns
         -------
@@ -211,18 +210,6 @@ class TimeSeries:
                 ),
                 logger=logger,
             )
-
-        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
-        if isinstance(times, pd.DatetimeIndex) and times.tz is not None:
-            logger.warning(
-                "The `times` argument was associated with a timezone, which is currently not supported "
-                "by xarray. To avoid unexpected behaviour, the tz information was removed. Consider calling "
-                f"`ts.time_index.tz_localize({times.tz})` when exporting the results."
-                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
-                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
-                "original timezone."
-            )
-            times = times.tz_localize(None)
 
         # avoid copying if data is already np.ndarray:
         values = np.array(values) if not isinstance(values, np.ndarray) else values
@@ -300,18 +287,18 @@ class TimeSeries:
         if has_datetime_index:
             time_zone = times.tz
             if time_zone is not None:
-                # TODO: potential to use time zone-aware index since `TimeSeries` was refactored
+                # TODO: potential to use timezone-aware index since `TimeSeries` was refactored
                 #  to use numpy as backend
-                # force time-index to be timezone naive
-                times = times.tz_localize(None)
+                # force time index to be timezone naive
                 logger.warning(
-                    "The provided DatetimeIndex was associated with a timezone, which is currently. "
-                    "To avoid unexpected behaviour, the tz information was removed. Consider calling "
-                    f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
+                    "The provided DatetimeIndex was associated with a timezone (tz), which is currently "
+                    "not supported. To avoid unexpected behaviour, the tz information was removed. Consider "
+                    "calling `ts.time_index.tz_localize({time_zone})` when exporting the results."
                     "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
                     "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
                     "original timezone."
                 )
+                times = times.tz_localize(None)
 
         if not has_frequency:
             # can only be `pd.DatetimeIndex` or int `pd.Index` (not `pd.RangeIndex`)
@@ -516,8 +503,8 @@ class TimeSeries:
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
     ) -> Self:
-        """
-        Return a TimeSeries instance built from an xarray DataArray.
+        """Create a ``TimeSeries`` from an `xarray.DataArray`.
+
         The dimensions of the DataArray have to be (time, component, sample), in this order. The time
         dimension can have an arbitrary name, but component and sample must be named "component" and "sample",
         respectively.
@@ -535,7 +522,7 @@ class TimeSeries:
         Parameters
         ----------
         xa
-            The xarray DataArray
+            The `xarray.DataArray`
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
             with NaN values. This requires either a provided `freq` or the possibility to infer the frequency from the
@@ -605,8 +592,8 @@ class TimeSeries:
         metadata: Optional[dict] = None,
         **kwargs,
     ) -> Self:
-        """
-        Build a deterministic TimeSeries instance built from a single CSV file.
+        """Create a ``TimeSeries`` from a CSV file.
+
         One column can be used to represent the time (if not present, the time index will be a RangeIndex)
         and a list of columns `value_cols` can be used to indicate the values for this time series.
 
@@ -707,10 +694,10 @@ class TimeSeries:
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
     ) -> Self:
-        """
-        Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
-        One column (or the DataFrame index) has to represent the time,
-        and a list of columns `value_cols` has to represent the values for this time series.
+        """Create a ``TimeSeries`` from a selection of columns of a `DataFrame`.
+
+        One column (or the DataFrame index) has to represent the time, and a list of columns `value_cols` has to
+        represent the values for this time series.
 
         Parameters
         ----------
@@ -888,10 +875,10 @@ class TimeSeries:
                     # remove and remember time zone here as pandas converts to UTC
                     time_index = time_index.tz_localize(None)
 
-        # BUGFIX : force time-index to be timezone naive as xarray doesn't support it
+        # force time index to be timezone naive
         if time_zone is not None:
             logger.warning(
-                "The provided DatetimeIndex was associated with a timezone, which is currently not supported. "
+                "The provided DatetimeIndex was associated with a timezone (tz), which is currently not supported. "
                 "To avoid unexpected behaviour, the tz information was removed. Consider calling "
                 f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
                 "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
@@ -904,7 +891,7 @@ class TimeSeries:
 
         return cls(
             times=time_index,
-            values=series_df.to_numpy()[:, :, np.newaxis],
+            values=series_df.to_numpy(),
             fill_missing_dates=fill_missing_dates,
             freq=freq,
             components=series_df.columns,
@@ -930,14 +917,14 @@ class TimeSeries:
         n_jobs: Optional[int] = 1,
         verbose: Optional[bool] = False,
     ) -> list[Self]:
-        """
-        Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
-        One column (or the DataFrame index) has to represent the time,
-        a list of columns `group_cols` must be used for extracting the individual TimeSeries by groups,
-        and a list of columns `value_cols` has to represent the values for the individual time series.
-        Values from columns ``group_cols`` and ``static_cols`` are added as static covariates to the resulting
-        TimeSeries objects. These can be viewed with `my_series.static_covariates`. Different to `group_cols`,
-        `static_cols` only adds the static values but are not used to extract the TimeSeries groups.
+        """Create a list of ``TimeSeries`` grouped by a selection of columns from a `DataFrame`.
+
+        One column (or the DataFrame index) has to represent the time, a list of columns `group_cols` must be used for
+        extracting the individual TimeSeries by groups, and a list of columns `value_cols` has to represent the values
+        for the individual time series. Values from columns ``group_cols`` and ``static_cols`` are added as static
+        covariates to the resulting TimeSeries objects. These can be viewed with `my_series.static_covariates`.
+        Different to `group_cols`, `static_cols` only adds the static values but are not used to extract the TimeSeries
+        groups.
 
         Parameters
         ----------
@@ -1188,8 +1175,7 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         metadata: Optional[dict] = None,
     ) -> Self:
-        """
-        Build a univariate deterministic TimeSeries from a Series.
+        """Create a ``TimeSeries`` from a `Series`.
 
         The series must contain an index that is either a pandas DatetimeIndex, a pandas RangeIndex, or a pandas Index
         that can be converted into a RangeIndex. It is better if the index has no holes; alternatively setting
@@ -1268,8 +1254,7 @@ class TimeSeries:
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
     ) -> Self:
-        """
-        Build a series from a time index and value array.
+        """Create a ``TimeSeries`` from a time index and value array.
 
         Parameters
         ----------
@@ -1370,8 +1355,8 @@ class TimeSeries:
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
     ) -> Self:
-        """
-        Build an integer-indexed series from an array of values.
+        """Create an integer-indexed ``TimeSeries`` from an array of values.
+
         The series will have an integer index (RangeIndex).
 
         Parameters
@@ -1454,16 +1439,16 @@ class TimeSeries:
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
     ) -> Self:
-        """
-        Build a series from the JSON String representation of a ``TimeSeries``
-        (produced using :func:`TimeSeries.to_json()`).
+        """Create a ``TimeSeries`` from the JSON String representation of a ``TimeSeries``.
+
+        The JSON String representation can be generated with :func:`TimeSeries.to_json()`.
 
         At the moment this only supports deterministic time series (i.e., made of 1 sample).
 
         Parameters
         ----------
         json_str
-            The JSON String to convert
+            The JSON String to convert.
         static_covariates
             Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
             DataFrame. If a Series, the index represents the static variables. The covariates are globally 'applied'
@@ -1523,26 +1508,17 @@ class TimeSeries:
 
     @classmethod
     def from_pickle(cls, path: str) -> Self:
-        """
-        Read a pickled ``TimeSeries``.
+        """Read a pickled ``TimeSeries``.
 
         Parameters
         ----------
         path : string
-            path pointing to a pickle file that will be loaded
+            path pointing to a pickle file that will be loaded.
 
         Returns
         -------
         TimeSeries
-            timeseries object loaded from file
-
-        Notes
-        -----
-        Xarray docs [1]_ suggest not using pickle as a long-term data storage.
-
-        References
-        ----------
-        .. [1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
+            The ``TimeSeries`` loaded from file.
         """
         with open(path, "rb") as fh:
             return pickle.load(fh)
@@ -1554,61 +1530,52 @@ class TimeSeries:
 
     @property
     def static_covariates(self) -> Optional[pd.DataFrame]:
-        """
-        Returns the static covariates contained in the series as a pandas DataFrame.
-        The columns represent the static variables and the rows represent the components of the uni/multivariate
+        """The static covariates of this ``TimeSeries``.
+
+        If defined, the static covariates are given as a `pandas.DataFrame`. The columns represent the static variables
+        and the rows represent the components of the uni/multivariate
         series.
         """
         return self._attrs.get(STATIC_COV_TAG, None)
 
     @property
     def hierarchy(self) -> Optional[dict]:
-        """
-        The hierarchy of this TimeSeries, if any.
-        If set, the hierarchy is encoded as a dictionary, whose keys are individual components
+        """The hierarchy of this ``TimeSeries``.
+
+        If defined, the hierarchy is given as a dictionary. The keys are the individual components
         and values are the set of parent(s) of these components in the hierarchy.
         """
         return self._attrs.get(HIERARCHY_TAG, None)
 
     @property
     def metadata(self) -> Optional[dict]:
-        """
-        The metadata of this TimeSeries, if any.
+        """The metadata of this ``TimeSeries``.
+
+        If defined, the metadata is given as a dictionary.
         """
         return self._attrs.get(METADATA_TAG, None)
 
     @property
-    def has_hierarchy(self) -> bool:
-        """Whether this series is hierarchical or not."""
-        return self.hierarchy is not None
-
-    @property
     def top_level_component(self) -> Optional[str]:
-        """
-        The top level component name of this series, or None if the series has no hierarchy.
-        """
+        """The top level component name of this series, or `None` if the series has no hierarchy."""
         return self._top_level_component
 
     @property
     def bottom_level_components(self) -> Optional[list[str]]:
-        """
-        The bottom level component names of this series, or None if the series has no hierarchy.
-        """
+        """The bottom level component names of this series, or `None` if the series has no hierarchy."""
         return self._bottom_level_components
 
     @property
     def top_level_series(self) -> Optional[Self]:
-        """
-        The univariate series containing the single top-level component of this series,
-        or None if the series has no hierarchy.
+        """The univariate series containing the single top-level component of this series,
+        or `None` if the series has no hierarchy.
         """
         return self[self.top_level_component] if self.has_hierarchy else None
 
     @property
     def bottom_level_series(self) -> Optional[list[Self]]:
-        """
-        The series containing the bottom-level components of this series in the same
-        order as they appear in the series, or None if the series has no hierarchy.
+        """The series containing the bottom-level components of this series in the same
+        order as they appear in the series, or `None` if the series has no hierarchy.
 
         The returned series is multivariate if there are multiple bottom components.
         """
@@ -1624,24 +1591,24 @@ class TimeSeries:
         return self._values.shape
 
     @property
+    def n_timesteps(self) -> int:
+        """The number of time steps in the series."""
+        return self.shape[TIME_AX]
+
+    @property
     def n_samples(self) -> int:
-        """Number of samples contained in the series."""
+        """The number of samples contained in the series."""
         return self.shape[SMPL_AX]
 
     @property
     def n_components(self) -> int:
-        """Number of components (dimensions) contained in the series."""
+        """The number of components (columns) in the series."""
         return self.shape[COMP_AX]
 
     @property
     def width(self) -> int:
-        """ "Width" (= number of components) of the series."""
+        """The width (number of components) of the series."""
         return self.n_components
-
-    @property
-    def n_timesteps(self) -> int:
-        """Number of time steps in the series."""
-        return self.shape[TIME_AX]
 
     @property
     def is_deterministic(self) -> bool:
@@ -1666,8 +1633,9 @@ class TimeSeries:
     @property
     def freq(self) -> Union[pd.DateOffset, int]:
         """The frequency of the series.
-        A `pd.DateOffset` if series is indexed with a `pd.DatetimeIndex`.
-        An integer (step size) if series is indexed with a `pd.RangeIndex`.
+
+        A `pd.DateOffset` if the series is indexed with a `pd.DatetimeIndex`.
+        An integer (step size) if the series is indexed with a `pd.RangeIndex`.
         """
         return self._freq
 
@@ -1683,12 +1651,12 @@ class TimeSeries:
 
     @property
     def components(self) -> pd.Index:
-        """The names of the components, as a Pandas Index."""
+        """The names of the components, as a `pandas.Index`."""
         return self._components.copy()
 
     @property
     def columns(self) -> pd.Index:
-        """The names of the components, as a Pandas Index."""
+        """The names of the components, as a `pandas.Index`."""
         return self.components
 
     @property
@@ -1710,6 +1678,11 @@ class TimeSeries:
     def has_range_index(self) -> bool:
         """Whether this series is indexed with an RangeIndex (otherwise it is indexed with a DatetimeIndex)."""
         return not self._has_datetime_index
+
+    @property
+    def has_hierarchy(self) -> bool:
+        """Whether this series contains a hierarchy."""
+        return self.hierarchy is not None
 
     @property
     def has_static_covariates(self) -> bool:
@@ -1799,7 +1772,7 @@ class TimeSeries:
 
     def data_array(self, copy: bool = True) -> xr.DataArray:
         """
-        Return the ``xarray.DataArray`` representation underlying this series.
+        Return an ``xarray.DataArray`` representation underlying this series.
 
         Parameters
         ----------
@@ -1809,7 +1782,7 @@ class TimeSeries:
         Returns
         -------
         xarray.DataArray
-            The xarray DataArray underlying this time series.
+            An ``xarray.DataArray`` representation of  represents the time series.
         """
         xa = xr.DataArray(
             self._values,
@@ -2494,8 +2467,7 @@ class TimeSeries:
             return gap_df
 
     def copy(self) -> Self:
-        """
-        Make a copy of this series.
+        """Create a copy of this series.
 
         Returns
         -------
@@ -2503,7 +2475,7 @@ class TimeSeries:
             A copy of this time series.
         """
 
-        # the xarray will be copied in the TimeSeries constructor.
+        # the data will be copied in the TimeSeries constructor.
         return self.__class__(
             times=self._time_index,
             values=self._values,
@@ -3144,7 +3116,6 @@ class TimeSeries:
             raise_log(ValueError("'periods' must be an integer >= 1."), logger)
 
         def _compute_diff(values_: np.ndarray, times_):
-            # xarray doesn't support Pandas "period" so compute diff() ourselves
             if not dropna:
                 # In this case the new DataArray will have the same size and filled with NaNs
                 values_diff = values_.copy()
@@ -3797,9 +3768,9 @@ class TimeSeries:
         method_kwargs: Optional[dict[str, Any]] = None,
         **kwargs,
     ) -> Self:
-        """
-        Build a reindexed ``TimeSeries`` with a given frequency.
-        Provided method is used to aggregate/fill holes in the reindexed TimeSeries, by default 'pad'.
+        """Create a reindexed ``TimeSeries`` with a given frequency.
+
+        The provided `method` is used to aggregate/fill holes in the reindexed TimeSeries, by default 'pad'.
 
         Parameters
         ----------
@@ -3807,7 +3778,7 @@ class TimeSeries:
             The new time difference between two adjacent entries in the returned TimeSeries.
             Expects a `pandas.DateOffset` or `DateOffset` alias.
         method
-            Method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
+            A method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
             in the reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
             <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`_.
             Supported methods: ["all", "any", "asfreq", "backfill", "bfill", "count", "ffill", "first", "interpolate",
@@ -4524,14 +4495,6 @@ class TimeSeries:
             path to a file where current object will be pickled
         protocol : integer, default highest
             pickling protocol. The default is best in most cases, use it only if having backward compatibility issues
-
-        Notes
-        -----
-        Xarray docs [1]_ suggest not using pickle as a long-term data storage.
-
-        References
-        ----------
-        .. [1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
         """
 
         with open(path, "wb") as fh:
@@ -5165,36 +5128,38 @@ class TimeSeries:
     @classmethod
     def _fill_missing_dates(
         cls,
-        times: pd.DatetimeIndex,
+        times: Union[pd.DatetimeIndex, pd.RangeIndex, pd.Index],
         values: np.ndarray,
         freq: Optional[Union[str, int]] = None,
     ) -> tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]:
-        """Return an xarray DataArray instance with missing dates inserted from an input xarray DataArray.
-        The first dimension of the input DataArray `xa` has to be the time dimension.
+        """Returns the time index and values with missing dates inserted.
 
-        This requires either a provided `freq` or the possibility to infer a unique frequency (see
+        This requires either a provided `freq` or the possibility to infer a unique frequency from `times` (see
         `offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
-        for more info on supported frequencies) from the provided timestamps.
+        for more info on supported frequencies).
 
         Parameters
         ----------
-        xa
-            The xarray DataArray
+        times
+            The time index.
+        values
+            The values.
         freq
-            Optionally, a string representing the frequency of the Pandas DateTimeIndex to fill in the missing dates.
+            Optionally, the target frequency to fill in the missing times. A pandas frequency offset (string) if
+            `times` is a `pandas.DatetimeIndex`, or a step step size if `times` is an integer index.
+            It must represent a target frequency that allows to maintain all dates / integers from `times`.
 
         Raises
         -------
         ValueError
-            If `xa`'s DateTimeIndex contains less than 3 elements;
-            if no unique frequency can be inferred from `xa`'s DateTimeIndex;
-            if the resampled DateTimeIndex does not contain all dates from `xa` (see
-                :meth:`_restore_from_frequency() <TimeSeries._restore_from_frequency>`)
+            If `times` contains less than 3 elements,
+            if no unique frequency can be inferred from `times`,
+            if the resampled index does not contain all dates from `times`.
 
         Returns
         -------
-        xarray DataArray
-            xarray DataArray with filled missing dates from `xa`
+        tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]
+            The `times` with inserted missing dates and `values` with `np.nan` for the newly inserted dates.
         """
 
         if freq is not None:
@@ -5244,9 +5209,13 @@ class TimeSeries:
 
     @staticmethod
     def _sort_index(
-        times, values
+        times: Union[pd.DatetimeIndex, pd.RangeIndex, pd.Index],
+        values: np.ndarray,
     ) -> tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]:
-        """Sorts an xarray by its time dimension index (only if it is not already monotonically increasing)."""
+        """Sorts `times` and `values` by ascending dates.
+
+        Only performed if `times` is not already monotonically increasing.
+        """
         if times.is_monotonic_increasing:
             return times, values
         times, idx_sorted = times.sort_values(return_indexer=True)
@@ -5254,8 +5223,11 @@ class TimeSeries:
 
     @staticmethod
     def _observed_freq_datetime_index(index: pd.DatetimeIndex) -> set:
-        """Returns all observed/inferred frequencies of a pandas DatetimeIndex. The frequencies are inferred from all
-        combinations of three adjacent time steps
+        """Returns all observed/inferred frequencies of a `pandas.DatetimeIndex`.
+
+        The frequencies are inferred from all combinations of three consecutive time steps.
+
+        Assumes that `index` is sorted in ascending order.
         """
         # find unique time deltas indices from three consecutive time stamps
         _, unq_td_index = np.unique(
@@ -5274,18 +5246,24 @@ class TimeSeries:
 
     @staticmethod
     def _observed_freq_integer_index(index: pd.Index) -> set:
-        """Returns all observed/inferred frequencies of a pandas Index (integer index). The frequencies are inferred
-        from all differences between two adjacent indices.
+        """Returns all observed/inferred frequencies of a `pandas.Index` (an integer-valued index).
+
+        The inferred frequencies are given by all unique differences between two consecutive elements.
+
+        Assumes that `index` is sorted in ascending order.
         """
         return set(index[1:] - index[:-1])
 
     @classmethod
     def _restore_range_indexed(
-        cls, times, values
+        cls,
+        times: pd.Index,
+        values: np.ndarray,
     ) -> tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]:
-        """If possible, converts an integer indexed xarray DataArray to a range indexed (pd.RangeIndex) DataArray.
-        Otherwise, raises an error. An integer Index can be converted to a pd.RangeIndex, if the sorted integer index
-        has a constant step size.
+        """Returns `times` re-indexed into a `pandas.RangeIndex` and `values` in the re-indexed order.
+
+        An integer `pandas.Index` can be converted to a `pandas.RangeIndex`, if the sorted index has a constant step
+        size. Raises a `ValueError` otherwise.
         """
         times, values = cls._sort_index(times=times, values=values)
         observed_freqs = cls._observed_freq_integer_index(times)
@@ -5309,37 +5287,35 @@ class TimeSeries:
 
     @classmethod
     def _restore_from_frequency(
-        cls, times, values, freq: Union[str, int]
+        cls,
+        times: Union[pd.DatetimeIndex, pd.RangeIndex, pd.Index],
+        values: np.ndarray,
+        freq: Union[str, int],
     ) -> tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]:
-        """Return an xarray DataArray instance that is resampled from an input xarray DataArray `xa` with frequency
-        `freq`. `freq` should be the inferred or actual frequency of `xa`. All data from `xa` is maintained in the
-        output DataArray at the corresponding dates. Any missing dates from `xa` will be inserted into the returned
-        DataArray with np.nan values.
+        """Returns `times` resampled with frequency `freq` and values with `np.nan` for the newly inserted dates.
 
-        The first dimension of the input DataArray `xa` has to be the time dimension.
-
-        This requires a provided frequency/step size `freq`
+        The frequency `freq` must represent a target frequency that allows to maintain all dates from `times`.
 
         Parameters
         ----------
-        xa
-            The xarray DataArray
+        times
+            The time index.
+        values
+            The values.
         freq
-            If a string, represents the actual or inferred frequency of the pandas DatetimeIndex from `xa` (see
-            `offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
-            for more info on supported frequencies).
-            If an integer, represents the actual or inferred step size of the pandas Index or pandas RangeIndex from
-            `xa`.
+            The target frequency to fill in the missing times. A pandas frequency offset (string) if
+            `times` is a `pandas.DatetimeIndex`, or a step size if `times` is an integer index.
+            It must represent a target frequency that allows to maintain all dates / integers from `times`.
 
         Raises
         -------
         ValueError
-            If the resampled/reindexed DateTimeIndex/RangeIndex does not contain all dates from `xa`
+            If the resampled/re-indexed DateTimeIndex/RangeIndex does not contain all dates from `times`.
 
         Returns
         -------
-        xarray DataArray
-            xarray DataArray resampled from `xa` with `freq` including all data from `xa` and inserted missing dates
+        tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]
+            The resampled `times` with frequency `freq` and `values` with `np.nan` for the newly inserted dates.
         """
         times, values = cls._sort_index(times=times, values=values)
 
