@@ -200,7 +200,7 @@ class TestTimeSeries:
         with pytest.raises(ValueError) as exc:
             _ = series_int[[2, 3, 6]]
         assert str(exc.value).startswith(
-            "Could not convert integer index to a `pd.RangeIndex`. "
+            "Could not convert integer index to a `pandas.RangeIndex`. "
             "Found non-unique step sizes/frequencies: `{1, 3}`. "
         )
 
