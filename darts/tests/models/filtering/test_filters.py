@@ -194,7 +194,7 @@ class TestGaussianProcessFilter:
 
         filtered_ts_median = gpf.filter(
             testing_signal_with_noise, num_samples=100
-        ).quantile_timeseries()
+        ).quantile()
         median_prediction_diff = filtered_ts_median - testing_signal
         assert noise_diff.values().std() > median_prediction_diff.values().std()
 

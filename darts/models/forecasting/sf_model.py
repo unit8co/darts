@@ -144,7 +144,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             target = series.values(copy=False).flatten()
         else:
             # perform OLS and get in-sample residuals
-            self._linreg = LinearRegressionModel(lags_future_covariates=[0])
+            self._linreg = LinearRegressionModel(
+                lags_future_covariates=[0],
+                use_static_covariates=False,
+            )
             self._linreg.fit(series, future_covariates=future_covariates)
             target = self._get_target_residuals(series, future_covariates)
 

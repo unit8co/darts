@@ -329,7 +329,7 @@ class AnomalyScorer(ABC):
             f"timeseries (number of samples must be equal to 1, found: {series.n_samples}). The series "
             f"will be converted to a deterministic series by taking the median of the samples.",
         )
-        return series.quantile_timeseries(quantile=0.5)
+        return series.quantile(q=0.5)
 
     def _extract_deterministic_values(self, series: np.ndarray, name_series: str):
         """Extract deterministic values from `series` (quantile=0.5 if `series` is probabilistic)."""

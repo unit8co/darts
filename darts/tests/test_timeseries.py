@@ -12,6 +12,10 @@ from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate, slice_intersect
 from darts.tests.conftest import POLARS_AVAILABLE
+from darts.utils.likelihood_models.base import (
+    likelihood_component_names,
+    quantile_names,
+)
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 from darts.utils.utils import expand_arr, freqs, generate_index
 
@@ -392,7 +396,7 @@ class TestTimeSeries:
         )
 
         for q in [0.01, 0.1, 0.5, 0.95]:
-            q_ts = ts.quantile_timeseries(quantile=q)
+            q_ts = ts.quantile(q=q)
             assert (abs(q_ts.values() - np.quantile(values, q=q, axis=2)) < 1e-3).all()
 
     def test_quantiles_df(self):
@@ -403,9 +407,9 @@ class TestTimeSeries:
             values=values,
             components=["a"],
         )
-        q_ts = ts.quantiles_df(q)
+        q_ts = ts.quantile(q=q).to_dataframe()
         for col in q_ts:
-            q = float(str(col).replace("a_", ""))
+            q = float(str(col).split("_q")[-1])
             assert abs(
                 q_ts[col].to_numpy().reshape(10, 1) - np.quantile(values, q=q, axis=2)
                 < 1e-3
@@ -3035,10 +3039,29 @@ class TestSimpleStatistics:
             ).all()
 
     def test_quantile(self):
-        for q in [0.01, 0.1, 0.5, 0.95]:
-            new_ts = self.ts.quantile(quantile=q)
+        qs = [0.01, 0.1, 0.5, 0.95]
+
+        q_ts = []
+        for q in qs:
+            new_ts = self.ts.quantile(q=q)
+
+            # check component names
+            q_comps = likelihood_component_names(
+                components=self.ts.components, parameter_names=quantile_names([q])
+            )
+            assert new_ts.components.tolist() == q_comps
+
             # check values
             assert np.isclose(
                 new_ts.values(),
                 np.quantile(self.values, q=q, axis=2),
             ).all()
+            q_ts.append((new_ts[q_comps[0]], new_ts[q_comps[1]]))
+
+        # component quantiles first ordered by component name and then by quantile
+        q_ts_0 = concatenate([ts[0] for ts in q_ts], axis=1)
+        q_ts_1 = concatenate([ts[1] for ts in q_ts], axis=1)
+        q_ts = concatenate([q_ts_0, q_ts_1], axis=1)
+
+        # computing all quantiles at once must be identical
+        assert self.ts.quantile(q=qs) == q_ts
