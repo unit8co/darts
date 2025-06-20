@@ -12,6 +12,7 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
+from darts import TimeSeries
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.ad.utils import (
     _assert_same_length,
@@ -20,7 +21,6 @@ from darts.ad.utils import (
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

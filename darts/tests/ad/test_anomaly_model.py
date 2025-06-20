@@ -1478,3 +1478,16 @@ class TestAnomalyDetectionModel:
                     pred_scores=[self.test, self.test],
                     names_of_scorers=["scorer1", "scorer2", "scorer3"],
                 )
+
+    def test_immutabilty(self):
+        """Check that the model does not mutate the input."""
+        model = ForecastingAnomalyModel(model=SKLearnModel(lags=10), scorer=Norm())
+
+        series = self.train
+        input_series_copy = series.copy()
+
+        model.fit(series, allow_model_training=True)
+        model.score(series)
+
+        # Check that the original series is not modified
+        assert series == input_series_copy

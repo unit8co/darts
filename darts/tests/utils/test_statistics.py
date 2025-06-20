@@ -116,6 +116,7 @@ class TestSeasonalDecompose:
     ts = trend + season
 
     def test_extract(self):
+        series_copy = self.ts.copy()
         # test default (naive) method
         calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6)
         diff = self.trend - calc_trend
@@ -170,6 +171,8 @@ class TestSeasonalDecompose:
             calc_trend, _ = extract_trend_and_seasonality(
                 self.ts, freq=[3, 6], method="MSTL", model=ModelMode.MULTIPLICATIVE
             )
+
+        assert self.ts == series_copy
 
     def test_remove_seasonality(self):
         # test default (naive) method

@@ -566,6 +566,7 @@ class TestAnomalyDetectionDetector:
 
     def test_fit_detect(self):
         """Calling fit() then detect() and fit_detect() should yield the same results"""
+        input_series_copy = self.train.copy()
         detector1 = QuantileDetector(low_quantile=0.05, high_quantile=0.95)
         detector1.fit(self.train)
         prediction1 = detector1.detect(self.train)
@@ -574,6 +575,9 @@ class TestAnomalyDetectionDetector:
         prediction2 = detector2.fit_detect(self.train)
 
         assert prediction1 == prediction2
+
+        # Check that the input series is not modified
+        assert self.train == input_series_copy
 
     def test_IQRDetector_constructor(self):
         # Numbers in `scale must be non-negative numbers

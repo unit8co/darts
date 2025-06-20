@@ -12,9 +12,9 @@ from typing import Union
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.ad.detectors.detectors import Detector, _BoundedDetectorMixin
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -92,7 +92,13 @@ class ThresholdDetector(Detector, _BoundedDetectorMixin):
                 low_threshold[component_idx],
                 high_threshold[component_idx],
             )
-        return series.with_values(np.expand_dims(detected, -1).astype(series.dtype))
+        return TimeSeries(
+            times=series.time_index,
+            values=np.expand_dims(detected, -1).astype(series.dtype),
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @property
     def low_threshold(self):

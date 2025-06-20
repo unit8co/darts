@@ -215,10 +215,10 @@ class TFTExplainer(_ForecastingModelExplainer):
         icl = self.model.input_chunk_length
         for idx, (series, pred_series) in enumerate(zip(foreground_series, preds)):
             times = series.time_index[-icl:].union(pred_series.time_index)
-            attention = TimeSeries.from_times_and_values(
+            attention = TimeSeries(
                 values=np.take(attention_heads[idx], horizon_idx, axis=0).T,
                 times=times,
-                columns=[f"horizon {str(i)}" for i in horizons],
+                components=[f"horizon {str(i)}" for i in horizons],
             )
             results.append({
                 "attention": attention,
@@ -339,12 +339,12 @@ class TFTExplainer(_ForecastingModelExplainer):
                 x_ticks = generate_index(
                     start=-self.model.input_chunk_length, end=self.n - 1
                 )
-                attention = TimeSeries.from_times_and_values(
+                attention = TimeSeries(
                     times=generate_index(
                         start=-self.model.input_chunk_length, end=self.n - 1
                     ),
                     values=attention.values(copy=False),
-                    columns=attention.components,
+                    components=attention.components,
                 )
                 x_label = "Index relative to first prediction point"
             elif show_index_as == "time":

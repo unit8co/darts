@@ -222,21 +222,35 @@ def extract_trend_and_seasonality(
     else:
         raise_log(ValueError(f"Unknown value for method: {method}"), logger)
 
-    season = TimeSeries.from_times_and_values(
-        ts.time_index,
-        decomp.seasonal,
-        static_covariates=ts.static_covariates,
-        hierarchy=ts.hierarchy,
-        metadata=ts.metadata,
-    )
-    trend = TimeSeries.from_times_and_values(
-        ts.time_index,
-        decomp.trend,
-        static_covariates=ts.static_covariates,
-        hierarchy=ts.hierarchy,
-        metadata=ts.metadata,
-    )
+    # keep components, ... only if the number of components matches
+    season_shape = decomp.seasonal.shape
+    if len(season_shape) == 1:
+        season_shape = (season_shape[0], 1)
+    if season_shape[1] == ts.n_components:
+        components = ts.components
+        static_covariates = ts.static_covariates
+        hierarchy = ts.hierarchy
+    else:
+        components = None
+        static_covariates = None
+        hierarchy = None
 
+    season = TimeSeries(
+        times=ts.time_index,
+        values=decomp.seasonal,
+        components=components,
+        static_covariates=static_covariates,
+        hierarchy=hierarchy,
+        metadata=ts.metadata,
+        copy=False,
+    )
+    trend = TimeSeries(
+        times=ts.time_index,
+        values=decomp.trend,
+        components=ts.components,
+        copy=False,
+        **ts._attrs,
+    )
     return trend, season
 
 

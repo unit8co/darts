@@ -301,11 +301,15 @@ class TestAnomalyDetectionAggregator:
 
         assert not isinstance(aggregator, FittableAggregator)
 
+        input_series_copy = self.mts_anomalies1.copy()
         # Check that predict can be called when series is appropriate
         pred = aggregator.predict(self.mts_anomalies1)
 
         # Check that the aggregated result has only one component
         assert pred.width == 1
+
+        # Check input series were not modified
+        assert self.mts_anomalies1 == input_series_copy
 
     @pytest.mark.parametrize("config", list_FittableAggregator)
     def test_FittableAggregator_fit_wrong_inputs(self, config):
@@ -460,6 +464,7 @@ class TestAnomalyDetectionAggregator:
         # Check if _fit_called is False before calling fit
         assert not aggregator._fit_called
 
+        input_series_copy = [self.real_anomalies.copy(), self.mts_anomalies1.copy()]
         aggregator.fit(self.real_anomalies, self.mts_anomalies1)
 
         # Check if _fit_called is True after calling fit
@@ -470,6 +475,9 @@ class TestAnomalyDetectionAggregator:
 
         # Check that the aggregated result has only one component
         assert pred.width == 1
+
+        # Check input series were not modified
+        assert [self.real_anomalies, self.mts_anomalies1] == input_series_copy
 
     @pytest.mark.parametrize("config", list_NonFittableAggregator)
     def test_aggregator_performance_single_series(self, config):
@@ -592,6 +600,10 @@ class TestAnomalyDetectionAggregator:
                 n_estimators=50, learning_rate=1.0, max_depth=1
             )
         )
+        input_series_copy = [
+            s.copy()
+            for s in [self.real_anomalies, self.mts_anomalies1, self.mts_anomalies2]
+        ]
         aggregator.fit(self.real_anomalies, self.mts_anomalies1)
 
         self.helper_eval_metric_multiple_series(
@@ -612,3 +624,10 @@ class TestAnomalyDetectionAggregator:
             [100, 100],
             decimal=1,
         )
+
+        # Check input series were not modified
+        assert [
+            self.real_anomalies,
+            self.mts_anomalies1,
+            self.mts_anomalies2,
+        ] == input_series_copy

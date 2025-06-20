@@ -33,12 +33,13 @@ class AndAggregator(Aggregator):
         self, series: Sequence[TimeSeries], *args, **kwargs
     ) -> Sequence[TimeSeries]:
         def _compononents_and(s: TimeSeries):
-            return TimeSeries.from_times_and_values(
+            return TimeSeries(
                 times=s.time_index,
                 values=(s.all_values(copy=False).sum(axis=1) >= s.width).astype(
                     s.dtype
                 ),
-                columns=["components_sum"],
+                components=["components_sum"],
+                copy=False,
             )
 
         return _parallel_apply(

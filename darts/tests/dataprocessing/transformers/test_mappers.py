@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers.mappers import InvertibleMapper, Mapper
@@ -58,13 +59,23 @@ class TestMappers:
             transformed = self.plus_ten.transform(to_transform)
             assert transformed == expected_output
 
-    def test_invertible_mapper(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
+    def test_invertible_mapper(self, component_mask):
         test_cases = [(self.zeroes), ([self.zeroes, self.tens])]
 
         for data in test_cases:
-            transformed = self.plus_ten_invertible.transform(data)
-            back = self.plus_ten_invertible.inverse_transform(transformed)
+            data_copy = data.copy()
+            transformed = self.plus_ten_invertible.transform(
+                data, component_mask=component_mask
+            )
+            assert data == data_copy
+
+            transformed_copy = transformed.copy()
+            back = self.plus_ten_invertible.inverse_transform(
+                transformed, component_mask=component_mask
+            )
             assert back == data
+            assert transformed == transformed_copy
 
     def test_mapper_with_timestamp(self):
         test_cases = [
