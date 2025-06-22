@@ -1802,7 +1802,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # flatten output for parallelization
         for pred, ss, ps in out:
-            predictions.append(pred)
+            predictions.append(pred.numpy())
             series_schemas += ss
             pred_starts += ps
 

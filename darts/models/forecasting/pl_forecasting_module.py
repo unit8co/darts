@@ -4,7 +4,6 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 
 import copy
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
 from functools import wraps
 from typing import Any, Optional, Union
 
@@ -15,7 +14,6 @@ import torchmetrics
 
 from darts.logging import get_logger, raise_if, raise_log
 from darts.models.components.layer_norm_variants import RINorm
-from darts.timeseries import TimeSeries
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,
     TorchBatch,
@@ -325,7 +323,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch: TorchInferenceBatch,
         batch_idx: int,
         dataloader_idx: Optional[int] = None,
-    ) -> Sequence[TimeSeries]:
+    ) -> tuple[torch.Tensor, Any, Any]:
         """performs the prediction step
 
         batch
@@ -393,7 +391,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # concatenate the batch of samples, to form self.pred_num_samples samples
         batch_predictions = torch.cat(batch_predictions, dim=0)
-        batch_predictions = batch_predictions.cpu().detach().numpy()
         return (
             batch_predictions,
             batch_series_schemas,
