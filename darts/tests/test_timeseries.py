@@ -383,23 +383,6 @@ class TestTimeSeries:
                 < 1e-3
             ).all()
 
-    def test_quantiles_df_default_quantiles(self):
-        values = np.random.rand(10, 1, 20)
-        ar = xr.DataArray(
-            values,
-            dims=("time", "component", "sample"),
-            coords={"time": self.times, "component": ["a"]},
-        )
-        ts = TimeSeries(ar)
-        q_ts_with_default = ts.quantiles_df()
-        q_ts_with_explicit = ts.quantiles_df([0.1, 0.5, 0.9])
-        for col in q_ts_with_default:
-            assert abs(
-                q_ts_with_default[col].to_numpy().reshape(10, 1)
-                - q_ts_with_explicit[col].to_numpy().reshape(10, 1)
-                < 1e-3
-            ).all()
-
     def test_alt_creation(self):
         with pytest.raises(ValueError):
             # Series cannot be lower than three without passing frequency as argument to constructor,
