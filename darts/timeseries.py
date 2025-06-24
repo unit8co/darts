@@ -1928,130 +1928,6 @@ class TimeSeries:
             schema = {k: deepcopy(v) for k, v in schema.items()}
         return schema
 
-    def quantile_df(self, quantile=0.5) -> pd.DataFrame:
-        """
-        Return a Pandas DataFrame containing the single desired quantile of each component (over the samples).
-
-        Each of the series components will appear as a column in the DataFrame. The column will be named
-        "<component>_X", where "<component>" is the column name corresponding to this component, and "X"
-        is the quantile value.
-        The quantile columns represent the marginal distributions of the components of this series.
-
-        This works only on stochastic series (i.e., with more than 1 sample)
-
-        Parameters
-        ----------
-        quantile
-            The desired quantile value. The value must be represented as a fraction
-            (between 0 and 1 inclusive). For instance, `0.5` will return a DataFrame
-            containing the median of the (marginal) distribution of each component.
-
-        Returns
-        -------
-        pandas.DataFrame
-            The Pandas DataFrame containing the desired quantile for each component.
-        """
-        self._assert_stochastic()
-        raise_if_not(
-            0 <= quantile <= 1,
-            "The quantile values must be expressed as fraction (between 0 and 1 inclusive).",
-            logger,
-        )
-
-        # column names
-        cnames = [s + f"_{quantile}" for s in self.columns]
-
-        return pd.DataFrame(
-            self._xa.quantile(q=quantile, dim=DIMS[2]),
-            index=self._time_index,
-            columns=cnames,
-        )
-
-    def quantile_timeseries(self, quantile=0.5, **kwargs) -> Self:
-        """
-        Return a deterministic ``TimeSeries`` containing the single desired quantile of each component
-        (over the samples) of this stochastic ``TimeSeries``.
-
-        The components in the new series are named "<component>_X", where "<component>"
-        is the column name corresponding to this component, and "X" is the quantile value.
-        The quantile columns represent the marginal distributions of the components of this series.
-
-        This works only on stochastic series (i.e., with more than 1 sample)
-
-        Parameters
-        ----------
-        quantile
-            The desired quantile value. The value must be represented as a fraction
-            (between 0 and 1 inclusive). For instance, `0.5` will return a TimeSeries
-            containing the median of the (marginal) distribution of each component.
-        kwargs
-            Other keyword arguments are passed down to `numpy.quantile()`
-
-        Returns
-        -------
-        TimeSeries
-            The TimeSeries containing the desired quantile for each component.
-        """
-        self._assert_stochastic()
-        raise_if_not(
-            0 <= quantile <= 1,
-            "The quantile values must be expressed as fraction (between 0 and 1 inclusive).",
-            logger,
-        )
-
-        # component names
-        cnames = [f"{comp}_{quantile}" for comp in self.components]
-
-        new_data = np.quantile(
-            self._xa.values,
-            q=quantile,
-            axis=2,
-            overwrite_input=False,
-            keepdims=True,
-            **kwargs,
-        )
-        new_xa = xr.DataArray(
-            new_data,
-            dims=self._xa.dims,
-            coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},
-            attrs=self._xa.attrs,
-        )
-
-        return self.__class__(new_xa)
-
-    def quantiles_df(self, quantiles: Optional[list[float]] = None) -> pd.DataFrame:
-        """
-        Return a Pandas DataFrame containing the desired quantiles of each component (over the samples).
-
-        Each of the series components will appear as a column in the DataFrame. The column will be named
-        "<component>_X", where "<component>" is the column name corresponding to this component, and "X"
-        is the quantile value.
-        The quantiles represent the marginal distributions of the components of this series.
-
-        This works only on stochastic series (i.e., with more than 1 sample)
-
-        Parameters
-        ----------
-        quantiles
-            List containing the desired quantiles. The values must be represented as fractions
-            (between 0 and 1 inclusive). For instance, `[0.1, 0.5, 0.9]` will return a DataFrame
-            containing the 10th-percentile, median and 90th-percentile of the (marginal) distribution
-            of each component. If not provided, `[0.1, 0.5, 0.9]` are used by default.
-
-        Returns
-        -------
-        pandas.DataFrame
-            The Pandas DataFrame containing the quantiles for each component.
-        """
-        quantiles = quantiles or [0.1, 0.5, 0.9]
-        return pd.concat(
-            [
-                self.quantile_timeseries(quantile).to_dataframe()
-                for quantile in quantiles
-            ],
-            axis=1,
-        )
-
     def astype(self, dtype: Union[str, np.dtype]) -> Self:
         """
         Converts this series to a new series with desired dtype.
@@ -4912,6 +4788,58 @@ class TimeSeries:
         )
         return self.__class__(new_xa)
 
+    def quantile(self, q: Union[float, Sequence[float]] = 0.5, **kwargs) -> Self:
+        """
+        Return a deterministic ``TimeSeries`` containing the desired quantile(s) `q` of each component (over the
+        samples) of this stochastic ``TimeSeries``.
+
+        The component quantiles in the new series are named "<component>_q<quantile>", where "<component>" is the
+        column name, and "<quantile>" is the quantile value.
+
+        The order of the component quantiles is: `[<c_1>_q<q_1>, ... <c_1>_q<q_2>, ..., <c_n>_q<q_n>]`.
+
+        This works only on stochastic series (i.e., with more than 1 sample).
+
+        Parameters
+        ----------
+        q
+            The desired quantile value or sequence of quantile values. Each value must be between 0. and 1. inclusive.
+            For instance, `0.5` will return a TimeSeries containing the median of the (marginal) distribution of each
+            component.
+        kwargs
+            Other keyword arguments are passed down to `numpy.quantile()`.
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the desired quantile(s) for each component.
+        """
+        self._assert_stochastic()
+        if isinstance(q, float):
+            q = [q]
+
+        raise_if_not(
+            all([0 <= q_i <= 1 for q_i in q]),
+            "The quantile values must be expressed as fraction (between 0 and 1 inclusive).",
+            logger,
+        )
+
+        # component names
+        cnames = [f"{comp}_q{q_i:.2f}" for comp in self.components for q_i in q]
+
+        # get quantiles of shape (n quantiles, n times, n components)
+        new_data = np.quantile(self._xa.values, q=q, axis=2, **kwargs)
+        # transpose and rehsape into (n times, n components * n quantiles, 1)
+        new_data = new_data.transpose((1, 2, 0)).reshape(len(self), len(cnames), 1)
+
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},
+            attrs=self._xa.attrs,
+        )
+        return self.__class__(new_xa)
+
     def var(self, ddof: int = 1) -> Self:
         """
         Return a deterministic ``TimeSeries`` containing the variance of each component
@@ -5009,33 +4937,6 @@ class TimeSeries:
             new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
         )
         return self.__class__(new_xa)
-
-    def quantile(self, quantile: float, **kwargs) -> Self:
-        """
-        Return a deterministic ``TimeSeries`` containing the single desired quantile of each component
-        (over the samples) of this stochastic ``TimeSeries``.
-
-        The components in the new series are named "<component>_X", where "<component>"
-        is the column name corresponding to this component, and "X" is the quantile value.
-        The quantile columns represent the marginal distributions of the components of this series.
-
-        This works only on stochastic series (i.e., with more than 1 sample)
-
-        Parameters
-        ----------
-        quantile
-            The desired quantile value. The value must be represented as a fraction
-            (between 0 and 1 inclusive). For instance, `0.5` will return a TimeSeries
-            containing the median of the (marginal) distribution of each component.
-        kwargs
-            Other keyword arguments are passed down to `numpy.quantile()`
-
-        Returns
-        -------
-        TimeSeries
-            The TimeSeries containing the desired quantile for each component.
-        """
-        return self.quantile_timeseries(quantile, **kwargs)
 
     """
     Dunder methods

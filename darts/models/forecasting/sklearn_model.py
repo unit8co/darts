@@ -182,7 +182,7 @@ class SKLearnModel(GlobalForecastingModel):
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -1396,6 +1396,7 @@ class SKLearnModel(GlobalForecastingModel):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
@@ -1433,6 +1434,7 @@ class SKLearnModel(GlobalForecastingModel):
                 show_warnings=show_warnings,
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
                 **kwargs,
             )
         else:
@@ -1450,6 +1452,7 @@ class SKLearnModel(GlobalForecastingModel):
                 show_warnings=show_warnings,
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
                 **kwargs,
             )
         return series2seq(hfc, seq_type_out=series_seq_type)
@@ -1586,7 +1589,7 @@ class SKLearnModelWithCategoricalCovariates(SKLearnModel, ABC):
             Optionally, string or list of strings specifying the static covariates that should be treated as
             categorical.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness for reproducible forecasting.
         """
         super().__init__(
             lags=lags,
@@ -1911,7 +1914,7 @@ class RegressionModel(SKLearnModel):
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
