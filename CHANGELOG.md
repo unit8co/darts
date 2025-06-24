@@ -32,13 +32,21 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - `HorizonBasedTorchTrainingDataset` now also supports future covariates.
   - Added parameter `stride` to `*TorchTrainingDatset` to apply a stride between two consecutive training samples.  [#2624](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
 - Added method `schema()` to `TimeSeries` to extract the schema from a series. It contains information about the time index, columns, static covariates, hierarchy, and metadata. [#2802](https://github.com/unit8co/darts/pull/2802) by [Dennis Bader](https://github.com/dennisbader).
-- Added parameter `random_state` to `ForecastingModel.predict()` to control the randomness of probabilistic forecasts. [#2808](https://github.com/unit8co/darts/pull/2808) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+- Improvements to `TimeSeries` quantile methods: [#2826](https://github.com/unit8co/darts/pull/2826) by [Dennis Bader](https://github.com/dennisbader).
+  - Method `quantile()` now supports computing multiple quantiles at once by passing a list of quantiles to parameter `q`. Also adjusted the component quantile names to follow the same naming convention as for quantile forecasts.
+  - 🔴 Renamed parameter `quantile` to `q`.
+  - 🔴 Removed method `quantile_timeseries()`. Use `quantile()` instead.
+  - 🔴 Removed method `quantile_df()`. Use `quantile().to_dataframe()` instead.
+  - 🔴 Removed method `quantiles_df()`. Use `quantile().to_dataframe()` instead.
+- Added parameter `random_state` to all `ForecastingModel` forecast methods (predict, historical forecasts, ...) to control the randomness of probabilistic forecasts. [#2808](https://github.com/unit8co/darts/pull/2808) and [#2816](https://github.com/unit8co/darts/pull/2816) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
 
 **Fixed**
 
 - Fixed some issues in `NLinearModel` with `normalize=True` that resulted in decreased predictive accuracy. Using `shared_weights=True` and auto-regressive forecasting now work properly. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Fixed a bug when training a `TorchForecastingModel`, where using certain `torchmetrics` that require a 2D model output (e.g. R2Score) raised an error. [He Weilin](https://github.com/cnhwl).
 - Fixed a bug with `SKLearnModel.__str__()` which raised an error when the model was wrapped by Darts' MultioutputRegressor. [#2811](https://github.com/unit8co/darts/pull/2811) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed the default `_ShapMethod` for three tree based regression models (HistGradientBoostingRegressor, ExtraTreesRegressor and RandomForestRegressor). [#2821](https://https://github.com/unit8co/darts/pull/2821) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
+- Fixed a bug in `StatsForecastModel` where custom future covariates support (OLS) resulted in a feature error with target series that contain static covariates. [#2824](https://github.com/unit8co/darts/pull/2824) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug in `_VariableSelectionNetwork.input_size_total` that was causing incorrect tensor dimension calculations. [#2818](https://github.com/unit8co/darts/pull/2818) by [Ayush R. Dahal](https://github.com/penknife6153)
 
 **Dependencies**

@@ -101,7 +101,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
         random_state
-            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -144,7 +144,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             target = series.values(copy=False).flatten()
         else:
             # perform OLS and get in-sample residuals
-            self._linreg = LinearRegressionModel(lags_future_covariates=[0])
+            self._linreg = LinearRegressionModel(
+                lags_future_covariates=[0],
+                use_static_covariates=False,
+            )
             self._linreg.fit(series, future_covariates=future_covariates)
             target = self._get_target_residuals(series, future_covariates)
 
@@ -201,6 +204,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
                     n=n,
                     num_samples=num_samples,
                     predict_likelihood_parameters=predict_likelihood_parameters,
+                    random_state=random_state,
                     verbose=verbose,
                 )
             )
@@ -211,6 +215,11 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             if num_samples > 1 or predict_likelihood_parameters
             else None
         )
+
+        # a seed is manually set in AutoCES and AutoTheta forecast functions which impacts the current random state, so
+        # here we save the current random state to restore if after getting quantiles
+        random_state_ = np.random.get_state()
+
         model_output = self._estimator_predict(
             n=n,
             series=series,
@@ -218,6 +227,9 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             future_covariates=future_covariates,
             levels=levels,
         )
+
+        # random state restored
+        np.random.set_state(random_state_)
 
         series = series if series is not None else self.training_series
 
