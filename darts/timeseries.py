@@ -2019,9 +2019,7 @@ class TimeSeries:
 
         return self.__class__(new_xa)
 
-    def quantiles_df(
-        self, quantiles: tuple[float, ...] = (0.1, 0.5, 0.9)
-    ) -> pd.DataFrame:
+    def quantiles_df(self, quantiles: Optional[list[float]] = None) -> pd.DataFrame:
         """
         Return a Pandas DataFrame containing the desired quantiles of each component (over the samples).
 
@@ -2035,15 +2033,17 @@ class TimeSeries:
         Parameters
         ----------
         quantiles
-            Tuple containing the desired quantiles. The values must be represented as fractions
-            (between 0 and 1 inclusive). For instance, `(0.1, 0.5, 0.9)` will return a DataFrame
-            containing the 10th-percentile, median and 90th-percentile of the (marginal) distribution of each component.
+            List containing the desired quantiles. The values must be represented as fractions
+            (between 0 and 1 inclusive). For instance, `[0.1, 0.5, 0.9]` will return a DataFrame
+            containing the 10th-percentile, median and 90th-percentile of the (marginal) distribution
+            of each component. If not provided, `[0.1, 0.5, 0.9]` are used by default.
 
         Returns
         -------
         pandas.DataFrame
             The Pandas DataFrame containing the quantiles for each component.
         """
+        quantiles = quantiles or [0.1, 0.5, 0.9]
         return pd.concat(
             [
                 self.quantile_timeseries(quantile).to_dataframe()
