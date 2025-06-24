@@ -67,6 +67,7 @@ if TORCH_AVAILABLE:
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
+prophet_available = not isinstance(Prophet, NotImportedModule)
 
 # conformal models require a fitted base model
 # in tests below, the model is re-trained for new input series.
@@ -238,7 +239,6 @@ if TORCH_AVAILABLE:
 extra_configs = [
     (ExponentialSmoothing, {"random_state": 42}, 0.3, None),
     (VARIMA, {"random_state": 42}, 0.03, None),
-    (Prophet, {"random_state": 42}, 0.03, None),
     (KalmanForecaster, {"random_state": 42}, 0.03, None),
     (
         LinearRegressionModel,
@@ -346,6 +346,8 @@ if cb_available:
             None,
         ),
     ]
+if prophet_available:
+    extra_configs += [(Prophet, {"random_state": 42}, 0.03, None)]
 
 
 @pytest.mark.slow
