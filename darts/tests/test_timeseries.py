@@ -367,7 +367,7 @@ class TestTimeSeries:
             assert (abs(q_ts.values() - np.quantile(values, q=q, axis=2)) < 1e-3).all()
 
     def test_quantiles_df(self):
-        q = [0.01, 0.1, 0.5, 0.95]
+        q = (0.01, 0.1, 0.5, 0.95)
         values = np.random.rand(10, 1, 1000)
         ar = xr.DataArray(
             values,
