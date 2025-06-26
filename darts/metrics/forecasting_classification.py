@@ -10,6 +10,7 @@ from darts.metrics.metrics import (
     SMPL_AX,
     TIME_AX,
     _get_values_or_raise,
+    classification_support,
     multi_ts_support,
     multivariate_support,
 )
@@ -32,18 +33,20 @@ def _transform_probabilities_to_most_likely(
 ):
     # format {component_name: unique str}_p_{class label: int}
     names_indices_label = [
-        (name.split("_p_")[:-2].str.join("_p_"), idx, int(name.split("_p_")[-1]))
+        ("_p_".join(name.split("_p_")[:-1]), idx, int(name.split("_p_")[-1]))
         for idx, name in enumerate(probabilities_names)
     ]
 
     # Shape is reduced to the number of component is the original series
-    new_shape = y_pred.shape
+    new_shape = list(y_pred.shape)
     new_shape[COMP_AX] = len(component_names)
     sampled_class = np.zeros(new_shape)
 
     for i, component_name in enumerate(component_names):
         labels, indices = zip(*[
-            idx for name, idx, label in names_indices_label if name == component_name
+            (label, idx)
+            for name, idx, label in names_indices_label
+            if name == component_name
         ])
         sampled_class[:, i] = np.take(
             labels, np.apply_along_axis(np.argmax, COMP_AX, y_pred[:, indices])
@@ -55,6 +58,7 @@ def _transform_probabilities_to_most_likely(
     # return np.expand_dims(most_likely_class, SMPL_AX)  # Add back sample idx
 
 
+@classification_support
 @multi_ts_support
 @multivariate_support
 def macc(

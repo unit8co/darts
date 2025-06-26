@@ -32,4 +32,29 @@ class TestForecastingClassificationMetrics:
             ["comp1", "comp2"],
         )
 
-        assert forecasting_classification.macc(y_true, y_pred) == np.ones((4, 2))
+        assert np, all(
+            forecasting_classification.macc(y_true, y_pred) == np.ones((4, 2))
+        )
+
+    def test_wrong_probabilistic_metric(self):
+        names = ["comp1_p_2", "comp1_p_4", "comp2_p_1", "comp2_p_3", "comp2_p_4"]
+
+        y_pred = TimeSeries.from_values(
+            np.array([
+                [0.1, 0.4, 0.9, 0.5],  # comp1_p_2
+                [0.9, 0.6, 0.1, 0.5],  # comp1_p_4
+                [0.3, 0.5, 0.3, 0.4],  # comp2_p_1
+                [0.2, 0.1, 0.4, 0.1],  # comp2_p_3
+                [0.5, 0.4, 0.3, 0.5],  # comp2_p_4
+            ]).T[:, :, np.newaxis],
+            names,
+        )
+        y_true = TimeSeries.from_values(
+            np.array([[4, 4, 2, 2], [4, 1, 3, 4], [1, 1, 1, 1]]).T[:, :, np.newaxis],
+            ["comp0", "comp1"],
+        )
+
+        # This is supposed to fail
+        assert np, all(
+            forecasting_classification.macc(y_true, y_pred) == np.ones((4, 2))
+        )
