@@ -15,7 +15,7 @@ from darts.dataprocessing.transformers import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_log
-from darts.timeseries import _finite_rows_boundaries
+from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, _finite_rows_boundaries
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -444,7 +444,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             return None
         elif (
             static_covariates is not None
-            and static_covariates.index.name == "component"
+            and static_covariates.index[0] != DEFAULT_GLOBAL_STATIC_COV_NAME
         ):
             if inverse_transform:
                 cols_orig = series.n_components // n_midas
