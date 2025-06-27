@@ -44,6 +44,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🔴 Removed method `quantiles_df()`. Use `quantile().to_dataframe()` instead.
 - Added parameter `random_state` to all `ForecastingModel` forecast methods (predict, historical forecasts, ...) to control the randomness of probabilistic forecasts. [#2808](https://github.com/unit8co/darts/pull/2808) and [#2816](https://github.com/unit8co/darts/pull/2816) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
 
+- Added `project_after_n_blocks` hyperparam to `TSMixerModel`, allowing some or all of the backbone to operate in the lookback rather than forecasted time space by [Eric Schibli](https://github.com/eschibli)
+
 **Fixed**
 
 - Fixed some issues in `NLinearModel` with `normalize=True` that resulted in decreased predictive accuracy. Using `shared_weights=True` and auto-regressive forecasting now work properly. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
