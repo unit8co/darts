@@ -275,11 +275,6 @@ class TimeSeries:
         ]):
             components = _clean_components(components)
 
-        if times.name is None:
-            times.name = DIMS[0]
-        if components.name is None:
-            components.name = DIMS[1]
-
         has_datetime_index = isinstance(times, pd.DatetimeIndex)
         has_range_index = isinstance(times, pd.RangeIndex)
         has_integer_index = not (has_datetime_index or has_range_index)
@@ -354,8 +349,8 @@ class TimeSeries:
             freq: int = times.step
             freq_str = None
 
-        # how the time dimension is named; we convert hashable to string
-        self._time_dim = str(times.name)
+        # how the dimensions are named; we convert hashable to string
+        self._time_dim = str(times.name) if times.name is not None else DIMS[TIME_AX]
         self._time_index = times
         self._freq = freq
         self._freq_str = freq_str
@@ -503,6 +498,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
+        copy: bool = True,
     ) -> Self:
         """Create a ``TimeSeries`` from an `xarray.DataArray`.
 
@@ -577,6 +573,7 @@ class TimeSeries:
             static_covariates=xa.attrs.get(STATIC_COV_TAG),
             hierarchy=xa.attrs.get(HIERARCHY_TAG),
             metadata=xa.attrs.get(METADATA_TAG),
+            copy=copy,
         )
 
     @classmethod
@@ -591,6 +588,7 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
+        copy: bool = True,
         **kwargs,
     ) -> Self:
         """Create a ``TimeSeries`` from a CSV file.
@@ -680,6 +678,7 @@ class TimeSeries:
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
+            copy=copy,
         )
 
     @classmethod
@@ -694,6 +693,7 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
+        copy: bool = True,
     ) -> Self:
         """Create a ``TimeSeries`` from a selection of columns of a `DataFrame`.
 
@@ -793,7 +793,6 @@ class TimeSeries:
         (3, 1, 1)
         """
         df = nw.from_native(df, eager_only=True, pass_through=False)
-        time_zone = None
 
         # get values
         if value_cols is None:
@@ -837,9 +836,17 @@ class TimeSeries:
                         )
                     )
             elif isinstance(time_col_vals.dtype, nw.Datetime):
-                # remember time zone here as polars converts to UTC
+                # force time index to be timezone naive, as polars converts to UTC
                 time_zone = time_col_vals.dtype.time_zone
                 if time_zone is not None:
+                    logger.warning(
+                        "The provided DatetimeIndex was associated with a timezone (tz), which is currently not "
+                        "supported. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                        f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
+                        "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                        "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                        "original timezone."
+                    )
                     time_col_vals = time_col_vals.dt.replace_time_zone(None)
                 time_index = pd.DatetimeIndex(time_col_vals)
             else:
@@ -848,11 +855,12 @@ class TimeSeries:
                         "Invalid type of `time_col`: it needs to be of either 'String', 'Datetime' or 'Int' dtype."
                     )
                 )
-            time_index.name = time_col
+            if not time_index.name:
+                time_index.name = time_col
         else:
             time_index = nw.maybe_get_index(df)
             if time_index is None:
-                time_index = pd.RangeIndex(len(df))
+                time_index = pd.RangeIndex(len(df), name=DIMS[TIME_AX])
                 logger.warning(
                     "No time column specified (`time_col=None`) and no index found in the `DataFrame`. Defaulting to "
                     "`pandas.RangeIndex(len(df))`. If this is not desired consider adding a time column "
@@ -870,25 +878,6 @@ class TimeSeries:
                     ),
                     logger,
                 )
-            if isinstance(time_index, pd.DatetimeIndex):
-                time_zone = time_index.tz
-                if time_zone is not None:
-                    # remove and remember time zone here as pandas converts to UTC
-                    time_index = time_index.tz_localize(None)
-
-        # force time index to be timezone naive
-        if time_zone is not None:
-            logger.warning(
-                "The provided DatetimeIndex was associated with a timezone (tz), which is currently not supported. "
-                "To avoid unexpected behaviour, the tz information was removed. Consider calling "
-                f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
-                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
-                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
-                "original timezone."
-            )
-
-        if not time_index.name:
-            time_index.name = time_col if time_col else DIMS[0]
 
         return cls(
             times=time_index,
@@ -900,6 +889,7 @@ class TimeSeries:
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
+            copy=copy,
         )
 
     @classmethod
@@ -917,6 +907,7 @@ class TimeSeries:
         drop_group_cols: Optional[Union[list[str], str]] = None,
         n_jobs: Optional[int] = 1,
         verbose: Optional[bool] = False,
+        copy: bool = True,
     ) -> list[Self]:
         """Create a list of ``TimeSeries`` grouped by a selection of columns from a `DataFrame`.
 
@@ -1156,6 +1147,7 @@ class TimeSeries:
                     else None
                 ),
                 metadata=metadata,
+                copy=copy,
             )
 
         return _parallel_apply(
@@ -1175,6 +1167,7 @@ class TimeSeries:
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         metadata: Optional[dict] = None,
+        copy: bool = True,
     ) -> Self:
         """Create a ``TimeSeries`` from a `Series`.
 
@@ -1240,9 +1233,8 @@ class TimeSeries:
             fillna_value=fillna_value,
             static_covariates=static_covariates,
             metadata=metadata,
+            copy=copy,
         )
-
-    pd.DataFrame
 
     @classmethod
     def from_times_and_values(
@@ -1359,6 +1351,7 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
+        copy: bool = True,
     ) -> Self:
         """Create an ``TimeSeries`` from an array of values.
 
@@ -1434,6 +1427,7 @@ class TimeSeries:
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
+            copy=copy,
         )
 
     @classmethod
@@ -1509,6 +1503,7 @@ class TimeSeries:
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
+            copy=False,  # JSON is immutable, so no need to copy
         )
 
     @classmethod
@@ -4472,7 +4467,6 @@ class TimeSeries:
                     *args,
                     **kwargs_central,
                 )
-                ax.set_xlabel(self.time_index.name)
             else:
                 p = ax.plot(
                     [self.start_time()],
@@ -4481,6 +4475,7 @@ class TimeSeries:
                     *args,
                     **kwargs_central,
                 )
+            ax.set_xlabel(self.time_dim)
             color_used = p[0].get_color() if default_formatting else None
 
             # Optionally show confidence intervals

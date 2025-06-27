@@ -11,9 +11,15 @@ import holidays
 import numpy as np
 import pandas as pd
 
-from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-from darts.timeseries import HIERARCHY_TAG, METADATA_TAG, STATIC_COV_TAG
+from darts.timeseries import (
+    DIMS,
+    HIERARCHY_TAG,
+    METADATA_TAG,
+    STATIC_COV_TAG,
+    TIME_AX,
+    TimeSeries,
+)
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -28,6 +34,7 @@ ONE_INDEXED_FREQS = {
     "weekofyear",
     "week_of_year",
 }
+TIMES_NAME = DIMS[TIME_AX]
 
 
 def constant_timeseries(
@@ -73,7 +80,9 @@ def constant_timeseries(
         A constant TimeSeries with value 'value'.
     """
 
-    index = generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(
+        start=start, end=end, freq=freq, length=length, name=TIMES_NAME
+    )
     values = np.full(len(index), value, dtype=dtype)
     return TimeSeries(
         times=index,
@@ -132,7 +141,9 @@ def linear_timeseries(
         A linear TimeSeries created as indicated above.
     """
 
-    index = generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(
+        start=start, end=end, freq=freq, length=length, name=TIMES_NAME
+    )
     values = np.linspace(start_value, end_value, len(index), dtype=dtype)
     return TimeSeries(
         times=index,
@@ -195,7 +206,9 @@ def sine_timeseries(
         A sinusoidal TimeSeries parametrized as indicated above.
     """
 
-    index = generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(
+        start=start, end=end, freq=freq, length=length, name=TIMES_NAME
+    )
     values = np.array(range(len(index)), dtype=dtype)
     f = np.vectorize(
         lambda x: value_amplitude
@@ -279,7 +292,9 @@ def gaussian_timeseries(
             logger,
         )
 
-    index = generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(
+        start=start, end=end, freq=freq, length=length, name=TIMES_NAME
+    )
     values = np.random.normal(mean, std, size=len(index)).astype(dtype)
     return TimeSeries(
         times=index,
@@ -336,7 +351,9 @@ def random_walk_timeseries(
         A random walk TimeSeries created as indicated above.
     """
 
-    index = generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(
+        start=start, end=end, freq=freq, length=length, name=TIMES_NAME
+    )
     values = np.cumsum(np.random.normal(mean, std, size=len(index)), dtype=dtype)
     return TimeSeries(
         times=index,
@@ -401,7 +418,9 @@ def autoregressive_timeseries(
             "start_values must have same length as coef.",
         )
 
-    index = generate_index(start=start, end=end, freq=freq, length=length)
+    index = generate_index(
+        start=start, end=end, freq=freq, length=length, name=TIMES_NAME
+    )
 
     values = np.empty(len(coef) + len(index))
     values[: len(coef)] = start_values
@@ -421,6 +440,7 @@ def _extend_time_index_until(
     time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
     until: Optional[Union[int, str, pd.Timestamp]],
     add_length: int,
+    name,
 ) -> pd.DatetimeIndex:
     if not add_length and not until:
         return time_index
@@ -481,7 +501,7 @@ def _extend_time_index_until(
 
         end = timestamp
 
-    new_time_index = pd.date_range(start=time_index[0], end=end, freq=freq)
+    new_time_index = pd.date_range(start=time_index[0], end=end, freq=freq, name=name)
     return new_time_index
 
 
@@ -901,7 +921,10 @@ def _generate_new_dates(
         last = input_series.end_time()
         start = last + input_series.freq
     return generate_index(
-        start=start, freq=input_series.freq, length=n, name=input_series.time_dim
+        start=start,
+        freq=input_series.freq,
+        length=n,
+        name=input_series._time_index.name,
     )
 
 
@@ -934,7 +957,9 @@ def _process_time_index(
             ValueError("`time_index` must be time zone naive."),
             logger=logger,
         )
-    time_index = _extend_time_index_until(time_index, until, add_length)
+    time_index = _extend_time_index_until(
+        time_index, until, add_length, time_index.name
+    )
 
     # convert to another time zone
     if tz is not None:

@@ -176,7 +176,7 @@ def _optimized_historical_forecasts_last_points_only(
                 + (forecast_horizon + model.output_chunk_shift - 1) * freq,
                 length=forecast.shape[0],
                 freq=freq * stride,
-                name=series_.time_index.name,
+                name=series_._time_index.name,
             )
 
         forecasts_list.append(
@@ -359,7 +359,7 @@ def _optimized_historical_forecasts_all_points(
             start=hist_fct_start + model.output_chunk_shift * series_.freq,
             length=forecast_horizon + (forecast.shape[0] - 1) * stride,
             freq=freq,
-            name=series_.time_index.name,
+            name=series_._time_index.name,
         )
 
         forecasts_ = []

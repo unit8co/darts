@@ -379,7 +379,7 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             start=start_time,
             length=len(series_values) + shift,
             freq=high_freq,
-            name=series.time_index.name,
+            name=series._time_index.name,
         )[shift:]
 
         inversed_midas_ts = MIDAS._create_midas_df(

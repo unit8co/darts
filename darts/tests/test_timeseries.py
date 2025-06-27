@@ -100,6 +100,7 @@ class TestTimeSeries:
                 is_eq = mock_init.call_args.kwargs[k] == v
                 if not isinstance(is_eq, bool):
                     is_eq = np.all(is_eq)
+                assert is_eq
 
     def test_pandas_creation(self):
         pd_series = pd.Series(range(10), name="test_name", dtype="float32")
@@ -109,6 +110,7 @@ class TestTimeSeries:
         assert ts_pd_series.name == pd_series.name
 
         pd_df = pd_series.to_frame()
+        pd_df.index.name = "time_index"
         ts = TimeSeries.from_dataframe(pd_df)
         ts_pd_df = ts.to_dataframe()
         assert ts_pd_df.equals(pd_df)
