@@ -1592,7 +1592,7 @@ class TimeSeries:
         )
 
     @property
-    def shape(self) -> tuple[int]:
+    def shape(self) -> tuple[int, int, int]:
         """The shape of the series (n_timesteps, n_components, n_samples)."""
         return self._xa.shape
 
