@@ -184,8 +184,9 @@ class TimeSeries:
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
-            Whether to copy the `times`, `values`, and `components` objects. If `copy=False`, mutating the series data
-            will affect the original data.
+            Whether to copy the `times` and `values` objects. If `copy=False`, mutating the series data will affect the
+            original data. Additionally, if `times` lack a frequency or step size, it will be assigned to the original
+            object.
 
         Returns
         -------
@@ -265,9 +266,9 @@ class TimeSeries:
             )
 
         if copy:
+            # deepcopy the index as updating `times.freq` with a shallow `copy()` mutates the original index
             times = deepcopy(times)
             values = values.copy()
-            components = components.copy()
 
         # clean component (column) names if needed (when names are not unique, or not strings)
         if len(set(components)) != len(components) or any([
@@ -389,7 +390,6 @@ class TimeSeries:
         else:  # None
             pass
 
-        # prepare static covariates:
         if static_covariates is not None:
             static_covariates.index = (
                 self.components
@@ -533,6 +533,10 @@ class TimeSeries:
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
+        copy
+            Whether to copy the `times` (time index dimension) and `values` (data) objects. If `copy=False`, mutating
+            the series data will affect the original data. Additionally, if `times` lack a frequency or step size, it
+            will be assigned to the original object.
 
         Returns
         -------
@@ -588,7 +592,6 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
-        copy: bool = True,
         **kwargs,
     ) -> Self:
         """Create a ``TimeSeries`` from a CSV file.
@@ -678,7 +681,7 @@ class TimeSeries:
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
-            copy=copy,
+            copy=False,
         )
 
     @classmethod
@@ -765,6 +768,10 @@ class TimeSeries:
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
+        copy
+            Whether to copy the `times` (DataFrame index or the `time_col` column) and DataFrame `values`.
+            If `copy=False`, mutating the series data will affect the original data. Additionally, if `times` lack a
+            frequency or step size, it will be assigned to the original object.
 
         Returns
         -------
@@ -966,6 +973,10 @@ class TimeSeries:
             `joblib.Parallel` class.
         verbose
             Optionally, a boolean value indicating whether to display a progress bar.
+        copy
+            Whether to copy the `times` (DataFrame index or the `time_col` column) and DataFrame `values`.
+            If `copy=False`, mutating the series data will affect the original data. Additionally, if `times` lack a
+            frequency or step size, it will be assigned to the original object.
 
         Returns
         -------
@@ -1202,6 +1213,9 @@ class TimeSeries:
             columns represent the static variables and the single row represents the univariate TimeSeries component.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
+        copy
+            Whether to copy the Series' `values`. If `copy=False`, mutating the series data will affect the original
+            data.
 
         Returns
         -------
@@ -1312,6 +1326,10 @@ class TimeSeries:
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
+        copy
+            Whether to copy the `times` and `values` objects. If `copy=False`, mutating the series data will affect the
+            original data. Additionally, if `times` lack a frequency or step size, it will be assigned to the original
+            object.
 
         Returns
         -------
@@ -1401,6 +1419,8 @@ class TimeSeries:
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
+        copy
+            Whether to copy the `values`. If `copy=False`, mutating the series data will affect the original data.
 
         Returns
         -------
@@ -1649,7 +1669,7 @@ class TimeSeries:
     @property
     def components(self) -> pd.Index:
         """The component (column) names of the series, as a ``pandas.Index``."""
-        return self._components.copy()
+        return self._components
 
     @property
     def columns(self) -> pd.Index:
@@ -1720,7 +1740,7 @@ class TimeSeries:
         xa = xr.DataArray(
             self._values,
             dims=(self._time_dim,) + DIMS[-2:],
-            coords={self._time_dim: self._time_index, DIMS[COMP_AX]: self._components},
+            coords={self._time_dim: self._time_index, DIMS[COMP_AX]: self.components},
             attrs=self._attrs,
         )
         return xa.copy() if copy else xa
@@ -1756,7 +1776,7 @@ class TimeSeries:
 
         data = self._values[:, 0, 0]
         index = self._time_index
-        name = self._components[0]
+        name = self.components[0]
 
         if copy:
             data = data.copy()
@@ -1816,7 +1836,7 @@ class TimeSeries:
                     "adapted to stochastic TimeSeries like quantile_df()."
                 )
 
-            comp_name = list(self._components)
+            comp_name = list(self.components)
             samples = range(self.n_samples)
             columns = [
                 "_s".join((comp_name, str(sample_id)))
@@ -1824,7 +1844,7 @@ class TimeSeries:
             ]
             data = values.reshape(values.shape[0], len(columns))
         else:
-            columns = self._components
+            columns = self.components
             data = values[:, :, 0]
 
         time_index = self._time_index
@@ -1861,7 +1881,7 @@ class TimeSeries:
         schema = {
             "time_freq": self._freq,
             "time_name": self._time_index.name,
-            "columns": self._components,
+            "columns": self.components,
             STATIC_COV_TAG: self.static_covariates,
             HIERARCHY_TAG: self.hierarchy,
             METADATA_TAG: self.metadata,
@@ -1886,7 +1906,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=self._values.astype(dtype),
-            components=self._components,
+            components=self.components,
             **self._attrs,
         )
 
@@ -2094,12 +2114,12 @@ class TimeSeries:
         if axis == TIME_AX:
             return self[:display_n]
         elif axis == COMP_AX:
-            return self[self._components.tolist()[:display_n]]
+            return self[self.components.tolist()[:display_n]]
         else:
             return self.__class__(
                 times=self._time_index,
                 values=self._values[:, :, :display_n],
-                components=self._components,
+                components=self.components,
                 **self._attrs,
             )
 
@@ -2126,12 +2146,12 @@ class TimeSeries:
         if axis == TIME_AX:
             return self[-display_n:]
         elif axis == COMP_AX:
-            return self[self._components.tolist()[-display_n:]]
+            return self[self.components.tolist()[-display_n:]]
         else:
             return self.__class__(
                 times=self._time_index,
                 values=self._values[:, :, -display_n:],
-                components=self._components,
+                components=self.components,
                 **self._attrs,
             )
 
@@ -2272,7 +2292,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=self._values,
-            components=self._components,
+            components=self.components,
             copy=True,
             **self._attrs,
         )
@@ -2741,7 +2761,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index[first_finite_row : last_finite_row + 1],
             values=self._values[first_finite_row : last_finite_row + 1],
-            components=self._components,
+            components=self.components,
             **self._attrs,
         )
 
@@ -2818,7 +2838,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=self._values * coef,
-            components=self._components,
+            components=self.components,
             **self._attrs,
         )
 
@@ -2866,7 +2886,7 @@ class TimeSeries:
         return self.__class__(
             times=new_time_index,
             values=self._values,
-            components=self._components,
+            components=self.components,
             **self._attrs,
         )
 
@@ -2923,7 +2943,7 @@ class TimeSeries:
         return self.__class__(
             times=times,
             values=values,
-            components=self._components,
+            components=self.components,
             **self._attrs,
         )
 
@@ -2938,7 +2958,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=self._values.cumsum(axis=0),
-            components=self._components,
+            components=self.components,
             **self._attrs,
         )
 
@@ -3013,7 +3033,7 @@ class TimeSeries:
         return self.__class__(
             times=times,
             values=values,
-            components=self._components,
+            components=self.components,
             **self._attrs,
         )
 
@@ -3060,7 +3080,7 @@ class TimeSeries:
 
         return self.append(
             self.__class__(
-                values=values, times=idx, components=self._components, **self._attrs
+                values=values, times=idx, components=self.components, **self._attrs
             )
         )
 
@@ -3196,7 +3216,7 @@ class TimeSeries:
             values=values,
             fill_missing_dates=fill_missing_dates,
             freq=freq,
-            components=self._components,
+            components=self.components,
             fillna_value=fillna_value,
             **self._attrs,
         )
@@ -3228,7 +3248,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=values,
-            components=self._components,
+            components=self.components,
             **self._attrs,
         )
 
@@ -3287,7 +3307,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=self._values,
-            components=self._components,
+            components=self.components,
             static_covariates=covariates,
             hierarchy=self.hierarchy,
             metadata=self.metadata,
@@ -3327,7 +3347,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=self._values,
-            components=self._components,
+            components=self.components,
             static_covariates=self.static_covariates,
             hierarchy=hierarchy,
             metadata=self.metadata,
@@ -3359,7 +3379,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=self._values,
-            components=self._components,
+            components=self.components,
             static_covariates=self.static_covariates,
             hierarchy=self.hierarchy,
             metadata=metadata,
@@ -3399,7 +3419,7 @@ class TimeSeries:
         if isinstance(col_names, str):
             col_names = [col_names]
 
-        comp_list = self._components.tolist()
+        comp_list = self.components.tolist()
         if not all([x in comp_list for x in col_names]):
             raise_log(
                 ValueError(
@@ -3415,7 +3435,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=self._values[:, indexer],
-            components=self._components[indexer],
+            components=self.components[indexer],
             static_covariates=(
                 self.static_covariates.iloc[indexer]
                 if self.static_covariates is not None
@@ -3735,7 +3755,7 @@ class TimeSeries:
         return self.__class__(
             times=self._time_index,
             values=values,
-            components=self._components,
+            components=self.components,
             **self._attrs,
         )
 
@@ -4531,7 +4551,7 @@ class TimeSeries:
         if isinstance(col_names_new, str):
             col_names_new = [col_names_new]
 
-        if not all([(x in self._components.to_list()) for x in col_names]):
+        if not all([(x in self.components.to_list()) for x in col_names]):
             raise_log(
                 ValueError(
                     "Some column names in col_names don't exist in the time series."
@@ -5167,11 +5187,11 @@ class TimeSeries:
         """
 
         if axis == 0:  # set time_index to first day
-            return self._time_index[0:1], self._components
+            return self._time_index[0:1], self.components
         elif axis == 1:  # rename components
             return self._time_index, pd.Index([new_cname])
         elif axis == 2:  # do nothing
-            return self._time_index, self._components
+            return self._time_index, self.components
         else:
             raise_log(
                 ValueError(f"Invalid `axis={axis}`. Must be one of `(1, 2, 3)`."),
@@ -5250,7 +5270,7 @@ class TimeSeries:
         if not np.array_equal(self._values, other._values, equal_nan=True):
             return False
 
-        if not self._components.equals(other._components):
+        if not self.components.equals(other.components):
             return False
 
         sc_self, sc_other = self.static_covariates, other.static_covariates
@@ -5469,7 +5489,7 @@ class TimeSeries:
         return self.__class__(
             times=deepcopy(self._time_index, memo),
             values=deepcopy(self._values, memo),
-            components=deepcopy(self._components, memo),
+            components=deepcopy(self.components, memo),
             copy=False,
             **deepcopy(self._attrs, memo),
         )
@@ -5586,14 +5606,14 @@ class TimeSeries:
                     )
             elif isinstance(key.start, str) or isinstance(key.stop, str):
                 # selecting components discards the hierarchy, if any
-                idx = self._components.get_indexer(pd.Index([key.start, key.stop]))
+                idx = self.components.get_indexer(pd.Index([key.start, key.stop]))
                 if (idx < 0).any():
                     raise_log(
                         KeyError("Not all components found in time index."), logger
                     )
                 indexer = slice(idx[0], idx[-1] + 1)
                 values = self._values[:, indexer]
-                components = self._components[indexer]
+                components = self.components[indexer]
                 static_covariates = self.static_covariates
                 return self.__class__(
                     times=self._time_index,
@@ -5656,12 +5676,12 @@ class TimeSeries:
 
         # handle simple types:
         elif isinstance(key, str):
-            col_idx = self._components.get_loc(key)
+            col_idx = self.components.get_loc(key)
             static_covariates = self.static_covariates
             return self.__class__(
                 times=self._time_index,
                 values=self._values[:, col_idx : col_idx + 1],
-                components=self._components[col_idx : col_idx + 1],
+                components=self.components[col_idx : col_idx + 1],
                 static_covariates=(
                     static_covariates.loc[[key]]
                     if adapt_covs_on_component
@@ -5696,13 +5716,13 @@ class TimeSeries:
         if isinstance(key, list):
             if all(isinstance(s, str) for s in key):
                 # when string(s) are provided, we consider it as (a list of) component(s)
-                indexer = self._components.get_indexer(key)
+                indexer = self.components.get_indexer(key)
                 if (indexer < 0).any():
                     raise_log(
                         KeyError("Not all components found in time index."), logger
                     )
                 values = self._values[:, indexer]
-                components = self._components[indexer]
+                components = self.components[indexer]
                 static_covariates = self.static_covariates
                 return self.__class__(
                     times=self._time_index,
@@ -5720,7 +5740,7 @@ class TimeSeries:
                 return self.__class__(
                     times=self._time_index[key],
                     values=self._values[key],
-                    components=self._components,
+                    components=self.components,
                     **self._attrs,
                 )
 
@@ -5730,7 +5750,7 @@ class TimeSeries:
                 return self.__class__(
                     times=self._time_index[key],
                     values=self._values[key],
-                    components=self._components,
+                    components=self.components,
                     **self._attrs,
                 )
 

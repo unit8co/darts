@@ -1803,7 +1803,7 @@ class TestTimeSeries:
             else:
                 assert schema_actual[k] == v_exp
 
-    def test_mutability(self):
+    def test_mutability_values(self):
         shape = (5, 3, 2)
         n = 5 * 3 * 2
         idx = pd.RangeIndex(stop=5)
@@ -1845,6 +1845,33 @@ class TestTimeSeries:
         # original values are the same
         assert np.array_equal(vals, np.arange(n).reshape(shape))
         assert ts == ts_copy
+
+    def test_mutability_times(self):
+        freq = pd.tseries.frequencies.to_offset("D")
+        idx = pd.date_range("2000-01-01", periods=5, freq=freq)
+        idx.freq = None
+        assert idx.freq != freq
+        assert idx.name is None
+
+        # copy does not mutate original object
+        ts = TimeSeries(times=idx, values=range(5), copy=True)
+        assert ts.time_index.freq == freq
+        assert idx.freq is None
+        assert ts.time_index.name is None
+        assert idx.name is None
+
+        ts.time_index.freq = None
+        assert ts.time_index.equals(idx)
+
+        # view updates the frequency of the original object (adds more information)
+        idx.name = "test_index"
+        ts = TimeSeries(times=idx, values=range(5), copy=False)
+        assert ts.time_index.freq == freq
+        assert idx.freq == freq
+        assert ts.time_index.name == "test_index"
+        assert idx.name == "test_index"
+
+        assert ts.time_index.equals(idx)
 
 
 def helper_test_slice(test_series: TimeSeries):
