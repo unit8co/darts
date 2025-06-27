@@ -50,6 +50,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- We set an upper version cap on `scipy<1.16.0` until `statsmodels` officially supports version `1.16.0`. [#2832](https://github.com/unit8co/darts/pull/2832) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 
 - Moved all torch dataset related modules from `darts.utils.data.*` to `darts.utils.data.torch_datasets.*`. The objects can still be imported as before with `from darts.utils.data import ...`
