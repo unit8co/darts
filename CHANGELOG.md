@@ -44,6 +44,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed some issues in `NLinearModel` with `normalize=True` that resulted in decreased predictive accuracy. Using `shared_weights=True` and auto-regressive forecasting now work properly. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Fixed a bug when training a `TorchForecastingModel`, where using certain `torchmetrics` that require a 2D model output (e.g. R2Score) raised an error. [He Weilin](https://github.com/cnhwl).
+- Fixed an issue with `TorchForecastingModel.predict()` on Windows machines, where tensor movement from GPU to CPU was not synchronized. [#2829](https://github.com/unit8co/darts/pull/2829) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug with `SKLearnModel.__str__()` which raised an error when the model was wrapped by Darts' MultioutputRegressor. [#2811](https://github.com/unit8co/darts/pull/2811) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed the default `_ShapMethod` for three tree based regression models (HistGradientBoostingRegressor, ExtraTreesRegressor and RandomForestRegressor). [#2821](https://https://github.com/unit8co/darts/pull/2821) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
 - Fixed a bug in `StatsForecastModel` where custom future covariates support (OLS) resulted in a feature error with target series that contain static covariates. [#2824](https://github.com/unit8co/darts/pull/2824) by [Dennis Bader](https://github.com/dennisbader).
