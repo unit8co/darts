@@ -238,8 +238,8 @@ class DTWAlignment:
 
         values1, values2 = values1[path[:, 0]], values2[path[:, 1]]
 
-        idx1 = pd.RangeIndex(values1.shape[0], name=self.series1._time_dim)
-        idx2 = pd.RangeIndex(values2.shape[0], name=self.series2._time_dim)
+        idx1 = pd.RangeIndex(values1.shape[0], name=self.series1._time_index.name)
+        idx2 = pd.RangeIndex(values2.shape[0], name=self.series2._time_index.name)
         warped_series1 = TimeSeries(
             times=idx1,
             values=values1,

@@ -325,7 +325,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch: TorchInferenceBatch,
         batch_idx: int,
         dataloader_idx: Optional[int] = None,
-    ) -> Sequence[TimeSeries]:
+    ) -> tuple[
+        torch.Tensor,
+        Sequence[Optional[dict[str, Any]]],
+        Sequence[Any],
+    ]:
         """performs the prediction step
 
         batch
@@ -393,7 +397,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # concatenate the batch of samples, to form self.pred_num_samples samples
         batch_predictions = torch.cat(batch_predictions, dim=0)
-        batch_predictions = batch_predictions.cpu().detach().numpy()
         return (
             batch_predictions,
             batch_series_schemas,

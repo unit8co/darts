@@ -5139,7 +5139,8 @@ class TimeSeries:
         resampled_values[resampled_times.index.isin(times)] = values
         return resampled_times.index, resampled_values
 
-    def _get_axis(self, axis: Union[int, str]) -> int:
+    @staticmethod
+    def _get_axis(axis: Union[int, str]) -> int:
         """Convert different `axis` types to an integer axis."""
         if isinstance(axis, int):
             if not 0 <= axis <= 2:
@@ -5149,15 +5150,14 @@ class TimeSeries:
                 )
             return axis
         else:
-            known_dims = (self._time_dim,) + DIMS[1:]
-            if axis not in known_dims:
+            if axis not in DIMS:
                 raise_log(
                     ValueError(
-                        f"`axis` must be a known dimension of this series: {known_dims}"
+                        f"`axis` must be a known dimension of this series: {DIMS}"
                     ),
                     logger,
                 )
-            return known_dims.index(axis)
+            return DIMS.index(axis)
 
     def _get_agg_dims(
         self, new_cname: str, axis: int
@@ -5852,25 +5852,7 @@ def concatenate(
     TimeSeries
         The concatenated series.
     """
-
-    time_dims = [ts.time_dim for ts in series]
-    if isinstance(axis, str):
-        if axis == DIMS[1]:
-            axis = 1
-        elif axis == DIMS[2]:
-            axis = 2
-        else:
-            if len(set(time_dims)) != 1 or axis != time_dims[0]:
-                raise_log(
-                    ValueError(
-                        "Unrecognised `axis` name. If `axis` denotes the time axis, all provided "
-                        "series must have the same time axis name (if that is not the case, try providing "
-                        "`axis=0` to concatenate along time dimension)."
-                    ),
-                    logger,
-                )
-            axis = 0
-
+    axis = TimeSeries._get_axis(axis)
     vals = [ts.all_values(copy=False) for ts in series]
 
     component_axis_equal = len({ts.shape[COMP_AX] for ts in series}) == 1

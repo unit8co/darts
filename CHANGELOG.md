@@ -15,7 +15,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added parameter `copy: bool = True` to all TimeSeries constructor and factory methods (`TimeSeries.from_*`). This allows to create your time series without copying the data. Defaults to `True` to maintain the existing behavior.
   - Method `__init__()` can now also be used to create new series in a similar way as `from_times_and_values()`.
   - 🔴 Comparison operators `>, >=, <=, <` now return a `numpy.ndarray` instead of a `xarray.DataArray`.
-  -
 - Added support for training `RegressionModel` and `TorchForecastingModel` with stridden training samples by passing parameter `stride` to `fit()`. This allows to reduce the size of the training set or apply elaborate training scenarios. [#2624](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
 - Improvements `NLinearModel`: Default value for `normalize` changed from `False` to `True` to reflect the source paper. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Renamed some regression models for consistency and clarity reasons. [#2774](https://github.com/unit8co/darts/pull/2774) by [Jonas Blanc](https://github.com/jonasblanc).
@@ -49,11 +48,14 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed some issues in `NLinearModel` with `normalize=True` that resulted in decreased predictive accuracy. Using `shared_weights=True` and auto-regressive forecasting now work properly. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Fixed a bug when training a `TorchForecastingModel`, where using certain `torchmetrics` that require a 2D model output (e.g. R2Score) raised an error. [He Weilin](https://github.com/cnhwl).
+- Fixed an issue with `TorchForecastingModel.predict()` on Windows machines, where tensor movement from GPU to CPU was not synchronized. [#2829](https://github.com/unit8co/darts/pull/2829) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug with `SKLearnModel.__str__()` which raised an error when the model was wrapped by Darts' MultioutputRegressor. [#2811](https://github.com/unit8co/darts/pull/2811) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed the default `_ShapMethod` for three tree based regression models (HistGradientBoostingRegressor, ExtraTreesRegressor and RandomForestRegressor). [#2821](https://https://github.com/unit8co/darts/pull/2821) by [Rijk van der Meulen](https://github.com/rijkvandermeulen).
 - Fixed a bug in `StatsForecastModel` where custom future covariates support (OLS) resulted in a feature error with target series that contain static covariates. [#2824](https://github.com/unit8co/darts/pull/2824) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
+
+- We set an upper version cap on `scipy<1.16.0` until `statsmodels` officially supports version `1.16.0`. [#2832](https://github.com/unit8co/darts/pull/2832) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
 
