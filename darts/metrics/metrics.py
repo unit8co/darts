@@ -44,6 +44,28 @@ METRIC_TYPE = Callable[
 ]
 
 
+def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
+    """
+    This decorator adds support for classification metrics with sanity checks and
+    handling of class probabilities and categorical samples.
+    """
+
+    @wraps(func)
+    def wrapper_interval_support(*args, **kwargs):
+        q = kwargs.get("q")
+        if q is not None:
+            raise_log(ValueError("`q` is not supported for classification metrics."))
+        q_interval = kwargs.get("q_interval")
+        if q_interval is not None:
+            raise_log(
+                ValueError("`q_interval` is not supported for classification metrics.")
+            )
+        kwargs["is_classification"] = True
+        return func(*args, **kwargs)
+
+    return wrapper_interval_support
+
+
 def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """
     This decorator adds support for quantile interval metrics with sanity checks, processing, and extraction of
@@ -263,29 +285,9 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     univariate metrics using a `component_reduction` subroutine passed as argument to the metric function.
     """
 
-    @wraps(func)
-    def wrapper_multivariate_support(*args, **kwargs) -> METRIC_OUTPUT_TYPE:
-        params = signature(func).parameters
-        # we can avoid checks about args and kwargs since the input is adjusted by the previous decorator
-        actual_series = args[0]
-        pred_series = args[1]
-        num_series_in_args = 2
-
-        q, q_comp_names = kwargs.get("q"), None
-        if q is None:
-            # without quantiles, the number of components must match
-            if actual_series.n_components != pred_series.n_components:
-                raise_log(
-                    ValueError(
-                        f"Mismatch between number of components in `actual_series` "
-                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
-                    ),
-                    logger=logger,
-                )
-            # compute median for stochastic predictions
-            if pred_series.is_stochastic:
-                q = np.array([0.5])
-        else:
+    def _quantile_handling(actual_series, pred_series, q, params, kwargs):
+        q_comp_names = None
+        if q is not None:
             # `q` is required to be a tuple (handled by `multi_ts_support` wrapper)
             if not isinstance(q, tuple) or not len(q) == 2:
                 raise_log(
@@ -317,9 +319,78 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         ),
                         logger=logger,
                     )
+        else:
+            # without quantiles, the number of components must match
+            if actual_series.n_components != pred_series.n_components:
+                raise_log(
+                    ValueError(
+                        f"Mismatch between number of components in `actual_series` "
+                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
+                    ),
+                    logger=logger,
+                )
+                # compute median for stochastic predictions
+            if pred_series.is_stochastic:
+                q = np.array([0.5])
 
         if "q" in params:
             kwargs["q"] = (q, q_comp_names)
+        return kwargs
+
+    def _is_valid_component(actual_series, pred_series, is_classification):
+        if actual_series.n_components != pred_series.n_components:
+            raise_log(
+                ValueError(
+                    f"Mismatch between number of components in `actual_series` "
+                    f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
+                ),
+                logger=logger,
+            )
+
+    @wraps(func)
+    def wrapper_multivariate_support(*args, **kwargs) -> METRIC_OUTPUT_TYPE:
+        params = signature(func).parameters
+        # we can avoid checks about args and kwargs since the input is adjusted by the previous decorator
+        actual_series = args[0]
+        pred_series = args[1]
+        num_series_in_args = 2
+        print("DECO")
+
+        if kwargs.pop("is_classification", False):
+            # TODO add constant for separator
+            # This assumes class probabilites components follow the "<component_name>_p_<label>" convention
+            # Note: the correct number of labels per component is not checked here
+            if np.any(pred_series.components != actual_series.components):
+                predicted_components = (
+                    pred_series.components.str.split("_p")
+                    .str[:-1]
+                    .str.join("_p")
+                    .unique()
+                )
+            if np.any(predicted_components != actual_series.components):
+                raise_log(
+                    ValueError(
+                        f"Mismatch between number of components in `actual_series` "
+                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
+                        "Class probabilities series must have one component per original component and label"
+                        "following the naming convention `<component_name>_p_<label>`."
+                        f"Original components: {actual_series.components}"
+                        f"Predicted components: {pred_series.components}"
+                    ),
+                    logger=logger,
+                )
+        else:
+            q = kwargs.get("q")
+            if q is None:
+                if actual_series.n_components != pred_series.n_components:
+                    raise_log(
+                        ValueError(
+                            f"Mismatch between number of components in `actual_series` "
+                            f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
+                        ),
+                        logger=logger,
+                    )
+            kwargs = _quantile_handling(actual_series, pred_series, q, params, kwargs)
 
         # handle `insample` parameters for scaled metrics
         input_series = (actual_series, pred_series)
