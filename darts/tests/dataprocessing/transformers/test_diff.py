@@ -6,9 +6,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from darts import TimeSeries
+from darts import concatenate as darts_concat
 from darts.dataprocessing.transformers import Diff
-from darts.timeseries import TimeSeries
-from darts.timeseries import concatenate as darts_concat
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
 from darts.utils.utils import freqs
 
@@ -62,7 +62,11 @@ class TestDiff:
         yields the original linear series.
         """
         lin_series = linear_timeseries(start_value=1, end_value=10, length=50)
-        quad_series = TimeSeries(lin_series.data_array().cumsum(axis=0))
+        quad_series = TimeSeries(
+            times=lin_series.time_index,
+            values=lin_series.all_values().cumsum(axis=0),
+            components=lin_series.components,
+        )
         for dropna in (False, True):
             diff = Diff(lags=1, dropna=dropna)
             diff.fit(quad_series)
@@ -98,16 +102,21 @@ class TestDiff:
 
         # Artifically truncate series:
         short_sine = self.sine_series.copy().drop_after(10)
+        short_sine_copy = short_sine.copy()
         for lags, dropna in test_cases:
             # Fit Diff to truncated series:
             diff = Diff(lags=lags, dropna=dropna)
             diff.fit(short_sine)
+            assert short_sine == short_sine_copy
+
             # Difference entire time series:
             to_undiff = self.sine_series.copy()
             if not isinstance(lags, Sequence):
                 lags = (lags,)
             for lag in lags:
                 to_undiff = to_undiff.diff(n=1, periods=lag, dropna=dropna)
+
+            to_undiff_copy = to_undiff
             # Should be able to undifference entire series even though only fitted
             # to truncated series:
             self.assert_series_equal(
@@ -115,6 +124,7 @@ class TestDiff:
                 series2=diff.inverse_transform(to_undiff),
                 equal_nan=(not dropna),
             )
+            assert to_undiff == to_undiff_copy
 
     def test_diff_multi_ts(self):
         """
@@ -158,7 +168,8 @@ class TestDiff:
             self.assert_series_equal(self.sine_series, back[0], equal_nan=(not dropna))
             self.assert_series_equal(self.sine_series, back[1], equal_nan=(not dropna))
 
-    def test_diff_stochastic_series(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True] * 5)])
+    def test_diff_stochastic_series(self, component_mask):
         """
         Tests that `Diff` class correctly differences and then undifferences a
         random series with multiple samples.
@@ -172,13 +183,24 @@ class TestDiff:
 
         vals = np.random.rand(10, 5, 10)
         series = TimeSeries.from_values(vals)
+        series_copy = series.copy()
 
         for lags, dropna in test_cases:
+            component_mask = component_mask if not dropna else None
             transformer = Diff(lags=lags, dropna=dropna)
-            new_series = transformer.fit_transform(series)
-            series_back = transformer.inverse_transform(new_series)
+            new_series = transformer.fit_transform(
+                series, component_mask=component_mask
+            )
+            assert series == series_copy
+
+            new_series_copy = new_series.copy()
+            series_back = transformer.inverse_transform(
+                new_series, component_mask=component_mask
+            )
+
             # Should recover original series:
             self.assert_series_equal(series, series_back, equal_nan=(not dropna))
+            assert new_series == new_series_copy
 
     def test_diff_dropna_and_component_mask_specified(self):
         """

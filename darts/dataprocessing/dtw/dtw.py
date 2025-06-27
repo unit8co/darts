@@ -8,13 +8,11 @@ from typing import Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 
 from darts import TimeSeries
 from darts.dataprocessing.dtw.cost_matrix import CostMatrix
 from darts.dataprocessing.dtw.window import CRWindow, NoWindow, Window
 from darts.logging import get_logger, raise_if, raise_if_not
-from darts.timeseries import DIMS
 
 logger = get_logger(__name__)
 
@@ -234,35 +232,27 @@ class DTWAlignment:
         (TimeSeries, TimeSeries)
             Two new TimeSeries instances of the same length, indexed by pd.RangeIndex.
         """
-
-        xa1 = self.series1.data_array(copy=False)
-        xa2 = self.series2.data_array(copy=False)
+        values1 = self.series1.all_values(copy=False)
+        values2 = self.series2.all_values(copy=False)
         path = self.path()
 
-        values1, values2 = xa1.values[path[:, 0]], xa2.values[path[:, 1]]
+        values1, values2 = values1[path[:, 0]], values2[path[:, 1]]
 
-        # We set a RangeIndex for both series:
-        warped_series1 = xr.DataArray(
-            data=values1,
-            dims=xa1.dims,
-            coords={
-                self.series1._time_dim: pd.RangeIndex(values1.shape[0]),
-                DIMS[1]: xa1.coords[DIMS[1]],
-            },
-            attrs=xa1.attrs,
+        idx1 = pd.RangeIndex(values1.shape[0], name=self.series1._time_index.name)
+        idx2 = pd.RangeIndex(values2.shape[0], name=self.series2._time_index.name)
+        warped_series1 = TimeSeries(
+            times=idx1,
+            values=values1,
+            components=self.series1.components,
+            **self.series1._attrs,
         )
 
-        warped_series2 = xr.DataArray(
-            data=values2,
-            dims=xa2.dims,
-            coords={
-                self.series2._time_dim: pd.RangeIndex(values2.shape[0]),
-                DIMS[1]: xa2.coords[DIMS[1]],
-            },
-            attrs=xa2.attrs,
+        warped_series2 = TimeSeries(
+            times=idx2,
+            values=values2,
+            components=self.series2.components,
+            **self.series2._attrs,
         )
-
-        time_dim1, time_dim2 = self.series1._time_dim, self.series2._time_dim
 
         # todo: prevent time information being lost after warping
         # Applying time index from series1 to series2 (take_dates = True) is disabled for consistency reasons
@@ -271,16 +261,7 @@ class DTWAlignment:
         # As a result series1 will not be warped, whereas series2 will be.
         # It could also cause the two series to have different lengths, if len(series1) < len(series2)
         # One could generate intermediate dates, but then the series would not have a consistent frequency
-
-        take_dates = False
-        if take_dates:
-            time_index = warped_series1[time_dim1]
-            time_index = time_index.rename({time_dim1: time_dim2})
-            warped_series2[time_dim2] = time_index
-
-        return TimeSeries.from_xarray(warped_series1), TimeSeries.from_xarray(
-            warped_series2
-        )
+        return warped_series1, warped_series2
 
 
 def dtw(

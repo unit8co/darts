@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
+from darts import TimeSeries
 from darts.logging import get_logger
-from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.historical_forecasts.utils import (
@@ -176,17 +176,18 @@ def _optimized_historical_forecasts_last_points_only(
                 + (forecast_horizon + model.output_chunk_shift - 1) * freq,
                 length=forecast.shape[0],
                 freq=freq * stride,
-                name=series_.time_index.name,
+                name=series_._time_index.name,
             )
 
         forecasts_list.append(
-            TimeSeries.from_times_and_values(
+            TimeSeries(
                 times=times,
                 values=forecast,
-                columns=forecast_components,
+                components=forecast_components,
                 static_covariates=series_.static_covariates,
                 hierarchy=series_.hierarchy,
                 metadata=series_.metadata,
+                copy=False,
             )
         )
     return forecasts_list
@@ -358,7 +359,7 @@ def _optimized_historical_forecasts_all_points(
             start=hist_fct_start + model.output_chunk_shift * series_.freq,
             length=forecast_horizon + (forecast.shape[0] - 1) * stride,
             freq=freq,
-            name=series_.time_index.name,
+            name=series_._time_index.name,
         )
 
         forecasts_ = []
@@ -366,13 +367,14 @@ def _optimized_historical_forecasts_all_points(
             range(0, forecast.shape[0] * stride, stride)
         ):
             forecasts_.append(
-                TimeSeries.from_times_and_values(
+                TimeSeries(
                     times=new_times[step_fct : step_fct + forecast_horizon],
                     values=forecast[idx_ftc],
-                    columns=forecast_components,
+                    components=forecast_components,
                     static_covariates=series_.static_covariates,
                     hierarchy=series_.hierarchy,
                     metadata=series_.metadata,
+                    copy=False,
                 )
             )
 

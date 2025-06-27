@@ -19,11 +19,11 @@ else:
 
 import pandas as pd
 
+from darts import TimeSeries
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

@@ -12,6 +12,7 @@ from typing import Optional, Union
 from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
@@ -19,7 +20,6 @@ from darts.models.forecasting.sklearn_model import (
     SKLearnModel,
     _QuantileModelContainer,
 )
-from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _check_likelihood,

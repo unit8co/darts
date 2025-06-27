@@ -16,11 +16,11 @@ if sys.version_info >= (3, 11):
 else:
     from typing_extensions import Self
 
+from darts import TimeSeries
 from darts.ad.anomaly_model.anomaly_model import AnomalyModel
 from darts.ad.scorers.scorers import AnomalyScorer
 from darts.logging import get_logger, raise_log
 from darts.models.filtering.filtering_model import FilteringModel
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

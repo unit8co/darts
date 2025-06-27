@@ -9,9 +9,9 @@ import numpy as np
 import statsmodels.tsa.holtwinters as hw
 from sklearn.utils import check_random_state
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
-from darts.timeseries import TimeSeries
 from darts.utils.utils import ModelMode, SeasonalityMode, random_method
 
 logger = get_logger(__name__)

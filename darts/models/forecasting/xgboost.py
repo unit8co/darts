@@ -13,6 +13,7 @@ from typing import Optional, Union
 import numpy as np
 import xgboost as xgb
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
@@ -20,7 +21,6 @@ from darts.models.forecasting.sklearn_model import (
     SKLearnModel,
     _QuantileModelContainer,
 )
-from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _check_likelihood,

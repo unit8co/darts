@@ -40,6 +40,7 @@ import torch
 from pytorch_lightning import loggers as pl_loggers
 from torch.utils.data import DataLoader
 
+from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import (
     get_logger,
@@ -53,7 +54,6 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
-from darts.timeseries import TimeSeries
 from darts.utils.data import (
     SequentialTorchInferenceDataset,
     SequentialTorchTrainingDataset,
@@ -1833,6 +1833,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     if predict_likelihood_parameters
                     else None
                 ),
+                "copy": False,
             },
         )
         return ts_forecasts
