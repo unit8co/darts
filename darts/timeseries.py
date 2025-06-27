@@ -85,7 +85,7 @@ DIMS = ("time", "component", "sample")
 TIME_AX = 0
 COMP_AX = 1
 SMPL_AX = 2
-AXES = {"time": 0, "component": 1, "sample": 2}
+AXES = {"time": TIME_AX, "component": COMP_AX, "sample": SMPL_AX}
 
 VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
 STATIC_COV_TAG = "static_covariates"
@@ -106,11 +106,9 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
-        copy=True,
+        copy: bool = True,
     ):
-        """Create a ``TimeSeries``.
-
-        It is recommended to use the factory methods to create TimeSeries instead.
+        """Create a ``TimeSeries`` from a time index `times` and values `values`.
 
         See Also
         --------
@@ -228,7 +226,7 @@ class TimeSeries:
             or np.issubdtype(values.dtype, np.float32)
         ):
             logger.warning(
-                "TimeSeries is using a numeric type different from np.float32 or np.float64. "
+                "TimeSeries is using a numeric type different from numpy.float32 or numpy.float64. "
                 "Not all functionalities may work properly. It is recommended casting your data to floating "
                 "point numbers before using TimeSeries."
             )
@@ -245,7 +243,7 @@ class TimeSeries:
 
         if not len(times) == len(values):
             raise_log(
-                ValueError("The time index and values must have to same length."),
+                ValueError("The time index and values must have the same length."),
                 logger,
             )
 
@@ -1244,6 +1242,8 @@ class TimeSeries:
             metadata=metadata,
         )
 
+    pd.DataFrame
+
     @classmethod
     def from_times_and_values(
         cls,
@@ -1256,6 +1256,7 @@ class TimeSeries:
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
         metadata: Optional[dict] = None,
+        copy: bool = True,
     ) -> Self:
         """Create a ``TimeSeries`` from a time index and value array.
 
@@ -1267,8 +1268,8 @@ class TimeSeries:
             `fill_missing_dates` can in some cases solve these issues (filling holes with NaN, or with the provided
             `fillna_value` numeric value, if any).
         values
-            A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
-            and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
+            A Numpy array, or array-like of values for the TimeSeries. Both 2-dimensional arrays, for deterministic
+            series, and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
             should be (time, component), and in the latter case (time, component, sample).
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
@@ -1346,6 +1347,7 @@ class TimeSeries:
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
+            copy=copy,
         )
 
     @classmethod
@@ -1879,7 +1881,7 @@ class TimeSeries:
         Parameters
         ----------
         dtype
-            A NumPy dtype (np.float32 or np.float64)
+            A NumPy dtype (numpy.float32 or numpy.float64)
 
         Returns
         -------
@@ -1944,7 +1946,7 @@ class TimeSeries:
 
         Returns
         -------
-        np.ndarray
+        numpy.ndarray
             The first values of every component of this deterministic time series
         """
         self._assert_deterministic()
@@ -1955,7 +1957,7 @@ class TimeSeries:
 
         Returns
         -------
-        np.ndarray
+        numpy.ndarray
             The last values of every component of this deterministic time series
         """
         self._assert_deterministic()
@@ -2213,7 +2215,7 @@ class TimeSeries:
 
         Returns
         -------
-        pd.DataFrame
+        pandas.DataFrame
             A pandas.DataFrame containing a row for every gap (rows with all-NaN values in underlying DataFrame)
             in this time series. The DataFrame contains three columns that include the start and end time stamps
             of the gap and the integer length of the gap (in `self.freq` units if the series is indexed
@@ -2382,7 +2384,7 @@ class TimeSeries:
 
         Returns
         -------
-        Union[pd.Timestamp, int]
+        Union[pandas.Timestamp, int]
             The index value corresponding to the provided point in the series.
             If the series is indexed by a `pandas.DatetimeIndex`, returns a `pandas.Timestamp`.
             If the series is indexed by a `pandas.RangeIndex`, returns an integer.
@@ -2410,8 +2412,8 @@ class TimeSeries:
         split_point
             A timestamp, float or integer. If float, represents the proportion of the series to include in the
             first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position after
-            which the split is performed. A pd.Timestamp can be provided for TimeSeries that are indexed by a
-            pd.DatetimeIndex. In such cases, the timestamp will be contained in the first TimeSeries, but not
+            which the split is performed. A pandas.Timestamp can be provided for TimeSeries that are indexed by a
+            pandas.DatetimeIndex. In such cases, the timestamp will be contained in the first TimeSeries, but not
             in the second one. The timestamp itself does not have to appear in the original TimeSeries index.
 
         Returns
@@ -2432,8 +2434,8 @@ class TimeSeries:
         split_point
             A timestamp, float or integer. If float, represents the proportion of the series to include in the
             first TimeSeries (must be between 0.0 and 1.0). If integer, represents the index position before
-            which the split is performed. A pd.Timestamp can be provided for TimeSeries that are indexed by a
-            pd.DatetimeIndex. In such cases, the timestamp will be contained in the second TimeSeries, but not
+            which the split is performed. A pandas.Timestamp can be provided for TimeSeries that are indexed by a
+            pandas.DatetimeIndex. In such cases, the timestamp will be contained in the second TimeSeries, but not
             in the first one. The timestamp itself does not have to appear in the original TimeSeries index.
 
         Returns
@@ -2658,7 +2660,7 @@ class TimeSeries:
 
         Returns
         -------
-        np.ndarray
+        numpy.ndarray
             The values of this series, over the time-span common to both series.
         """
         vals = self.all_values(copy=copy)
@@ -2687,7 +2689,7 @@ class TimeSeries:
 
         Returns
         -------
-        Union[pd.DatetimeIndex, pd.RangeIndex]
+        Union[pandas.DatetimeIndex, pandas.RangeIndex]
             The time index of this series, over the time-span common to both series.
         """
 
@@ -3469,7 +3471,7 @@ class TimeSeries:
         Parameters
         ----------
         attribute
-            A pd.DatatimeIndex attribute which will serve as the basis of the new column(s).
+            A pandas.DatatimeIndex attribute which will serve as the basis of the new column(s).
         one_hot
             Boolean value indicating whether to add the specified attribute as a one hot encoding
             (results in more columns).
@@ -3609,7 +3611,7 @@ class TimeSeries:
         [[0.5]
         [2.5]
         [4.5]]
-        >>> downsampled_reduce_ts = ts.resample(freq="30min", method="reduce", method_args={"func":np.mean})
+        >>> downsampled_reduce_ts = ts.resample(freq="30min", method="reduce", method_args={"func": np.mean})
         >>> print(downsampled_reduce_ts.values())
         [[0.5]
         [2.5]
@@ -4936,8 +4938,8 @@ class TimeSeries:
 
         Returns
         -------
-        tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]
-            The `times` with inserted missing dates and `values` with `np.nan` for the newly inserted dates.
+        tuple[Union[pandas.DatetimeIndex, pandas.RangeIndex], numpy.ndarray]
+            The `times` with inserted missing dates and `values` with `numpy.nan` for the newly inserted dates.
         """
 
         if freq is not None:
@@ -5092,8 +5094,8 @@ class TimeSeries:
 
         Returns
         -------
-        tuple[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray]
-            The resampled `times` with frequency `freq` and `values` with `np.nan` for the newly inserted dates.
+        tuple[Union[pandas.DatetimeIndex, pandas.RangeIndex], numpy.ndarray]
+            The resampled `times` with frequency `freq` and `values` with `numpy.nan` for the newly inserted dates.
         """
         times, values = cls._sort_index(times=times, values=values)
 
@@ -5455,14 +5457,14 @@ class TimeSeries:
         return (
             self.data_array(copy=False)
             .__repr__()
-            .replace("xarray.DataArray", "TimeSeries (DataArray)")
+            .replace("xarray.DataArray", "TimeSeries")
         )
 
     def _repr_html_(self):
         return (
             self.data_array(copy=False)
             ._repr_html_()
-            .replace("xarray.DataArray", "TimeSeries (DataArray)")
+            .replace("xarray.DataArray", "TimeSeries")
         )
 
     def __copy__(self, deep: bool = True):
@@ -5495,7 +5497,7 @@ class TimeSeries:
 
         The supported index types are the following base types as a single value, a list or a slice:
 
-        - pd.Timestamp -> return a TimeSeries corresponding to the value(s) at the given timestamp(s).
+        - pandas.Timestamp -> return a TimeSeries corresponding to the value(s) at the given timestamp(s).
         - str -> return a TimeSeries including the column(s) (components) specified as str.
         - int -> return a TimeSeries with the value(s) at the given row (time) index.
 

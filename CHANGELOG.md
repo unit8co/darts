@@ -11,6 +11,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Migrated the `TimeSeries` backend from `xarray` to `numpy`, resulting in drastic performance improvements throughout Darts without any changes to the user experience! We're talking about free speed boosts for creating and manipulating series of up to multiple orders of magnitude, which will positively affect any downstream task. You can find some benchmarks in the images [here](https://github.com/unit8co/darts/pull/2807).
+  - Added parameter `copy: bool = True` to all TimeSeries constructor and factory methods (`TimeSeries.from_*`). This allows to create your time series without copying the data. Defaults to `True` to maintain the existing behavior.
+  - Method `__init__()` can now also be used to create new series in a similar way as `from_times_and_values()`.
+  - 🔴 Comparison operators `>, >=, <=, <` now return a `numpy.ndarray` instead of a `xarray.DataArray`.
+  -
 - Added support for training `RegressionModel` and `TorchForecastingModel` with stridden training samples by passing parameter `stride` to `fit()`. This allows to reduce the size of the training set or apply elaborate training scenarios. [#2624](https://github.com/unit8co/darts/pull/2529) by [Antoine Madrona](https://github.com/madtoinou)
 - Improvements `NLinearModel`: Default value for `normalize` changed from `False` to `True` to reflect the source paper. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Renamed some regression models for consistency and clarity reasons. [#2774](https://github.com/unit8co/darts/pull/2774) by [Jonas Blanc](https://github.com/jonasblanc).
@@ -18,7 +23,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - 🟠 Renamed `RandomForest` to `RandomForestModel`. Using `RandomForest` will raise a depraction warning.
   - 🔴 Renamed `RegressionModelWithCategoricalCovariates` to `SKLearnModelWithCategoricalCovariates`. Removed `RegressionModelWithCategoricalCovariates`
 - Improvements to `TorchForecastingModel`: [#2802](https://github.com/unit8co/darts/pull/2802) by [Dennis Bader](https://github.com/dennisbader).
-  - Drastically improved prediction speed which is now up to 5.4 times as fast before. This affects `predict()`, `historcial_forecasts()`, `backtest()`, `gridsearch()` and `residuals()`.
+  - Drastically improved prediction speed which is now up to 5.4 times as fast before. This affects `predict()`, `historical_forecasts()`, `backtest()`, `gridsearch()` and `residuals()`.
   - Added parameter `values_only` to method `predict_from_dataset()` which will return a tuple of (prediction `np.ndarray`, target series schema, prediction start time) instead of `TimeSeries` objects. This allows to completely bypass `TimeSeries` for model inference with custom datasets.
 - 🔴 Improvements to `TorchForecastingModel` datasets: [#2798](https://github.com/unit8co/darts/pull/2798) by [Dennis Bader](https://github.com/dennisbader).
   - We simplified the training and inference datasets. Instead of having covariates specific datasets, the new datasets now support all combinations of covariates natively:

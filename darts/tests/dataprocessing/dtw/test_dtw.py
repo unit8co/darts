@@ -24,8 +24,6 @@ class TestDynamicTimeWarping:
     series2 = tg.sine_timeseries(
         length=length, value_frequency=freq, value_phase=np.pi / 4, value_y_offset=5
     )
-    series1_copy = series1.copy()
-    series2_copy = series2.copy()
 
     def test_shift(self):
         input1 = [

@@ -458,10 +458,6 @@ class TestSKLearnModels:
             self.sine_univariate1.drop_after(50), self.sine_univariate2
         )
         new_model.fit(self.sine_univariate1.drop_after(50), self.sine_univariate2)
-
-        print(new_model.predict(5))
-        print(deprecated_model.predict(5))
-
         assert new_model.predict(5) == deprecated_model.predict(5)
 
     @pytest.mark.parametrize("config", product(models, [True, False]))
