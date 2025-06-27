@@ -1225,6 +1225,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             start=pred_time - 1 * series_.freq,
                             length=1,
                             freq=series_.freq,
+                            name=series_._time_index.name,
                         ),
                         values=np.array([np.nan]),
                         copy=False,
@@ -1268,6 +1269,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             start=last_points_times[0],
                             end=last_points_times[-1],
                             freq=series_.freq * stride,
+                            name=series_._time_index.name,
                         ),
                         values=np.array(last_points_values),
                         components=(
@@ -1921,6 +1923,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 fitted_values = TimeSeries(
                     times=series.time_index,
                     values=model.fitted_values,
+                    copy=False,
                 )
                 if data_transformers and "series" in data_transformers:
                     fitted_values = _apply_inverse_data_transformers(

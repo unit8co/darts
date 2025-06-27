@@ -875,10 +875,9 @@ class SequentialEncoderTransformer:
                 # fit the transformer on all encoded values by concatenating multi-series input encodings
                 vals = np.concatenate([cov.values(copy=False) for cov in covariates])
                 self.transformer.fit(
-                    series=TimeSeries(
-                        times=pd.RangeIndex(stop=len(vals)),
+                    series=TimeSeries.from_values(
                         values=vals,
-                        components=covariates[0].components,
+                        columns=covariates[0].components,
                         copy=False,
                     ),
                     component_mask=self.transform_mask,
