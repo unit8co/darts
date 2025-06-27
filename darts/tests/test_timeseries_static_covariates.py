@@ -843,7 +843,7 @@ class TestTimeSeriesStaticCovariate:
         self.helper_test_transfer(tag, ts_stoch, ts_stoch.kurtosis())
 
         # will append "_quantile" to component names
-        self.helper_test_transfer_values(tag, ts_stoch, ts_stoch.quantile_timeseries())
+        self.helper_test_transfer_values(tag, ts_stoch, ts_stoch.quantile())
         self.helper_test_transfer_values(tag, ts_stoch, ts_stoch.quantile(0.5))
         # will change component names
         self.helper_test_transfer_values(tag, ts, ts.add_datetime_attribute("hour"))
@@ -868,7 +868,7 @@ class TestTimeSeriesStaticCovariate:
     @staticmethod
     def helper_test_transfer_values(tag, ts, ts_new):
         """values of static cov or metadata must match but not row index (component names).
-        I.e. series.quantile_timeseries() adds "_quantiles" to component names
+        I.e. series.quantile() adds "_quantiles" to component names
         """
         if tag == STATIC_COV_TAG:
             assert not ts_new.static_covariates.index.equals(ts.components)
