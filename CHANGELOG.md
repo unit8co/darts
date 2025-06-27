@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Migrated the `TimeSeries` backend from `xarray` to `numpy`, resulting in drastic performance improvements throughout Darts without any changes to the user experience! We're talking about free speed boosts for creating and manipulating series of up to multiple orders of magnitude, which will positively affect any downstream task. You can find some benchmarks in the images [here](https://github.com/unit8co/darts/pull/2807).
+- Migrated the `TimeSeries` backend from `xarray` to `numpy`, resulting in drastic performance improvements throughout Darts without any changes to the user experience! We're talking about free speed boosts for creating and manipulating series of up to multiple orders of magnitude, which will positively affect any downstream task. You can find some benchmarks in the images [here](https://github.com/unit8co/darts/pull/2807). [#2807](https://github.com/unit8co/darts/pull/2807) by [Dennis Bader](https://github.com/dennisbader).
   - Added parameter `copy: bool = True` to all TimeSeries constructor and factory methods (`TimeSeries.from_*`). This allows to create your time series without copying the data. Defaults to `True` to maintain the existing behavior.
   - Method `__init__()` can now also be used to create new series in a similar way as `from_times_and_values()`.
   - 🔴 Comparison operators `>, >=, <=, <` now return a `numpy.ndarray` instead of a `xarray.DataArray`.
