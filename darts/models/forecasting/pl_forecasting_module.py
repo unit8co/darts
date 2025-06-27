@@ -4,6 +4,7 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 
 import copy
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from functools import wraps
 from typing import Any, Optional, Union
 
@@ -323,7 +324,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         batch: TorchInferenceBatch,
         batch_idx: int,
         dataloader_idx: Optional[int] = None,
-    ) -> tuple[torch.Tensor, Any, Any]:
+    ) -> tuple[
+        torch.Tensor,
+        Sequence[Optional[dict[str, Any]]],
+        Sequence[Any],
+    ]:
         """performs the prediction step
 
         batch
