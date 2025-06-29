@@ -832,8 +832,9 @@
 <span class="sd">    label_name</span>
 <span class="sd">        Name that will appear in the legend.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">component</span><span class="p">[:</span><span class="mi">10</span><span class="p">]):</span>
-        <span class="n">comp</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
+    <span class="n">data_array</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">data_array</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">data_array</span><span class="o">.</span><span class="n">component</span><span class="p">[:</span><span class="mi">10</span><span class="p">]):</span>
+        <span class="n">comp</span> <span class="o">=</span> <span class="n">data_array</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">component</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">comp</span><span class="o">.</span><span class="n">sample</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">central_series</span> <span class="o">=</span> <span class="n">comp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="s2">&quot;sample&quot;</span><span class="p">)</span>

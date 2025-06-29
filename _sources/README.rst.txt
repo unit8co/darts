@@ -496,7 +496,7 @@ on bringing more models and features.
      - 
      - 
      - 
-   * - `RegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel>`_\ : wrapper around any scikit-learn-like regression model
+   * - `SKLearnModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel>`_\ : wrapper around any scikit-learn-like regression model
      - 
      - ✅ ✅
      - ✅ ✅ ✅
@@ -508,7 +508,7 @@ on bringing more models and features.
      - ✅ ✅ ✅
      - ✅ ✅
      - ✅
-   * - `RandomForest <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest>`_
+   * - `RandomForestModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel>`_
      - 
      - ✅ ✅
      - ✅ ✅ ✅

@@ -186,6 +186,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.special</span><span class="w"> </span><span class="kn">import</span> <span class="n">inv_boxcox</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.stats</span><span class="w"> </span><span class="kn">import</span> <span class="n">boxcox</span><span class="p">,</span> <span class="n">boxcox_normmax</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers.fittable_data_transformer</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">FittableDataTransformer</span><span class="p">,</span>
 <span class="p">)</span>
@@ -193,7 +194,6 @@
     <span class="n">InvertibleDataTransformer</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -345,7 +345,13 @@
             <span class="p">[</span><span class="n">boxcox</span><span class="p">(</span><span class="n">vals</span><span class="p">[:,</span> <span class="n">i</span><span class="p">],</span> <span class="n">lmbda</span><span class="o">=</span><span class="n">lmbda</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span>
         <span class="p">)</span>
         <span class="n">transformed_vals</span> <span class="o">=</span> <span class="n">BoxCox</span><span class="o">.</span><span class="n">unstack_samples</span><span class="p">(</span><span class="n">transformed_vals</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">transformed_vals</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+            <span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+            <span class="n">values</span><span class="o">=</span><span class="n">transformed_vals</span><span class="p">,</span>
+            <span class="n">components</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">series</span><span class="o">.</span><span class="n">_attrs</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="BoxCox.ts_inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.boxcox.html#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">ts_inverse_transform</span><span class="p">(</span>
@@ -360,7 +366,13 @@
         <span class="n">inv_transformed_vals</span> <span class="o">=</span> <span class="n">BoxCox</span><span class="o">.</span><span class="n">unstack_samples</span><span class="p">(</span>
             <span class="n">inv_transformed_vals</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">series</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">inv_transformed_vals</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+            <span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+            <span class="n">values</span><span class="o">=</span><span class="n">inv_transformed_vals</span><span class="p">,</span>
+            <span class="n">components</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">series</span><span class="o">.</span><span class="n">_attrs</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
 </pre></div>
 
               </div>

@@ -191,12 +191,28 @@
 <span class="n">SUPPORTED_SAMPLE_WEIGHT</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="s2">&quot;exponential&quot;</span><span class="p">}</span>
 
 
-<div class="viewcode-block" id="CovariateType"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.utils.html#darts.utils.data.utils.CovariateType">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CovariateType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
-    <span class="n">PAST</span> <span class="o">=</span> <span class="s2">&quot;past&quot;</span>
-    <span class="n">FUTURE_PAST</span> <span class="o">=</span> <span class="s2">&quot;future_past&quot;</span>
-    <span class="n">HISTORIC_FUTURE</span> <span class="o">=</span> <span class="s2">&quot;historic_future&quot;</span>
-    <span class="n">FUTURE</span> <span class="o">=</span> <span class="s2">&quot;future&quot;</span>
-    <span class="n">NONE</span> <span class="o">=</span> <span class="kc">None</span></div>
+<div class="viewcode-block" id="FeatureType"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.utils.html#darts.utils.data.utils.FeatureType">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">FeatureType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">PAST_TARGET</span> <span class="o">=</span> <span class="s2">&quot;past_target&quot;</span>
+    <span class="n">FUTURE_TARGET</span> <span class="o">=</span> <span class="s2">&quot;future_target&quot;</span>
+    <span class="n">PAST_COVARIATES</span> <span class="o">=</span> <span class="s2">&quot;past_covariates&quot;</span>
+    <span class="n">FUTURE_PAST_COVARIATES</span> <span class="o">=</span> <span class="s2">&quot;future_past_covariates&quot;</span>
+    <span class="n">HISTORIC_FUTURE_COVARIATES</span> <span class="o">=</span> <span class="s2">&quot;historic_future_covariates&quot;</span>
+    <span class="n">FUTURE_COVARIATES</span> <span class="o">=</span> <span class="s2">&quot;future_covariates&quot;</span>
+    <span class="n">STATIC_COVARIATES</span> <span class="o">=</span> <span class="s2">&quot;static_covariates&quot;</span>
+    <span class="n">SAMPLE_WEIGHT</span> <span class="o">=</span> <span class="s2">&quot;sample_weight&quot;</span></div>
+
+
+<span class="c1"># for extracting feature index boundaries</span>
+
+<span class="n">_SERIES_TYPES</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">FeatureType</span><span class="o">.</span><span class="n">PAST_TARGET</span><span class="p">,</span>
+    <span class="n">FeatureType</span><span class="o">.</span><span class="n">FUTURE_TARGET</span><span class="p">,</span>
+    <span class="n">FeatureType</span><span class="o">.</span><span class="n">PAST_COVARIATES</span><span class="p">,</span>
+    <span class="n">FeatureType</span><span class="o">.</span><span class="n">FUTURE_PAST_COVARIATES</span><span class="p">,</span>
+    <span class="n">FeatureType</span><span class="o">.</span><span class="n">HISTORIC_FUTURE_COVARIATES</span><span class="p">,</span>
+    <span class="n">FeatureType</span><span class="o">.</span><span class="n">FUTURE_COVARIATES</span><span class="p">,</span>
+    <span class="n">FeatureType</span><span class="o">.</span><span class="n">SAMPLE_WEIGHT</span><span class="p">,</span>
+<span class="p">]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_matching_index</span><span class="p">(</span><span class="n">ts_target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">ts_covariate</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
@@ -276,9 +292,10 @@
 
         <span class="c1"># create sequence of series for tabularization</span>
         <span class="n">sample_weight</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">TimeSeries</span><span class="p">(</span>
                 <span class="n">times</span><span class="o">=</span><span class="n">target_i</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
                 <span class="n">values</span><span class="o">=</span><span class="n">weights</span><span class="p">[</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">target_i</span><span class="p">)</span> <span class="p">:],</span>
+                <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">target_i</span> <span class="ow">in</span> <span class="n">target_series</span>
         <span class="p">]</span>

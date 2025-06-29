@@ -28,7 +28,6 @@
         darts.models.forecasting.prophet_model
         darts.models.forecasting.random_forest
         darts.models.forecasting.regression_ensemble_model
-        darts.models.forecasting.regression_model
         darts.models.forecasting.rnn_model
         darts.models.forecasting.sf_auto_arima
         darts.models.forecasting.sf_auto_ces
@@ -39,6 +38,7 @@
         darts.models.forecasting.sf_croston
         darts.models.forecasting.sf_model
         darts.models.forecasting.sf_tbats
+        darts.models.forecasting.sklearn_model
         darts.models.forecasting.tcn_model
         darts.models.forecasting.tft_model
         darts.models.forecasting.tft_submodels

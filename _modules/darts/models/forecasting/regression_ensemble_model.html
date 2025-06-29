@@ -183,12 +183,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.ensemble_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">EnsembleModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">ForecastingModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.linear_regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegressionModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">concatenate</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.sklearn_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">SKLearnModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -212,7 +212,7 @@
 <span class="sd">        The provided regression model must implement ``fit()`` and ``predict()`` methods</span>
 <span class="sd">        (e.g. scikit-learn regression models). Note that here the regression model is used to learn how to</span>
 <span class="sd">        best ensemble the individual forecasting models&#39; forecasts. It is not the same usage of regression</span>
-<span class="sd">        as in :class:`RegressionModel`, where the regression model is used to produce forecasts based on the</span>
+<span class="sd">        as in :class:`SKLearnModel`, where the regression model is used to produce forecasts based on the</span>
 <span class="sd">        lagged series.</span>
 
 <span class="sd">        If `future_covariates` or `past_covariates` are provided at training or inference time,</span>
@@ -299,7 +299,7 @@
             <span class="n">regression_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
                 <span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">fit_intercept</span><span class="o">=</span><span class="kc">False</span>
             <span class="p">)</span>
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regression_model</span><span class="p">,</span> <span class="n">RegressionModel</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">regression_model</span><span class="p">,</span> <span class="n">SKLearnModel</span><span class="p">):</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="n">regression_model</span><span class="o">.</span><span class="n">multi_models</span><span class="p">,</span>
                 <span class="s2">&quot;Cannot use `regression_model` that was created with `multi_models = False`.&quot;</span><span class="p">,</span>
@@ -308,7 +308,7 @@
             <span class="n">regression_model</span> <span class="o">=</span> <span class="n">regression_model</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># scikit-learn like model</span>
-            <span class="n">regression_model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span>
+            <span class="n">regression_model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span>
                 <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">regression_model</span>
             <span class="p">)</span>
 
@@ -320,7 +320,7 @@
             <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">regression_model</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="p">:</span> <span class="n">RegressionModel</span> <span class="o">=</span> <span class="n">regression_model</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">regression_model</span><span class="p">:</span> <span class="n">SKLearnModel</span> <span class="o">=</span> <span class="n">regression_model</span>
 
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">regression_train_n_points</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
@@ -626,6 +626,7 @@
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
         <span class="n">is_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="ow">or</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="n">predictions</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
@@ -638,6 +639,7 @@
                 <span class="n">future_covariates</span><span class="o">=</span><span class="n">prediction</span><span class="p">,</span>
                 <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">serie</span><span class="p">,</span> <span class="n">prediction</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
         <span class="p">]</span>

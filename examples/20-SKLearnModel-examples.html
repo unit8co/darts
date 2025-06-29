@@ -446,8 +446,8 @@
   </a>
   <ul class="visible nav section-nav flex-column">
    <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#RegressionModel">
-     RegressionModel
+    <a class="reference internal nav-link" href="#SKLearnModel">
+     SKLearnModel
     </a>
     <ul class="nav section-nav flex-column">
      <li class="toc-h3 nav-item toc-entry">
@@ -810,7 +810,7 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
 </script></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -829,7 +829,7 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
     <span class="n">CatBoostModel</span><span class="p">,</span>
     <span class="n">LightGBMModel</span><span class="p">,</span>
     <span class="n">LinearRegressionModel</span><span class="p">,</span>
-    <span class="n">RegressionModel</span><span class="p">,</span>
+    <span class="n">SKLearnModel</span><span class="p">,</span>
     <span class="n">XGBModel</span><span class="p">,</span>
 <span class="p">)</span>
 </pre></div>
@@ -878,20 +878,20 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_4_0.png" src="../_images/examples_20-RegressionModel-examples_4_0.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_4_0.png" src="../_images/examples_20-SKLearnModel-examples_4_0.png" />
 </div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_4_1.png" src="../_images/examples_20-RegressionModel-examples_4_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_4_1.png" src="../_images/examples_20-SKLearnModel-examples_4_1.png" />
 </div>
 </div>
 <section id="Darts-Regression-Models">
 <h3>Darts Regression Models<a class="headerlink" href="#Darts-Regression-Models" title="Permalink to this heading">¶</a></h3>
 <p>Regression is a statistical method used in data science and machine learning to model the relationship between a dependent variable (target <code class="docutils literal notranslate"><span class="pre">y</span></code>) and one or more independent variables (features <code class="docutils literal notranslate"><span class="pre">X</span></code>).</p>
-<p>For convenience, the core Darts package ships with a couple of regression models: - <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code>: fully integrated sklearn models - <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>: wrap the Darts Model API around any sklearn-like model - <code class="docutils literal notranslate"><span class="pre">XGBModel</span></code>: wrapper around <a class="reference external" href="https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor">XGBoost’s</a> <code class="docutils literal notranslate"><span class="pre">XGBRegressor</span></code></p>
+<p>For convenience, the core Darts package ships with a couple of regression models: - <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">RandomForestModel</span></code>: fully integrated sklearn models - <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code>: wrap the Darts Model API around any sklearn-like model - <code class="docutils literal notranslate"><span class="pre">XGBModel</span></code>: wrapper around <a class="reference external" href="https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor">XGBoost’s</a> <code class="docutils literal notranslate"><span class="pre">XGBRegressor</span></code></p>
 <p>In addition to these, we also offer a unified API for some state of the art regression models that can be installed following our <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">installation guide</a>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>: wrapper around <a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html#lightgbm-lgbmregressor">LightGBM’s</a> <code class="docutils literal notranslate"><span class="pre">LightGBMRegressor</span></code></p></li>
@@ -917,7 +917,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <li><p><code class="docutils literal notranslate"><span class="pre">lags_past_covariates</span></code>: optionally, lags for a past covariates series (external past-observed features to help improve forecasts)</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">lags_future_covariates</span></code>: optionally, lags for a future covariates series (external future-known features to help improve forecasts)</p></li>
 </ul>
-<p>There are multiple ways to define your lags <code class="docutils literal notranslate"><span class="pre">(int,</span> <span class="pre">List[int],</span> <span class="pre">Tuple[int,</span> <span class="pre">int],</span> <span class="pre">...)</span></code>. You can find out more about this in the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel">RegressionModel docs</a>.</p>
+<p>There are multiple ways to define your lags <code class="docutils literal notranslate"><span class="pre">(int,</span> <span class="pre">List[int],</span> <span class="pre">Tuple[int,</span> <span class="pre">int],</span> <span class="pre">...)</span></code>. You can find out more about this in the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel">SKLearnModel docs</a>.</p>
 </section>
 <section id="Lagged-data-extraction">
 <h2>Lagged data extraction<a class="headerlink" href="#Lagged-data-extraction" title="Permalink to this heading">¶</a></h2>
@@ -961,7 +961,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_6_1.png" src="../_images/examples_20-RegressionModel-examples_6_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_6_1.png" src="../_images/examples_20-SKLearnModel-examples_6_1.png" />
 </div>
 </div>
 </section>
@@ -999,7 +999,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_8_1.png" src="../_images/examples_20-RegressionModel-examples_8_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_8_1.png" src="../_images/examples_20-SKLearnModel-examples_8_1.png" />
 </div>
 </div>
 </section>
@@ -1037,7 +1037,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_10_1.png" src="../_images/examples_20-RegressionModel-examples_10_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_10_1.png" src="../_images/examples_20-SKLearnModel-examples_10_1.png" />
 </div>
 </div>
 <p>And what if we added some calendar information? We can let the model generate calendar attribute encodings for free with <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>.</p>
@@ -1068,7 +1068,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_12_0.png" src="../_images/examples_20-RegressionModel-examples_12_0.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_12_0.png" src="../_images/examples_20-SKLearnModel-examples_12_0.png" />
 </div>
 </div>
 </section>
@@ -1106,7 +1106,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_14_1.png" src="../_images/examples_20-RegressionModel-examples_14_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_14_1.png" src="../_images/examples_20-SKLearnModel-examples_14_1.png" />
 </div>
 </div>
 </section>
@@ -1149,7 +1149,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_16_1.png" src="../_images/examples_20-RegressionModel-examples_16_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_16_1.png" src="../_images/examples_20-SKLearnModel-examples_16_1.png" />
 </div>
 </div>
 </section>
@@ -1198,7 +1198,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_18_1.png" src="../_images/examples_20-RegressionModel-examples_18_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_18_1.png" src="../_images/examples_20-SKLearnModel-examples_18_1.png" />
 </div>
 </div>
 </section>
@@ -1257,7 +1257,7 @@ Value_NE5_q0.95 : 20418.7421875
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_21_1.png" src="../_images/examples_20-RegressionModel-examples_21_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_21_1.png" src="../_images/examples_20-SKLearnModel-examples_21_1.png" />
 </div>
 </div>
 </section>
@@ -1292,7 +1292,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_24_1.png" src="../_images/examples_20-RegressionModel-examples_24_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_24_1.png" src="../_images/examples_20-SKLearnModel-examples_24_1.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -1337,22 +1337,22 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 <section id="Conclusion">
 <h3>Conclusion<a class="headerlink" href="#Conclusion" title="Permalink to this heading">¶</a></h3>
 <p>By tabularizing the data and unifying the API across libraries, Darts closes the gap between traditional regression problems and timeseries forecasting.</p>
-<p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> and its sub-classes offer a wide range of functionalities which can be used to build strong models in just a few lines of codes.</p>
+<p><code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> and its sub-classes offer a wide range of functionalities which can be used to build strong models in just a few lines of codes.</p>
 </section>
 </section>
 </section>
 <section id="Appendix">
 <h1>Appendix<a class="headerlink" href="#Appendix" title="Permalink to this heading">¶</a></h1>
-<section id="RegressionModel">
-<h2>RegressionModel<a class="headerlink" href="#RegressionModel" title="Permalink to this heading">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> wraps the Darts API around any sklearn regression model. With this we can use the model in the same way as any other Darts forecasting models.</p>
+<section id="SKLearnModel">
+<h2>SKLearnModel<a class="headerlink" href="#SKLearnModel" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> wraps the Darts API around any sklearn regression model. With this we can use the model in the same way as any other Darts forecasting models.</p>
 <p>As an examnple, fitting a Bayesian ridge regression on the example dataset takes only a few lines:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span>
+<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">(</span><span class="mi">48</span><span class="p">,</span> <span class="mi">24</span><span class="p">),</span>
     <span class="n">model</span><span class="o">=</span><span class="n">BayesianRidge</span><span class="p">(),</span>
@@ -1370,8 +1370,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
-</pre></div>
+<div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
@@ -1382,7 +1381,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_29_1.png" src="../_images/examples_20-RegressionModel-examples_29_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_29_1.png" src="../_images/examples_20-SKLearnModel-examples_29_1.png" />
 </div>
 </div>
 <p>The underlying model methods remain accessible and by combining the <code class="docutils literal notranslate"><span class="pre">BasesianRidge.coef_</span></code> attribute with the <code class="docutils literal notranslate"><span class="pre">RegressionModel.lagged_feature_names</span></code> attribute, the coefficients of the regression model can easily be interpreted:</p>
@@ -1415,12 +1414,12 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
  &#39;Value_NE5_target_lag-20&#39;: 0.12892167797527437}
 </pre></div></div>
 </div>
-<p>One of the limitation of the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> class is that it does not provide probabilistic forecasting out of the box but it is possible to implement it by creating a new class inheriting from both <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">_LikelihoodMixin</span></code> and implementing the missing methods (the <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> class can be use as a template).</p>
+<p>One of the limitation of the <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> class is that it does not provide probabilistic forecasting out of the box but it is possible to implement it by creating a new class inheriting from both <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> and <code class="docutils literal notranslate"><span class="pre">_LikelihoodMixin</span></code> and implementing the missing methods (the <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> class can be use as a template).</p>
 <section id="Custom-model">
 <h3>Custom model<a class="headerlink" href="#Custom-model" title="Permalink to this heading">¶</a></h3>
 <p>You can even implement your own model as long as it works with tabular data and provides the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1445,7 +1444,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 
 
 <span class="n">window_weights</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span>
-<span class="n">model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
     <span class="n">model</span><span class="o">=</span><span class="n">CustomRegressionModel</span><span class="p">(</span><span class="n">window_weights</span><span class="p">),</span>
@@ -1461,8 +1460,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 </div>
 </div>
 <div class="nboutput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
-</pre></div>
+<div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
@@ -1473,7 +1471,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_34_1.png" src="../_images/examples_20-RegressionModel-examples_34_1.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_34_1.png" src="../_images/examples_20-SKLearnModel-examples_34_1.png" />
 </div>
 </div>
 </section>
@@ -1532,7 +1530,7 @@ CatboostModel MAPE: 2.373275454432286
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_20-RegressionModel-examples_36_2.png" src="../_images/examples_20-RegressionModel-examples_36_2.png" />
+<img alt="../_images/examples_20-SKLearnModel-examples_36_2.png" src="../_images/examples_20-SKLearnModel-examples_36_2.png" />
 </div>
 </div>
 </section>

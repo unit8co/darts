@@ -1,0 +1,3 @@
+.. automodule:: darts.utils.data.torch_datasets.inference_dataset
+   :members:
+   :undoc-members:

@@ -479,7 +479,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -644,11 +644,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -696,6 +691,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -763,28 +763,18 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -803,7 +793,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -916,7 +906,7 @@
                 
   <span class="target" id="module-darts.utils.multioutput"></span><dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.multioutput.MultiOutputRegressor">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.multioutput.</span></span><span class="sig-name descname"><span class="pre">MultiOutputRegressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_set_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_weight_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/multioutput.html#MultiOutputRegressor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.multioutput.MultiOutputRegressor" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.multioutput.</span></span><span class="sig-name descname"><span class="pre">MultiOutputRegressor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">estimator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_set_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">eval_weight_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/multioutput.html#MultiOutputRegressor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.multioutput.MultiOutputRegressor" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">MultiOutputRegressor</span></code></p>
 <p><code class="xref py py-class docutils literal notranslate"><span class="pre">sklearn.utils.multioutput.MultiOutputRegressor</span></code> with a modified <code class="docutils literal notranslate"><span class="pre">fit()</span></code> method that also slices
 validation data correctly. The validation data has to be passed as parameter <code class="docutils literal notranslate"><span class="pre">eval_set</span></code> in <code class="docutils literal notranslate"><span class="pre">**fit_params</span></code>.</p>
@@ -955,7 +945,7 @@ validation data correctly. The validation data has to be passed as parameter <co
 <td><p>Predict multi-output variable using model for each target variable.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.multioutput.MultiOutputRegressor.score" title="darts.utils.multioutput.MultiOutputRegressor.score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">score</span></code></a>(X, y[, sample_weight])</p></td>
-<td><p>Return the coefficient of determination of the prediction.</p></td>
+<td><p>Return <span class="xref std std-ref">coefficient of determination</span> on test data.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.multioutput.MultiOutputRegressor.set_fit_request" title="darts.utils.multioutput.MultiOutputRegressor.set_fit_request"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_fit_request</span></code></a>(*[, sample_weight])</p></td>
 <td><p>Request metadata passed to the <code class="docutils literal notranslate"><span class="pre">fit</span></code> method.</p></td>
@@ -1090,8 +1080,8 @@ Note: Separate models are generated for each predictor.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.multioutput.MultiOutputRegressor.score">
 <span class="sig-name descname"><span class="pre">score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.multioutput.MultiOutputRegressor.score" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the coefficient of determination of the prediction.</p>
-<p>The coefficient of determination <span class="math notranslate nohighlight">\(R^2\)</span> is defined as
+<dd><p>Return <span class="xref std std-ref">coefficient of determination</span> on test data.</p>
+<p>The coefficient of determination, <span class="math notranslate nohighlight">\(R^2\)</span>, is defined as
 <span class="math notranslate nohighlight">\((1 - \frac{u}{v})\)</span>, where <span class="math notranslate nohighlight">\(u\)</span> is the residual
 sum of squares <code class="docutils literal notranslate"><span class="pre">((y_true</span> <span class="pre">-</span> <span class="pre">y_pred)**</span> <span class="pre">2).sum()</span></code> and <span class="math notranslate nohighlight">\(v\)</span>
 is the total sum of squares <code class="docutils literal notranslate"><span class="pre">((y_true</span> <span class="pre">-</span> <span class="pre">y_true.mean())</span> <span class="pre">**</span> <span class="pre">2).sum()</span></code>.

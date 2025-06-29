@@ -208,12 +208,13 @@
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">_compononents_and</span><span class="p">(</span><span class="n">s</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
-            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
                 <span class="n">times</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
                 <span class="n">values</span><span class="o">=</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">s</span><span class="o">.</span><span class="n">width</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span>
                     <span class="n">s</span><span class="o">.</span><span class="n">dtype</span>
                 <span class="p">),</span>
-                <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;components_sum&quot;</span><span class="p">],</span>
+                <span class="n">components</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;components_sum&quot;</span><span class="p">],</span>
+                <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">_parallel_apply</span><span class="p">(</span>

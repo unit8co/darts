@@ -868,22 +868,34 @@
 
     <span class="nd">@wraps</span><span class="p">(</span><span class="n">decorated</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">if</span> <span class="s2">&quot;random_state&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-            <span class="c1"># get random state for first time from model constructor</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+        <span class="n">store_instance</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="n">random_instance</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="s2">&quot;random_state&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="ow">and</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># get random state from model constructor or `predict()`</span>
+            <span class="n">random_instance</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_random_instance&quot;</span><span class="p">):</span>
+                <span class="c1"># do not store random instance when called from `predict()`</span>
+                <span class="n">store_instance</span> <span class="o">=</span> <span class="kc">False</span>
         <span class="k">elif</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_random_instance&quot;</span><span class="p">):</span>
             <span class="c1"># get random state for first time from other method</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span>
+            <span class="n">random_instance</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">MAX_NUMPY_SEED_VALUE</span><span class="p">)</span>
             <span class="p">)</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
 
+        <span class="c1"># if no random instance is provided, use the one stored in the class</span>
+        <span class="k">if</span> <span class="n">random_instance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">random_instance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span>
+
+        <span class="k">if</span> <span class="n">store_instance</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">random_instance</span>
+
         <span class="c1"># handle the randomness</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span><span class="p">)</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">set_state</span><span class="p">(</span><span class="n">random_instance</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="n">decorated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
         <span class="c1"># update the random state after the function call</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">store_instance</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">result</span>
 
     <span class="k">return</span> <span class="n">decorator</span></div>

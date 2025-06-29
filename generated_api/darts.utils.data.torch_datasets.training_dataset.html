@@ -1,0 +1,1180 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Training Datasets &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="darts.utils.data.torch_datasets.utils.html" />
+    <link rel="prev" title="Inference Datasets" href="darts.utils.data.torch_datasets.inference_dataset.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.ad.html">
+   Anomaly Detection
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.aggregators.html">
+     Anomaly Aggregators
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">
+       AND Aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">
+       Ensemble scikit-learn aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">
+       OR Aggregator
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.anomaly_model.html">
+     Anomaly Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+    <label for="toctree-checkbox-3">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">
+       Filtering Anomaly Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">
+       Forecasting Anomaly Model
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.detectors.html">
+     Anomaly Detectors
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+    <label for="toctree-checkbox-4">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
+       Interquartile Range (IQR) Detector
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
+       Quantile Detector
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.threshold_detector.html">
+       Threshold Detector
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.scorers.html">
+     Anomaly Scorers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+    <label for="toctree-checkbox-5">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.difference_scorer.html">
+       Difference Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">
+       k-means Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">
+       NLL Cauchy Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">
+       NLL Exponential Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">
+       NLL Gamma Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">
+       NLL Gaussian Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">
+       NLL Laplace Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">
+       NLL Poisson Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.norm_scorer.html">
+       Norm Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
+       PyOD Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
+       Wasserstein Scorer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.ad.utils.html">
+     Utils for Anomaly Detection
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.dtw.html">
+     Dynamic Time Warping (DTW)
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
+       Dynamic Time Warping (DTW)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.window.html">
+       DTW Windows
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.encoders.html">
+     Time Axis Encoders
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">
+       Time Axes Encoders
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mapper and InvertibleMapper
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">
+       Window Transformer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+  <label for="toctree-checkbox-10">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
+  <label for="toctree-checkbox-11">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     Explainability Result
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for SKLearnModels
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.tft_explainer.html">
+     TFT Explainer for Temporal Fusion Transformer (TFTModel)
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
+  <label for="toctree-checkbox-12">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
+  <label for="toctree-checkbox-13">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
+    <label for="toctree-checkbox-14">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
+    <label for="toctree-checkbox-15">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.dlinear.html">
+       D-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
+       Global Baseline Models (Naive)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nlinear.html">
+       N-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       AutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       AutoCES
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       AutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       AutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
+       Time-series Dense Encoder (TiDE)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
+       Time-Series Mixer (TSMixer)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.xgboost.html">
+       XGBoost Model
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+  <label for="toctree-checkbox-16">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2 current active has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
+    <label for="toctree-checkbox-17">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       Training Datasets
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        SKLearnModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Time Series Statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.ts_utils.html">
+     Additional util functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+
+<nav id="bd-toc-nav">
+    
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.utils.data.torch_datasets.training_dataset"></span><section id="training-datasets">
+<h1>Training Datasets<a class="headerlink" href="#training-datasets" title="Permalink to this heading">¶</a></h1>
+<ul class="simple">
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchTrainingDataset</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ShiftedTorchTrainingDataset</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialTorchTrainingDataset</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">HorizonBasedTorchTrainingDataset</span></code></p></li>
+</ul>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.torch_datasets.training_dataset.HorizonBasedTorchTrainingDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.torch_datasets.training_dataset.</span></span><span class="sig-name descname"><span class="pre">HorizonBasedTorchTrainingDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1,</span> <span class="pre">3)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/torch_datasets/training_dataset.html#HorizonBasedTorchTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.torch_datasets.training_dataset.HorizonBasedTorchTrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.torch_datasets.training_dataset.SequentialTorchTrainingDataset" title="darts.utils.data.torch_datasets.training_dataset.SequentialTorchTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialTorchTrainingDataset</span></code></a></p>
+<p>Horizon Based Training Dataset</p>
+<p>A dataset inspired by the N-BEATS way of training on the M4 dataset: <a class="reference external" href="https://arxiv.org/abs/1905.10437">https://arxiv.org/abs/1905.10437</a>.</p>
+<p>Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
+set of single input <cite>TimeSeries</cite>. The elements are:</p>
+<ul class="simple">
+<li><p>past_target: target <cite>series</cite> values in the input chunk</p></li>
+<li><p>past_covariates: <cite>past_covariates</cite> values in the input chunk (<cite>None</cite> if <cite>past_covariates=None</cite>)</p></li>
+<li><p>historic_future_covariates: <cite>future_covariates</cite> values in the input chunk (<cite>None</cite> if <cite>future_covariates=None</cite>)</p></li>
+<li><p>future_covariates: <cite>future_covariates</cite> values in the output chunk (<cite>None</cite> if <cite>future_covariates=None</cite>)</p></li>
+<li><p>static_covariates: <cite>static_covariates</cite> values of the <cite>series</cite> (<cite>None</cite> if <cite>use_static_covariates=False</cite>)</p></li>
+<li><p>sample_weight: <cite>sample_weight</cite> values in the output chunk (<cite>None</cite> if <cite>sample_weight=None</cite>)</p></li>
+<li><p>future_target: <cite>series</cite> values in the output chunk</p></li>
+</ul>
+<p>Given the horizon <cite>output_chunk_length</cite> of a model, this dataset will compute some “past / future” input and
+output chunks as follows: First a “forecast point” is selected in the range of the last <cite>(min_lh *
+output_chunk_length, max_lh * output_chunk_length)</cite> points before the end of the time series.
+The “future” output chunk then consists in the following <cite>output_chunk_length</cite> points, and the “past” input
+chunk will be the preceding <cite>lookback * output_chunk_length</cite> points.</p>
+<p>The sample index determines:</p>
+<ul class="simple">
+<li><p>the position / time of the extracted chunks relative to the end of a single target <cite>series</cite></p></li>
+<li><p>the index (which series and covariates) to use in case <cite>series</cite> (and covariates) are
+passed as a sequence of series.</p></li>
+</ul>
+<p>The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+lengths, they will contain different numbers of slices. Therefore, some particular slices may
+be sampled more often than others if they belong to shorter time series.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each series in the provided sequence must have a minimum length of
+<cite>(lookback + max_lh) * output_chunk_length</cite>, and <cite>min_lh</cite> must be <cite>&gt;=1</cite>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of <cite>TimeSeries</cite> containing past covariates.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of <cite>TimeSeries</cite> containing future-known covariates.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the lookahead / future window that the model emits as output (for the target) and takes as
+input (for future covariates).</p></li>
+<li><p><strong>output_chunk_shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of steps to shift the start of the output chunk into the future.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between consecutive samples (windows of lagged values extracted from the target
+series), applied starting from the end of the series. This should be used with caution as it might
+introduce bias in the forecasts.</p></li>
+<li><p><strong>lh</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – A <cite>(min_lh, max_lh)</cite> interval for the forecast point, starting from the end of the series.
+For example, <cite>(1, 3)</cite> will select forecast points uniformly between <cite>1*H</cite> and <cite>3*H</cite> points
+before the end of the series. It is required that <cite>min_lh &gt;= 1</cite>.</p></li>
+<li><p><strong>lookback</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – A integer interval for the length of the input in the emitted input and output splits, expressed as a
+multiple of <cite>output_chunk_length</cite>. For instance, <cite>lookback=3</cite> will emit “inputs” of lengths
+<cite>3 * output_chunk_length</cite>.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from the target <cite>series</cite>.</p></li>
+<li><p><strong>sample_weight</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+per label (each step in <cite>output_chunk_length</cite>), and per component.
+If a series or sequence of series, then those weights are used. If the weight series only have a single
+component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
+component-specific weights, the number of components must match those of <cite>series</cite>.
+If a string, then the weights are generated using built-in weighting functions. The available options are
+<cite>“linear”</cite> or <cite>“exponential”</cite> decay - the further in the past, the lower the weight. The weights are
+computed globally based on the length of the longest series in <cite>series</cite>. Then for each series, the weights
+are extracted from the end of the global weights. This gives a common time weighting across all series.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.torch_datasets.training_dataset.SequentialTorchTrainingDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.torch_datasets.training_dataset.</span></span><span class="sig-name descname"><span class="pre">SequentialTorchTrainingDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/torch_datasets/training_dataset.html#SequentialTorchTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.torch_datasets.training_dataset.SequentialTorchTrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.torch_datasets.training_dataset.ShiftedTorchTrainingDataset" title="darts.utils.data.torch_datasets.training_dataset.ShiftedTorchTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">ShiftedTorchTrainingDataset</span></code></a></p>
+<p>Sequential Training Dataset</p>
+<p>Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
+set of single input <cite>TimeSeries</cite>. The elements are:</p>
+<ul class="simple">
+<li><p>past_target: target <cite>series</cite> values in the input chunk</p></li>
+<li><p>past_covariates: <cite>past_covariates</cite> values in the input chunk (<cite>None</cite> if <cite>past_covariates=None</cite>)</p></li>
+<li><p>historic_future_covariates: <cite>future_covariates</cite> values in the input chunk (<cite>None</cite> if <cite>future_covariates=None</cite>)</p></li>
+<li><p>future_covariates: <cite>future_covariates</cite> values in the output chunk (<cite>None</cite> if <cite>future_covariates=None</cite>)</p></li>
+<li><p>static_covariates: <cite>static_covariates</cite> values of the <cite>series</cite> (<cite>None</cite> if <cite>use_static_covariates=False</cite>)</p></li>
+<li><p>sample_weight: <cite>sample_weight</cite> values in the output chunk (<cite>None</cite> if <cite>sample_weight=None</cite>)</p></li>
+<li><p>future_target: <cite>series</cite> values in the output chunk</p></li>
+</ul>
+<p>The output chunk starts <cite>input_chunk_length + output_chunk_shift</cite> after the input chunk’s start.</p>
+<p>The sample index determines:</p>
+<ul class="simple">
+<li><p>the position / time of the extracted chunks relative to the end of a single target <cite>series</cite></p></li>
+<li><p>the index (which series and covariates) to use in case <cite>series</cite> (and covariates) are
+passed as a sequence of series.</p></li>
+</ul>
+<p>The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+lengths, they will contain different numbers of slices. Therefore, some particular slices may
+be sampled more often than others if they belong to shorter time series.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each series in the provided sequence must have a minimum length of
+<cite>input_chunk_length + output_chunk_shift + output_chunk_length</cite>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of <cite>TimeSeries</cite> containing past covariates.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of <cite>TimeSeries</cite> containing future-known covariates.</p></li>
+<li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the lookback / past window the model takes as input.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the lookahead / future window that the model emits as output (for the target) and takes as
+input (for future covariates).</p></li>
+<li><p><strong>output_chunk_shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of steps to shift the start of the output chunk into the future.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between consecutive samples (windows of lagged values extracted from the target
+series), applied starting from the end of the series. This should be used with caution as it might
+introduce bias in the forecasts.</p></li>
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This is an upper bound on the number of samples that can be produced per time series. It can be used to
+limit the total size of the dataset and ensure proper sampling. If <cite>None</cite>, will read all individual time
+series in advance (at dataset creation) to check their sizes. This might be expensive on big datasets.
+If not <cite>None</cite>, will only keep a maximum of <cite>max_samples_per_ts</cite> samples per series, extracted from the most
+recent past.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from the target <cite>series</cite>.</p></li>
+<li><p><strong>sample_weight</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+per label (each step in <cite>output_chunk_length</cite>), and per component.
+If a series or sequence of series, then those weights are used. If the weight series only have a single
+component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
+component-specific weights, the number of components must match those of <cite>series</cite>.
+If a string, then the weights are generated using built-in weighting functions. The available options are
+<cite>“linear”</cite> or <cite>“exponential”</cite> decay - the further in the past, the lower the weight. The weights are
+computed globally based on the length of the longest series in <cite>series</cite>. Then for each series, the weights
+are extracted from the end of the global weights. This gives a common time weighting across all series.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.torch_datasets.training_dataset.ShiftedTorchTrainingDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.torch_datasets.training_dataset.</span></span><span class="sig-name descname"><span class="pre">ShiftedTorchTrainingDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/torch_datasets/training_dataset.html#ShiftedTorchTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.torch_datasets.training_dataset.ShiftedTorchTrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.torch_datasets.training_dataset.TorchTrainingDataset" title="darts.utils.data.torch_datasets.training_dataset.TorchTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchTrainingDataset</span></code></a></p>
+<p>Shifted Training Dataset</p>
+<p>Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and
+set of single input <cite>TimeSeries</cite>. The elements are:</p>
+<ul class="simple">
+<li><p>past_target: target <cite>series</cite> values in the input chunk</p></li>
+<li><p>past_covariates: <cite>past_covariates</cite> values in the input chunk (<cite>None</cite> if <cite>past_covariates=None</cite>)</p></li>
+<li><p>historic_future_covariates: <cite>future_covariates</cite> values in the input chunk (<cite>None</cite> if <cite>future_covariates=None</cite>)</p></li>
+<li><p>future_covariates: <cite>future_covariates</cite> values in the output chunk (<cite>None</cite> if <cite>future_covariates=None</cite>)</p></li>
+<li><p>static_covariates: <cite>static_covariates</cite> values of the <cite>series</cite> (<cite>None</cite> if <cite>use_static_covariates=False</cite>)</p></li>
+<li><p>sample_weight: <cite>sample_weight</cite> values in the output chunk (<cite>None</cite> if <cite>sample_weight=None</cite>)</p></li>
+<li><p>future_target: <cite>series</cite> values in the output chunk</p></li>
+</ul>
+<p>The output chunk starts <cite>shift</cite> after the input chunk’s start.</p>
+<p>The sample index determines:</p>
+<ul class="simple">
+<li><p>the position / time of the extracted chunks relative to the end of a single target <cite>series</cite></p></li>
+<li><p>the index (which series and covariates) to use in case <cite>series</cite> (and covariates) are
+passed as a sequence of series.</p></li>
+</ul>
+<p>The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has
+a probability 1/N of coming from any of the N time series in the sequence. If the time series have different
+lengths, they will contain different numbers of slices. Therefore, some particular slices may
+be sampled more often than others if they belong to shorter time series.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Each series in the provided sequence must have a minimum length of
+<cite>max(input_chunk_length, shift + output_chunk_length)</cite>.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of <cite>TimeSeries</cite> containing past covariates.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of <cite>TimeSeries</cite> containing future-known covariates.</p></li>
+<li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the lookback / past window the model takes as input.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the lookahead / future window that the model emits as output (for the target) and takes as
+input (for future covariates).</p></li>
+<li><p><strong>shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps by which to shift the output chunks relative to the start of the input chunks.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between consecutive samples (windows of lagged values extracted from the target
+series), applied starting from the end of the series. This should be used with caution as it might
+introduce bias in the forecasts.</p></li>
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This is an upper bound on the number of samples that can be produced per time series. It can be used to
+limit the total size of the dataset and ensure proper sampling. If <cite>None</cite>, will read all individual time
+series in advance (at dataset creation) to check their sizes. This might be expensive on big datasets.
+If not <cite>None</cite>, will only keep a maximum of <cite>max_samples_per_ts</cite> samples per series, extracted from the most
+recent past.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from the target <cite>series</cite>.</p></li>
+<li><p><strong>sample_weight</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+per label (each step in <cite>output_chunk_length</cite>), and per component.
+If a series or sequence of series, then those weights are used. If the weight series only have a single
+component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
+component-specific weights, the number of components must match those of <cite>series</cite>.
+If a string, then the weights are generated using built-in weighting functions. The available options are
+<cite>“linear”</cite> or <cite>“exponential”</cite> decay - the further in the past, the lower the weight. The weights are
+computed globally based on the length of the longest series in <cite>series</cite>. Then for each series, the weights
+are extracted from the end of the global weights. This gives a common time weighting across all series.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.torch_datasets.training_dataset.TorchTrainingDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.torch_datasets.training_dataset.</span></span><span class="sig-name descname"><span class="pre">TorchTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/torch_datasets/training_dataset.html#TorchTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.torch_datasets.training_dataset.TorchTrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html#darts.utils.data.torch_datasets.dataset.TorchDataset" title="darts.utils.data.torch_datasets.dataset.TorchDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Abstract class for all training datasets that can be used with Darts’ <cite>TorchForecastingModel</cite>.</p>
+<p>Each sample drawn from this dataset must be a seven-element tuple extracted from a specific time window and
+set of single input <cite>TimeSeries</cite>. The elements are:</p>
+<ul class="simple">
+<li><p>past_target: target <cite>series</cite> values in the input chunk</p></li>
+<li><p>past_covariates: Optional <cite>past_covariates</cite> values in the input chunk</p></li>
+<li><p>historic_future_covariates: Optional <cite>future_covariates</cite> values in the input chunk</p></li>
+<li><p>future_covariates: Optional <cite>future_covariates</cite> values in the output chunk</p></li>
+<li><p>static_covariates: Optional <cite>static_covariates</cite> values of the <cite>series</cite></p></li>
+<li><p>sample_weight: Optional <cite>sample_weight</cite> values in the output chunk</p></li>
+<li><p>future_target: <cite>series</cite> values in the output chunk</p></li>
+</ul>
+<p>Darts <cite>TorchForecastingModel</cite> can be fit from instances of <cite>TorchTrainingDataset</cite> using the <cite>fit_from_dataset()</cite>
+method.</p>
+<p><cite>TorchTrainingDataset</cite> inherits from torch <cite>Dataset</cite>; meaning that all subclasses must implement the
+<cite>__getitem__()</cite> method. All returned elements must be of type <cite>np.ndarray</cite> (or <cite>None</cite> for optional covariates
+and sample weight).</p>
+</dd></dl>
+
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.utils.data.torch_datasets.inference_dataset.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Inference Datasets</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.utils.data.torch_datasets.utils.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">&lt;no title&gt;</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

@@ -40,7 +40,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Likelihoods for TorchForecastingModel" href="darts.utils.likelihood_models.torch.html" />
-    <link rel="prev" title="Likelihoods for RegressionModel" href="darts.utils.likelihood_models.sklearn.html" />
+    <link rel="prev" title="Likelihoods for SKLearnModel" href="darts.utils.likelihood_models.sklearn.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -477,7 +477,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -642,11 +642,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -694,6 +689,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -761,28 +761,18 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -801,7 +791,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -945,7 +935,7 @@
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model_output, num_samples)</p></td>
@@ -958,7 +948,7 @@
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1043,7 +1033,7 @@ If <cite>1</cite> and <cite>predict_likelihood_parameters=False</cite>, returns 
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Likelihoods for <cite>RegressionModel</cite></p>
+            <p class="prev-next-title">Likelihoods for <cite>SKLearnModel</cite></p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.utils.likelihood_models.torch.html" title="next page">

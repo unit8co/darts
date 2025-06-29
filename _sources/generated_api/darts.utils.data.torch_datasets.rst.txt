@@ -1,0 +1,13 @@
+
+
+
+.. automodule:: darts.utils.data.torch_datasets
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.utils.data.torch_datasets.dataset
+        darts.utils.data.torch_datasets.inference_dataset
+        darts.utils.data.torch_datasets.training_dataset
+        darts.utils.data.torch_datasets.utils

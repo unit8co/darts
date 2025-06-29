@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Shap Explainer for RegressionModels &#8212; darts  documentation</title>
+    <title>Shap Explainer for SKLearnModels &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -477,7 +477,7 @@
    </li>
    <li class="toctree-l2 current active">
     <a class="current reference internal" href="#">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -642,11 +642,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -694,6 +689,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -761,28 +761,18 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -801,7 +791,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -907,11 +897,11 @@
               
               <div>
                 
-  <span class="target" id="module-darts.explainability.shap_explainer"></span><section id="shap-explainer-for-regressionmodels">
-<h1>Shap Explainer for RegressionModels<a class="headerlink" href="#shap-explainer-for-regressionmodels" title="Permalink to this heading">¶</a></h1>
+  <span class="target" id="module-darts.explainability.shap_explainer"></span><section id="shap-explainer-for-sklearnmodels">
+<h1>Shap Explainer for SKLearnModels<a class="headerlink" href="#shap-explainer-for-sklearnmodels" title="Permalink to this heading">¶</a></h1>
 <p>A <a class="reference external" href="https://github.com/slundberg/shap">shap explainer</a> specifically for time series
 forecasting models.</p>
-<p>This class is (currently) limited to Darts’ <cite>RegressionModel</cite> instances of forecasting models. It uses shap values to
+<p>This class is (currently) limited to Darts’ <cite>SKLearnModel</cite> instances of forecasting models. It uses shap values to
 provide “explanations” of each input features. The input features are the different past lags (of the target and/or
 past covariates), as well as potential future lags of future covariates used as inputs by the forecasting model to
 produce its forecasts. Furthermore, in the case of multivariate series, the features contain each dimension of
@@ -943,12 +933,12 @@ and one horizon, for a given target series. It displays shap values of each lag/
 <li><p>A background series is a <cite>TimeSeries</cite> used to train the shap explainer.</p></li>
 <li><p>A foreground series is a <cite>TimeSeries</cite> that can be explained by a shap explainer after it has been fitted.</p></li>
 </ul>
-<p>Currently, <cite>ShapExplainer</cite> only works with <cite>RegressionModel</cite> forecasting models.
+<p>Currently, <cite>ShapExplainer</cite> only works with <cite>SKLearnModel</cite> forecasting models.
 The number of explained horizons (t+1, t+2, …) can be at most equal to <cite>output_chunk_length</cite> of <cite>model</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel" title="darts.models.forecasting.regression_model.RegressionModel"><em>darts.models.forecasting.regression_model.RegressionModel</em></a>) – A <cite>RegressionModel</cite> to be explained. It must be fitted first.</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel" title="darts.models.forecasting.sklearn_model.SKLearnModel"><em>darts.models.forecasting.sklearn_model.SKLearnModel</em></a>) – A <cite>SKLearnModel</cite> to be explained. It must be fitted first.</p></li>
 <li><p><strong>background_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – One or several series to <em>train</em> the <cite>ShapExplainer</cite> along with any foreground series.
 Consider using a reduced well-chosen background to reduce computation time.
 Optional if <cite>model</cite> was fit on a single target series. By default, it is the <cite>series</cite> used at fitting time.
@@ -1040,7 +1030,7 @@ All values must be <cite>&lt;=output_chunk_length</cite> of the explained foreca
 3 past covariates with default component names <code class="docutils literal notranslate"><span class="pre">&quot;0&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;1&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;2&quot;</span></code>,
 and one future covariate with default component name <code class="docutils literal notranslate"><span class="pre">&quot;0&quot;</span></code>.
 Also, <code class="docutils literal notranslate"><span class="pre">horizons</span> <span class="pre">=</span> <span class="pre">[1,</span> <span class="pre">2]</span></code>.
-The model is a regression model, with <code class="docutils literal notranslate"><span class="pre">lags</span> <span class="pre">=</span> <span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">lags_past_covariates=[-1,</span> <span class="pre">-3]</span></code>,
+The model is a <cite>SKLearnModel</cite>, with <code class="docutils literal notranslate"><span class="pre">lags</span> <span class="pre">=</span> <span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">lags_past_covariates=[-1,</span> <span class="pre">-3]</span></code>,
 <code class="docutils literal notranslate"><span class="pre">lags_future_covariates</span> <span class="pre">=</span> <span class="pre">[0]</span></code>.</p>
 <p>We provide <cite>foreground_series</cite>, <cite>foreground_past_covariates</cite>, <cite>foreground_future_covariates</cite> each of length 5.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">explain_results</span> <span class="o">=</span> <span class="n">explainer</span><span class="o">.</span><span class="n">explain</span><span class="p">(</span>
@@ -1104,7 +1094,7 @@ must be specified.</p></li>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.explainability.shap_explainer.ShapExplainer.model">
-<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel" title="darts.models.forecasting.regression_model.RegressionModel"><span class="pre">RegressionModel</span></a></em><a class="headerlink" href="#darts.explainability.shap_explainer.ShapExplainer.model" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel" title="darts.models.forecasting.sklearn_model.SKLearnModel"><span class="pre">SKLearnModel</span></a></em><a class="headerlink" href="#darts.explainability.shap_explainer.ShapExplainer.model" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">

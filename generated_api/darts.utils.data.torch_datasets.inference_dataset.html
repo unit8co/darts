@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Training Datasets Base Classes &#8212; darts  documentation</title>
+    <title>Inference Datasets &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -39,8 +39,8 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="darts.utils.data.utils.html" />
-    <link rel="prev" title="&lt;no title&gt;" href="darts.utils.data.tabularization.html" />
+    <link rel="next" title="Training Datasets" href="darts.utils.data.torch_datasets.training_dataset.html" />
+    <link rel="prev" title="Dataset Base Class" href="darts.utils.data.torch_datasets.dataset.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -477,7 +477,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -642,11 +642,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -694,6 +689,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -761,28 +761,18 @@
     </label>
     <ul class="current">
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
-       Training Datasets Base Classes
+       Inference Datasets
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -801,7 +791,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -907,110 +897,100 @@
               
               <div>
                 
-  <span class="target" id="module-darts.utils.data.training_dataset"></span><section id="training-datasets-base-classes">
-<h1>Training Datasets Base Classes<a class="headerlink" href="#training-datasets-base-classes" title="Permalink to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.DualCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">DualCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#DualCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.DualCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
-<p>Abstract class for a DualCovariatesTorchModel training dataset. It contains 4-tuples of
-<cite>(past_target, historic_future_covariates, future_covariates, static_covariates, future_target)</cite> <cite>np.ndarray</cite>.
-The covariates are optional and can be <cite>None</cite>.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.FutureCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">FutureCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#FutureCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.FutureCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
-<p>Abstract class for a FutureCovariatesTorchModel training dataset. It contains 3-tuples of
-<cite>(past_target, future_covariate, static_covariates, future_target)</cite> <cite>np.ndarray</cite>.
-The covariates are optional and can be <cite>None</cite>.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.MixedCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">MixedCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#MixedCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.MixedCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
-<p>Abstract class for a MixedCovariatesTorchModel training dataset. It contains 5-tuples of
-<cite>(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
-future_target)</cite> <cite>np.ndarray</cite>.
-The covariates are optional and can be <cite>None</cite>.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.PastCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">PastCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#PastCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.PastCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
-<p>Abstract class for a PastCovariatesTorchModel training dataset. It contains 3-tuples of
-<cite>(past_target, past_covariate, static_covariates, future_target)</cite> <cite>np.ndarray</cite>.
-The covariates are optional and can be <cite>None</cite>.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.SplitCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">SplitCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#SplitCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.SplitCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
-<p>Abstract class for a SplitCovariatesTorchModel training dataset. It contains 4-tuples of
-<cite>(past_target, past_covariates, future_covariates, static_covariates, future_target)</cite> <cite>np.ndarray</cite>.
-The covariates are optional and can be <cite>None</cite>.</p>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.TrainingDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">TrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#TrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.TrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></p>
-<p>Super-class for all training datasets for torch models in Darts. These include</p>
+  <span class="target" id="module-darts.utils.data.torch_datasets.inference_dataset"></span><section id="inference-datasets">
+<h1>Inference Datasets<a class="headerlink" href="#inference-datasets" title="Permalink to this heading">¶</a></h1>
 <ul class="simple">
-<li><dl class="simple">
-<dt>“PastCovariates” datasets (for PastCovariatesTorchModel): containing (past_target,</dt><dd><p>past_covariates,
-static_covariates,
-future_target)</p>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>“FutureCovariates” datasets (for FutureCovariatesTorchModel): containing (past_target,</dt><dd><p>future_covariates,
-static_covariates,
-future_target)</p>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>“DualCovariates” datasets (for DualCovariatesTorchModel): containing (past_target,</dt><dd><p>historic_future_covariates,
-future_covariates,
-static_covariates,
-future_target)</p>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>“MixedCovariates” datasets (for MixedCovariatesTorchModel): containing (past_target,</dt><dd><p>past_covariates,
-historic_future_covariates,
-future_covariates,
-static_covariates,
-future_target)</p>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>“SplitCovariates” datasets (for SplitCovariatesTorchModel): containing (past_target,</dt><dd><p>past_covariates,
-future_covariates,
-static_covariates,
-future_target)</p>
-</dd>
-</dl>
-</li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchInferenceDataset</span></code></p></li>
+<li><p><code class="xref py py-class docutils literal notranslate"><span class="pre">SequentialTorchInferenceDataset</span></code></p></li>
 </ul>
-<p>The covariates are optional and can be <cite>None</cite>.</p>
-<p>This is meant to be used for training (or validation), all data except <cite>future_target</cite> represents model
-inputs (<cite>future_target</cite> is the output the model are trained to predict).</p>
-<p>Darts <cite>TorchForecastingModel`s can be fit from instances of `TrainingDataset</cite> of the right type using the
-<cite>fit_from_dataset()</cite> method.</p>
-<p><cite>TrainingDataset</cite> inherits torch <cite>Dataset</cite>; meaning that the implementations have to
-provide the <cite>__getitem__()</cite> method.</p>
-<p>It contains <cite>np.ndarray</cite> (and not <cite>TimeSeries</cite>), because training requires the values only,
-and so we can get big performance gains when slicing by returning only numpy views of the data
-underlying the <cite>TimeSeries</cite>.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.torch_datasets.inference_dataset.SequentialTorchInferenceDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.torch_datasets.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">SequentialTorchInferenceDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/torch_datasets/inference_dataset.html#SequentialTorchInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.torch_datasets.inference_dataset.SequentialTorchInferenceDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.torch_datasets.inference_dataset.TorchInferenceDataset" title="darts.utils.data.torch_datasets.inference_dataset.TorchInferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchInferenceDataset</span></code></a></p>
+<p>Sequential Inference Dataset</p>
+<p>Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
+set of single input <cite>TimeSeries</cite>. The elements are:</p>
+<ul class="simple">
+<li><p>past_target: target <cite>series</cite> values in the input chunk</p></li>
+<li><p>past_covariates: <cite>past_covariates</cite> values in the input chunk (<cite>None</cite> if <cite>past_covariates=None</cite>)</p></li>
+<li><p>future_past_covariates: <cite>past_covariates</cite> values in the forecast horizon (<cite>None</cite> if <cite>past_covariates=None</cite>
+or <cite>n&lt;=output_chunk_length</cite> / non-auto-regressive forecasting)</p></li>
+<li><p>historic_future_covariates: <cite>future_covariates</cite> values in the input chunk (<cite>None</cite> if <cite>future_covariates=None</cite>)</p></li>
+<li><p>future_covariates: <cite>future_covariates</cite> values in the forecast horizon (<cite>None</cite> if <cite>future_covariates=None</cite>)</p></li>
+<li><p>static_covariates: <cite>static_covariates</cite> values of the <cite>series</cite> (<cite>None</cite> if <cite>use_static_covariates=False</cite>)</p></li>
+<li><p>target_series: the target <cite>TimeSeries</cite></p></li>
+<li><p>pred_time: the time of the first point in the forecast horizon</p></li>
+</ul>
+<p>The output chunk / forecast horizon starts <cite>output_chunk_length + output_chunk_shift</cite> after the input chunk’s
+start.</p>
+<p>The sample index determines:</p>
+<ul class="simple">
+<li><p>the position / time of the extracted chunks relative to the end of a single target <cite>series</cite></p></li>
+<li><p>the index (which series and covariates) to use in case <cite>series</cite> (and covariates) are
+passed as a sequence of series.</p></li>
+</ul>
+<p>With <cite>bounds=None</cite>, all samples will be extracted relative to the end of the target <cite>series</cite> (input chunk’s end
+time is the same as the target series’ end time). Otherwise, samples will be extracted from the given
+boundaries <cite>bounds</cite> with a stride of <cite>stride</cite>.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>“historic_future_covariates” are the values of the future-known covariates that fall into the sample’s
+input chunk (the past window / history in the view of the sample).</p>
+</div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>“future_past_covariates” are past covariates that happen to be also known in the future - those
+are needed for forecasting with <cite>n &gt; output_chunk_length</cite> (auto-regression) by any model relying on past
+covariates. For this reason, this dataset may also emit the “future past_covariates”.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – One or a sequence of target <cite>TimeSeries</cite> that are to be predicted into the future.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of <cite>TimeSeries</cite> containing past covariates. If past covariates
+were used during training, they must be supplied at prediction.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of <cite>TimeSeries</cite> containing future-known covariates. If future covariates
+were used during training, they must be supplied at prediction.</p></li>
+<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon: The number of time steps to predict after the end of the target series.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps between two consecutive predictions. Can only be used together
+with <cite>bounds</cite>.</p></li>
+<li><p><strong>bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an array of shape <cite>(n series, 2)</cite>, with the left and right prediction start point boundaries
+per series. The boundaries must represent the positional index of the series (0, len(series)).
+If provided, <cite>stride</cite> must be <cite>&gt;=1</cite>.</p></li>
+<li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the lookback / past window the model takes as input.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the lookahead / future window that the model emits as output (for the target) and takes as
+input (for future covariates).</p></li>
+<li><p><strong>output_chunk_shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of steps to shift the start of the output chunk into the future.</p></li>
+<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from the target <cite>series</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.torch_datasets.inference_dataset.TorchInferenceDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.torch_datasets.inference_dataset.</span></span><span class="sig-name descname"><span class="pre">TorchInferenceDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/torch_datasets/inference_dataset.html#TorchInferenceDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.torch_datasets.inference_dataset.TorchInferenceDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html#darts.utils.data.torch_datasets.dataset.TorchDataset" title="darts.utils.data.torch_datasets.dataset.TorchDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TorchDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Abstract class for all inference datasets that can be used with Darts’ <cite>TorchForecastingModel</cite>.</p>
+<p>Provides samples to compute forecasts using a <cite>TorchForecastingModel</cite>.</p>
+<p>Each sample drawn from this dataset is an eight-element tuple extracted from a specific time window and
+set of single input <cite>TimeSeries</cite>. The elements are:</p>
+<ul class="simple">
+<li><p>past_target: target <cite>series</cite> values in the input chunk</p></li>
+<li><p>past_covariates: Optional <cite>past_covariates</cite> values in the input chunk</p></li>
+<li><p>future_past_covariates: Optional <cite>past_covariates</cite> values in the forecast horizon (for auto-regression with
+<cite>n&gt;output_chunk_length</cite>)</p></li>
+<li><p>historic_future_covariates: Optional <cite>future_covariates</cite> values in the input chunk</p></li>
+<li><p>future_covariates: Optional <cite>future_covariates</cite> values in the output chunk and forecast horizon</p></li>
+<li><p>static_covariates: Optional <cite>static_covariates</cite> values of the <cite>series</cite></p></li>
+<li><p>target_series: the target <cite>TimeSeries</cite></p></li>
+<li><p>pred_time: the time of the first point in the forecast horizon</p></li>
+</ul>
+<p>Darts <cite>TorchForecastingModel</cite> can predict from instances of <cite>TorchInferenceDataset</cite> using the
+<cite>predict_from_dataset()</cite> method.</p>
+<p><cite>TorchInferenceDataset</cite> inherits from torch <cite>Dataset</cite>; meaning that all subclasses must implement the
+<cite>__getitem__()</cite> method. All returned elements except <cite>target_series</cite> (<cite>TimeSeries</cite>) and <cite>pred_time</cite>
+(<cite>pd.Timestamp</cite> or <cite>int</cite>) must be of type <cite>np.ndarray</cite> (or <cite>None</cite> for optional covariates).</p>
 </dd></dl>
 
 </section>
@@ -1021,17 +1001,17 @@ underlying the <cite>TimeSeries</cite>.</p>
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.utils.data.tabularization.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.utils.data.torch_datasets.dataset.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">&lt;no title&gt;</p>
+            <p class="prev-next-title">Dataset Base Class</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.utils.data.utils.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.utils.data.torch_datasets.training_dataset.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">&lt;no title&gt;</p>
+        <p class="prev-next-title">Training Datasets</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

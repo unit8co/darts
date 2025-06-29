@@ -324,16 +324,16 @@ be provided to <code class="docutils literal notranslate"><span class="pre">pred
 <p>If you wish to save a particular model and use it elsewhere or at a later point in time, darts can achieve that. It leverages pickle and in the case of Torch models relies on saving PyTorch Lightning trainer checkpoints.
 All forecasting models support saving the model on the filesystem, by calling the <code class="docutils literal notranslate"><span class="pre">save()</span></code> function, which saves that particular <code class="docutils literal notranslate"><span class="pre">ForecastingModel</span></code> object instance. When the model is to be used again, the method <code class="docutils literal notranslate"><span class="pre">load()</span></code> can be used. Please note that the methods <code class="docutils literal notranslate"><span class="pre">save_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">load_model()</span></code> are deprecated.</p>
 <p><strong>Example:</strong></p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SKLearnModel</span>
 
-<span class="n">model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 
 <span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;my_model.pkl&quot;</span><span class="p">)</span>
-<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_model.pkl&quot;</span><span class="p">)</span>
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;my_model.pkl&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The parameter <code class="docutils literal notranslate"><span class="pre">path</span></code> specifies a path or file handle under which to save the model at its current state. If no <code class="docutils literal notranslate"><span class="pre">path</span></code> is specified, the model is automatically
-saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl&quot;</span></code>. E.g., <code class="docutils literal notranslate"><span class="pre">&quot;RegressionModel_2020-01-01_12:00:00.pkl&quot;</span></code>.
+saved under <code class="docutils literal notranslate"><span class="pre">&quot;{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl&quot;</span></code>. E.g., <code class="docutils literal notranslate"><span class="pre">&quot;SKLearnModel_2020-01-01_12:00:00.pkl&quot;</span></code>.
 Optionally there is also pickle specific keyword arguments <code class="docutils literal notranslate"><span class="pre">protocol</span></code>, <code class="docutils literal notranslate"><span class="pre">fix_imports</span></code> and <code class="docutils literal notranslate"><span class="pre">buffer_callback</span></code>.
 More info: <a class="reference external" href="https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump">pickle.dump()</a></p>
 <p>With torch models, the model parameters and the training state are saved. We use the trainer to save the model checkpoint.</p>
@@ -387,11 +387,11 @@ The advantage of training on multiple series is that a single model can be expos
 <p>In turn, the advantage of having <code class="docutils literal notranslate"><span class="pre">predict()</span></code> providing forecasts for potentially several series at once is that the computation can often be batched and vectorized across the multiple series, which is computationally faster than calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code> multiple times on isolated series.</p>
 <p>These models are shown with a “✅” under the <code class="docutils literal notranslate"><span class="pre">Multiple-series</span> <span class="pre">training</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.</p>
 <p>You can also find out programmatically, whether a model supports multiple series.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SKLearnModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
 
 <span class="c1"># when True, multiple time series are supported</span>
-<span class="n">supports_multi_ts</span> <span class="o">=</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">,</span> <span class="n">GlobalForecastingModel</span><span class="p">)</span>
+<span class="n">supports_multi_ts</span> <span class="o">=</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">SKLearnModel</span><span class="p">,</span> <span class="n">GlobalForecastingModel</span><span class="p">)</span>
 </pre></div>
 </div>
 <p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844">This article</a> provides more explanations about training models on multiple series.</p>

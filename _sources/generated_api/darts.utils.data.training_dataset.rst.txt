@@ -1,3 +1,0 @@
-.. automodule:: darts.utils.data.training_dataset
-   :members:
-   :undoc-members:

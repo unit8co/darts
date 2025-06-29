@@ -1,0 +1,773 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.utils.data.torch_datasets.training_dataset &#8212; darts  documentation</title>
+    
+  <link href="../../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../_static/jquery.js"></script>
+    <script src="../../../../../_static/underscore.js"></script>
+    <script src="../../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <link rel="shortcut icon" href="../../../../../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../../index.html">
+  <img src="../../../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../examples.html">
+  Examples
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.utils.data.torch_datasets.training_dataset</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Training Datasets</span>
+<span class="sd">-----------------</span>
+
+<span class="sd">- :class:`~darts.utils.data.training_dataset.TorchTrainingDataset`</span>
+<span class="sd">- :class:`~darts.utils.data.training_dataset.ShiftedTorchTrainingDataset`</span>
+<span class="sd">- :class:`~darts.utils.data.training_dataset.SequentialTorchTrainingDataset`</span>
+<span class="sd">- :class:`~darts.utils.data.training_dataset.HorizonBasedTorchTrainingDataset`</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">math</span><span class="w"> </span><span class="kn">import</span> <span class="n">ceil</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.torch_datasets.dataset</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorchDataset</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.torch_datasets.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorchTrainingDatasetOutput</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FeatureType</span><span class="p">,</span>
+    <span class="n">_process_sample_weight</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">series2seq</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TorchTrainingDataset"><a class="viewcode-back" href="../../../../../generated_api/darts.utils.data.torch_datasets.training_dataset.html#darts.utils.data.torch_datasets.training_dataset.TorchTrainingDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">TorchTrainingDataset</span><span class="p">(</span><span class="n">TorchDataset</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Abstract class for all training datasets that can be used with Darts&#39; `TorchForecastingModel`.</span>
+
+<span class="sd">        Each sample drawn from this dataset must be a seven-element tuple extracted from a specific time window and</span>
+<span class="sd">        set of single input `TimeSeries`. The elements are:</span>
+
+<span class="sd">        - past_target: target `series` values in the input chunk</span>
+<span class="sd">        - past_covariates: Optional `past_covariates` values in the input chunk</span>
+<span class="sd">        - historic_future_covariates: Optional `future_covariates` values in the input chunk</span>
+<span class="sd">        - future_covariates: Optional `future_covariates` values in the output chunk</span>
+<span class="sd">        - static_covariates: Optional `static_covariates` values of the `series`</span>
+<span class="sd">        - sample_weight: Optional `sample_weight` values in the output chunk</span>
+<span class="sd">        - future_target: `series` values in the output chunk</span>
+
+<span class="sd">        Darts `TorchForecastingModel` can be fit from instances of `TorchTrainingDataset` using the `fit_from_dataset()`</span>
+<span class="sd">        method.</span>
+
+<span class="sd">        `TorchTrainingDataset` inherits from torch `Dataset`; meaning that all subclasses must implement the</span>
+<span class="sd">        `__getitem__()` method. All returned elements must be of type `np.ndarray` (or `None` for optional covariates</span>
+<span class="sd">        and sample weight).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TorchTrainingDatasetOutput</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a sample drawn from this dataset.&quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="ShiftedTorchTrainingDataset"><a class="viewcode-back" href="../../../../../generated_api/darts.utils.data.torch_datasets.training_dataset.html#darts.utils.data.torch_datasets.training_dataset.ShiftedTorchTrainingDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ShiftedTorchTrainingDataset</span><span class="p">(</span><span class="n">TorchTrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shifted Training Dataset</span>
+
+<span class="sd">        Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and</span>
+<span class="sd">        set of single input `TimeSeries`. The elements are:</span>
+
+<span class="sd">        - past_target: target `series` values in the input chunk</span>
+<span class="sd">        - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)</span>
+<span class="sd">        - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)</span>
+<span class="sd">        - future_covariates: `future_covariates` values in the output chunk (`None` if `future_covariates=None`)</span>
+<span class="sd">        - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)</span>
+<span class="sd">        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)</span>
+<span class="sd">        - future_target: `series` values in the output chunk</span>
+
+<span class="sd">        The output chunk starts `shift` after the input chunk&#39;s start.</span>
+
+<span class="sd">        The sample index determines:</span>
+
+<span class="sd">        - the position / time of the extracted chunks relative to the end of a single target `series`</span>
+<span class="sd">        - the index (which series and covariates) to use in case `series` (and covariates) are</span>
+<span class="sd">          passed as a sequence of series.</span>
+
+<span class="sd">        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has</span>
+<span class="sd">        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different</span>
+<span class="sd">        lengths, they will contain different numbers of slices. Therefore, some particular slices may</span>
+<span class="sd">        be sampled more often than others if they belong to shorter time series.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Each series in the provided sequence must have a minimum length of</span>
+<span class="sd">            `max(input_chunk_length, shift + output_chunk_length)`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            One or a sequence of target `TimeSeries`.</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing past covariates.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing future-known covariates.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the lookback / past window the model takes as input.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the lookahead / future window that the model emits as output (for the target) and takes as</span>
+<span class="sd">            input (for future covariates).</span>
+<span class="sd">        shift</span>
+<span class="sd">            The number of time steps by which to shift the output chunks relative to the start of the input chunks.</span>
+<span class="sd">        stride</span>
+<span class="sd">            The number of time steps between consecutive samples (windows of lagged values extracted from the target</span>
+<span class="sd">            series), applied starting from the end of the series. This should be used with caution as it might</span>
+<span class="sd">            introduce bias in the forecasts.</span>
+<span class="sd">        max_samples_per_ts</span>
+<span class="sd">            This is an upper bound on the number of samples that can be produced per time series. It can be used to</span>
+<span class="sd">            limit the total size of the dataset and ensure proper sampling. If `None`, will read all individual time</span>
+<span class="sd">            series in advance (at dataset creation) to check their sizes. This might be expensive on big datasets.</span>
+<span class="sd">            If not `None`, will only keep a maximum of `max_samples_per_ts` samples per series, extracted from the most</span>
+<span class="sd">            recent past.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from the target `series`.</span>
+<span class="sd">        sample_weight</span>
+<span class="sd">            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,</span>
+<span class="sd">            per label (each step in `output_chunk_length`), and per component.</span>
+<span class="sd">            If a series or sequence of series, then those weights are used. If the weight series only have a single</span>
+<span class="sd">            component / column, then the weights are applied globally to all components in `series`. Otherwise, for</span>
+<span class="sd">            component-specific weights, the number of components must match those of `series`.</span>
+<span class="sd">            If a string, then the weights are generated using built-in weighting functions. The available options are</span>
+<span class="sd">            `&quot;linear&quot;` or `&quot;exponential&quot;` decay - the further in the past, the lower the weight. The weights are</span>
+<span class="sd">            computed globally based on the length of the longest series in `series`. Then for each series, the weights</span>
+<span class="sd">            are extracted from the end of the global weights. This gives a common time weighting across all series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">stride</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">and</span> <span class="n">stride</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`stride` must be a positive integer greater than 0.&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># setup target and sequence</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="n">past_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">)</span>
+        <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">)</span>
+        <span class="n">static_covariates</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">static_covariates</span> <span class="k">if</span> <span class="n">use_static_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">cov</span><span class="p">,</span> <span class="n">cov_type</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">PAST_COVARIATES</span><span class="p">,</span> <span class="n">FeatureType</span><span class="o">.</span><span class="n">FUTURE_COVARIATES</span><span class="p">],</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">cov</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">cov</span><span class="p">):</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">cov_type</span><span class="o">.</span><span class="n">value</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The sequence of `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` must have the same length as &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;the sequence of target `series`.&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="n">size_of_both_chunks</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">shift</span> <span class="o">+</span> <span class="n">output_chunk_length</span><span class="p">)</span>
+
+        <span class="c1"># setup samples</span>
+        <span class="k">if</span> <span class="n">max_samples_per_ts</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># read all time series to get the maximum size</span>
+            <span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">series</span><span class="p">)</span> <span class="o">-</span> <span class="n">size_of_both_chunks</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">max_samples_per_ts</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The input `series` are too short to extract even a single sample. &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;Expected min length: `</span><span class="si">{</span><span class="n">size_of_both_chunks</span><span class="si">}</span><span class="s2">`, received max length: &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">max_samples_per_ts</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">size_of_both_chunks</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+            <span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="n">ceil</span><span class="p">(</span><span class="n">max_samples_per_ts</span> <span class="o">/</span> <span class="n">stride</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">size_of_both_chunks</span> <span class="o">=</span> <span class="n">size_of_both_chunks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shift</span> <span class="o">=</span> <span class="n">shift</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stride</span> <span class="o">=</span> <span class="n">stride</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="n">max_samples_per_ts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ideal_nr_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">past_covariates</span> <span class="o">=</span> <span class="n">past_covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">future_covariates</span> <span class="o">=</span> <span class="n">future_covariates</span>
+
+        <span class="c1"># setup sample weights; ignore weights when `ocl==0`</span>
+        <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">output_chunk_length</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sample_weight</span> <span class="o">=</span> <span class="n">_process_sample_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">sample_weight</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">uses_past_covariates</span> <span class="o">=</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uses_future_covariates</span> <span class="o">=</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">uses_static_covariates_covariates</span> <span class="o">=</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ideal_nr_samples</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TorchTrainingDatasetOutput</span><span class="p">:</span>
+        <span class="c1"># determine the index of the time series.</span>
+        <span class="n">series_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">series</span><span class="p">[</span><span class="n">series_idx</span><span class="p">]</span>
+
+        <span class="c1"># determine the index at the end of the output chunk</span>
+        <span class="n">end_of_output_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_end_of_output_idx</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">series_idx</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span>
+
+        <span class="c1"># load covariates</span>
+        <span class="n">past_covariates</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">past_covariates</span><span class="p">[</span><span class="n">series_idx</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_past_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">future_covariates</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">future_covariates</span><span class="p">[</span><span class="n">series_idx</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+
+        <span class="c1"># optionally, load sample weight</span>
+        <span class="n">sample_weight</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">sample_weight</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_weight</span><span class="p">[</span><span class="n">series_idx</span><span class="p">]</span>
+            <span class="n">weight_n_comp</span> <span class="o">=</span> <span class="n">sample_weight</span><span class="o">.</span><span class="n">n_components</span>
+            <span class="k">if</span> <span class="n">weight_n_comp</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">weight_n_comp</span> <span class="o">!=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span><span class="p">:</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The number of components in `</span><span class="si">{</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">SAMPLE_WEIGHT</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2">` must &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;either be `1` or match the number of target series components &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">n_components</span><span class="si">}</span><span class="s2">` (at series sequence idx `</span><span class="si">{</span><span class="n">series_idx</span><span class="si">}</span><span class="s2">`).&quot;</span>
+                    <span class="p">),</span>
+                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                <span class="p">)</span>
+
+        <span class="c1"># get start and end indices (positions) of all feature types for the current sample</span>
+        <span class="n">idx_bounds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory_indexer</span><span class="p">(</span>
+            <span class="n">series_idx</span><span class="o">=</span><span class="n">series_idx</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">shift</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shift</span><span class="p">,</span>
+            <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">end_of_output_idx</span><span class="o">=</span><span class="n">end_of_output_idx</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
+            <span class="n">n</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">series_vals</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="c1"># extract past target series</span>
+        <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">idx_bounds</span><span class="p">[</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">PAST_TARGET</span><span class="p">]</span>
+        <span class="n">pt</span> <span class="o">=</span> <span class="n">series_vals</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+
+        <span class="c1"># extract future target series</span>
+        <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">idx_bounds</span><span class="p">[</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">FUTURE_TARGET</span><span class="p">]</span>
+        <span class="n">ft</span> <span class="o">=</span> <span class="n">series_vals</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+
+        <span class="c1"># past cov, historic future cov, future cov, static cov, sample weight</span>
+        <span class="n">pc</span><span class="p">,</span> <span class="n">hfc</span><span class="p">,</span> <span class="n">fc</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">sw</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="c1"># extract past covariates</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_past_covariates</span><span class="p">:</span>
+            <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">idx_bounds</span><span class="p">[</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">PAST_COVARIATES</span><span class="p">]</span>
+            <span class="n">pc</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+
+        <span class="c1"># extract future covariates</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_future_covariates</span><span class="p">:</span>
+            <span class="c1"># future part of future covariates</span>
+            <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">idx_bounds</span><span class="p">[</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">FUTURE_COVARIATES</span><span class="p">]</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">fc</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+
+            <span class="c1"># historic part of future covariates</span>
+            <span class="n">hfc_start</span><span class="p">,</span> <span class="n">hfc_end</span> <span class="o">=</span> <span class="n">idx_bounds</span><span class="p">[</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">HISTORIC_FUTURE_COVARIATES</span><span class="p">]</span>
+            <span class="n">hfc</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="n">hfc_start</span><span class="p">:</span><span class="n">hfc_end</span><span class="p">]</span>
+
+        <span class="c1"># extract sample weights</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="o">=</span> <span class="n">idx_bounds</span><span class="p">[</span><span class="n">FeatureType</span><span class="o">.</span><span class="n">SAMPLE_WEIGHT</span><span class="p">]</span>
+            <span class="n">sw</span> <span class="o">=</span> <span class="n">sample_weight</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">]</span>
+
+        <span class="c1"># extract static covariates</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_static_covariates_covariates</span><span class="p">:</span>
+            <span class="n">sc</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># (</span>
+        <span class="c1">#     past target,</span>
+        <span class="c1">#     past cov,</span>
+        <span class="c1">#     historic future cov,</span>
+        <span class="c1">#     future cov,</span>
+        <span class="c1">#     static cov,</span>
+        <span class="c1">#     sample weight,</span>
+        <span class="c1">#     future target</span>
+        <span class="c1"># )</span>
+        <span class="k">return</span> <span class="n">pt</span><span class="p">,</span> <span class="n">pc</span><span class="p">,</span> <span class="n">hfc</span><span class="p">,</span> <span class="n">fc</span><span class="p">,</span> <span class="n">sc</span><span class="p">,</span> <span class="n">sw</span><span class="p">,</span> <span class="n">ft</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_end_of_output_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">series_idx</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="c1"># determine the actual number of possible samples in this time series</span>
+        <span class="n">n_samples_in_ts</span> <span class="o">=</span> <span class="n">ceil</span><span class="p">(</span>
+            <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">size_of_both_chunks</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">n_samples_in_ts</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The dataset contains target `series` that are too short to extract &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;even a single example. Expected min length: `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">size_of_both_chunks</span><span class="si">}</span><span class="s2">`, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;received length `</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="si">}</span><span class="s2">` (at series sequence idx `</span><span class="si">{</span><span class="n">series_idx</span><span class="si">}</span><span class="s2">`).&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># determine the index at the end of the output chunk</span>
+        <span class="c1"># it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+            <span class="o">-</span> <span class="p">(</span><span class="n">idx</span> <span class="o">-</span> <span class="p">(</span><span class="n">series_idx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span><span class="p">))</span>
+            <span class="o">%</span> <span class="n">n_samples_in_ts</span>
+            <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SequentialTorchTrainingDataset"><a class="viewcode-back" href="../../../../../generated_api/darts.utils.data.torch_datasets.training_dataset.html#darts.utils.data.torch_datasets.training_dataset.SequentialTorchTrainingDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">SequentialTorchTrainingDataset</span><span class="p">(</span><span class="n">ShiftedTorchTrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Sequential Training Dataset</span>
+
+<span class="sd">        Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and</span>
+<span class="sd">        set of single input `TimeSeries`. The elements are:</span>
+
+<span class="sd">        - past_target: target `series` values in the input chunk</span>
+<span class="sd">        - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)</span>
+<span class="sd">        - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)</span>
+<span class="sd">        - future_covariates: `future_covariates` values in the output chunk (`None` if `future_covariates=None`)</span>
+<span class="sd">        - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)</span>
+<span class="sd">        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)</span>
+<span class="sd">        - future_target: `series` values in the output chunk</span>
+
+<span class="sd">        The output chunk starts `input_chunk_length + output_chunk_shift` after the input chunk&#39;s start.</span>
+
+<span class="sd">        The sample index determines:</span>
+
+<span class="sd">        - the position / time of the extracted chunks relative to the end of a single target `series`</span>
+<span class="sd">        - the index (which series and covariates) to use in case `series` (and covariates) are</span>
+<span class="sd">          passed as a sequence of series.</span>
+
+<span class="sd">        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has</span>
+<span class="sd">        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different</span>
+<span class="sd">        lengths, they will contain different numbers of slices. Therefore, some particular slices may</span>
+<span class="sd">        be sampled more often than others if they belong to shorter time series.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Each series in the provided sequence must have a minimum length of</span>
+<span class="sd">            `input_chunk_length + output_chunk_shift + output_chunk_length`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            One or a sequence of target `TimeSeries`.</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing past covariates.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing future-known covariates.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the lookback / past window the model takes as input.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the lookahead / future window that the model emits as output (for the target) and takes as</span>
+<span class="sd">            input (for future covariates).</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            The number of steps to shift the start of the output chunk into the future.</span>
+<span class="sd">        stride</span>
+<span class="sd">            The number of time steps between consecutive samples (windows of lagged values extracted from the target</span>
+<span class="sd">            series), applied starting from the end of the series. This should be used with caution as it might</span>
+<span class="sd">            introduce bias in the forecasts.</span>
+<span class="sd">        max_samples_per_ts</span>
+<span class="sd">            This is an upper bound on the number of samples that can be produced per time series. It can be used to</span>
+<span class="sd">            limit the total size of the dataset and ensure proper sampling. If `None`, will read all individual time</span>
+<span class="sd">            series in advance (at dataset creation) to check their sizes. This might be expensive on big datasets.</span>
+<span class="sd">            If not `None`, will only keep a maximum of `max_samples_per_ts` samples per series, extracted from the most</span>
+<span class="sd">            recent past.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from the target `series`.</span>
+<span class="sd">        sample_weight</span>
+<span class="sd">            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,</span>
+<span class="sd">            per label (each step in `output_chunk_length`), and per component.</span>
+<span class="sd">            If a series or sequence of series, then those weights are used. If the weight series only have a single</span>
+<span class="sd">            component / column, then the weights are applied globally to all components in `series`. Otherwise, for</span>
+<span class="sd">            component-specific weights, the number of components must match those of `series`.</span>
+<span class="sd">            If a string, then the weights are generated using built-in weighting functions. The available options are</span>
+<span class="sd">            `&quot;linear&quot;` or `&quot;exponential&quot;` decay - the further in the past, the lower the weight. The weights are</span>
+<span class="sd">            computed globally based on the length of the longest series in `series`. Then for each series, the weights</span>
+<span class="sd">            are extracted from the end of the global weights. This gives a common time weighting across all series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="n">input_chunk_length</span> <span class="o">+</span> <span class="n">output_chunk_shift</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">shift</span><span class="o">=</span><span class="n">shift</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="HorizonBasedTorchTrainingDataset"><a class="viewcode-back" href="../../../../../generated_api/darts.utils.data.torch_datasets.training_dataset.html#darts.utils.data.torch_datasets.training_dataset.HorizonBasedTorchTrainingDataset">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">HorizonBasedTorchTrainingDataset</span><span class="p">(</span><span class="n">SequentialTorchTrainingDataset</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">lh</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>
+        <span class="n">lookback</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Horizon Based Training Dataset</span>
+
+<span class="sd">        A dataset inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.</span>
+
+<span class="sd">        Each sample drawn from this dataset is a seven-element tuple extracted from a specific time window and</span>
+<span class="sd">        set of single input `TimeSeries`. The elements are:</span>
+
+<span class="sd">        - past_target: target `series` values in the input chunk</span>
+<span class="sd">        - past_covariates: `past_covariates` values in the input chunk (`None` if `past_covariates=None`)</span>
+<span class="sd">        - historic_future_covariates: `future_covariates` values in the input chunk (`None` if `future_covariates=None`)</span>
+<span class="sd">        - future_covariates: `future_covariates` values in the output chunk (`None` if `future_covariates=None`)</span>
+<span class="sd">        - static_covariates: `static_covariates` values of the `series` (`None` if `use_static_covariates=False`)</span>
+<span class="sd">        - sample_weight: `sample_weight` values in the output chunk (`None` if `sample_weight=None`)</span>
+<span class="sd">        - future_target: `series` values in the output chunk</span>
+
+<span class="sd">        Given the horizon `output_chunk_length` of a model, this dataset will compute some &quot;past / future&quot; input and</span>
+<span class="sd">        output chunks as follows: First a &quot;forecast point&quot; is selected in the range of the last `(min_lh *</span>
+<span class="sd">        output_chunk_length, max_lh * output_chunk_length)` points before the end of the time series.</span>
+<span class="sd">        The &quot;future&quot; output chunk then consists in the following `output_chunk_length` points, and the &quot;past&quot; input</span>
+<span class="sd">        chunk will be the preceding `lookback * output_chunk_length` points.</span>
+
+<span class="sd">        The sample index determines:</span>
+
+<span class="sd">        - the position / time of the extracted chunks relative to the end of a single target `series`</span>
+<span class="sd">        - the index (which series and covariates) to use in case `series` (and covariates) are</span>
+<span class="sd">          passed as a sequence of series.</span>
+
+<span class="sd">        The sampling is uniform over the number of time series; i.e., the i-th sample of this dataset has</span>
+<span class="sd">        a probability 1/N of coming from any of the N time series in the sequence. If the time series have different</span>
+<span class="sd">        lengths, they will contain different numbers of slices. Therefore, some particular slices may</span>
+<span class="sd">        be sampled more often than others if they belong to shorter time series.</span>
+
+<span class="sd">        .. note::</span>
+<span class="sd">            Each series in the provided sequence must have a minimum length of</span>
+<span class="sd">            `(lookback + max_lh) * output_chunk_length`, and `min_lh` must be `&gt;=1`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            One or a sequence of target `TimeSeries`.</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing past covariates.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing future-known covariates.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the lookahead / future window that the model emits as output (for the target) and takes as</span>
+<span class="sd">            input (for future covariates).</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            The number of steps to shift the start of the output chunk into the future.</span>
+<span class="sd">        stride</span>
+<span class="sd">            The number of time steps between consecutive samples (windows of lagged values extracted from the target</span>
+<span class="sd">            series), applied starting from the end of the series. This should be used with caution as it might</span>
+<span class="sd">            introduce bias in the forecasts.</span>
+<span class="sd">        lh</span>
+<span class="sd">            A `(min_lh, max_lh)` interval for the forecast point, starting from the end of the series.</span>
+<span class="sd">            For example, `(1, 3)` will select forecast points uniformly between `1*H` and `3*H` points</span>
+<span class="sd">            before the end of the series. It is required that `min_lh &gt;= 1`.</span>
+<span class="sd">        lookback:</span>
+<span class="sd">            A integer interval for the length of the input in the emitted input and output splits, expressed as a</span>
+<span class="sd">            multiple of `output_chunk_length`. For instance, `lookback=3` will emit &quot;inputs&quot; of lengths</span>
+<span class="sd">            `3 * output_chunk_length`.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether to use/include static covariate data from the target `series`.</span>
+<span class="sd">        sample_weight</span>
+<span class="sd">            Optionally, some sample weights to apply to the target `series` labels. They are applied per observation,</span>
+<span class="sd">            per label (each step in `output_chunk_length`), and per component.</span>
+<span class="sd">            If a series or sequence of series, then those weights are used. If the weight series only have a single</span>
+<span class="sd">            component / column, then the weights are applied globally to all components in `series`. Otherwise, for</span>
+<span class="sd">            component-specific weights, the number of components must match those of `series`.</span>
+<span class="sd">            If a string, then the weights are generated using built-in weighting functions. The available options are</span>
+<span class="sd">            `&quot;linear&quot;` or `&quot;exponential&quot;` decay - the further in the past, the lower the weight. The weights are</span>
+<span class="sd">            computed globally based on the length of the longest series in `series`. Then for each series, the weights</span>
+<span class="sd">            are extracted from the end of the global weights. This gives a common time weighting across all series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Checks</span>
+        <span class="n">min_lh</span><span class="p">,</span> <span class="n">max_lh</span> <span class="o">=</span> <span class="n">lh</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">max_lh</span> <span class="o">&gt;=</span> <span class="n">min_lh</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Invalid `lh=</span><span class="si">{</span><span class="n">lh</span><span class="si">}</span><span class="s2">`. `lh` must be a tuple `(min_lh, max_lh)`, &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;with `1 &lt;= min_lh &lt;= max_lh`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="p">(</span><span class="n">max_lh</span> <span class="o">-</span> <span class="n">min_lh</span><span class="p">)</span> <span class="o">*</span> <span class="n">output_chunk_length</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">max_samples_per_ts</span> <span class="o">=</span> <span class="n">ceil</span><span class="p">(</span><span class="n">max_samples_per_ts</span> <span class="o">/</span> <span class="n">stride</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">lookback</span> <span class="o">*</span> <span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_lh</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lh</span> <span class="o">=</span> <span class="n">min_lh</span><span class="p">,</span> <span class="n">max_lh</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lookback</span> <span class="o">=</span> <span class="n">lookback</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_end_of_output_idx</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">series_idx</span><span class="p">,</span> <span class="n">idx</span><span class="p">):</span>
+        <span class="c1"># determine the actual number of possible samples in this time series</span>
+        <span class="n">min_length</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lookback</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lh</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_length</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;The dataset contains target `series` that are too short to extract &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;even a single example. Expected min length: `</span><span class="si">{</span><span class="n">min_length</span><span class="si">}</span><span class="s2">`, received &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;length `</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="si">}</span><span class="s2">` (at series sequence idx `</span><span class="si">{</span><span class="n">series_idx</span><span class="si">}</span><span class="s2">`).&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="c1"># determine the index lh_idx of the forecasting point (the last point of the input series, before the target)</span>
+        <span class="c1"># lh_idx should be in [0, self.max_samples_per_ts)</span>
+        <span class="n">lh_idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">idx</span> <span class="o">-</span> <span class="p">(</span><span class="n">series_idx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_samples_per_ts</span><span class="p">))</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">stride</span>
+
+        <span class="c1"># determine the index at the end of the output chunk</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">-</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lh</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">lh_idx</span><span class="p">)</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

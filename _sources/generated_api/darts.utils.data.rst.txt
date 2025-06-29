@@ -6,11 +6,7 @@
     .. toctree::
         :maxdepth: 1
         
-        
-        darts.utils.data.horizon_based_dataset
-        darts.utils.data.inference_dataset
-        darts.utils.data.sequential_dataset
-        darts.utils.data.shifted_dataset
         darts.utils.data.tabularization
-        darts.utils.data.training_dataset
+        darts.utils.data.torch_datasets
+        
         darts.utils.data.utils

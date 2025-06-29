@@ -477,7 +477,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -642,11 +642,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -694,6 +689,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -761,28 +761,18 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -801,7 +791,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -1953,16 +1943,16 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 <code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index.year</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code>. And for pd.RangeIndex:
 <code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code></p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of input target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>input_chunk_length</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute
-minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of output target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>output_chunk_length</cite> from both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and
-<code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -2226,16 +2216,16 @@ Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <c
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
 For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of input target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>input_chunk_length</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute
-minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of output target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>output_chunk_length</cite> from both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and
-<code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
@@ -2500,16 +2490,16 @@ Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <c
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
 For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of input target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>input_chunk_length</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute
-minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of output target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>output_chunk_length</cite> from both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and
-<code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
@@ -2772,16 +2762,16 @@ TimeSeries’ time index.</p>
 <li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Currently only ‘relative’ is supported. The generated encoded values will range from (-inf, inf) and the
 target series end time will be used as a reference to evaluate the relative index positions.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of input target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>input_chunk_length</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute
-minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of output target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>output_chunk_length</cite> from both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and
-<code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -3310,16 +3300,16 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 <code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index.year</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code>. And for pd.RangeIndex:
 <code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code></p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of input target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>input_chunk_length</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute
-minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of output target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>output_chunk_length</cite> from both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and
-<code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -3583,16 +3573,16 @@ Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <c
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
 For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of input target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>input_chunk_length</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute
-minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of output target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>output_chunk_length</cite> from both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and
-<code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
@@ -3857,16 +3847,16 @@ Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <c
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
 For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of input target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>input_chunk_length</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute
-minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of output target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>output_chunk_length</cite> from both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and
-<code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
@@ -4129,16 +4119,16 @@ TimeSeries’ time index.</p>
 <li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Currently only ‘relative’ is supported. The generated encoded values will range from (-inf, inf) and the
 target series end time will be used as a reference to evaluate the relative index positions.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of input target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>input_chunk_length</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute
-minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of output target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>output_chunk_length</cite> from both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and
-<code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -4483,19 +4473,19 @@ The <cite>attribute</cite> tells the <cite>SingleEncoder</cite> which attribute 
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>add_encoders</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>) – A dictionary with the encoder settings.</p></li>
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of input target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>input_chunk_length</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, or to the absolute
-minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+minimum target lag value <cite>abs(min(lags))</cite> for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the number of output target time steps per chunk. Only required for
-<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
 Corresponds to parameter <cite>output_chunk_length</cite> from both <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, and
-<code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+<code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_past_covariates</cite> of <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>lags_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a list of integers representing the future covariate lags. Accepts all integer values.
-Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.
-Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code>.</p></li>
+Only required for <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.
+Corresponds to the lag values from parameter <cite>lags_future_covariates</cite> from <code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code>.</p></li>
 <li><p><strong>takes_past_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to encode/generate past covariates.</p></li>
 <li><p><strong>takes_future_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to encode/generate future covariates.</p></li>
 </ul>

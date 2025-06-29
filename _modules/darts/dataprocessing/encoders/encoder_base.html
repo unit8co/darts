@@ -231,10 +231,10 @@
 <span class="sd">        A   in combination with :class:`LocalForecastingModel`, or in a model agnostic scenario:</span>
 <span class="sd">                All parameters can be ignored. This scenario is only supported by</span>
 <span class="sd">                :class:`FutureCovariatesIndexGenerator`.</span>
-<span class="sd">        B   in combination with :class:`RegressionModel`:</span>
+<span class="sd">        B   in combination with :class:`SKLearnModel`:</span>
 <span class="sd">                Set `input_chunk_length`, `output_chunk_length`, and `lags_covariates`.</span>
 <span class="sd">                `input_chunk_length` is the absolute value of the minimum target lag `abs(min(lags))` used with the</span>
-<span class="sd">                regression model.</span>
+<span class="sd">                `SKLearnModel`.</span>
 <span class="sd">                Set `output_chunk_length`, and `lags_covariates` with the identical values used at forecasting model</span>
 <span class="sd">                creation. For the covariates lags, use `lags_past_covariates` for class:`PastCovariatesIndexGenerator`,</span>
 <span class="sd">                and `lags_future_covariates` for class:`PastCovariatesIndexGenerator`.</span>
@@ -247,12 +247,12 @@
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required in scenarios B, C.</span>
 <span class="sd">            Corresponds to `input_chunk_length` for :class:`TorchForecastingModel`, or to the absolute minimum target</span>
-<span class="sd">            lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required in scenarios B, and C.</span>
-<span class="sd">            Corresponds to `output_chunk_length` for both :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            Corresponds to `output_chunk_length` for both :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">        lags_covariates</span>
-<span class="sd">            Optionally, a list of integers giving the covariates lags used for Darts&#39; RegressionModels. Only required</span>
+<span class="sd">            Optionally, a list of integers giving the covariates lags used for Darts&#39; SKLearnModels. Only required</span>
 <span class="sd">            in scenario B. Corresponds to the lag values from `lags_past_covariates` for past covariates, and</span>
 <span class="sd">            `lags_future_covariates` for future covariates.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -380,7 +380,7 @@
             <span class="ow">and</span> <span class="n">output_chunk_length</span> <span class="ow">is</span> <span class="kc">None</span>
             <span class="ow">and</span> <span class="n">lags_covariates</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="p">)</span>
-        <span class="c1"># RegressionModel</span>
+        <span class="c1"># SKLearnModel</span>
         <span class="n">is_scenario_b</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">input_chunk_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
             <span class="ow">and</span> <span class="n">output_chunk_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
@@ -456,15 +456,15 @@
         <span class="c1">#     raised if user supplied insufficient covariates</span>
         <span class="c1"># case 1</span>
         <span class="c1">#     only input_chunk_length and output_chunk_length are given: the complete covariate index is within the</span>
-        <span class="c1">#     target index; always True for all models except RegressionModels.</span>
+        <span class="c1">#     target index; always True for all models except SKLearnModels.</span>
         <span class="c1"># case 2</span>
         <span class="c1">#     covariate lags were given (shift_start &lt;= 0 and shift_end &lt;= 0) and</span>
         <span class="c1">#     abs(shift_start - 1) &lt;= input_chunk_length: the complete covariate index is within the target index;</span>
-        <span class="c1">#     can only be True for RegressionModels.</span>
+        <span class="c1">#     can only be True for SKLearnModels.</span>
         <span class="c1"># case 3</span>
         <span class="c1">#     covariate lags were given (shift_start &lt;= 0 and shift_end &lt;= 0) and</span>
         <span class="c1">#     abs(shift_start - 1) &gt; input_chunk_length: we need to add indices before the beginning of the target</span>
-        <span class="c1">#     series; can only be True for RegressionModels.</span>
+        <span class="c1">#     series; can only be True for SKLearnModels.</span>
 
         <span class="n">target_end</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># case 0</span>
@@ -498,12 +498,12 @@
         <span class="c1"># case 1</span>
         <span class="c1">#     only input_chunk_length and output_chunk_length are given: we need to generate a time index that starts</span>
         <span class="c1">#     `input_chunk_length - 1` before the end of `target` and ends `max(0, n - output_chunk_length)` after the</span>
-        <span class="c1">#     end of `target`; always True for all models except RegressionModels.</span>
+        <span class="c1">#     end of `target`; always True for all models except SKLearnModels.</span>
         <span class="c1"># case 2</span>
         <span class="c1">#     covariate lags were given (shift_start &lt;= 0 and shift_end &lt;= 0): we need to generate a time index that</span>
         <span class="c1">#     starts `-shift_start` before the end of `target` and has a length of</span>
         <span class="c1">#     `shift_steps + max(0, n - output_chunk_length)`, where `shift_steps` is the number of time steps between</span>
-        <span class="c1">#     `shift_start` and `shift_end`; can only be True for RegressionModels.</span>
+        <span class="c1">#     `shift_start` and `shift_end`; can only be True for SKLearnModels.</span>
 
         <span class="n">target_end</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># case 0</span>
@@ -558,17 +558,17 @@
         <span class="c1">#     simply return the target time index.</span>
         <span class="c1"># case 2</span>
         <span class="c1">#     only input_chunk_length and output_chunk_length are given: the complete covariate index is within the</span>
-        <span class="c1">#     target index; always True for all models except RegressionModels.</span>
+        <span class="c1">#     target index; always True for all models except SKLearnModels.</span>
         <span class="c1"># case 3</span>
         <span class="c1">#     covariate lags were given and (shift_start &lt;= 0 or shift_end &lt;= 0): historic part of future covariates.</span>
         <span class="c1">#     if shift_end &lt; 0 there will only be the historic part of future covariates.</span>
         <span class="c1">#     If shift_start &lt;= 0 and abs(shift_start - 1) &gt; input_chunk_length: we need to add indices before the</span>
-        <span class="c1">#     beginning of the target series; can only be True for RegressionModels.</span>
+        <span class="c1">#     beginning of the target series; can only be True for SKLearnModels.</span>
         <span class="c1"># case 4</span>
         <span class="c1">#     covariate lags were given and (shift_start &gt; 0 or shift_end &gt; 0): future part of future covariates.</span>
         <span class="c1">#     if shift_start &gt; 0 there will only be the future part of future covariates.</span>
         <span class="c1">#     If shift_end &gt; 0 and shift_start &gt; input_chunk_length: we need to add indices after the end of the</span>
-        <span class="c1">#     target series; can only be True for RegressionModels.</span>
+        <span class="c1">#     target series; can only be True for SKLearnModels.</span>
 
         <span class="n">target_end</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span>
 
@@ -609,11 +609,11 @@
         <span class="c1"># case 2</span>
         <span class="c1">#     only input_chunk_length and output_chunk_length are given: we need to generate a time index that starts</span>
         <span class="c1">#     `input_chunk_length - 1` before the end of `target` and ends `max(n, output_chunk_length)` after the</span>
-        <span class="c1">#     end of `target`; always True for all models except RegressionModels.</span>
+        <span class="c1">#     end of `target`; always True for all models except SKLearnModels.</span>
         <span class="c1"># case 3</span>
         <span class="c1">#     covariate lags were given: we need to generate a time index that starts `-shift_start`</span>
         <span class="c1">#     steps before the end of `target` and has a length of `shift_steps + max(0, n - output_chunk_length)`,</span>
-        <span class="c1">#     where `shift_steps` is `shift_end - shift_start`; can only be True for RegressionModels.</span>
+        <span class="c1">#     where `shift_steps` is `shift_end - shift_start`; can only be True for SKLearnModels.</span>
 
         <span class="n">target_end</span> <span class="o">=</span> <span class="n">target</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span>
         <span class="k">if</span> <span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># case 0</span>
@@ -1048,10 +1048,12 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_update_mask</span><span class="p">(</span><span class="n">covariates</span><span class="p">)</span>
             <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_mask</span><span class="p">):</span>
                 <span class="c1"># fit the transformer on all encoded values by concatenating multi-series input encodings</span>
+                <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">cov</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">cov</span> <span class="ow">in</span> <span class="n">covariates</span><span class="p">])</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span>
-                        <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">cov</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">cov</span> <span class="ow">in</span> <span class="n">covariates</span><span class="p">]),</span>
+                        <span class="n">values</span><span class="o">=</span><span class="n">vals</span><span class="p">,</span>
                         <span class="n">columns</span><span class="o">=</span><span class="n">covariates</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+                        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="p">),</span>
                     <span class="n">component_mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">transform_mask</span><span class="p">,</span>
                 <span class="p">)</span>
@@ -1090,12 +1092,12 @@
 
 <span class="sd">    case 1</span>
 <span class="sd">        (steps_ahead_start &gt;= 0 and steps_ahead_end is None or &lt;= 1)</span>
-<span class="sd">        the complete index is within the target index; always True for all models except RegressionModels.</span>
+<span class="sd">        the complete index is within the target index; always True for all models except SKLearnModels.</span>
 <span class="sd">    case 2</span>
-<span class="sd">        steps_ahead_start &lt; 0: add indices before the target start time; only possible for RegressionModels</span>
+<span class="sd">        steps_ahead_start &lt; 0: add indices before the target start time; only possible for SKLearnModels</span>
 <span class="sd">        where the minimum past lag is larger than input_chunk_length.</span>
 <span class="sd">    case 3</span>
-<span class="sd">        steps_ahead_end &gt; 0: add indices after the target end time; only possible for RegressionModels</span>
+<span class="sd">        steps_ahead_end &gt; 0: add indices after the target end time; only possible for SKLearnModels</span>
 <span class="sd">        where the maximum future lag is larger than output_chunk_length.</span>
 
 <span class="sd">    Parameters</span>

@@ -190,7 +190,7 @@
     <span class="n">InvertibleDataTransformer</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">_finite_rows_boundaries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">DEFAULT_GLOBAL_STATIC_COV_NAME</span><span class="p">,</span> <span class="n">_finite_rows_boundaries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -554,7 +554,7 @@
             <span class="n">start</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
             <span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">series_values</span><span class="p">)</span> <span class="o">+</span> <span class="n">shift</span><span class="p">,</span>
             <span class="n">freq</span><span class="o">=</span><span class="n">high_freq</span><span class="p">,</span>
-            <span class="n">name</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
         <span class="p">)[</span><span class="n">shift</span><span class="p">:]</span>
 
         <span class="n">inversed_midas_ts</span> <span class="o">=</span> <span class="n">MIDAS</span><span class="o">.</span><span class="n">_create_midas_df</span><span class="p">(</span>
@@ -619,7 +619,7 @@
             <span class="k">return</span> <span class="kc">None</span>
         <span class="k">elif</span> <span class="p">(</span>
             <span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="ow">and</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;component&quot;</span>
+            <span class="ow">and</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">DEFAULT_GLOBAL_STATIC_COV_NAME</span>
         <span class="p">):</span>
             <span class="k">if</span> <span class="n">inverse_transform</span><span class="p">:</span>
                 <span class="n">cols_orig</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">n_components</span> <span class="o">//</span> <span class="n">n_midas</span>
@@ -658,12 +658,13 @@
             <span class="n">drop_static_covariates</span><span class="o">=</span><span class="n">drop_static_covariates</span><span class="p">,</span>
             <span class="n">inverse_transform</span><span class="o">=</span><span class="n">inverse_transform</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
             <span class="n">times</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span>
             <span class="n">values</span><span class="o">=</span><span class="n">arr</span><span class="p">,</span>
-            <span class="n">columns</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span>
+            <span class="n">components</span><span class="o">=</span><span class="n">cols</span><span class="p">,</span>
             <span class="n">static_covariates</span><span class="o">=</span><span class="n">static_covariates</span><span class="p">,</span>
             <span class="n">metadata</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span></div>
 </pre></div>
 

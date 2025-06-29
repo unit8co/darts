@@ -194,17 +194,17 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.ensemble</span><span class="w"> </span><span class="kn">import</span> <span class="n">RandomForestRegressor</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_deprecation_warning</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.sklearn_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">FUTURE_LAGS_TYPE</span><span class="p">,</span>
     <span class="n">LAGS_TYPE</span><span class="p">,</span>
-    <span class="n">RegressionModel</span><span class="p">,</span>
+    <span class="n">SKLearnModel</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="RandomForest"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RandomForest</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">):</span>
+<div class="viewcode-block" id="RandomForestModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RandomForestModel</span><span class="p">(</span><span class="n">SKLearnModel</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -217,6 +217,7 @@
         <span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">multi_models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Random Forest Model</span>
@@ -307,8 +308,173 @@
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
 <span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness for reproducible forecasting.</span>
 <span class="sd">        **kwargs</span>
-<span class="sd">            Additional keyword arguments passed to `sklearn.ensemble.RandomForest`.</span>
+<span class="sd">            Additional keyword arguments passed to `sklearn.ensemble.RandomForestRegressor`.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import RandomForestModel</span>
+<span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # predicting atmospheric pressure</span>
+<span class="sd">        &gt;&gt;&gt; target = series[&#39;p (mbar)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use past observed rainfall (pretending to be unknown beyond index 100)</span>
+<span class="sd">        &gt;&gt;&gt; past_cov = series[&#39;rain (mm)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use future temperatures (pretending this component is a forecast)</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = series[&#39;T (degC)&#39;][:106]</span>
+<span class="sd">        &gt;&gt;&gt; # random forest with 200 trees trained with MAE</span>
+<span class="sd">        &gt;&gt;&gt; model = RandomForestModel(</span>
+<span class="sd">        &gt;&gt;&gt;     lags=12,</span>
+<span class="sd">        &gt;&gt;&gt;     lags_past_covariates=12,</span>
+<span class="sd">        &gt;&gt;&gt;     lags_future_covariates=[0,1,2,3,4,5],</span>
+<span class="sd">        &gt;&gt;&gt;     output_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     n_estimators=200,</span>
+<span class="sd">        &gt;&gt;&gt;     criterion=&quot;absolute_error&quot;,</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[1006.29805],</span>
+<span class="sd">               [1006.23675],</span>
+<span class="sd">               [1006.17325],</span>
+<span class="sd">               [1006.10295],</span>
+<span class="sd">               [1006.06505],</span>
+<span class="sd">               [1006.05465]])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_estimators</span> <span class="o">=</span> <span class="n">n_estimators</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> <span class="o">=</span> <span class="n">max_depth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;n_estimators&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_estimators</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;max_depth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">random_state</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
+            <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
+            <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+            <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
+            <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
+            <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">RandomForestRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RandomForest"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RandomForest</span><span class="p">(</span><span class="n">RandomForestModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FUTURE_LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_estimators</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">multi_models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Random Forest Model</span>
+
+<span class="sd">        Note: `RandomForest` is deprecated and will be removed in a future version.</span>
+<span class="sd">        Use :class:`~darts.models.forecasting.random_forest.RandomForestModel` instead.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lags</span>
+<span class="sd">            Lagged target `series` values used to predict the next time step/s.</span>
+<span class="sd">            If an integer, must be &gt; 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`</span>
+<span class="sd">            corresponds the first predicted time step of each sample. If `output_chunk_shift &gt; 0`, then</span>
+<span class="sd">            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.</span>
+<span class="sd">            If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.</span>
+<span class="sd">            If a dictionary, the keys correspond to the `series` component names (of the first series when</span>
+<span class="sd">            using multiple series) and the values correspond to the component lags (integer or list of integers). The</span>
+<span class="sd">            key &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
+<span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
+<span class="sd">        lags_past_covariates</span>
+<span class="sd">            Lagged `past_covariates` values used to predict the next time step/s.</span>
+<span class="sd">            If an integer, must be &gt; 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,</span>
+<span class="sd">            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift &gt; 0`, then</span>
+<span class="sd">            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.</span>
+<span class="sd">            If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.</span>
+<span class="sd">            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when</span>
+<span class="sd">            using multiple series) and the values correspond to the component lags (integer or list of integers). The</span>
+<span class="sd">            key &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
+<span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
+<span class="sd">        lags_future_covariates</span>
+<span class="sd">            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the</span>
+<span class="sd">            first step in the output chunk, even when `output_chunk_shift &gt; 0`.</span>
+<span class="sd">            If a tuple of `(past, future)`, both values must be &gt; 0. Uses the last `n=past` past lags and `n=future`</span>
+<span class="sd">            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first</span>
+<span class="sd">            predicted time step of each sample. If `output_chunk_shift &gt; 0`, the position of negative lags differ from</span>
+<span class="sd">            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same</span>
+<span class="sd">            step as a target lag of `-5 + output_chunk_shift`.</span>
+<span class="sd">            If a list of integers, uses only the specified values as lags.</span>
+<span class="sd">            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when</span>
+<span class="sd">            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key</span>
+<span class="sd">            &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
+<span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast</span>
+<span class="sd">            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a</span>
+<span class="sd">            one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents auto-regression. This is</span>
+<span class="sd">            useful when the covariates don&#39;t extend far enough into the future, or to prohibit the model from using</span>
+<span class="sd">            future values of past and / or future covariates for prediction (depending on the model&#39;s covariate</span>
+<span class="sd">            support).</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the</span>
+<span class="sd">            input chunk end). This will create a gap between the input (history of target and past covariates) and</span>
+<span class="sd">            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first</span>
+<span class="sd">            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the</span>
+<span class="sd">            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions</span>
+<span class="sd">            (`n &gt; output_chunk_length`).</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.dataprocessing.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
+<span class="sd">        n_estimators : int</span>
+<span class="sd">            The number of trees in the forest.</span>
+<span class="sd">        max_depth : int</span>
+<span class="sd">            The maximum depth of the tree. If None, then nodes are expanded until all leaves are pure or until all</span>
+<span class="sd">            leaves contain less than min_samples_split samples.</span>
+<span class="sd">        multi_models</span>
+<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model</span>
+<span class="sd">            is trained to predict all the steps in &#39;output_chunk_length&#39; (features lags are shifted back by</span>
+<span class="sd">            `output_chunk_length - n` for each step `n`). Default: True.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
+<span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
+<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness for reproducible forecasting.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Additional keyword arguments passed to `sklearn.ensemble.RandomForestRegressor`.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
@@ -340,11 +506,12 @@
 <span class="sd">               [1006.06505],</span>
 <span class="sd">               [1006.05465]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n_estimators</span> <span class="o">=</span> <span class="n">n_estimators</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span> <span class="o">=</span> <span class="n">max_depth</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;n_estimators&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_estimators</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;max_depth&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span>
+
+        <span class="n">raise_deprecation_warning</span><span class="p">(</span>
+            <span class="s2">&quot;`RandomForest` is deprecated and will be removed in a future version. &quot;</span>
+            <span class="s2">&quot;Use `RandomForestModel` instead.&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
@@ -353,9 +520,12 @@
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
             <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
+            <span class="n">n_estimators</span><span class="o">=</span><span class="n">n_estimators</span><span class="p">,</span>
+            <span class="n">max_depth</span><span class="o">=</span><span class="n">max_depth</span><span class="p">,</span>
             <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
-            <span class="n">model</span><span class="o">=</span><span class="n">RandomForestRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span></div>
 </pre></div>
 

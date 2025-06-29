@@ -479,7 +479,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -644,11 +644,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -696,6 +691,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -763,28 +763,18 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -803,7 +793,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -977,7 +967,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.component_names" title="darts.utils.likelihood_models.torch.BernoulliLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.component_names" title="darts.utils.likelihood_models.torch.BernoulliLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.BernoulliLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -993,7 +983,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.BernoulliLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1111,7 +1101,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BetaLikelihood.component_names" title="darts.utils.likelihood_models.torch.BetaLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BetaLikelihood.component_names" title="darts.utils.likelihood_models.torch.BetaLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BetaLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.BetaLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -1127,7 +1117,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.BetaLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.BetaLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.BetaLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1248,7 +1238,7 @@ requires a large value for <cite>num_samples</cite> for sampling predictions.</p
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.component_names" title="darts.utils.likelihood_models.torch.CauchyLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.component_names" title="darts.utils.likelihood_models.torch.CauchyLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.CauchyLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -1264,7 +1254,7 @@ requires a large value for <cite>num_samples</cite> for sampling predictions.</p
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.CauchyLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1381,7 +1371,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.component_names" title="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.component_names" title="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -1397,7 +1387,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1515,7 +1505,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.component_names" title="darts.utils.likelihood_models.torch.DirichletLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.component_names" title="darts.utils.likelihood_models.torch.DirichletLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.DirichletLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -1531,7 +1521,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.DirichletLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1648,7 +1638,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.component_names" title="darts.utils.likelihood_models.torch.ExponentialLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.component_names" title="darts.utils.likelihood_models.torch.ExponentialLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.ExponentialLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -1664,7 +1654,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.ExponentialLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1782,7 +1772,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GammaLikelihood.component_names" title="darts.utils.likelihood_models.torch.GammaLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GammaLikelihood.component_names" title="darts.utils.likelihood_models.torch.GammaLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GammaLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.GammaLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -1798,7 +1788,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.GammaLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GammaLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GammaLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -1931,7 +1921,7 @@ Default: 0. (equivalent to NLL)</p></li>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.component_names" title="darts.utils.likelihood_models.torch.GaussianLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.component_names" title="darts.utils.likelihood_models.torch.GaussianLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.GaussianLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -1947,7 +1937,7 @@ Default: 0. (equivalent to NLL)</p></li>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.GaussianLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2064,7 +2054,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.component_names" title="darts.utils.likelihood_models.torch.GeometricLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.component_names" title="darts.utils.likelihood_models.torch.GeometricLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.GeometricLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -2080,7 +2070,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.GeometricLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2198,7 +2188,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.component_names" title="darts.utils.likelihood_models.torch.GumbelLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.component_names" title="darts.utils.likelihood_models.torch.GumbelLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.GumbelLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -2214,7 +2204,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.GumbelLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2331,7 +2321,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.component_names" title="darts.utils.likelihood_models.torch.HalfNormalLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.component_names" title="darts.utils.likelihood_models.torch.HalfNormalLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.HalfNormalLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -2347,7 +2337,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.HalfNormalLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2465,7 +2455,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.component_names" title="darts.utils.likelihood_models.torch.LaplaceLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.component_names" title="darts.utils.likelihood_models.torch.LaplaceLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.LaplaceLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -2481,7 +2471,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.LaplaceLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2599,7 +2589,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.component_names" title="darts.utils.likelihood_models.torch.LogNormalLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.component_names" title="darts.utils.likelihood_models.torch.LogNormalLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.LogNormalLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -2615,7 +2605,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.LogNormalLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2727,7 +2717,7 @@ network are in terms of the mean <span class="math notranslate nohighlight">\(\m
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.component_names" title="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.component_names" title="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -2743,7 +2733,7 @@ network are in terms of the mean <span class="math notranslate nohighlight">\(\m
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2861,7 +2851,7 @@ happen independently of the time since the last event.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.component_names" title="darts.utils.likelihood_models.torch.PoissonLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.component_names" title="darts.utils.likelihood_models.torch.PoissonLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.PoissonLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -2877,7 +2867,7 @@ happen independently of the time since the last event.</p>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.PoissonLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -2988,7 +2978,7 @@ representing the likelihood of a well defined distribution.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.QuantileRegression.component_names" title="darts.utils.likelihood_models.torch.QuantileRegression.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.QuantileRegression.component_names" title="darts.utils.likelihood_models.torch.QuantileRegression.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.QuantileRegression.compute_loss" title="darts.utils.likelihood_models.torch.QuantileRegression.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -3004,7 +2994,7 @@ representing the likelihood of a well defined distribution.</p>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.QuantileRegression.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.QuantileRegression.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.QuantileRegression.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -3127,7 +3117,7 @@ quantiles closest to the sampled value.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.TorchLikelihood.component_names" title="darts.utils.likelihood_models.torch.TorchLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.TorchLikelihood.component_names" title="darts.utils.likelihood_models.torch.TorchLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.TorchLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.TorchLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -3143,7 +3133,7 @@ quantiles closest to the sampled value.</p>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.TorchLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.TorchLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.TorchLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
@@ -3258,7 +3248,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.component_names" title="darts.utils.likelihood_models.torch.WeibullLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>(input_series)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.component_names" title="darts.utils.likelihood_models.torch.WeibullLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.WeibullLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
@@ -3274,7 +3264,7 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.WeibullLikelihood.component_names">
-<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
 <dd><p>Generates names for the parameters of the Likelihood.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>

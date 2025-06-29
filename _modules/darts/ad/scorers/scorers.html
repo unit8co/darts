@@ -278,9 +278,10 @@
                 <span class="n">vals</span><span class="o">=</span><span class="n">actual</span><span class="o">.</span><span class="n">slice_intersect_values</span><span class="p">(</span><span class="n">pred</span><span class="p">),</span>
                 <span class="n">pred_vals</span><span class="o">=</span><span class="n">pred</span><span class="o">.</span><span class="n">slice_intersect_values</span><span class="p">(</span><span class="n">actual</span><span class="p">),</span>
             <span class="p">)</span>
-            <span class="n">scores</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">scores</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
                 <span class="n">values</span><span class="o">=</span><span class="n">scores</span><span class="p">,</span>
                 <span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+                <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -503,7 +504,7 @@
             <span class="sa">f</span><span class="s2">&quot;timeseries (number of samples must be equal to 1, found: </span><span class="si">{</span><span class="n">series</span><span class="o">.</span><span class="n">n_samples</span><span class="si">}</span><span class="s2">). The series &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;will be converted to a deterministic series by taking the median of the samples.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">quantile_timeseries</span><span class="p">(</span><span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_extract_deterministic_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">name_series</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Extract deterministic values from `series` (quantile=0.5 if `series` is probabilistic).&quot;&quot;&quot;</span>
@@ -867,7 +868,15 @@
         <span class="n">out</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">,</span> <span class="n">res</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">residuals</span><span class="p">):</span>
             <span class="n">time_index</span> <span class="o">=</span> <span class="n">s2</span><span class="o">.</span><span class="n">slice_intersect_times</span><span class="p">(</span><span class="n">s1</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">s2</span><span class="o">.</span><span class="n">with_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">res</span><span class="p">))</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">TimeSeries</span><span class="p">(</span>
+                    <span class="n">times</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span>
+                    <span class="n">values</span><span class="o">=</span><span class="n">res</span><span class="p">,</span>
+                    <span class="n">components</span><span class="o">=</span><span class="n">s2</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+                    <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">s2</span><span class="o">.</span><span class="n">_attrs</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">out</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_fun_window_agg</span><span class="p">(</span>
@@ -896,7 +905,13 @@
                 <span class="n">mean_score</span><span class="p">[</span><span class="n">idx_point</span><span class="p">]</span> <span class="o">=</span> <span class="n">score_vals</span><span class="p">[</span><span class="n">idx_point</span> <span class="p">:</span> <span class="n">idx_point</span> <span class="o">+</span> <span class="n">window</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span>
                     <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
                 <span class="p">)</span>
-            <span class="n">score_point_wise</span> <span class="o">=</span> <span class="n">score</span><span class="o">.</span><span class="n">with_times_and_values</span><span class="p">(</span><span class="n">score</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">mean_score</span><span class="p">)</span>
+            <span class="n">score_point_wise</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+                <span class="n">times</span><span class="o">=</span><span class="n">score</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+                <span class="n">values</span><span class="o">=</span><span class="n">mean_score</span><span class="p">,</span>
+                <span class="n">components</span><span class="o">=</span><span class="n">score</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+                <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">score</span><span class="o">.</span><span class="n">_attrs</span><span class="p">,</span>
+            <span class="p">)</span>
             <span class="n">scores_point_wise</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">score_point_wise</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">scores_point_wise</span>
 
@@ -1060,10 +1075,10 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_univariate</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_univariate</span> <span class="ow">and</span> <span class="n">series</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="c1"># number of input components matches output components, we can generate a new series</span>
             <span class="c1"># with the same attrs, and component names</span>
-            <span class="n">create_fn</span> <span class="o">=</span> <span class="s2">&quot;with_times_and_values&quot;</span>
+            <span class="n">keep_components</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># otherwise, create a clean new series</span>
-            <span class="n">create_fn</span> <span class="o">=</span> <span class="s2">&quot;from_times_and_values&quot;</span>
+            <span class="n">keep_components</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="c1"># (components, n series * (time - (window - 1))) -&gt; (n series * (time - (window - 1)), components)</span>
         <span class="n">score_vals</span> <span class="o">=</span> <span class="n">score_vals</span><span class="o">.</span><span class="n">T</span>
@@ -1071,10 +1086,12 @@
         <span class="n">idx</span> <span class="o">=</span> <span class="mi">0</span>
         <span class="c1"># (n series * (time - (window - 1)), components) -&gt; n series * (time - (window - 1), components)</span>
         <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+            <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;components&quot;</span><span class="p">:</span> <span class="n">s</span><span class="o">.</span><span class="n">components</span><span class="p">,</span> <span class="o">**</span><span class="n">s</span><span class="o">.</span><span class="n">_attrs</span><span class="p">}</span> <span class="k">if</span> <span class="n">keep_components</span> <span class="k">else</span> <span class="p">{}</span>
             <span class="n">result</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="nb">getattr</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">create_fn</span><span class="p">)(</span>
+                <span class="n">TimeSeries</span><span class="p">(</span>
                     <span class="n">times</span><span class="o">=</span><span class="n">s</span><span class="o">.</span><span class="n">_time_index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">-</span> <span class="mi">1</span> <span class="p">:],</span>
                     <span class="n">values</span><span class="o">=</span><span class="n">score_vals</span><span class="p">[</span><span class="n">idx</span> <span class="p">:</span> <span class="n">idx</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="p">:],</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="p">)</span>
             <span class="n">idx</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">+</span> <span class="mi">1</span>

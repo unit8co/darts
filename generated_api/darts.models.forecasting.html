@@ -477,7 +477,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -642,11 +642,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -694,6 +689,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -761,28 +761,18 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -801,7 +791,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -944,9 +934,9 @@
 </ul>
 </dd>
 <dt>Regression Models (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</dt><dd><ul class="simple">
-<li><p><a class="reference internal" href="darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel" title="darts.models.forecasting.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RegressionModel</span></code></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel" title="darts.models.forecasting.sklearn_model.SKLearnModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel" title="darts.models.forecasting.linear_regression_model.LinearRegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></a></p></li>
-<li><p><a class="reference internal" href="darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest" title="darts.models.forecasting.random_forest.RandomForest"><code class="xref py py-class docutils literal notranslate"><span class="pre">RandomForest</span></code></a></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel" title="darts.models.forecasting.random_forest.RandomForestModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RandomForestModel</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel" title="darts.models.forecasting.lgbm.LightGBMModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LightGBMModel</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel" title="darts.models.forecasting.xgboost.XGBModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">XGBModel</span></code></a></p></li>
 <li><p><a class="reference internal" href="darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel" title="darts.models.forecasting.catboost_model.CatBoostModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">CatBoostModel</span></code></a></p></li>
@@ -997,7 +987,6 @@
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.prophet_model.html">Facebook Prophet</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.random_forest.html">Random Forest</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">Regression ensemble model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.regression_model.html">Regression Model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.rnn_model.html">Recurrent Neural Networks</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">AutoARIMA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">AutoCES</a></li>
@@ -1008,6 +997,7 @@
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.sf_croston.html">Croston method</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.sf_model.html">StatsForecastModel</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.sf_tbats.html">TBATS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.sklearn_model.html">SKLearn Model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.tcn_model.html">Temporal Convolutional Network</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.tft_model.html">Temporal Fusion Transformer (TFT)</a></li>
 <li class="toctree-l1"><a class="reference internal" href="darts.models.forecasting.theta.html">Theta Method</a></li>

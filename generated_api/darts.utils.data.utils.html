@@ -40,7 +40,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="&lt;no title&gt;" href="darts.utils.historical_forecasts.html" />
-    <link rel="prev" title="Training Datasets Base Classes" href="darts.utils.data.training_dataset.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="darts.utils.data.torch_datasets.utils.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -477,7 +477,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -642,11 +642,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -694,6 +689,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -761,28 +761,18 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -801,7 +791,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -913,33 +903,48 @@
               <div>
                 
   <span class="target" id="module-darts.utils.data.utils"></span><dl class="py class">
-<dt class="sig sig-object py" id="darts.utils.data.utils.CovariateType">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.utils.</span></span><span class="sig-name descname"><span class="pre">CovariateType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/utils.html#CovariateType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.utils.CovariateType" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.utils.data.utils.FeatureType">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.utils.</span></span><span class="sig-name descname"><span class="pre">FeatureType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/utils.html#FeatureType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.utils.FeatureType" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
 <p>An enumeration.</p>
 <dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.utils.CovariateType.FUTURE">
-<span class="sig-name descname"><span class="pre">FUTURE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'future'</span></em><a class="headerlink" href="#darts.utils.data.utils.CovariateType.FUTURE" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.utils.data.utils.FeatureType.FUTURE_COVARIATES">
+<span class="sig-name descname"><span class="pre">FUTURE_COVARIATES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'future_covariates'</span></em><a class="headerlink" href="#darts.utils.data.utils.FeatureType.FUTURE_COVARIATES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.utils.CovariateType.FUTURE_PAST">
-<span class="sig-name descname"><span class="pre">FUTURE_PAST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'future_past'</span></em><a class="headerlink" href="#darts.utils.data.utils.CovariateType.FUTURE_PAST" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.utils.data.utils.FeatureType.FUTURE_PAST_COVARIATES">
+<span class="sig-name descname"><span class="pre">FUTURE_PAST_COVARIATES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'future_past_covariates'</span></em><a class="headerlink" href="#darts.utils.data.utils.FeatureType.FUTURE_PAST_COVARIATES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.utils.CovariateType.HISTORIC_FUTURE">
-<span class="sig-name descname"><span class="pre">HISTORIC_FUTURE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'historic_future'</span></em><a class="headerlink" href="#darts.utils.data.utils.CovariateType.HISTORIC_FUTURE" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.utils.data.utils.FeatureType.FUTURE_TARGET">
+<span class="sig-name descname"><span class="pre">FUTURE_TARGET</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'future_target'</span></em><a class="headerlink" href="#darts.utils.data.utils.FeatureType.FUTURE_TARGET" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.utils.CovariateType.NONE">
-<span class="sig-name descname"><span class="pre">NONE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#darts.utils.data.utils.CovariateType.NONE" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.utils.data.utils.FeatureType.HISTORIC_FUTURE_COVARIATES">
+<span class="sig-name descname"><span class="pre">HISTORIC_FUTURE_COVARIATES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'historic_future_covariates'</span></em><a class="headerlink" href="#darts.utils.data.utils.FeatureType.HISTORIC_FUTURE_COVARIATES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.utils.CovariateType.PAST">
-<span class="sig-name descname"><span class="pre">PAST</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'past'</span></em><a class="headerlink" href="#darts.utils.data.utils.CovariateType.PAST" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.utils.data.utils.FeatureType.PAST_COVARIATES">
+<span class="sig-name descname"><span class="pre">PAST_COVARIATES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'past_covariates'</span></em><a class="headerlink" href="#darts.utils.data.utils.FeatureType.PAST_COVARIATES" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.data.utils.FeatureType.PAST_TARGET">
+<span class="sig-name descname"><span class="pre">PAST_TARGET</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'past_target'</span></em><a class="headerlink" href="#darts.utils.data.utils.FeatureType.PAST_TARGET" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.data.utils.FeatureType.SAMPLE_WEIGHT">
+<span class="sig-name descname"><span class="pre">SAMPLE_WEIGHT</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'sample_weight'</span></em><a class="headerlink" href="#darts.utils.data.utils.FeatureType.SAMPLE_WEIGHT" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.data.utils.FeatureType.STATIC_COVARIATES">
+<span class="sig-name descname"><span class="pre">STATIC_COVARIATES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'static_covariates'</span></em><a class="headerlink" href="#darts.utils.data.utils.FeatureType.STATIC_COVARIATES" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -951,11 +956,11 @@
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.utils.data.training_dataset.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.utils.data.torch_datasets.utils.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Training Datasets Base Classes</p>
+            <p class="prev-next-title">&lt;no title&gt;</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.utils.historical_forecasts.html" title="next page">

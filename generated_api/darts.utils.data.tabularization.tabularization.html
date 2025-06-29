@@ -1,0 +1,1620 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="&lt;no title&gt;" href="darts.utils.data.torch_datasets.html" />
+    <link rel="prev" title="&lt;no title&gt;" href="darts.utils.data.tabularization.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
+  Release Notes
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.ad.html">
+   Anomaly Detection
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.aggregators.html">
+     Anomaly Aggregators
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">
+       AND Aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">
+       Ensemble scikit-learn aggregator
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">
+       OR Aggregator
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.anomaly_model.html">
+     Anomaly Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+    <label for="toctree-checkbox-3">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">
+       Filtering Anomaly Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">
+       Forecasting Anomaly Model
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.detectors.html">
+     Anomaly Detectors
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+    <label for="toctree-checkbox-4">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
+       Interquartile Range (IQR) Detector
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
+       Quantile Detector
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.detectors.threshold_detector.html">
+       Threshold Detector
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.ad.scorers.html">
+     Anomaly Scorers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+    <label for="toctree-checkbox-5">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.difference_scorer.html">
+       Difference Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">
+       k-means Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">
+       NLL Cauchy Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">
+       NLL Exponential Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">
+       NLL Gamma Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">
+       NLL Gaussian Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">
+       NLL Laplace Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">
+       NLL Poisson Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.norm_scorer.html">
+       Norm Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
+       PyOD Scorer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
+       Wasserstein Scorer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.ad.utils.html">
+     Utils for Anomaly Detection
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+  <label for="toctree-checkbox-6">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.dtw.html">
+     Dynamic Time Warping (DTW)
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
+       Dynamic Time Warping (DTW)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.dtw.window.html">
+       DTW Windows
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.encoders.html">
+     Time Axis Encoders
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+    <label for="toctree-checkbox-8">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">
+       Time Axes Encoders
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
+       Differencing Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mapper and InvertibleMapper
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
+       Mixed-data sampling (MIDAS) Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
+       Static Covariates Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">
+       Window Transformer
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
+  <label for="toctree-checkbox-10">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.explainability.html">
+   Explainability
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
+  <label for="toctree-checkbox-11">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.explainability_result.html">
+     Explainability Result
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.shap_explainer.html">
+     Shap Explainer for SKLearnModels
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.explainability.tft_explainer.html">
+     TFT Explainer for Temporal Fusion Transformer (TFTModel)
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
+  <label for="toctree-checkbox-12">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
+  <label for="toctree-checkbox-13">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
+    <label for="toctree-checkbox-14">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
+    <label for="toctree-checkbox-15">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
+       CatBoost model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
+       Conformal Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.dlinear.html">
+       D-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
+       Global Baseline Models (Naive)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nlinear.html">
+       N-Linear
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       AutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
+       AutoCES
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
+       AutoETS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
+       AutoMFLES
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
+       AutoTBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
+       AutoTheta
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
+       StatsForecastModel
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
+       TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
+       Time-series Dense Encoder (TiDE)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
+       Time-Series Mixer (TSMixer)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.xgboost.html">
+       XGBoost Model
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+  <label for="toctree-checkbox-16">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
+    <label for="toctree-checkbox-17">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
+    <label for="toctree-checkbox-18">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
+       Likelihoods for
+       <cite>
+        SKLearnModel
+       </cite>
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
+       Likelihoods for
+       <cite>
+        StatsForecast
+       </cite>
+       Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
+       Likelihoods for
+       <cite>
+        TorchForecastingModel
+       </cite>
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Time Series Statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.ts_utils.html">
+     Additional util functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="simple visible nav section-nav flex-column">
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.utils.data.tabularization.tabularization"></span><dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.data.tabularization.tabularization.add_static_covariates_to_lagged_data">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.data.tabularization.tabularization.</span></span><span class="sig-name descname"><span class="pre">add_static_covariates_to_lagged_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">features</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uses_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/tabularization/tabularization.html#add_static_covariates_to_lagged_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.tabularization.tabularization.add_static_covariates_to_lagged_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add static covariates to the features’ table for SKLearnModels.
+If <cite>uses_static_covariates=True</cite>, all target series used in <cite>fit()</cite> and <cite>predict()</cite> must have static
+covariates with identical dimensionality. Otherwise, will not consider static covariates.</p>
+<p>The static covariates are added to the right of the lagged features following the convention:
+with a 2 component series, and 2 static covariates per component -&gt;
+scov_1_comp_1 | scov_1_comp_2 | scov_2_comp_1 | scov_2_comp_2</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>features</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]) – The features’ numpy array(s) to which the static covariates will be added. Can either be a lone feature
+matrix or a <cite>Sequence</cite> of feature matrices; in the latter case, static covariates will be appended to
+each feature matrix in this <cite>Sequence</cite>.</p></li>
+<li><p><strong>target_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The target series from which to read the static covariates.</p></li>
+<li><p><strong>uses_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the model uses/expects static covariates. If <cite>True</cite>, it enforces that static covariates must
+have identical shapes across all of target series.</p></li>
+<li><p><strong>last_shape</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the last observed shape of the static covariates. This is <code class="docutils literal notranslate"><span class="pre">None</span></code> before fitting, or when
+<cite>uses_static_covariates</cite> is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The features’ array(s) with appended static covariates columns. If the <cite>features</cite> input was passed as a
+<cite>Sequence</cite> of <cite>np.array`s, then a `Sequence</cite> is also returned; if <cite>features</cite> was passed as an <cite>np.array</cite>,
+a <cite>np.array</cite> is returned.
+<cite>last_shape</cite> is the shape of the static covariates.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(features, last_shape)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.data.tabularization.tabularization.create_lagged_component_names">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.data.tabularization.tabularization.</span></span><span class="sig-name descname"><span class="pre">create_lagged_component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concatenate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/tabularization/tabularization.html#create_lagged_component_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.tabularization.tabularization.create_lagged_component_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Helper function called to retrieve the name of the features and labels arrays created with
+<cite>create_lagged_data()</cite>. The order of the features is the following:</p>
+<dl class="simple">
+<dt>Along the <cite>n_lagged_features</cite> axis, <cite>X</cite> has the following structure:</dt><dd><p>lagged_target | lagged_past_covariates | lagged_future_covariates | static covariates</p>
+</dd>
+</dl>
+<p>For <cite>*_lags=[-2,-1]</cite> and <cite>*_series.n_components = 2</cite> (lags shared across all the components),
+each <cite>lagged_*</cite> has the following structure (grouped by lags):</p>
+<blockquote>
+<div><p>comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1</p>
+</div></blockquote>
+<p>For <cite>*_lags={‘comp0’:[-3, -1], ‘comp1’:[-5, -3]}</cite> and <cite>*_series.n_components = 2</cite> (component-
+specific lags), each <cite>lagged_*</cite> has the following structure (sorted by lags, then by components):</p>
+<blockquote>
+<div><p>comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1</p>
+</div></blockquote>
+<dl class="simple">
+<dt>and for static covariates (2 static covariates acting on 2 target components):</dt><dd><p>cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1</p>
+</dd>
+</dl>
+<p>Along the <cite>n_lagged_labels</cite> axis, <cite>y</cite> has the following structure (for <cite>output_chunk_length=4</cite> and
+<cite>target_series.n_components=2</cite>):</p>
+<blockquote>
+<div><p>comp0_target_lag0 | comp1_target_lag0 | … | comp0_target_lag3 | comp1_target_lag3</p>
+</div></blockquote>
+<p>Note : will only use the component names of the first series from <cite>target_series</cite>, <cite>past_covariates</cite>,
+<cite>future_covariates</cite>, and static_covariates.</p>
+<p>The naming convention for target, past and future covariates lags is: <code class="docutils literal notranslate"><span class="pre">&quot;{name}_{type}_lag{i}&quot;</span></code>, where:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{name}</span></code> the component name of the (first) series</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{type}</span></code> is the feature type, one of “target”, “pastcov”, and “futcov”</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{i}</span></code> is the lag value</p></li>
+</ul>
+</div></blockquote>
+<p>The naming convention for static covariates is: <code class="docutils literal notranslate"><span class="pre">&quot;{name}_statcov_target_{comp}&quot;</span></code>, where:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{name}</span></code> the static covariate name of the (first) series</p></li>
+<li><dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">{comp}</span></code> the target component name of the (first) that the static covariate act on. If the static</dt><dd><p>covariate acts globally on a multivariate target series, will show “global”.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>The naming convention for labels is: <code class="docutils literal notranslate"><span class="pre">&quot;{name}_target_hrz{i}&quot;</span></code>, where:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{name}</span></code> the component name of the (first) series</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{i}</span></code> is the step in the forecast horizon</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]]</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul>
+<li><p><em>features_cols_name</em> – The names of the lagged features in the <cite>X</cite> array generated by <cite>create_lagged_data()</cite>
+as a <cite>List[str]</cite>. If <cite>concatenate=True</cite>, also contains the columns names for
+the <cite>y</cite> array (on the right).</p></li>
+<li><p><em>labels_cols_name</em> –</p>
+<dl class="simple">
+<dt>The names of the lagged features in the <cite>y</cite> array generated by <cite>create_lagged_data()</cite></dt><dd><p>as a <cite>List[str]</cite>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">tabularization.create_lagged_data</span></code></dt><dd><p>generate the lagged features and labels as (list of) Arrays.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.data.tabularization.tabularization.create_lagged_data">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.data.tabularization.tabularization.</span></span><span class="sig-name descname"><span class="pre">create_lagged_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uses_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_static_covariates_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_inputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_moving_windows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_training</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concatenate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/tabularization/tabularization.html#create_lagged_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.tabularization.tabularization.create_lagged_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the features array <cite>X</cite> and labels array <cite>y</cite> to train a lagged-variables <cite>SKLearnModel</cite> when
+<cite>is_training = True</cite>; alternatively, creates the features array <cite>X</cite> to produce a series of prediction from an
+already-trained model when <cite>is_training = False</cite>. In both cases, a list of time indices corresponding to
+each generated observation is also returned.</p>
+<p class="rubric">Notes</p>
+<dl>
+<dt>Instead of calling <cite>create_lagged_data</cite> directly, it is instead recommended that:</dt><dd><ul class="simple">
+<li><p><cite>create_lagged_training_data</cite> be called if one wishes to create the <cite>X</cite> and <cite>y</cite> arrays</p></li>
+</ul>
+<p>to train an <cite>SKLearnModel</cite>.
+- <cite>create_lagged_prediction_data</cite> be called if one wishes to create the <cite>X</cite> array required
+to generate a prediction from an already-trained <cite>SKLearnModel</cite>.</p>
+</dd>
+</dl>
+<p>This is because even though both of these functions are merely wrappers around <cite>create_lagged_data</cite>, their
+call signatures are more easily interpreted than <cite>create_lagged_data</cite>. For example,
+<cite>create_lagged_prediction_data</cite> does not accept <cite>output_chunk_length</cite> nor <cite>multi_models</cite> as inputs, since
+these inputs are not used when constructing prediction data. Similarly, <cite>create_lagged_prediction_data</cite>
+returns only <cite>X</cite> and <cite>times</cite> as outputs, as opposed to returning <cite>y</cite> as <cite>None</cite> along with <cite>X</cite> and <cite>times</cite>.</p>
+<dl class="simple">
+<dt>The <cite>X</cite> array is constructed from the lagged values of up to three separate timeseries:</dt><dd><p>1. The <cite>target_series</cite>, which contains the values we’re trying to predict. An <cite>SKLearnModel</cite> that
+uses previous values of the target its predicting is referred to as <em>autoregressive</em>; please refer to
+<a class="reference internal" href="#r592ab9944029-1" id="id1">[1]</a> for further details about autoregressive timeseries models.
+2. The past covariates series, which contains values that are <em>not</em> known into the future. Unlike
+the target series, however, past covariates are <em>not</em> to be predicted by the <cite>SKLearnModel</cite>.
+3. The future covariates (AKA ‘exogenous’ covariates) series, which contains values that are known
+into the future, even beyond the data in <cite>target_series</cite> and <cite>past_covariates</cite>.</p>
+</dd>
+</dl>
+<p>See <a class="reference internal" href="#r592ab9944029-2" id="id2">[2]</a> for a more detailed discussion about target, past, and future covariates. Conversely, <cite>y</cite> is
+comprised only of the lagged values of <cite>target_series</cite>.</p>
+<dl class="simple">
+<dt>The shape of <cite>X</cite> is:</dt><dd><p><cite>X.shape = (n_observations, n_lagged_features, n_samples)</cite>,</p>
+</dd>
+</dl>
+<p>where <cite>n_observations</cite> equals either the number of time points shared between all specified series,
+or <cite>max_samples_per_ts</cite>, whichever is smallest.
+The shape of <cite>y</cite> is:</p>
+<blockquote>
+<div><p><cite>y.shape = (n_observations, output_chunk_length, n_samples)</cite>,</p>
+</div></blockquote>
+<dl class="simple">
+<dt>if <cite>multi_models = True</cite>, otherwise:</dt><dd><p><cite>y.shape = (n_observations, 1, n_samples)</cite>.</p>
+</dd>
+</dl>
+<p>Along the <cite>n_lagged_features</cite> axis, <cite>X</cite> has the following structure (for <cite>*_lags=[-2,-1]</cite> and
+<cite>*_series.n_components = 2</cite>):</p>
+<blockquote>
+<div><p>lagged_target | lagged_past_covariates | lagged_future_covariates</p>
+</div></blockquote>
+<dl class="simple">
+<dt>where each <cite>lagged_*</cite> has the following structure:</dt><dd><p><a href="#id10"><span class="problematic" id="id11">lag_</span></a>-2_comp_1_* | <a href="#id12"><span class="problematic" id="id13">lag_</span></a>-2_comp_2_* | <a href="#id14"><span class="problematic" id="id15">lag_</span></a>-1_comp_1_* | <a href="#id16"><span class="problematic" id="id17">lag_</span></a>-1_comp_2_*</p>
+</dd>
+</dl>
+<p>Along the <cite>n_lagged_labels</cite> axis, <cite>y</cite> has the following structure (for <cite>output_chunk_length=4</cite> and
+<cite>target_series.n_components=2</cite>):</p>
+<blockquote>
+<div><p>lag_+0_comp_1_target | lag_+0_comp_2_target | … | lag_+3_comp_1_target | lag_+3_comp_2_target</p>
+</div></blockquote>
+<p>The <cite>lags</cite> and <cite>lags_past_covariates</cite> must contain only values less than or equal to -1. In other words, one
+cannot use the value of either of these series at time <cite>t</cite> to predict the value of the target series at the
+same time <cite>t</cite>; this is because the values of <cite>target_series</cite> and <cite>past_covariates</cite> at time <cite>t</cite> aren’t available
+at prediction time, by definition. Conversely, since the values of <cite>future_covariates</cite> are known into the future,
+<cite>lags_future_covariates</cite> can contain negative, positive, and/or zero lag values (i.e. we <em>can</em> use the values of
+<cite>future_covariates</cite> at time <cite>t</cite> or beyond to predict the value of <cite>target_series</cite> at time <cite>t</cite>).</p>
+<p>The exact method used to construct <cite>X</cite> and <cite>y</cite> depends on whether all specified timeseries are
+of the same frequency or not:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If all specified timeseries are of the same frequency, <cite>strided_moving_window</cite> is used to extract</p></li>
+</ul>
+<p>contiguous time blocks from each timeseries; the lagged variables are then extracted from each window.
+- If all specified timeseries are <em>not</em> of the same frequency, then <cite>find_shared_times</cite> is first used
+to find those times common to all three timeseries, after which the lagged features are extracted by
+offsetting the time indices of these common times by the requested lags.</p>
+</div></blockquote>
+<p>In cases where it can be validly applied, the ‘moving window’ method is expected to be faster than the
+‘intersecting time’ method. However, in exceptional cases where only a small number of lags are being
+extracted, but the difference between the lag values is large (e.g. <cite>lags = [-1, -1000]</cite>), the ‘moving
+window’ method is expected to consume significantly more memory, since it extracts all series values
+between the maximum and minimum lags as ‘windows’, before actually extracting the specific requested lag values.</p>
+<p>In order for the lagged features of a series to be added to <cite>X</cite>, <em>both</em> that series and the corresponding lags
+must be specified; if a series is specified without the corresponding lags, that series will be ignored and not
+added to <cite>X</cite>. <cite>X</cite> and <cite>y</cite> arrays are constructed independently over the samples dimension (i.e. the second axis)
+of each series.</p>
+<p>If the provided series are stochastic (i.e. <cite>series.n_components &gt; 1</cite>), then an <cite>X</cite> and <cite>y</cite> array will be
+constructed for each sample; the arrays corresponding to each sample are concatenated together along the <cite>2`nd
+axis of `X</cite> and <cite>y</cite>. In other words, <cite>create_lagged_data</cite> is vectorized over the sample axis of the <cite>target_series</cite>,
+<cite>past_covariates</cite>, and <cite>future_covariates</cite> inputs. Importantly, if stochastic series are provided, each series must
+have the same number of samples, otherwise an error will be thrown.</p>
+<p>Each series input (i.e. <cite>target_series</cite>, <cite>past_covariates</cite>, and <cite>future_covariates</cite>) can be specified either as
+a single <cite>TimeSeries</cite>, or as a <cite>Sequence</cite> of <cite>TimeSeries</cite>; the specified series must all be of the same type,
+however (i.e. either all <cite>TimeSeries</cite> or all <cite>Sequence[TimeSeries]</cite>). If <cite>Sequence[TimeSeries]</cite> are specified,
+then a feature matrix <cite>X</cite> and labels array <cite>y</cite> will be constructed using the corresponding <cite>TimeSeries</cite> in
+each <cite>Sequence</cite> (i.e. the first <cite>TimeSeries</cite> in each <cite>Sequence</cite> are used to create an <cite>X</cite> and <cite>y</cite>, then
+the second <cite>TimeSeries</cite> in each <cite>Sequence</cite> are used to create an <cite>X</cite> and <cite>y</cite>, etc.). If <cite>concatenate = True</cite>,
+these <cite>X</cite>’s and <cite>y</cite>’s will be concatenated along the <cite>0`th axis; otherwise, a list of `X</cite> and <cite>y</cite> array will
+be returned. Note that <cite>times</cite> is always returned as a <cite>Sequence[pd.Index]</cite>, however, even when
+<cite>concatenate = True</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the series for the <cite>SKLearnModel</cite> to predict. Must be specified if <cite>is_training = True</cite>.
+Can be specified as either a <cite>TimeSeries</cite> or as a <cite>Sequence[TimeSeries]</cite>.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the past covariates series that the <cite>SKLearnModel</cite> will use as inputs. Unlike the
+<cite>target_series</cite>, <cite>past_covariates</cite> are <em>not</em> to be predicted by the <cite>SKLearnModel</cite>. Can be
+specified as either a <cite>TimeSeries</cite> or as a <cite>Sequence[TimeSeries]</cite>.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the future covariates (i.e. exogenous covariates) series that the <cite>SKLearnModel</cite> will
+use as inputs. Can be specified as either a <cite>TimeSeries</cite> or as a <cite>Sequence[TimeSeries]</cite>.</p></li>
+<li><p><strong>lags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
+autoregressive features will <em>not</em> be added to <cite>X</cite>. Each lag value is assumed to be negative (e.g.
+<cite>lags = [-3, -1]</cite> will extract <cite>target_series</cite> values which are 3 time steps and 1 time step away from
+the current value). If the lags are provided as a dictionary, the lags values are specific to each
+component in the target series.</p></li>
+<li><p><strong>lags_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the lags of <cite>past_covariates</cite> to be used as features. Like <cite>lags</cite>, each lag value is assumed to
+be less than or equal to -1. If the lags are provided as a dictionary, the lags values are specific to each
+component in the past covariates series.</p></li>
+<li><p><strong>lags_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the lags of <cite>future_covariates</cite> to be used as features. Unlike <cite>lags</cite> and
+<cite>lags_past_covariates</cite>, <cite>lags_future_covariates</cite> values can be positive (i.e. use values <em>after</em> time <cite>t</cite>
+to predict target at time <cite>t</cite>), zero (i.e. use values <em>at</em> time <cite>t</cite> to predict target at time <cite>t</cite>), and/or
+negative (i.e. use values <em>before</em> time <cite>t</cite> to predict target at time <cite>t</cite>). If <cite>output_chunk_shift &gt; 0</cite>, the
+lags are relative to the first time step of the shifted output chunk. If the lags are provided as
+a dictionary, the lags values are specific to each component in the future covariates series.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps ahead into the future the <cite>SKLearnModel</cite> is to predict. Must
+best specified if <cite>is_training = True</cite>.</p></li>
+<li><p><strong>output_chunk_shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps to shift the output chunk ahead into the future.</p></li>
+<li><p><strong>uses_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the model uses/expects static covariates. If <cite>True</cite>, it enforces that static covariates must
+have identical shapes across all target series.</p></li>
+<li><p><strong>last_static_covariates_shape</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the last observed shape of the static covariates. This is <code class="docutils literal notranslate"><span class="pre">None</span></code> before fitting, or when
+<cite>uses_static_covariates</cite> is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
+samples are kept. In theory, specifying a smaller <cite>max_samples_per_ts</cite> should reduce computation time,
+especially in cases where many observations could be generated.</p></li>
+<li><p><strong>multi_models</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies whether the <cite>SKLearnModel</cite> predicts multiple time steps into the future. If <cite>True</cite>,
+then the <cite>SKLearnModel</cite> is assumed to predict all time steps from time <cite>t</cite> to <cite>t+output_chunk_length</cite>.
+If <cite>False</cite>, then the <cite>SKLearnModel</cite> is assumed to predict <em>only</em> the time step at <cite>t+output_chunk_length</cite>.
+This input is ignored if <cite>is_training = False</cite>.</p></li>
+<li><p><strong>check_inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that the <cite>lags_*</cite> and <cite>series_*</cite> inputs should be checked for validity. Should be set
+to <cite>False</cite> if inputs have already been checked for validity (e.g. inside the <cite>__init__</cite> of a class), otherwise
+should be set to <cite>True</cite>.</p></li>
+<li><p><strong>use_moving_windows</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that the ‘moving window’ method should be used to construct <cite>X</cite> and <cite>y</cite> if all
+provided series are of the same frequency. If <cite>use_moving_windows = False</cite>, the ‘time intersection’ method
+will always be used, even when all provided series are of the same frequency. In general, setting
+to <cite>True</cite> results in faster tabularization at the potential cost of higher memory usage. See Notes for further
+details.</p></li>
+<li><p><strong>is_training</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies whether the constructed lagged data are to be used for training an <cite>SKLearnModel</cite>
+(i.e. <cite>is_training = True</cite>), or for generating predictions from an already-trained <cite>SKLearnModel</cite> (i.e.
+<cite>is_training = False</cite>). If <cite>is_training = True</cite>, <cite>target_series</cite> and <cite>output_chunk_length</cite> must be specified,
+the <cite>multi_models</cite> input is utilised, and a label array <cite>y</cite> is returned. Conversely, if <cite>is_training = False</cite>,
+then <cite>target_series</cite> and <cite>output_chunk_length</cite> do not need to be specified, the <cite>multi_models</cite> input is ignored,
+and the returned <cite>y</cite> value is <cite>None</cite>.</p></li>
+<li><p><strong>concatenate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that <cite>X</cite> and <cite>y</cite> should both be returned as single <cite>np.ndarray`s, instead of as
+a `Sequence[np.ndarray]</cite>. If each series input is specified as a <cite>Sequence[TimeSeries]</cite> and
+<cite>concatenate = False</cite>, <cite>X</cite> and <cite>y</cite> will be lists whose <cite>i`th element corresponds to the feature matrix or label
+array formed by the `i`th `TimeSeries</cite> in each <cite>Sequence[TimeSeries]</cite> input. Conversely, if <cite>concatenate = True</cite>
+when <cite>Sequence[TimeSeries]</cite> are provided, then <cite>X</cite> and <cite>y</cite> will be arrays created by concatenating all
+feature/label arrays formed by each <cite>TimeSeries</cite> along the <cite>0`th axis. Note that `times</cite> is still returned as
+<cite>Sequence[pd.Index]</cite>, even when <cite>concatenate = True</cite>.</p></li>
+<li><p><strong>sample_weight</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+per label (each step in <cite>output_chunk_length</cite>), and per component.
+If a series or sequence of series, then those weights are used. If the weight series only have a single
+component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
+component-specific weights, the number of components must match those of <cite>series</cite>.
+If a string, then the weights are generated using built-in weighting functions. The available options are
+<cite>“linear”</cite> or <cite>“exponential”</cite> decay - the further in the past, the lower the weight. The weights are
+computed globally based on the length of the longest series in <cite>series</cite>. Then for each series, the weights
+are extracted from the end of the global weights. This gives a common time weighting across all series.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between consecutive samples, applied starting from the end of the series. This should
+be used with caution as it might introduce bias in the forecasts.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>X</em> – The constructed features array(s), with shape <cite>(n_observations, n_lagged_features, n_samples)</cite>.
+If the series inputs were specified as <cite>Sequence[TimeSeries]</cite> and <cite>concatenate = False</cite>, then <cite>X</cite>
+is returned as a <cite>Sequence[np.array]</cite>; otherwise, <cite>X</cite> is returned as a single <cite>np.array</cite>.</p></li>
+<li><p><em>y</em> – The constructed labels array. If <cite>multi_models = True</cite>, then <cite>y</cite> is a
+<cite>(n_observations, output_chunk_length, n_samples)</cite>-shaped array; conversely, if
+<cite>multi_models =  False</cite>, then <cite>y</cite> is a <cite>(n_observations, 1, n_samples)</cite>-shaped array.
+If the series inputs were specified as <cite>Sequence[TimeSeries]</cite> and <cite>concatenate = False</cite>, then <cite>y</cite>
+is returned as a <cite>Sequence[np.array]</cite>; otherwise, <cite>y</cite> is returned as a single <cite>np.array</cite>.</p></li>
+<li><p><em>times</em> – The <cite>time_index</cite> of each observation in <cite>X</cite> and <cite>y</cite>, returned as a <cite>Sequence</cite> of <cite>pd.Index`es.
+If the series inputs were specified as `Sequence[TimeSeries]</cite>, then the <cite>i`th list element
+gives the times of those observations formed using the `i`th `TimeSeries</cite> object in each
+<cite>Sequence</cite>. Otherwise, if the series inputs were specified as <cite>TimeSeries</cite>, the only
+element is the times of those observations formed from the lone <cite>TimeSeries</cite> inputs.</p></li>
+<li><p><em>last_static_covariates_shape</em> – The last observed shape of the static covariates. This is <code class="docutils literal notranslate"><span class="pre">None</span></code> when <cite>uses_static_covariates</cite>
+is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><em>sample_weight</em> – The weights to apply to each observation in <cite>X</cite> and output step <cite>y</cite>, returned as a <cite>Sequence</cite> of <cite>np.ndarray</cite>.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the specified time series do not share any times for which features (and labels if <cite>is_training = True</cite>) can
+be constructed.</p></li>
+<li><p><strong>ValueError</strong> – If no lags are specified, or if any of the specified lag values are non-negative.</p></li>
+<li><p><strong>ValueError</strong> – If any of the series are too short to create features and/or labels for the requested lags and
+<cite>output_chunk_length</cite> values.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>target_series</cite> and/or <cite>output_chunk_length</cite> are <em>not</em> specified when <cite>is_training = True</cite>.</p></li>
+<li><p><strong>ValueError</strong> – If the provided series do not share the same type of <cite>time_index</cite> (e.g. <cite>target_series</cite> uses a
+pd.RangeIndex, but <cite>future_covariates</cite> uses a <cite>pd.DatetimeIndex</cite>).</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r592ab9944029-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://otexts.com/fpp2/AR.html#AR">https://otexts.com/fpp2/AR.html#AR</a></p>
+</dd>
+<dt class="label" id="r592ab9944029-2"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><p><a class="reference external" href="https://unit8.com/resources/time-series-forecasting-using-past-and-future-external-data-with-darts/">https://unit8.com/resources/time-series-forecasting-using-past-and-future-external-data-with-darts/</a></p>
+</dd>
+</dl>
+<div class="admonition seealso">
+<p class="admonition-title">See also</p>
+<dl class="simple">
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">tabularization.create_lagged_component_names</span></code></dt><dd><p>return the lagged features names as a list of strings.</p>
+</dd>
+</dl>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.data.tabularization.tabularization.create_lagged_prediction_data">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.data.tabularization.tabularization.</span></span><span class="sig-name descname"><span class="pre">create_lagged_prediction_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uses_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_static_covariates_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_inputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_moving_windows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concatenate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/tabularization/tabularization.html#create_lagged_prediction_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.tabularization.tabularization.create_lagged_prediction_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the features array <cite>X</cite> to produce a series of prediction from an already-trained <cite>SKLearnModel</cite>; the
+time index values of each observation is also returned.</p>
+<p class="rubric">Notes</p>
+<p>This function is simply a wrapper around <cite>create_lagged_data</cite>; for further details on the structure of <cite>X</cite>, please
+refer to <cite>help(create_lagged_data)</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the series for the <cite>SKLearnModel</cite> to predict.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the past covariates series that the <cite>SKLearnModel</cite> will use as inputs. Unlike the
+<cite>target_series</cite>, <cite>past_covariates</cite> are <em>not</em> to be predicted by the <cite>SKLearnModel</cite>.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the future covariates (i.e. exogenous covariates) series that the <cite>SKLearnModel</cite> will
+use as inputs.</p></li>
+<li><p><strong>lags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
+autoregressive features will <em>not</em> be added to <cite>X</cite>. Each lag value is assumed to be negative (e.g.
+<cite>lags = [-3, -1]</cite> will extract <cite>target_series</cite> values which are 3 time steps and 1 time step away from
+the current value). If the lags are provided as a dictionary, the lags values are specific to each
+component in the target series.</p></li>
+<li><p><strong>lags_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the lags of <cite>past_covariates</cite> to be used as features. Like <cite>lags</cite>, each lag value is assumed to
+be less than or equal to -1. If the lags are provided as a dictionary, the lags values are specific to each
+component in the past covariates series.</p></li>
+<li><p><strong>lags_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the lags of <cite>future_covariates</cite> to be used as features. Unlike <cite>lags</cite> and <cite>lags_past_covariates</cite>,
+<cite>lags_future_covariates</cite> values can be positive (i.e. use values <em>after</em> time <cite>t</cite> to predict target at
+time <cite>t</cite>), zero (i.e. use values <em>at</em> time <cite>t</cite> to predict target at time <cite>t</cite>), and/or negative (i.e. use
+values <em>before</em> time <cite>t</cite> to predict target at time <cite>t</cite>). If the lags are provided as a dictionary, the lags
+values are specific to each component in the future covariates series.</p></li>
+<li><p><strong>uses_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the model uses/expects static covariates. If <cite>True</cite>, it enforces that static covariates must
+have identical shapes across all target series.</p></li>
+<li><p><strong>last_static_covariates_shape</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the last observed shape of the static covariates. This is <code class="docutils literal notranslate"><span class="pre">None</span></code> before fitting, or when
+<cite>uses_static_covariates</cite> is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
+samples are kept. In theory, specifying a smaller <cite>max_samples_per_ts</cite> should reduce computation time,
+especially in cases where many observations could be generated.</p></li>
+<li><p><strong>check_inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that the <cite>lags_*</cite> and <cite>series_*</cite> inputs should be checked for validity. Should be set
+to <cite>False</cite> if inputs have already been checked for validity (e.g. inside the <cite>__init__</cite> of a class), otherwise
+should be set to <cite>True</cite>.</p></li>
+<li><p><strong>use_moving_windows</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that the ‘moving window’ method should be used to construct <cite>X</cite> and <cite>y</cite> if all
+provided series are of the same frequency. If <cite>use_moving_windows = False</cite>, the ‘time intersection’ method
+will always be used, even when all provided series are of the same frequency. In general, setting
+to <cite>True</cite> results in faster tabularization at the potential cost of higher memory usage. See Notes for further
+details.</p></li>
+<li><p><strong>concatenate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that <cite>X</cite> should be returned as a single <cite>np.ndarray</cite>, instead of as a
+<cite>Sequence[np.ndarray]</cite>. If each series input is specified as a <cite>Sequence[TimeSeries]</cite> and <cite>concatenate = False</cite>,
+<cite>X</cite> will be a list whose <cite>i`th element corresponds to the feature matrix or label array formed by the `i`th
+`TimeSeries</cite> in each <cite>Sequence[TimeSeries]</cite> input. Conversely, if <cite>concatenate = True</cite> when
+<cite>Sequence[TimeSeries]</cite> are provided, then <cite>X</cite> will be an array created by concatenating all feature
+arrays formed by each <cite>TimeSeries</cite> along the <cite>0`th axis. Note that `times</cite> is still returned as
+<cite>Sequence[pd.Index]</cite>, even when <cite>concatenate = True</cite>.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between consecutive samples applied, starting from the end of the series. This should
+be used with caution as it will cause gaps in the forecasts.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show warnings.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>X</em> – The constructed features array(s), with shape <cite>(n_observations, n_lagged_features, n_samples)</cite>.
+If the series inputs were specified as <cite>Sequence[TimeSeries]</cite> and <cite>concatenate = False</cite>, then <cite>X</cite>
+is returned as a <cite>Sequence[np.array]</cite>; otherwise, <cite>X</cite> is returned as a single <cite>np.array</cite>.</p></li>
+<li><p><em>times</em> – The <cite>time_index</cite> of each observation in <cite>X</cite> and <cite>y</cite>, returned as a <cite>Sequence</cite> of <cite>pd.Index`es.
+If the series inputs were specified as `Sequence[TimeSeries]</cite>, then the <cite>i`th list element
+gives the times of those observations formed using the `i`th `TimeSeries</cite> object in each
+<cite>Sequence</cite>. Otherwise, if the series inputs were specified as <cite>TimeSeries</cite>, the only
+element is the times of those observations formed from the lone <cite>TimeSeries</cite> inputs.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the specified time series do not share any times for which features can be constructed.</p></li>
+<li><p><strong>ValueError</strong> – If no lags are specified, or if any of the specified lag values are non-negative.</p></li>
+<li><p><strong>ValueError</strong> – If any of the series are too short to create features for the requested lag values.</p></li>
+<li><p><strong>ValueError</strong> – If the provided series do not share the same type of <cite>time_index</cite> (e.g. <cite>target_series</cite> uses a
+pd.RangeIndex, but <cite>future_covariates</cite> uses a <cite>pd.DatetimeIndex</cite>).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.data.tabularization.tabularization.create_lagged_training_data">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.data.tabularization.tabularization.</span></span><span class="sig-name descname"><span class="pre">create_lagged_training_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uses_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_static_covariates_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_inputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_moving_windows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">concatenate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/tabularization/tabularization.html#create_lagged_training_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.tabularization.tabularization.create_lagged_training_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates the features array <cite>X</cite> and labels array <cite>y</cite> to train a lagged-variables <cite>SKLearnModel</cite> (e.g. an
+<cite>sklearn</cite> model); the time index values of each observation is also returned.</p>
+<p class="rubric">Notes</p>
+<p>This function is simply a wrapper around <cite>create_lagged_data</cite>; for further details on the structure of <cite>X</cite>, please
+refer to <cite>help(create_lagged_data)</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The series for the <cite>SKLearnModel</cite> to predict.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps ahead into the future the <cite>SKLearnModel</cite> is to predict.</p></li>
+<li><p><strong>output_chunk_shift</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the number of time steps to shift the output chunk ahead into the future.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the past covariates series that the <cite>SKLearnModel</cite> will use as inputs. Unlike the
+<cite>target_series</cite>, <cite>past_covariates</cite> are <em>not</em> to be predicted by the <cite>SKLearnModel</cite>.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the future covariates (i.e. exogenous covariates) series that the <cite>SKLearnModel</cite> will
+use as inputs.</p></li>
+<li><p><strong>lags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the lags of the target series to be used as (autoregressive) features. If not specified,
+autoregressive features will <em>not</em> be added to <cite>X</cite>. Each lag value is assumed to be negative (e.g.
+<cite>lags = [-3, -1]</cite> will extract <cite>target_series</cite> values which are 3 time steps and 1 time step away from
+the current value). If the lags are provided as a dictionary, the lags values are specific to each
+component in the target series.</p></li>
+<li><p><strong>lags_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the lags of <cite>past_covariates</cite> to be used as features. Like <cite>lags</cite>, each lag value is assumed to
+be less than or equal to -1. If the lags are provided as a dictionary, the lags values are specific to each
+component in the past covariates series.</p></li>
+<li><p><strong>lags_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the lags of <cite>future_covariates</cite> to be used as features. Unlike <cite>lags</cite> and <cite>lags_past_covariates</cite>,
+<cite>lags_future_covariates</cite> values can be positive (i.e. use values <em>after</em> time <cite>t</cite> to predict target at
+time <cite>t</cite>), zero (i.e. use values <em>at</em> time <cite>t</cite> to predict target at time <cite>t</cite>), and/or negative (i.e. use values
+<em>before</em> time <cite>t</cite> to predict target at time <cite>t</cite>). If the lags are provided as a dictionary, the lags values
+are specific to each component in the future covariates series.</p></li>
+<li><p><strong>uses_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the model uses/expects static covariates. If <cite>True</cite>, it enforces that static covariates must
+have identical shapes across all target series.</p></li>
+<li><p><strong>last_static_covariates_shape</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the last observed shape of the static covariates. This is <code class="docutils literal notranslate"><span class="pre">None</span></code> before fitting, or when
+<cite>uses_static_covariates</cite> is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the maximum number of samples to be drawn for training/validation; only the most recent
+samples are kept. In theory, specifying a smaller <cite>max_samples_per_ts</cite> should reduce computation time,
+especially in cases where many observations could be generated.</p></li>
+<li><p><strong>multi_models</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies whether the <cite>SKLearnModel</cite> predicts multiple time steps into the future. If <cite>True</cite>,
+then the <cite>SKLearnModel</cite> is assumed to predict all time steps from time <cite>t</cite> to <cite>t+output_chunk_length</cite>.
+If <cite>False</cite>, then the <cite>SKLearnModel</cite> is assumed to predict <em>only</em> the time step at <cite>t+output_chunk_length</cite>.</p></li>
+<li><p><strong>check_inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that the <cite>lags_*</cite> and <cite>series_*</cite> inputs should be checked for validity. Should be set
+to <cite>False</cite> if inputs have already been checked for validity (e.g. inside the <cite>__init__</cite> of a class), otherwise
+should be set to <cite>True</cite>.</p></li>
+<li><p><strong>use_moving_windows</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that the ‘moving window’ method should be used to construct <cite>X</cite> and <cite>y</cite> if all
+provided series are of the same frequency. If <cite>use_moving_windows = False</cite>, the ‘time intersection’ method
+will always be used, even when all provided series are of the same frequency. In general, setting
+to <cite>True</cite> results in faster tabularization at the potential cost of higher memory usage. See Notes for further
+details.</p></li>
+<li><p><strong>concatenate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that <cite>X</cite> and <cite>y</cite> should both be returned as single <cite>np.ndarray`s, instead of as
+a `Sequence[np.ndarray]</cite>. If each series input is specified as a <cite>Sequence[TimeSeries]</cite> and
+<cite>concatenate = False</cite>, <cite>X</cite> and <cite>y</cite> will be lists whose <cite>i`th element corresponds to the feature matrix or label
+array formed by the `i`th `TimeSeries</cite> in each <cite>Sequence[TimeSeries]</cite> input. Conversely, if <cite>concatenate = True</cite>
+when <cite>Sequence[TimeSeries]</cite> are provided, then <cite>X</cite> and <cite>y</cite> will be arrays created by concatenating all
+feature/label arrays formed by each <cite>TimeSeries</cite> along the <cite>0`th axis. Note that `times</cite> is still returned as
+<cite>Sequence[pd.Index]</cite>, even when <cite>concatenate = True</cite>.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between consecutive samples, applied starting from the end of the series. This should
+be used with caution as it might introduce bias in the forecasts.</p></li>
+<li><p><strong>sample_weight</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+per label (each step in <cite>output_chunk_length</cite>), and per component.
+If a series or sequence of series, then those weights are used. If the weight series only have a single
+component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
+component-specific weights, the number of components must match those of <cite>series</cite>.
+If a string, then the weights are generated using built-in weighting functions. The available options are
+<cite>“linear”</cite> or <cite>“exponential”</cite> decay - the further in the past, the lower the weight. The weights are
+computed globally based on the length of the longest series in <cite>series</cite>. Then for each series, the weights
+are extracted from the end of the global weights. This gives a common time weighting across all series.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>X</em> – The constructed features array(s), with shape <cite>(n_observations, n_lagged_features, n_samples)</cite>.
+If the series inputs were specified as <cite>Sequence[TimeSeries]</cite> and <cite>concatenate = False</cite>, then <cite>X</cite>
+is returned as a <cite>Sequence[np.array]</cite>; otherwise, <cite>X</cite> is returned as a single <cite>np.array</cite>.</p></li>
+<li><p><em>y</em> – The constructed labels array. If <cite>multi_models = True</cite>, then <cite>y</cite> is a
+<cite>(n_observations, output_chunk_length, n_samples)</cite>-shaped array; conversely, if
+<cite>multi_models =  False</cite>, then <cite>y</cite> is a <cite>(n_observations, 1, n_samples)</cite>-shaped array.
+If the series inputs were specified as <cite>Sequence[TimeSeries]</cite> and <cite>concatenate = False</cite>, then <cite>y</cite>
+is returned as a <cite>Sequence[np.array]</cite>; otherwise, <cite>y</cite> is returned as a single <cite>np.array</cite>.</p></li>
+<li><p><em>times</em> – The <cite>time_index</cite> of each observation in <cite>X</cite> and <cite>y</cite>, returned as a <cite>Sequence</cite> of <cite>pd.Index`es.
+If the series inputs were specified as `Sequence[TimeSeries]</cite>, then the <cite>i`th list element
+gives the times of those observations formed using the `i`th `TimeSeries</cite> object in each
+<cite>Sequence</cite>. Otherwise, if the series inputs were specified as <cite>TimeSeries</cite>, the only
+element is the times of those observations formed from the lone <cite>TimeSeries</cite> inputs.</p></li>
+<li><p><em>sample_weight</em> – The weights to apply to each observation in <cite>X</cite> and output step <cite>y</cite>, returned as a <cite>Sequence</cite> of <cite>np.ndarray</cite>.</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If the specified time series do not share any times for which features and labels can be constructed.</p></li>
+<li><p><strong>ValueError</strong> – If no lags are specified, or if any of the specified lag values are non-negative.</p></li>
+<li><p><strong>ValueError</strong> – If any of the series are too short to create features and labels for the requested lags and
+<cite>output_chunk_length</cite> values.</p></li>
+<li><p><strong>ValueError</strong> – If the provided series do not share the same type of <cite>time_index</cite> (e.g. <cite>target_series</cite> uses a
+pd.RangeIndex, but <cite>future_covariates</cite> uses a <cite>pd.DatetimeIndex</cite>).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.data.tabularization.tabularization.get_shared_times">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.data.tabularization.tabularization.</span></span><span class="sig-name descname"><span class="pre">get_shared_times</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">series_or_times</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sort</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/tabularization/tabularization.html#get_shared_times"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.tabularization.tabularization.get_shared_times" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the times shared by all specified <cite>TimeSeries</cite> or time indexes (i.e. the intersection of all
+these times). If <cite>sort = True</cite>, then these shared times are sorted from earliest to latest. Any <cite>TimeSeries</cite> or
+time indices in <cite>series_or_times</cite> that aren’t specified (i.e. are <cite>None</cite>) are simply ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series_or_times</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The <cite>TimeSeries</cite> and/or time indices that should ‘intersected’.</p></li>
+<li><p><strong>sort</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies that the returned shared times should be sorted from earliest to latest.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The time indices present in all specified <cite>TimeSeries</cite> and/or time indices.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>shared_times</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If the specified <cite>TimeSeries</cite> and/or time indices do not all share the same type of time index (i.e. must
+either be all <cite>pd.DatetimeIndex</cite> or all <cite>pd.RangeIndex</cite>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.data.tabularization.tabularization.get_shared_times_bounds">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.data.tabularization.tabularization.</span></span><span class="sig-name descname"><span class="pre">get_shared_times_bounds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">series_or_times</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/tabularization/tabularization.html#get_shared_times_bounds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.tabularization.tabularization.get_shared_times_bounds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the latest <cite>start_time</cite> and the earliest <cite>end_time</cite> among all non-<cite>None</cite> <cite>series_or_times</cite>;
+these are (non-tight) lower and upper <cite>bounds</cite> on the intersection of all these <cite>series_or_times</cite> respectively.
+If no potential overlap exists between all specified series, <cite>None</cite> is returned instead.</p>
+<p class="rubric">Notes</p>
+<p>If all specified <cite>series_or_times</cite> are of the same frequency, then <cite>get_shared_times_bounds</cite>
+returns tight <cite>bounds</cite> (i.e. the earliest and latest time within the intersection of all the timeseries
+is returned). To see this, suppose we have three equal-frequency series with observations made at different
+times:</p>
+<blockquote>
+<div><p>Series 1: ——
+Series 2:    ——
+Series 3:  ——</p>
+</div></blockquote>
+<p>Here, each <cite>-</cite> denotes an observation at a specific time. In this example, <cite>find_time_overlap_bounds</cite> will
+return the times at <cite>LB</cite> and <cite>UB</cite>:</p>
+<blockquote>
+<div><blockquote>
+<div><p>LB</p>
+</div></blockquote>
+<p>Series 1: —<a href="#id4"><span class="problematic" id="id5">|---|</span></a>
+Series 2:    <a href="#id6"><span class="problematic" id="id7">|---|</span></a>—
+Series 3:  –<a href="#id8"><span class="problematic" id="id9">|---|</span></a>-</p>
+<blockquote>
+<div><p>UB</p>
+</div></blockquote>
+</div></blockquote>
+<p>If the specified timeseries are <em>not</em> of the same frequency, then the returned <cite>bounds</cite> is potentially non-tight
+(i.e. <cite>LB &lt;= intersection.start_time() &lt; intersection.end_time() &lt;= UB</cite>, where <cite>intersection</cite> are the times shared
+by all specified timeseries)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series_or_times</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Index</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]]) – The <cite>TimeSeries</cite> and/or <cite>pd.Index</cite> values to compute intersection <cite>bounds</cite> for; any provided <cite>None</cite> values
+are ignored.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Tuple containing the latest <cite>start_time</cite> and earliest <cite>end time</cite> among all specified <cite>timeseries</cite>, in that
+order. If no potential overlap exists between the specified series, then <cite>None</cite> is returned instead. Similarly,
+if no non-<cite>None</cite> <cite>series_or_times</cite> were specified, <cite>None</cite> is returned.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>bounds</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>TypeError</strong> – If the series and/or times in <cite>series_or_times</cite> don’t all share the same type of <cite>time_index</cite>
+(i.e. either all <cite>pd.DatetimeIndex</cite> or <cite>pd.RangeIndex</cite>).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.utils.data.tabularization.tabularization.strided_moving_window">
+<span class="sig-prename descclassname"><span class="pre">darts.utils.data.tabularization.tabularization.</span></span><span class="sig-name descname"><span class="pre">strided_moving_window</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">window_len</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">check_inputs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/tabularization/tabularization.html#strided_moving_window"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.tabularization.tabularization.strided_moving_window" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts moving window views of an <cite>x</cite> array along a specified <cite>axis</cite>, where each window is of length <cite>window_len</cite>
+and consecutive windows are separated by <cite>stride</cite> indices. The total number of extracted windows equals
+<cite>num_windows = (x.shape[axis] - window_len)//stride + 1</cite>.</p>
+<p class="rubric">Notes</p>
+<dl class="simple">
+<dt>This function is similar to <cite>sliding_window_view</cite> in <cite>np.lib.stride_tricks</cite>, except that:</dt><dd><p>1. <cite>strided_moving_window</cite> allows for consecutive windows to be separated by a specified <cite>stride</cite>,
+whilst <cite>sliding_window_view</cite> does not.
+2. <cite>strided_moving_window</cite> can only operate along a single axis, whereas <cite>sliding_window_view</cite> can
+operate along multiple axes.</p>
+</dd>
+</dl>
+<p>Additionally, unlike <cite>sliding_window_view</cite>, using <cite>strided_moving_window</cite> doesn’t require <cite>numpy &gt;= 1.20.0</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – The array from which to extract moving windows.</p></li>
+<li><p><strong>window_len</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The size of the extracted moving windows.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the separation between consecutive windows.</p></li>
+<li><p><strong>axis</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, the axis along which the moving windows should be extracted.</p></li>
+<li><p><strong>check_inputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, specifies whether inputs should be checked for validity. Should be set
+to <cite>False</cite> if inputs have already been checked for validity (e.g. inside the <cite>__init__</cite>
+of a class), otherwise should be set to <cite>True</cite>. See <a class="reference internal" href="#r39a6276a3ed9-1" id="id3">[1]</a> for further details.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The moving windows extracted from <cite>x</cite>. The extracted windows are stacked along the last axis, and the
+<cite>axis</cite> along which the windows were extracted is ‘trimmed’ such that its length equals the number of
+extracted windows. More specifically, <cite>windows.shape = x_trimmed_shape + (window_len,)</cite>, where
+<cite>x_trimmed_shape</cite> equals <cite>x.shape</cite>, except that <cite>x_trimmed_shape[axis] = num_windows</cite>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>windows</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>ValueError</strong> – If <cite>check_inputs = True</cite> and <cite>window_len</cite> is not positive.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>check_inputs = True</cite> and <cite>stride</cite> is not positive.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>check_inputs = True</cite> and <cite>axis</cite> is greater than <cite>x.ndim</cite>.</p></li>
+<li><p><strong>ValueError</strong> – If <cite>check_inputs = True</cite> and <cite>window_len</cite> is larger than <cite>x.shape[axis]</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r39a6276a3ed9-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.lib.stride_tricks.as_strided.html">https://numpy.org/doc/stable/reference/generated/numpy.lib.stride_tricks.as_strided.html</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.utils.data.tabularization.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">&lt;no title&gt;</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.utils.data.torch_datasets.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">&lt;no title&gt;</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

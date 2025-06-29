@@ -39,7 +39,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Shap Explainer for RegressionModels" href="darts.explainability.shap_explainer.html" />
+    <link rel="next" title="Shap Explainer for SKLearnModels" href="darts.explainability.shap_explainer.html" />
     <link rel="prev" title="&lt;no title&gt;" href="darts.explainability.explainability.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -477,7 +477,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -642,11 +642,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -694,6 +689,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -761,28 +761,18 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -801,7 +791,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -978,7 +968,7 @@ forecast at any timestamp forecastable corresponding to the foreground <cite>Tim
 3 past covariates with default component names <code class="docutils literal notranslate"><span class="pre">&quot;0&quot;</span></code>, <code class="docutils literal notranslate"><span class="pre">&quot;1&quot;</span></code>, and <code class="docutils literal notranslate"><span class="pre">&quot;2&quot;</span></code>,
 and one future covariate with default component name <code class="docutils literal notranslate"><span class="pre">&quot;0&quot;</span></code>.
 Also, <code class="docutils literal notranslate"><span class="pre">horizons</span> <span class="pre">=</span> <span class="pre">[1,</span> <span class="pre">2]</span></code>.
-The model is a regression model, with <code class="docutils literal notranslate"><span class="pre">lags</span> <span class="pre">=</span> <span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">lags_past_covariates=[-1,</span> <span class="pre">-3]</span></code>,
+The model is a <cite>SKLearnModel</cite>, with <code class="docutils literal notranslate"><span class="pre">lags</span> <span class="pre">=</span> <span class="pre">3</span></code>, <code class="docutils literal notranslate"><span class="pre">lags_past_covariates=[-1,</span> <span class="pre">-3]</span></code>,
 <code class="docutils literal notranslate"><span class="pre">lags_future_covariates</span> <span class="pre">=</span> <span class="pre">[0]</span></code>.</p>
 <p>We provide <cite>foreground_series</cite>, <cite>foreground_past_covariates</cite>, <cite>foreground_future_covariates</cite> each of length 5.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">explainer</span> <span class="o">=</span> <span class="n">SomeHorizonBasedExplainer</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
@@ -1299,7 +1289,7 @@ If multiple series were used in <a class="reference internal" href="darts.explai
     <a class='right-next' id="next-link" href="darts.explainability.shap_explainer.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Shap Explainer for RegressionModels</p>
+        <p class="prev-next-title">Shap Explainer for SKLearnModels</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

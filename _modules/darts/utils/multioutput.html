@@ -199,17 +199,16 @@
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+        <span class="n">estimator</span><span class="p">,</span>
         <span class="n">eval_set_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">eval_weight_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">eval_set_name_</span> <span class="o">=</span> <span class="n">eval_set_name</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">eval_weight_name_</span> <span class="o">=</span> <span class="n">eval_weight_name</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n_features_in_</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">feature_names_in_</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># according to sklearn, set only attributes in `__init__` that are known before fitting;</span>
+        <span class="c1"># all other params at fitting time must have the suffix `&quot;_&quot;`</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_set_name</span> <span class="o">=</span> <span class="n">eval_set_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eval_weight_name</span> <span class="o">=</span> <span class="n">eval_weight_name</span>
 
 <div class="viewcode-block" id="MultiOutputRegressor.fit"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputRegressor.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the model to data, separately for each output variable.</span>
@@ -271,8 +270,8 @@
             <span class="p">)</span>
 
         <span class="n">fit_params_validated</span> <span class="o">=</span> <span class="n">_check_method_params</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">fit_params</span><span class="p">)</span>
-        <span class="n">eval_set</span> <span class="o">=</span> <span class="n">fit_params_validated</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_set_name_</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-        <span class="n">eval_weight</span> <span class="o">=</span> <span class="n">fit_params_validated</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_weight_name_</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">eval_set</span> <span class="o">=</span> <span class="n">fit_params_validated</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_set_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">eval_weight</span> <span class="o">=</span> <span class="n">fit_params_validated</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_weight_name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span> <span class="o">=</span> <span class="n">Parallel</span><span class="p">(</span><span class="n">n_jobs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">)(</span>
             <span class="n">delayed</span><span class="p">(</span><span class="n">_fit_estimator</span><span class="p">)(</span>
@@ -282,11 +281,9 @@
                 <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">sample_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                 <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="o">**</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_set_name</span><span class="p">:</span> <span class="p">[</span><span class="n">eval_set</span><span class="p">[</span><span class="n">i</span><span class="p">]]}</span> <span class="k">if</span> <span class="n">eval_set</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}),</span>
                 <span class="o">**</span><span class="p">(</span>
-                    <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_set_name_</span><span class="p">:</span> <span class="p">[</span><span class="n">eval_set</span><span class="p">[</span><span class="n">i</span><span class="p">]]}</span> <span class="k">if</span> <span class="n">eval_set</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">{}</span>
-                <span class="p">),</span>
-                <span class="o">**</span><span class="p">(</span>
-                    <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_weight_name_</span><span class="p">:</span> <span class="p">[</span><span class="n">eval_weight</span><span class="p">[</span><span class="n">i</span><span class="p">]]}</span>
+                    <span class="p">{</span><span class="bp">self</span><span class="o">.</span><span class="n">eval_weight_name</span><span class="p">:</span> <span class="p">[</span><span class="n">eval_weight</span><span class="p">[</span><span class="n">i</span><span class="p">]]}</span>
                     <span class="k">if</span> <span class="n">eval_weight</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
                     <span class="k">else</span> <span class="p">{}</span>
                 <span class="p">),</span>

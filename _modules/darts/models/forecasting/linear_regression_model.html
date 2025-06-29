@@ -187,14 +187,14 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.optimize</span><span class="w"> </span><span class="kn">import</span> <span class="n">linprog</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegression</span><span class="p">,</span> <span class="n">PoissonRegressor</span><span class="p">,</span> <span class="n">QuantileRegressor</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.regression_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.sklearn_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">FUTURE_LAGS_TYPE</span><span class="p">,</span>
     <span class="n">LAGS_TYPE</span><span class="p">,</span>
-    <span class="n">RegressionModel</span><span class="p">,</span>
+    <span class="n">SKLearnModel</span><span class="p">,</span>
     <span class="n">_QuantileModelContainer</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">QuantileRegression</span><span class="p">,</span>
     <span class="n">_check_likelihood</span><span class="p">,</span>
@@ -204,7 +204,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="LinearRegressionModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LinearRegressionModel</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">):</span>
+<div class="viewcode-block" id="LinearRegressionModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LinearRegressionModel</span><span class="p">(</span><span class="n">SKLearnModel</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -302,11 +302,7 @@
 <span class="sd">        quantiles</span>
 <span class="sd">            Fit the model to these quantiles if the `likelihood` is set to `quantile`.</span>
 <span class="sd">        random_state</span>
-<span class="sd">            Control the randomness of the sampling. Used as seed for</span>
-<span class="sd">            `numpy.random.Generator</span>
-<span class="sd">            &lt;https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator&gt;`_. Ignored when</span>
-<span class="sd">            no `likelihood` is set.</span>
-<span class="sd">            Default: ``None``.</span>
+<span class="sd">            Controls the randomness for reproducible forecasting.</span>
 <span class="sd">        multi_models</span>
 <span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model</span>
 <span class="sd">            is trained to predict all the steps in &#39;output_chunk_length&#39; (features lags are shifted back by</span>
@@ -368,7 +364,6 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">_get_likelihood</span><span class="p">(</span>
             <span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span>
             <span class="n">n_outputs</span><span class="o">=</span><span class="n">output_chunk_length</span> <span class="k">if</span> <span class="n">multi_models</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
             <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -382,6 +377,7 @@
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
         <span class="p">)</span>
 
 <div class="viewcode-block" id="LinearRegressionModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>

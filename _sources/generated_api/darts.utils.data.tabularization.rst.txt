@@ -1,3 +1,10 @@
+
+
+
 .. automodule:: darts.utils.data.tabularization
-   :members:
-   :undoc-members:
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.utils.data.tabularization.tabularization

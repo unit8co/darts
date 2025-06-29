@@ -460,18 +460,18 @@
 <span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute</span>
-<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and</span>
-<span class="sd">            :class:`RegressionModel`.</span>
+<span class="sd">            :class:`SKLearnModel`.</span>
 <span class="sd">        lags_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.</span>
 <span class="sd">        tz</span>
 <span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -509,18 +509,18 @@
 <span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute</span>
-<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and</span>
-<span class="sd">            :class:`RegressionModel`.</span>
+<span class="sd">            :class:`SKLearnModel`.</span>
 <span class="sd">        lags_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.</span>
 <span class="sd">        tz</span>
 <span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -620,18 +620,18 @@
 <span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute</span>
-<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and</span>
-<span class="sd">            :class:`RegressionModel`.</span>
+<span class="sd">            :class:`SKLearnModel`.</span>
 <span class="sd">        lags_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.</span>
 <span class="sd">        tz</span>
 <span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -669,18 +669,18 @@
 <span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute</span>
-<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and</span>
-<span class="sd">            :class:`RegressionModel`.</span>
+<span class="sd">            :class:`SKLearnModel`.</span>
 <span class="sd">        lags_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.</span>
 <span class="sd">        tz</span>
 <span class="sd">            Optionally, a time zone to convert the time index to before computing the attributes.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -743,14 +743,16 @@
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">idx_diff</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
             <span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
             <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span>
                 <span class="n">start</span><span class="o">=</span><span class="n">idx_diff</span> <span class="o">-</span> <span class="n">idx_larger_end</span><span class="p">,</span>
                 <span class="n">stop</span><span class="o">=</span><span class="n">idx_diff</span> <span class="o">-</span> <span class="n">idx_larger_end</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">),</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">),</span>
             <span class="p">),</span>
-            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">],</span>
-        <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span>
+            <span class="n">components</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">],</span>
+            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
@@ -793,18 +795,18 @@
 <span class="sd">            target series end time will be used as a reference to evaluate the relative index positions.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute</span>
-<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and</span>
-<span class="sd">            :class:`RegressionModel`.</span>
+<span class="sd">            :class:`SKLearnModel`.</span>
 <span class="sd">        lags_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">index_generator</span><span class="o">=</span><span class="n">PastCovariatesIndexGenerator</span><span class="p">(</span>
@@ -837,18 +839,18 @@
 <span class="sd">            target series end time will be used as a reference to evaluate the relative index positions.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute</span>
-<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and</span>
-<span class="sd">            :class:`RegressionModel`.</span>
+<span class="sd">            :class:`SKLearnModel`.</span>
 <span class="sd">        lags_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">index_generator</span><span class="o">=</span><span class="n">FutureCovariatesIndexGenerator</span><span class="p">(</span>
@@ -896,11 +898,12 @@
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the user-defined callable to encode the index&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">target_end</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
             <span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
-            <span class="n">values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">(</span><span class="n">index</span><span class="p">),</span>
-            <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="s2">&quot;custom&quot;</span><span class="p">],</span>
-        <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span>
+            <span class="n">values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">(</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)),</span>
+            <span class="n">components</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">base_component_name</span> <span class="o">+</span> <span class="s2">&quot;custom&quot;</span><span class="p">],</span>
+            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
@@ -944,18 +947,18 @@
 <span class="sd">            ``attribute = lambda index: (index - 1950) / 50``</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute</span>
-<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and</span>
-<span class="sd">            :class:`RegressionModel`.</span>
+<span class="sd">            :class:`SKLearnModel`.</span>
 <span class="sd">        lags_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">index_generator</span><span class="o">=</span><span class="n">PastCovariatesIndexGenerator</span><span class="p">(</span>
@@ -991,18 +994,18 @@
 <span class="sd">            ``attribute = lambda index: (index - 1950) / 50``</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute</span>
-<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and</span>
-<span class="sd">            :class:`RegressionModel`.</span>
+<span class="sd">            :class:`SKLearnModel`.</span>
 <span class="sd">        lags_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">index_generator</span><span class="o">=</span><span class="n">FutureCovariatesIndexGenerator</span><span class="p">(</span>
@@ -1095,22 +1098,22 @@
 <span class="sd">            A dictionary with the encoder settings.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            Optionally, the number of input target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `input_chunk_length` from :class:`TorchForecastingModel`, or to the absolute</span>
-<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`RegressionModel`.</span>
+<span class="sd">            minimum target lag value `abs(min(lags))` for :class:`SKLearnModel`.</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Optionally, the number of output target time steps per chunk. Only required for</span>
-<span class="sd">            :class:`TorchForecastingModel`, and :class:`RegressionModel`.</span>
+<span class="sd">            :class:`TorchForecastingModel`, and :class:`SKLearnModel`.</span>
 <span class="sd">            Corresponds to parameter `output_chunk_length` from both :class:`TorchForecastingModel`, and</span>
-<span class="sd">            :class:`RegressionModel`.</span>
+<span class="sd">            :class:`SKLearnModel`.</span>
 <span class="sd">        lags_past_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the past covariate lags. Accepts integer lag values &lt;= -1.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_past_covariates` of :class:`SKLearnModel`.</span>
 <span class="sd">        lags_future_covariates</span>
 <span class="sd">            Optionally, a list of integers representing the future covariate lags. Accepts all integer values.</span>
-<span class="sd">            Only required for :class:`RegressionModel`.</span>
-<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`RegressionModel`.</span>
+<span class="sd">            Only required for :class:`SKLearnModel`.</span>
+<span class="sd">            Corresponds to the lag values from parameter `lags_future_covariates` from :class:`SKLearnModel`.</span>
 <span class="sd">        takes_past_covariates</span>
 <span class="sd">            Whether to encode/generate past covariates.</span>
 <span class="sd">        takes_future_covariates</span>

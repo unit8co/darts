@@ -211,7 +211,7 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="20-RegressionModel-examples.html">
+  <a class="reference internal" href="20-SKLearnModel-examples.html">
    Regression Models
   </a>
  </li>
@@ -755,7 +755,7 @@ div.rendered_html tbody tr:hover {
 <li><p><code class="docutils literal notranslate"><span class="pre">Anomaly</span> <span class="pre">Models</span></code>: offer a convenient way to produce anomaly scores from any of Darts’ global forecasting models or filtering models by comparing the models’ predictions with actual observations. Each Anomaly Model takes one forecasting/filtering model and one or multiple scorers. The model produces some predictions, which are fed together with the actual series to the scorer(s). It will return anomaly scores for each scorer.</p></li>
 </ul>
 <p>The figure below illustrates the different input/output for each tool:</p>
-<p><img alt="74bb651eaafb4da9b3083c605480cf9b" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
+<p><img alt="55df8654c0664d9493b6d92bf58a0a39" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
 <p>The notebook is devided into two sections:</p>
 <ul class="simple">
 <li><p>How to use <code class="docutils literal notranslate"><span class="pre">ForecastingAnomalyModel</span></code> to find anomalies in the number of taxi passengers in New York.</p></li>
@@ -809,7 +809,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">TaxiNewYorkDataset</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">rmse</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SKLearnModel</span>
 </pre></div>
 </div>
 </div>
@@ -917,7 +917,7 @@ div.rendered_html tbody tr:hover {
 </section>
 <section id="Train-a-Darts-forecasting-model">
 <h2>Train a Darts forecasting model<a class="headerlink" href="#Train-a-Darts-forecasting-model" title="Permalink to this heading">¶</a></h2>
-<p>We will use a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> to predict the number of taxi passengers. The first 4500 timestamps will be used to train the model. The training set is considered to be anomaly-free, the five considered anomalies are located after the 4500th timestamps. The number of lags is set to 1 week, assuming the demand follows a periodicity of 1 week. To help the model, additional information on the targeted series is passed as covariates (the hour and the day of the week).</p>
+<p>We will use a <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> to predict the number of taxi passengers. The first 4500 timestamps will be used to train the model. The training set is considered to be anomaly-free, the five considered anomalies are located after the 4500th timestamps. The number of lags is set to 1 week, assuming the demand follows a periodicity of 1 week. To help the model, additional information on the targeted series is passed as covariates (the hour and the day of the week).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
@@ -935,7 +935,7 @@ div.rendered_html tbody tr:hover {
 <span class="c1"># one week corresponds to (7 days * 24 hours * 2) of 30 minutes</span>
 <span class="n">one_week</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">2</span>
 
-<span class="n">forecasting_model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span>
+<span class="n">forecasting_model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="n">one_week</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
@@ -951,7 +951,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-RegressionModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0], output_chunk_length=1, output_chunk_shift=0, add_encoders={&#39;cyclic&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]}}, model=None, multi_models=True, use_static_covariates=True)
+SKLearnModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0], output_chunk_length=1, output_chunk_shift=0, add_encoders={&#39;cyclic&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]}}, model=None, multi_models=True, use_static_covariates=True)
 </pre></div></div>
 </div>
 </section>
@@ -962,7 +962,7 @@ RegressionModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0],
 <p>The <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter is an integer value indicating the window size used by the scorer to transform the series into an anomaly score. A scorer will slice the given series into subsequences of size W and returns a value indicating how anomalous these subset of W values are.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">window_agg</span></code> can be used to transform the window-wise scores into point-wise scores by aggregating all anomaly scores from each window that the point was included in.</p>
 <p>The following figure illustrates the mechanism of a Forecasting Anomaly model:</p>
-<p><img alt="0ee9163751a14e698c0eb70f53f1d272" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
+<p><img alt="9a1d10dc479b49c694bb43356e0b4e69" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
 <section id="Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()">
 <h3>Using the main functions: fit(), score(), eval_metric() and show_anomalies()<a class="headerlink" href="#Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()" title="Permalink to this heading">¶</a></h3>
 <div class="nbinput nblast docutils container">
@@ -1400,7 +1400,7 @@ f1: 0.45/1
 <h1>Simple case: <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code><a class="headerlink" href="#Simple-case:-KMeansScorer" title="Permalink to this heading">¶</a></h1>
 <p>Let’s have a closer look at the scorer’s <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter on the example of the <code class="docutils literal notranslate"><span class="pre">KmeansScorer</span></code>. We’ll use two toy datasets to demonstrate how the scorers perform with different window sizes. In first example we set <code class="docutils literal notranslate"><span class="pre">window=1</span></code> on a multivariate time series, and in the second we set <code class="docutils literal notranslate"><span class="pre">window=2</span></code> on a univariate time series.</p>
 <p>The figure below illustrates the Scorer’s windowing process:</p>
-<p><img alt="65552173860e411482364771c573074d" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
+<p><img alt="6592d76e13ec405a96fa0ccbd5c961d0" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
 <section id="Multivariate-case-with-window=1">
 <h2>Multivariate case with window=1<a class="headerlink" href="#Multivariate-case-with-window=1" title="Permalink to this heading">¶</a></h2>
 <section id="Synthetic-data-creation">
@@ -1564,7 +1564,7 @@ f1: 0.45/1
 <p>We’ll use the <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code> to locate the anomalies with the following parameters:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">k</span></code>=2: The number of clusters/centroids generated by the KMeans model. We choose two since we know that there are only two valid states.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">window</span></code>=1 (default): Each timestamp is considered independently by the KMeans model. It indicates the size of the window used to create the subsequences of the series (<code class="docutils literal notranslate"><span class="pre">window</span></code> is identical to a positive target <code class="docutils literal notranslate"><span class="pre">lag</span></code> for our <a class="reference external" href="https://unit8co.github.io/darts/examples/20-RegressionModel-examples.html#Darts-Regression-Models">regression models</a>). In this example we know that each anomaly can be detected by only looking one step.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">window</span></code>=1 (default): Each timestamp is considered independently by the KMeans model. It indicates the size of the window used to create the subsequences of the series (<code class="docutils literal notranslate"><span class="pre">window</span></code> is identical to a positive target <code class="docutils literal notranslate"><span class="pre">lag</span></code> for our <a class="reference external" href="https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html#Darts-Regression-Models">regression models</a>). In this example we know that each anomaly can be detected by only looking one step.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">component_wise</span></code>=False (default): All components are used together as features with a single KMeans model. If <code class="docutils literal notranslate"><span class="pre">True</span></code>, we would fit a dedicated model per component. For this example we need information about both components to find all anomalies.</p></li>
 </ul>
 <p>We’ll fit <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code> on the anomaly-free training series, compute the anomaly scores on the test series, and finally evaluate the scores.</p>

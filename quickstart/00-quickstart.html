@@ -1648,7 +1648,7 @@ MAPE = 4.42%
 <h1>Machine learning and global models<a class="headerlink" href="#Machine-learning-and-global-models" title="Permalink to this heading">¶</a></h1>
 <p>Darts has a rich support for machine learning and deep learning forecasting models; for instance:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html">RegressionModel</a> can wrap around any sklearn-compatible regression model to produce forecasts (it has its own <a class="reference external" href="#Regression-forecasting-models">section below</a>).</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html">SKLearnModel</a> can wrap around any sklearn-compatible regression model to produce forecasts (it has its own <a class="reference external" href="#Regression-forecasting-models">section below</a>).</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html">RNNModel</a> is a flexible RNN implementation, which can be used like DeepAR.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html">NBEATSModel</a> implements the N-BEATS model.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html">TFTModel</a> implements the Temporal Fusion Transformer model.</p></li>
@@ -2139,28 +2139,28 @@ HPU available: False, using: 0 HPUs
 <section id="Regression-forecasting-models">
 <h1>Regression forecasting models<a class="headerlink" href="#Regression-forecasting-models" title="Permalink to this heading">¶</a></h1>
 <blockquote>
-<div><p>Note: You can find a detailed example notebook for our RegressionModel <a class="reference external" href="https://unit8co.github.io/darts/examples/20-RegressionModel-examples.html">here</a>.</p>
+<div><p>Note: You can find a detailed example notebook for our SKLearnModel <a class="reference external" href="https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html">here</a>.</p>
 </div></blockquote>
-<p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html">RegressionModels</a> are forecasting models which wrap around sklearn-compatible regression models. The inner regression model is used to predict future values of the target series, as a function of certain lags of the target, past and future covariates. Behind the scenes, the time series are tabularized in order to build a training dataset in the right format.</p>
-<p>By default, the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> will do a linear regression. It is very easy to use any desired sklearn-compatible regression model by specifying the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter, but for convenience Darts also provides a couple of ready-made models out of the box:</p>
+<p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html">SKLearnModel</a> are forecasting models which wrap around sklearn-compatible regression models. The inner regression model is used to predict future values of the target series, as a function of certain lags of the target, past and future covariates. Behind the scenes, the time series are tabularized in order to build a training dataset in the right format.</p>
+<p>By default, the <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> will do a linear regression. It is very easy to use any desired sklearn-compatible regression model by specifying the <code class="docutils literal notranslate"><span class="pre">model</span></code> parameter, but for convenience Darts also provides a couple of ready-made models out of the box:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html">LinearRegressionModel</a> wraps around <code class="docutils literal notranslate"><span class="pre">sklearn.linear_model.LinearRegression</span></code> (accepting the same kwargs).</p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html">RandomForest</a> wraps around <code class="docutils literal notranslate"><span class="pre">sklearn.ensemble.RandomForestRegressor</span></code>.</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html">RandomForestModel</a> wraps around <code class="docutils literal notranslate"><span class="pre">sklearn.ensemble.RandomForestRegressor</span></code>.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html">LightGBMModel</a> wraps around <code class="docutils literal notranslate"><span class="pre">lightbm</span></code>.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html">XGBModel</a> wraps around <code class="docutils literal notranslate"><span class="pre">xgboost</span></code>.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html">CatBoostModel</a> wraps around <code class="docutils literal notranslate"><span class="pre">catboost</span></code>.</p></li>
 </ul>
 <p>For example, this is what fitting a Bayesian ridge regression to our toy two-series problem looks like:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[47]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">BayesianRidge</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SKLearnModel</span>
 
-<span class="n">model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">72</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">BayesianRidge</span><span class="p">())</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">72</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">BayesianRidge</span><span class="p">())</span>
 
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
     <span class="p">[</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span>
@@ -2171,7 +2171,7 @@ HPU available: False, using: 0 HPUs
 </div>
 <p>Several things happened above:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">lags=72</span></code> is telling the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> to look at the past 72 lags / months of the target.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lags=72</span></code> is telling the <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> to look at the past 72 lags / months of the target.</p></li>
 <li><p>In addition, <code class="docutils literal notranslate"><span class="pre">lags_future_covariates=[-6,</span> <span class="pre">0]</span></code> means that the model will also look at lags of the <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> we provide. Here we specify the exact lags we want the models to take into account; the “-6th” and the “0th” lag. The “0th” lag means the “current” lag (i.e., at the time step being forecasted); obviously, knowning this lag requires knowing the data in advance (hence the fact we are using <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>). Similarly, <code class="docutils literal notranslate"><span class="pre">-6</span></code> means we also look at the value of the
 covariates 6 months before the forecasted time step (which also requires to know the covariates in advance if we are forecasting at a horizon more than 6 steps ahead).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">model=BayesianRidge()</span></code> provides the actual inner regression model.</p></li>
@@ -2246,11 +2246,11 @@ covariates 6 months before the forecasted time step (which also requires to know
 </div>
 <p>It seems that this model performs well on the Air traffic series, how does it do when we backtest it on this one series?</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[51]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">bayes_ridge_model</span> <span class="o">=</span> <span class="n">RegressionModel</span><span class="p">(</span>
+<span></span><span class="n">bayes_ridge_model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="mi">72</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">BayesianRidge</span><span class="p">()</span>
 <span class="p">)</span>
 
@@ -2977,7 +2977,7 @@ quantile loss at quantile 0.95: 7.39
 </section>
 <section id="With-Regression-Models">
 <h2>With Regression Models<a class="headerlink" href="#With-Regression-Models" title="Permalink to this heading">¶</a></h2>
-<p>Probailistic support for our <code class="docutils literal notranslate"><span class="pre">RegressionModels</span></code> is similiar to that of the neural networks. We have to specify a <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> at model creation. Instead of giving a likelihood object, we can simply pick one of <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code> (with some <code class="docutils literal notranslate"><span class="pre">quantiles</span></code>) and <code class="docutils literal notranslate"><span class="pre">&quot;poisson&quot;</span></code>.</p>
+<p>Probailistic support for our <code class="docutils literal notranslate"><span class="pre">SKLearnModels</span></code> is similiar to that of the neural networks. We have to specify a <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> at model creation. Instead of giving a likelihood object, we can simply pick one of <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code> (with some <code class="docutils literal notranslate"><span class="pre">quantiles</span></code>) and <code class="docutils literal notranslate"><span class="pre">&quot;poisson&quot;</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[67]:
 </pre></div>
@@ -3080,7 +3080,7 @@ MAPE = 11.93%
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">forecasting_models</span></code> is a list of forecasting models whose predictions we want to ensemble.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">regression_train_n_points</span></code> is the number of time steps to use for fitting the “ensemble regression” model (i.e., the inner model that combines the forecasts).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">regression_model</span></code> is, optionally, a sklearn-compatible regression model or a Darts <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> to be used for the ensemble regression. If not specified, a linear regression is used. Using a sklearn model is easy out-of-the-box, but using a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> allows to potentially take arbitrary lags of the individual forecasts as inputs of the regression model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">regression_model</span></code> is, optionally, a sklearn-compatible regression model or a Darts <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> to be used for the ensemble regression. If not specified, a linear regression is used. Using a sklearn model is easy out-of-the-box, but using a <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> allows to potentially take arbitrary lags of the individual forecasts as inputs of the regression model.</p></li>
 <li><p>and for more, read our this <a class="reference external" href="https://unit8co.github.io/darts/examples/19-EnsembleModel-examples.html">user guide on ensembling models</a>.</p></li>
 </ul>
 <p>Once these elements are in place, a <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code> can be used like a regular forecasting model:</p>

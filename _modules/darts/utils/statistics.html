@@ -397,21 +397,35 @@
     <span class="k">else</span><span class="p">:</span>
         <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown value for method: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
-    <span class="n">season</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-        <span class="n">decomp</span><span class="o">.</span><span class="n">seasonal</span><span class="p">,</span>
-        <span class="n">static_covariates</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
-        <span class="n">hierarchy</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
-        <span class="n">metadata</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
-    <span class="p">)</span>
-    <span class="n">trend</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-        <span class="n">decomp</span><span class="o">.</span><span class="n">trend</span><span class="p">,</span>
-        <span class="n">static_covariates</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
-        <span class="n">hierarchy</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
-        <span class="n">metadata</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
-    <span class="p">)</span>
+    <span class="c1"># keep components, ... only if the number of components matches</span>
+    <span class="n">season_shape</span> <span class="o">=</span> <span class="n">decomp</span><span class="o">.</span><span class="n">seasonal</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">season_shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">season_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">season_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">season_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">ts</span><span class="o">.</span><span class="n">n_components</span><span class="p">:</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">components</span>
+        <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">static_covariates</span>
+        <span class="n">hierarchy</span> <span class="o">=</span> <span class="n">ts</span><span class="o">.</span><span class="n">hierarchy</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">static_covariates</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">hierarchy</span> <span class="o">=</span> <span class="kc">None</span>
 
+    <span class="n">season</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">decomp</span><span class="o">.</span><span class="n">seasonal</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">components</span><span class="p">,</span>
+        <span class="n">static_covariates</span><span class="o">=</span><span class="n">static_covariates</span><span class="p">,</span>
+        <span class="n">hierarchy</span><span class="o">=</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">trend</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">decomp</span><span class="o">.</span><span class="n">trend</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">ts</span><span class="o">.</span><span class="n">_attrs</span><span class="p">,</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">trend</span><span class="p">,</span> <span class="n">season</span></div>
 
 

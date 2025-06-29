@@ -211,7 +211,7 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="20-RegressionModel-examples.html">
+  <a class="reference internal" href="20-SKLearnModel-examples.html">
    Regression Models
   </a>
  </li>
@@ -414,11 +414,11 @@
   </a>
   <ul class="nav section-nav flex-column">
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Part-2.1:-Using-Darts-RegressionModels.">
+    <a class="reference internal nav-link" href="#Part-2.1:-Using-Darts-SKLearnModels.">
      Part 2.1: Using Darts
      <code class="docutils literal notranslate">
       <span class="pre">
-       RegressionModel
+       SKLearnModel
       </span>
      </code>
      s.
@@ -816,7 +816,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <p>And now we import everything. Don’t be afraid, we will uncover what these imports mean through the notebook :)</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -851,7 +851,7 @@ div.rendered_html tbody tr:hover {
     <span class="n">LinearRegressionModel</span><span class="p">,</span>
     <span class="n">NaiveSeasonal</span><span class="p">,</span>
     <span class="n">NBEATSModel</span><span class="p">,</span>
-    <span class="n">RandomForest</span><span class="p">,</span>
+    <span class="n">RandomForestModel</span><span class="p">,</span>
     <span class="n">Theta</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.losses</span><span class="w"> </span><span class="kn">import</span> <span class="n">SmapeLoss</span>
@@ -1445,7 +1445,7 @@ computing sMAPEs...
 <h2>Part 2: Global models on the <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-2:-Global-models-on-the-air-dataset" title="Permalink to this heading">¶</a></h2>
 <p>In this section we will use “global models” - that is, models that are fit on multiple series at once. Darts has essentially two kinds of global models:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">RegressionModels</span></code> which are wrappers around sklearn-like regression models (Part 2.1).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SKLearnModels</span></code> which are wrappers around sklearn-like regression models (Part 2.1).</p></li>
 <li><p>PyTorch-based models, which offer various deep learning models (Part 2.2).</p></li>
 </ul>
 <p>Both models can be trained on multiple series by “tabularizing” the data - i.e., taking many (input, output) sub-slices from all the training series, and training machine learning models in a supervised fashion to predict the output based on the input.</p>
@@ -1471,16 +1471,16 @@ computing sMAPEs...
 </pre></div>
 </div>
 </div>
-<section id="Part-2.1:-Using-Darts-RegressionModels.">
-<h3>Part 2.1: Using Darts <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s.<a class="headerlink" href="#Part-2.1:-Using-Darts-RegressionModels." title="Permalink to this heading">¶</a></h3>
-<p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> in Darts are forecasting models that can wrap around any “scikit-learn compatible” regression model to obtain forecasts. Compared to deep learning, they represent good “go-to” global models because they typically don’t have many hyper-parameters and can be faster to train. In addition, Darts also offers some “pre-packaged” regression models such as <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>.</p>
+<section id="Part-2.1:-Using-Darts-SKLearnModels.">
+<h3>Part 2.1: Using Darts <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code>s.<a class="headerlink" href="#Part-2.1:-Using-Darts-SKLearnModels." title="Permalink to this heading">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> in Darts are forecasting models that can wrap around any “scikit-learn compatible” regression model to obtain forecasts. Compared to deep learning, they represent good “go-to” global models because they typically don’t have many hyper-parameters and can be faster to train. In addition, Darts also offers some “pre-packaged” regression models such as <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>.</p>
 <p>We’ll now use our function <code class="docutils literal notranslate"><span class="pre">eval_global_models()</span></code>. In the following cells, we will try using some regression models, for example:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">RegressionModel(some_sklearn_model)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SKLearnModel(some_sklearn_model)</span></code></p></li>
 </ul>
-<p>You can refer to <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html">the API doc</a> for how to use them.</p>
+<p>You can refer to <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html">the API doc</a> for how to use them.</p>
 <p>Important parameters are <code class="docutils literal notranslate"><span class="pre">lags</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>. They determine respectively the length of the lookback and “lookforward” windows used by the model, and they correspond to the lengths of the input/output subslices used for training. For instance <code class="docutils literal notranslate"><span class="pre">lags=24</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=12</span></code> mean that the model will consume the past 24 lags in order to predict the next 12. In our case, because the shortest training series has length 36, we must have
 <code class="docutils literal notranslate"><span class="pre">lags</span> <span class="pre">+</span> <span class="pre">output_chunk_length</span> <span class="pre">&lt;=</span> <span class="pre">36</span></code>. (Note that <code class="docutils literal notranslate"><span class="pre">lags</span></code> can also be a list of integers representing the individual lags to be consumed by the model instead of the window length).</p>
 <div class="nbinput docutils container">
@@ -1542,12 +1542,12 @@ computing sMAPEs...
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="n">rf_smapes</span><span class="p">,</span> <span class="n">rf_time</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
-    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">RandomForest</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span>
+    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">RandomForestModel</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span>
 <span class="p">)</span>
 </pre></div>
 </div>
@@ -2015,7 +2015,7 @@ HPU available: False, using: 0 HPUs
 </section>
 <section id="Try-training-other-global-models-on-m4-and-applying-on-airline-passengers">
 <h3>Try training other global models on <code class="docutils literal notranslate"><span class="pre">m4</span></code> and applying on airline passengers<a class="headerlink" href="#Try-training-other-global-models-on-m4-and-applying-on-airline-passengers" title="Permalink to this heading">¶</a></h3>
-<p>Let’s now try to train other global models on the M4 dataset in order to see if we can get similar results. Below, we will train some <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s on the full <code class="docutils literal notranslate"><span class="pre">m4</span></code> dataset. This can be quite slow. To have faster training we could use e.g., <code class="docutils literal notranslate"><span class="pre">random.choices(m4_train,</span> <span class="pre">k=5000)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">m4_train</span></code> to limit the size of the training set. We could also specify some small enough value for <code class="docutils literal notranslate"><span class="pre">max_samples_per_ts</span></code> in order to limit the number of training samples.</p>
+<p>Let’s now try to train other global models on the M4 dataset in order to see if we can get similar results. Below, we will train some <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code>s on the full <code class="docutils literal notranslate"><span class="pre">m4</span></code> dataset. This can be quite slow. To have faster training we could use e.g., <code class="docutils literal notranslate"><span class="pre">random.choices(m4_train,</span> <span class="pre">k=5000)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">m4_train</span></code> to limit the size of the training set. We could also specify some small enough value for <code class="docutils literal notranslate"><span class="pre">max_samples_per_ts</span></code> in order to limit the number of training samples.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
 </pre></div>

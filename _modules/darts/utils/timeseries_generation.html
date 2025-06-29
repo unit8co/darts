@@ -180,14 +180,21 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">holidays</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">DIMS</span><span class="p">,</span>
+    <span class="n">HIERARCHY_TAG</span><span class="p">,</span>
+    <span class="n">METADATA_TAG</span><span class="p">,</span>
+    <span class="n">STATIC_COV_TAG</span><span class="p">,</span>
+    <span class="n">TIME_AX</span><span class="p">,</span>
+    <span class="n">TimeSeries</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -202,6 +209,7 @@
     <span class="s2">&quot;weekofyear&quot;</span><span class="p">,</span>
     <span class="s2">&quot;week_of_year&quot;</span><span class="p">,</span>
 <span class="p">}</span>
+<span class="n">TIMES_NAME</span> <span class="o">=</span> <span class="n">DIMS</span><span class="p">[</span><span class="n">TIME_AX</span><span class="p">]</span>
 
 
 <div class="viewcode-block" id="constant_timeseries"><a class="viewcode-back" href="../../../generated_api/darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.constant_timeseries">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">constant_timeseries</span><span class="p">(</span>
@@ -247,11 +255,15 @@
 <span class="sd">        A constant TimeSeries with value &#39;value&#39;.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">TIMES_NAME</span>
+    <span class="p">)</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="n">value</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">index</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">]),</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -304,10 +316,15 @@
 <span class="sd">        A linear TimeSeries created as indicated above.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">TIMES_NAME</span>
+    <span class="p">)</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">start_value</span><span class="p">,</span> <span class="n">end_value</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">index</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">]),</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -364,7 +381,9 @@
 <span class="sd">        A sinusoidal TimeSeries parametrized as indicated above.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">TIMES_NAME</span>
+    <span class="p">)</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
     <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span>
         <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">value_amplitude</span>
@@ -372,9 +391,11 @@
         <span class="o">+</span> <span class="n">value_y_offset</span>
     <span class="p">)</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">f</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">index</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">]),</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -446,11 +467,15 @@
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">TIMES_NAME</span>
+    <span class="p">)</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">index</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">]),</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -501,11 +526,15 @@
 <span class="sd">        A random walk TimeSeries created as indicated above.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">TIMES_NAME</span>
+    <span class="p">)</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span> <span class="n">std</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">)),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">index</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">]),</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -564,7 +593,9 @@
             <span class="s2">&quot;start_values must have same length as coef.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
-    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">)</span>
+    <span class="n">index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">TIMES_NAME</span>
+    <span class="p">)</span>
 
     <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coef</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
     <span class="n">values</span><span class="p">[:</span> <span class="nb">len</span><span class="p">(</span><span class="n">coef</span><span class="p">)]</span> <span class="o">=</span> <span class="n">start_values</span>
@@ -572,9 +603,11 @@
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">coef</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">coef</span><span class="p">)</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">)):</span>
         <span class="c1"># calculate next time step as dot product of coefs with previous len(coef) time steps</span>
         <span class="n">values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">values</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">coef</span><span class="p">)</span> <span class="p">:</span> <span class="n">i</span><span class="p">],</span> <span class="n">coef</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">index</span><span class="p">,</span> <span class="n">values</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">coef</span><span class="p">)</span> <span class="p">:],</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">coef</span><span class="p">)</span> <span class="p">:],</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">]),</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -582,6 +615,7 @@
     <span class="n">time_index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">],</span>
     <span class="n">until</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">]],</span>
     <span class="n">add_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">:</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">add_length</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">until</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">time_index</span>
@@ -642,7 +676,7 @@
 
         <span class="n">end</span> <span class="o">=</span> <span class="n">timestamp</span>
 
-    <span class="n">new_time_index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span>
+    <span class="n">new_time_index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">new_time_index</span>
 
 
@@ -704,8 +738,11 @@
     <span class="p">)</span>
     <span class="n">index_series</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">time_index</span><span class="p">)</span>
     <span class="n">values</span> <span class="o">=</span> <span class="n">index_series</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">country_holidays</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">time_index_ts</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">time_index_ts</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">([</span><span class="n">column_name</span><span class="p">]),</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 
@@ -909,9 +946,12 @@
                 <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">values_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">with_columns</span><span class="p">:</span> <span class="n">values</span><span class="p">})</span>
-
-    <span class="n">values_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">time_index_ts</span>
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">values_df</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">time_index_ts</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values_df</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">),</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">values_df</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_build_forecast_series</span><span class="p">(</span>
@@ -922,6 +962,7 @@
     <span class="n">with_hierarchy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">pred_start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">time_index</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Builds a forecast time series starting after the end of an input time series, with the</span>
@@ -943,6 +984,8 @@
 <span class="sd">        Optionally, give a custom prediction start point. Only effective if `time_index` is `None`.</span>
 <span class="sd">    time_index</span>
 <span class="sd">        Optionally, the index to use for the forecast time series.</span>
+<span class="sd">    copy</span>
+<span class="sd">        If set to `True`, a copy of the input series is made. Otherwise, the input series is used as a view.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -965,15 +1008,81 @@
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
         <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
     <span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-        <span class="n">time_index</span><span class="p">,</span>
-        <span class="n">values</span><span class="p">,</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
         <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span>
-        <span class="n">columns</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">custom_columns</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">custom_columns</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">custom_columns</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">custom_columns</span><span class="p">,</span>
         <span class="n">static_covariates</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">static_covariates</span> <span class="k">if</span> <span class="n">with_static_covs</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">hierarchy</span> <span class="k">if</span> <span class="n">with_hierarchy</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">metadata</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+        <span class="n">copy</span><span class="o">=</span><span class="n">copy</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_build_forecast_series_from_schema</span><span class="p">(</span>
+    <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="n">schema</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="n">pred_start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+    <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">likelihood_component_names_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">copy</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Builds a forecast time series from predicted values and `TimeSeries` schema starting at `pred_start`.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    values</span>
+<span class="sd">        Forecasted values, can be either the target(s) or parameters of the likelihood model</span>
+<span class="sd">    schema</span>
+<span class="sd">        Schema of the predicted target `TimeSeries`.</span>
+<span class="sd">    pred_start</span>
+<span class="sd">        The prediction start time.</span>
+<span class="sd">    predict_likelihood_parameters</span>
+<span class="sd">        Whether the values represent predicted likelihood parameters.</span>
+<span class="sd">    likelihood_component_names_fn</span>
+<span class="sd">        A function to compute the likelihood parameter component names. Only effective when</span>
+<span class="sd">        `predict_likelihood_parameters=True`.</span>
+<span class="sd">    copy</span>
+<span class="sd">        If set to `True`, a copy of the input series is made. Otherwise, the input series is used as a view.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    TimeSeries</span>
+<span class="sd">        A new TimeSeries instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">time_index</span> <span class="o">=</span> <span class="n">generate_index</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">pred_start</span><span class="p">,</span>
+        <span class="n">freq</span><span class="o">=</span><span class="n">schema</span><span class="p">[</span><span class="s2">&quot;time_freq&quot;</span><span class="p">],</span>
+        <span class="n">length</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">schema</span><span class="p">[</span><span class="s2">&quot;time_name&quot;</span><span class="p">],</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">predict_likelihood_parameters</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">likelihood_component_names_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Must pass `likelihood_component_names_fn` with &quot;</span>
+                    <span class="s2">&quot;`predict_likelihood_parameters=True`&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="n">likelihood_component_names_fn</span><span class="p">(</span><span class="n">components</span><span class="o">=</span><span class="n">schema</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">])</span>
+        <span class="n">static_covariates</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">hierarchy</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">columns</span> <span class="o">=</span> <span class="n">schema</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]</span>
+        <span class="n">static_covariates</span> <span class="o">=</span> <span class="n">schema</span><span class="p">[</span><span class="n">STATIC_COV_TAG</span><span class="p">]</span>
+        <span class="n">hierarchy</span> <span class="o">=</span> <span class="n">schema</span><span class="p">[</span><span class="n">HIERARCHY_TAG</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span>
+        <span class="n">static_covariates</span><span class="o">=</span><span class="n">static_covariates</span><span class="p">,</span>
+        <span class="n">hierarchy</span><span class="o">=</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="n">metadata</span><span class="o">=</span><span class="n">schema</span><span class="p">[</span><span class="n">METADATA_TAG</span><span class="p">],</span>
+        <span class="n">copy</span><span class="o">=</span><span class="n">copy</span><span class="p">,</span>
     <span class="p">)</span>
 
 
@@ -987,7 +1096,10 @@
         <span class="n">last</span> <span class="o">=</span> <span class="n">input_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span>
         <span class="n">start</span> <span class="o">=</span> <span class="n">last</span> <span class="o">+</span> <span class="n">input_series</span><span class="o">.</span><span class="n">freq</span>
     <span class="k">return</span> <span class="n">generate_index</span><span class="p">(</span>
-        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">time_dim</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+        <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+        <span class="n">length</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+        <span class="n">name</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
     <span class="p">)</span>
 
 
@@ -1020,7 +1132,9 @@
             <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;`time_index` must be time zone naive.&quot;</span><span class="p">),</span>
             <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="n">time_index</span> <span class="o">=</span> <span class="n">_extend_time_index_until</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span> <span class="n">until</span><span class="p">,</span> <span class="n">add_length</span><span class="p">)</span>
+    <span class="n">time_index</span> <span class="o">=</span> <span class="n">_extend_time_index_until</span><span class="p">(</span>
+        <span class="n">time_index</span><span class="p">,</span> <span class="n">until</span><span class="p">,</span> <span class="n">add_length</span><span class="p">,</span> <span class="n">time_index</span><span class="o">.</span><span class="n">name</span>
+    <span class="p">)</span>
 
     <span class="c1"># convert to another time zone</span>
     <span class="k">if</span> <span class="n">tz</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>

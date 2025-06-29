@@ -180,8 +180,8 @@
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -312,14 +312,15 @@
 <span class="sd">        A TimeSeries, `series` with all missing values set to `fill`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
         <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
         <span class="n">series</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">),</span>
         <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
-        <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
         <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
         <span class="n">metadata</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
 
 
@@ -350,12 +351,15 @@
         <span class="n">interpolate_kwargs</span><span class="p">[</span><span class="s2">&quot;limit_direction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;both&quot;</span>
     <span class="n">interpolate_kwargs</span><span class="p">[</span><span class="s2">&quot;inplace&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">series_temp</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span>
-        <span class="n">series_temp</span><span class="p">,</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">series_temp</span><span class="o">.</span><span class="n">index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">series_temp</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">series_temp</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
         <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
         <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
         <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
         <span class="n">metadata</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">metadata</span><span class="p">,</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span>
 </pre></div>
 

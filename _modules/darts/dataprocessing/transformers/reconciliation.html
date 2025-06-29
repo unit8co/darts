@@ -189,12 +189,12 @@
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">BaseDataTransformer</span><span class="p">,</span>
     <span class="n">FittableDataTransformer</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -251,7 +251,13 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">y_hat</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
     <span class="n">reconciled_values</span> <span class="o">=</span> <span class="n">S</span> <span class="o">@</span> <span class="n">G</span> <span class="o">@</span> <span class="n">y_hat</span>  <span class="c1"># (n, m) * (m, n) * (time, n, samples)</span>
-    <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">reconciled_values</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+        <span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+        <span class="n">values</span><span class="o">=</span><span class="n">reconciled_values</span><span class="p">,</span>
+        <span class="n">components</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">series</span><span class="o">.</span><span class="n">_attrs</span><span class="p">,</span>
+    <span class="p">)</span>
 
 
 <div class="viewcode-block" id="BottomUpReconciliator"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">BottomUpReconciliator</span><span class="p">(</span><span class="n">BaseDataTransformer</span><span class="p">):</span>

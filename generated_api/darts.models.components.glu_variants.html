@@ -477,7 +477,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -642,11 +642,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -694,6 +689,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
        TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -761,28 +761,18 @@
     </label>
     <ul>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
-       Horizon-Based Training Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -801,7 +791,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -1047,7 +1037,7 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.Bilinear.set_extra_state" title="darts.models.components.glu_variants.Bilinear.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.Bilinear.set_submodule" title="darts.models.components.glu_variants.Bilinear.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.Bilinear.set_submodule" title="darts.models.components.glu_variants.Bilinear.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module[, strict])</p></td>
 <td><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.Bilinear.share_memory" title="darts.models.components.glu_variants.Bilinear.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
@@ -1090,7 +1080,7 @@
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.Bilinear.T_destination">
 <span class="sig-name descname"><span class="pre">T_destination</span></span><a class="headerlink" href="#darts.models.components.glu_variants.Bilinear.T_destination" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
+<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1215,7 +1205,7 @@ are direct members of this module.</p>
 <dd class="field-odd"><p><em>Module</em> – a child module</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1479,9 +1469,9 @@ fully-qualified string.)</p>
 <dd class="field-odd"><p>torch.nn.Module</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p>
+<dd class="field-even"><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the target string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1613,7 +1603,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1670,7 +1660,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1693,7 +1683,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, Module]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1705,7 +1695,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
+<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code>[Module], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
 <li><p><strong>prefix</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – a prefix that will be added to the name of the module</p></li>
 <li><p><strong>remove_duplicate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to remove the duplicated module instances in the result
 or not</p></li>
@@ -1763,7 +1753,7 @@ parameters in the result. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1879,9 +1869,9 @@ output possibly modified. The hook should have the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
 before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
 registered by this method.
@@ -1932,9 +1922,9 @@ the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
 hooks registered by this method.
@@ -1987,9 +1977,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -2033,9 +2023,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -2197,16 +2187,23 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.Bilinear.set_submodule">
-<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.Bilinear.set_submodule" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.Bilinear.set_submodule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error if
+the submodule does not exist.</p>
+</div>
 <p>For example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code> that
 looks like this:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>A(
     (net_b): Module(
         (net_c): Module(
-            (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+            (conv): Conv2d(3, 3, 3)
         )
-        (linear): Linear(in_features=100, out_features=200, bias=True)
+        (linear): Linear(3, 3)
     )
 )
 </pre></div>
@@ -2214,9 +2211,14 @@ looks like this:</p>
 <p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> has a nested
 submodule <code class="docutils literal notranslate"><span class="pre">net_b</span></code>, which itself has two submodules <code class="docutils literal notranslate"><span class="pre">net_c</span></code>
 and <code class="docutils literal notranslate"><span class="pre">linear</span></code>. <code class="docutils literal notranslate"><span class="pre">net_c</span></code> then has a submodule <code class="docutils literal notranslate"><span class="pre">conv</span></code>.)</p>
-<p>To overide the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
-would call
-<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(33,</span> <span class="pre">16))</span></code>.</p>
+<p>To override the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
+could call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(1,</span> <span class="pre">1))</span></code>
+where <code class="docutils literal notranslate"><span class="pre">strict</span></code> could be <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>To add a new submodule <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> to the existing <code class="docutils literal notranslate"><span class="pre">net_b</span></code> module,
+you would call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1))</span></code>.</p>
+<p>In the above if you set <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> and call
+<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1),</span> <span class="pre">strict=True)</span></code>, an AttributeError
+will be raised because <code class="docutils literal notranslate"><span class="pre">net_b</span></code> does not have a submodule named <code class="docutils literal notranslate"><span class="pre">conv</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -2224,14 +2226,18 @@ would call
 to look for. (See above example for how to specify a
 fully-qualified string.)</p></li>
 <li><p><strong>module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>) – The module to set the submodule to.</p></li>
+<li><p><strong>strict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error
+if the submodule doesn’t already exist.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If the target string is empty</p></li>
-<li><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p></li>
+<li><p><strong>ValueError</strong> – If the <code class="docutils literal notranslate"><span class="pre">target</span></code> string is empty or if <code class="docutils literal notranslate"><span class="pre">module</span></code> is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
+<li><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the <code class="docutils literal notranslate"><span class="pre">target</span></code> string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -2654,7 +2660,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GEGLU.set_extra_state" title="darts.models.components.glu_variants.GEGLU.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GEGLU.set_submodule" title="darts.models.components.glu_variants.GEGLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GEGLU.set_submodule" title="darts.models.components.glu_variants.GEGLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module[, strict])</p></td>
 <td><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GEGLU.share_memory" title="darts.models.components.glu_variants.GEGLU.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
@@ -2697,7 +2703,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GEGLU.T_destination">
 <span class="sig-name descname"><span class="pre">T_destination</span></span><a class="headerlink" href="#darts.models.components.glu_variants.GEGLU.T_destination" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
+<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
 </dd></dl>
 
 <dl class="py method">
@@ -2822,7 +2828,7 @@ are direct members of this module.</p>
 <dd class="field-odd"><p><em>Module</em> – a child module</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3086,9 +3092,9 @@ fully-qualified string.)</p>
 <dd class="field-odd"><p>torch.nn.Module</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p>
+<dd class="field-even"><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the target string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3220,7 +3226,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3277,7 +3283,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3300,7 +3306,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, Module]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3312,7 +3318,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
+<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code>[Module], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
 <li><p><strong>prefix</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – a prefix that will be added to the name of the module</p></li>
 <li><p><strong>remove_duplicate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to remove the duplicated module instances in the result
 or not</p></li>
@@ -3370,7 +3376,7 @@ parameters in the result. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -3486,9 +3492,9 @@ output possibly modified. The hook should have the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
 before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
 registered by this method.
@@ -3539,9 +3545,9 @@ the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
 hooks registered by this method.
@@ -3594,9 +3600,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -3640,9 +3646,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -3804,16 +3810,23 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GEGLU.set_submodule">
-<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GEGLU.set_submodule" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GEGLU.set_submodule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error if
+the submodule does not exist.</p>
+</div>
 <p>For example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code> that
 looks like this:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>A(
     (net_b): Module(
         (net_c): Module(
-            (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+            (conv): Conv2d(3, 3, 3)
         )
-        (linear): Linear(in_features=100, out_features=200, bias=True)
+        (linear): Linear(3, 3)
     )
 )
 </pre></div>
@@ -3821,9 +3834,14 @@ looks like this:</p>
 <p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> has a nested
 submodule <code class="docutils literal notranslate"><span class="pre">net_b</span></code>, which itself has two submodules <code class="docutils literal notranslate"><span class="pre">net_c</span></code>
 and <code class="docutils literal notranslate"><span class="pre">linear</span></code>. <code class="docutils literal notranslate"><span class="pre">net_c</span></code> then has a submodule <code class="docutils literal notranslate"><span class="pre">conv</span></code>.)</p>
-<p>To overide the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
-would call
-<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(33,</span> <span class="pre">16))</span></code>.</p>
+<p>To override the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
+could call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(1,</span> <span class="pre">1))</span></code>
+where <code class="docutils literal notranslate"><span class="pre">strict</span></code> could be <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>To add a new submodule <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> to the existing <code class="docutils literal notranslate"><span class="pre">net_b</span></code> module,
+you would call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1))</span></code>.</p>
+<p>In the above if you set <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> and call
+<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1),</span> <span class="pre">strict=True)</span></code>, an AttributeError
+will be raised because <code class="docutils literal notranslate"><span class="pre">net_b</span></code> does not have a submodule named <code class="docutils literal notranslate"><span class="pre">conv</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -3831,14 +3849,18 @@ would call
 to look for. (See above example for how to specify a
 fully-qualified string.)</p></li>
 <li><p><strong>module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>) – The module to set the submodule to.</p></li>
+<li><p><strong>strict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error
+if the submodule doesn’t already exist.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If the target string is empty</p></li>
-<li><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p></li>
+<li><p><strong>ValueError</strong> – If the <code class="docutils literal notranslate"><span class="pre">target</span></code> string is empty or if <code class="docutils literal notranslate"><span class="pre">module</span></code> is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
+<li><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the <code class="docutils literal notranslate"><span class="pre">target</span></code> string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -4261,7 +4283,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GELU.set_extra_state" title="darts.models.components.glu_variants.GELU.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GELU.set_submodule" title="darts.models.components.glu_variants.GELU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GELU.set_submodule" title="darts.models.components.glu_variants.GELU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module[, strict])</p></td>
 <td><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GELU.share_memory" title="darts.models.components.glu_variants.GELU.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
@@ -4304,7 +4326,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GELU.T_destination">
 <span class="sig-name descname"><span class="pre">T_destination</span></span><a class="headerlink" href="#darts.models.components.glu_variants.GELU.T_destination" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
+<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
 </dd></dl>
 
 <dl class="py method">
@@ -4429,7 +4451,7 @@ are direct members of this module.</p>
 <dd class="field-odd"><p><em>Module</em> – a child module</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -4693,9 +4715,9 @@ fully-qualified string.)</p>
 <dd class="field-odd"><p>torch.nn.Module</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p>
+<dd class="field-even"><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the target string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -4827,7 +4849,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -4884,7 +4906,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -4907,7 +4929,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, Module]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -4919,7 +4941,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
+<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code>[Module], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
 <li><p><strong>prefix</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – a prefix that will be added to the name of the module</p></li>
 <li><p><strong>remove_duplicate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to remove the duplicated module instances in the result
 or not</p></li>
@@ -4977,7 +4999,7 @@ parameters in the result. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -5093,9 +5115,9 @@ output possibly modified. The hook should have the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
 before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
 registered by this method.
@@ -5146,9 +5168,9 @@ the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
 hooks registered by this method.
@@ -5201,9 +5223,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -5247,9 +5269,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -5411,16 +5433,23 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GELU.set_submodule">
-<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GELU.set_submodule" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GELU.set_submodule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error if
+the submodule does not exist.</p>
+</div>
 <p>For example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code> that
 looks like this:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>A(
     (net_b): Module(
         (net_c): Module(
-            (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+            (conv): Conv2d(3, 3, 3)
         )
-        (linear): Linear(in_features=100, out_features=200, bias=True)
+        (linear): Linear(3, 3)
     )
 )
 </pre></div>
@@ -5428,9 +5457,14 @@ looks like this:</p>
 <p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> has a nested
 submodule <code class="docutils literal notranslate"><span class="pre">net_b</span></code>, which itself has two submodules <code class="docutils literal notranslate"><span class="pre">net_c</span></code>
 and <code class="docutils literal notranslate"><span class="pre">linear</span></code>. <code class="docutils literal notranslate"><span class="pre">net_c</span></code> then has a submodule <code class="docutils literal notranslate"><span class="pre">conv</span></code>.)</p>
-<p>To overide the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
-would call
-<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(33,</span> <span class="pre">16))</span></code>.</p>
+<p>To override the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
+could call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(1,</span> <span class="pre">1))</span></code>
+where <code class="docutils literal notranslate"><span class="pre">strict</span></code> could be <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>To add a new submodule <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> to the existing <code class="docutils literal notranslate"><span class="pre">net_b</span></code> module,
+you would call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1))</span></code>.</p>
+<p>In the above if you set <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> and call
+<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1),</span> <span class="pre">strict=True)</span></code>, an AttributeError
+will be raised because <code class="docutils literal notranslate"><span class="pre">net_b</span></code> does not have a submodule named <code class="docutils literal notranslate"><span class="pre">conv</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -5438,14 +5472,18 @@ would call
 to look for. (See above example for how to specify a
 fully-qualified string.)</p></li>
 <li><p><strong>module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>) – The module to set the submodule to.</p></li>
+<li><p><strong>strict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error
+if the submodule doesn’t already exist.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If the target string is empty</p></li>
-<li><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p></li>
+<li><p><strong>ValueError</strong> – If the <code class="docutils literal notranslate"><span class="pre">target</span></code> string is empty or if <code class="docutils literal notranslate"><span class="pre">module</span></code> is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
+<li><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the <code class="docutils literal notranslate"><span class="pre">target</span></code> string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -5868,7 +5906,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GLU.set_extra_state" title="darts.models.components.glu_variants.GLU.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GLU.set_submodule" title="darts.models.components.glu_variants.GLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GLU.set_submodule" title="darts.models.components.glu_variants.GLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module[, strict])</p></td>
 <td><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.GLU.share_memory" title="darts.models.components.glu_variants.GLU.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
@@ -5911,7 +5949,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GLU.T_destination">
 <span class="sig-name descname"><span class="pre">T_destination</span></span><a class="headerlink" href="#darts.models.components.glu_variants.GLU.T_destination" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
+<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
 </dd></dl>
 
 <dl class="py method">
@@ -6036,7 +6074,7 @@ are direct members of this module.</p>
 <dd class="field-odd"><p><em>Module</em> – a child module</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -6300,9 +6338,9 @@ fully-qualified string.)</p>
 <dd class="field-odd"><p>torch.nn.Module</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p>
+<dd class="field-even"><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the target string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -6434,7 +6472,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -6491,7 +6529,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -6514,7 +6552,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, Module]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -6526,7 +6564,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
+<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code>[Module], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
 <li><p><strong>prefix</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – a prefix that will be added to the name of the module</p></li>
 <li><p><strong>remove_duplicate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to remove the duplicated module instances in the result
 or not</p></li>
@@ -6584,7 +6622,7 @@ parameters in the result. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -6700,9 +6738,9 @@ output possibly modified. The hook should have the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
 before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
 registered by this method.
@@ -6753,9 +6791,9 @@ the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
 hooks registered by this method.
@@ -6808,9 +6846,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -6854,9 +6892,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -7018,16 +7056,23 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GLU.set_submodule">
-<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GLU.set_submodule" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GLU.set_submodule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error if
+the submodule does not exist.</p>
+</div>
 <p>For example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code> that
 looks like this:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>A(
     (net_b): Module(
         (net_c): Module(
-            (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+            (conv): Conv2d(3, 3, 3)
         )
-        (linear): Linear(in_features=100, out_features=200, bias=True)
+        (linear): Linear(3, 3)
     )
 )
 </pre></div>
@@ -7035,9 +7080,14 @@ looks like this:</p>
 <p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> has a nested
 submodule <code class="docutils literal notranslate"><span class="pre">net_b</span></code>, which itself has two submodules <code class="docutils literal notranslate"><span class="pre">net_c</span></code>
 and <code class="docutils literal notranslate"><span class="pre">linear</span></code>. <code class="docutils literal notranslate"><span class="pre">net_c</span></code> then has a submodule <code class="docutils literal notranslate"><span class="pre">conv</span></code>.)</p>
-<p>To overide the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
-would call
-<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(33,</span> <span class="pre">16))</span></code>.</p>
+<p>To override the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
+could call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(1,</span> <span class="pre">1))</span></code>
+where <code class="docutils literal notranslate"><span class="pre">strict</span></code> could be <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>To add a new submodule <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> to the existing <code class="docutils literal notranslate"><span class="pre">net_b</span></code> module,
+you would call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1))</span></code>.</p>
+<p>In the above if you set <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> and call
+<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1),</span> <span class="pre">strict=True)</span></code>, an AttributeError
+will be raised because <code class="docutils literal notranslate"><span class="pre">net_b</span></code> does not have a submodule named <code class="docutils literal notranslate"><span class="pre">conv</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -7045,14 +7095,18 @@ would call
 to look for. (See above example for how to specify a
 fully-qualified string.)</p></li>
 <li><p><strong>module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>) – The module to set the submodule to.</p></li>
+<li><p><strong>strict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error
+if the submodule doesn’t already exist.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If the target string is empty</p></li>
-<li><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p></li>
+<li><p><strong>ValueError</strong> – If the <code class="docutils literal notranslate"><span class="pre">target</span></code> string is empty or if <code class="docutils literal notranslate"><span class="pre">module</span></code> is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
+<li><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the <code class="docutils literal notranslate"><span class="pre">target</span></code> string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -7475,7 +7529,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReGLU.set_extra_state" title="darts.models.components.glu_variants.ReGLU.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReGLU.set_submodule" title="darts.models.components.glu_variants.ReGLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReGLU.set_submodule" title="darts.models.components.glu_variants.ReGLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module[, strict])</p></td>
 <td><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReGLU.share_memory" title="darts.models.components.glu_variants.ReGLU.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
@@ -7518,7 +7572,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReGLU.T_destination">
 <span class="sig-name descname"><span class="pre">T_destination</span></span><a class="headerlink" href="#darts.models.components.glu_variants.ReGLU.T_destination" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
+<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
 </dd></dl>
 
 <dl class="py method">
@@ -7643,7 +7697,7 @@ are direct members of this module.</p>
 <dd class="field-odd"><p><em>Module</em> – a child module</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -7907,9 +7961,9 @@ fully-qualified string.)</p>
 <dd class="field-odd"><p>torch.nn.Module</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p>
+<dd class="field-even"><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the target string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -8041,7 +8095,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -8098,7 +8152,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -8121,7 +8175,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, Module]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -8133,7 +8187,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
+<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code>[Module], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
 <li><p><strong>prefix</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – a prefix that will be added to the name of the module</p></li>
 <li><p><strong>remove_duplicate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to remove the duplicated module instances in the result
 or not</p></li>
@@ -8191,7 +8245,7 @@ parameters in the result. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -8307,9 +8361,9 @@ output possibly modified. The hook should have the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
 before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
 registered by this method.
@@ -8360,9 +8414,9 @@ the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
 hooks registered by this method.
@@ -8415,9 +8469,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -8461,9 +8515,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -8625,16 +8679,23 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReGLU.set_submodule">
-<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReGLU.set_submodule" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReGLU.set_submodule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error if
+the submodule does not exist.</p>
+</div>
 <p>For example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code> that
 looks like this:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>A(
     (net_b): Module(
         (net_c): Module(
-            (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+            (conv): Conv2d(3, 3, 3)
         )
-        (linear): Linear(in_features=100, out_features=200, bias=True)
+        (linear): Linear(3, 3)
     )
 )
 </pre></div>
@@ -8642,9 +8703,14 @@ looks like this:</p>
 <p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> has a nested
 submodule <code class="docutils literal notranslate"><span class="pre">net_b</span></code>, which itself has two submodules <code class="docutils literal notranslate"><span class="pre">net_c</span></code>
 and <code class="docutils literal notranslate"><span class="pre">linear</span></code>. <code class="docutils literal notranslate"><span class="pre">net_c</span></code> then has a submodule <code class="docutils literal notranslate"><span class="pre">conv</span></code>.)</p>
-<p>To overide the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
-would call
-<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(33,</span> <span class="pre">16))</span></code>.</p>
+<p>To override the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
+could call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(1,</span> <span class="pre">1))</span></code>
+where <code class="docutils literal notranslate"><span class="pre">strict</span></code> could be <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>To add a new submodule <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> to the existing <code class="docutils literal notranslate"><span class="pre">net_b</span></code> module,
+you would call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1))</span></code>.</p>
+<p>In the above if you set <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> and call
+<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1),</span> <span class="pre">strict=True)</span></code>, an AttributeError
+will be raised because <code class="docutils literal notranslate"><span class="pre">net_b</span></code> does not have a submodule named <code class="docutils literal notranslate"><span class="pre">conv</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -8652,14 +8718,18 @@ would call
 to look for. (See above example for how to specify a
 fully-qualified string.)</p></li>
 <li><p><strong>module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>) – The module to set the submodule to.</p></li>
+<li><p><strong>strict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error
+if the submodule doesn’t already exist.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If the target string is empty</p></li>
-<li><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p></li>
+<li><p><strong>ValueError</strong> – If the <code class="docutils literal notranslate"><span class="pre">target</span></code> string is empty or if <code class="docutils literal notranslate"><span class="pre">module</span></code> is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
+<li><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the <code class="docutils literal notranslate"><span class="pre">target</span></code> string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -9082,7 +9152,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReLU.set_extra_state" title="darts.models.components.glu_variants.ReLU.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReLU.set_submodule" title="darts.models.components.glu_variants.ReLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReLU.set_submodule" title="darts.models.components.glu_variants.ReLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module[, strict])</p></td>
 <td><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.ReLU.share_memory" title="darts.models.components.glu_variants.ReLU.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
@@ -9125,7 +9195,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReLU.T_destination">
 <span class="sig-name descname"><span class="pre">T_destination</span></span><a class="headerlink" href="#darts.models.components.glu_variants.ReLU.T_destination" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
+<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
 </dd></dl>
 
 <dl class="py method">
@@ -9250,7 +9320,7 @@ are direct members of this module.</p>
 <dd class="field-odd"><p><em>Module</em> – a child module</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -9514,9 +9584,9 @@ fully-qualified string.)</p>
 <dd class="field-odd"><p>torch.nn.Module</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p>
+<dd class="field-even"><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the target string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -9648,7 +9718,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -9705,7 +9775,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -9728,7 +9798,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, Module]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -9740,7 +9810,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
+<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code>[Module], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
 <li><p><strong>prefix</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – a prefix that will be added to the name of the module</p></li>
 <li><p><strong>remove_duplicate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to remove the duplicated module instances in the result
 or not</p></li>
@@ -9798,7 +9868,7 @@ parameters in the result. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -9914,9 +9984,9 @@ output possibly modified. The hook should have the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
 before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
 registered by this method.
@@ -9967,9 +10037,9 @@ the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
 hooks registered by this method.
@@ -10022,9 +10092,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -10068,9 +10138,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -10232,16 +10302,23 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReLU.set_submodule">
-<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReLU.set_submodule" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReLU.set_submodule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error if
+the submodule does not exist.</p>
+</div>
 <p>For example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code> that
 looks like this:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>A(
     (net_b): Module(
         (net_c): Module(
-            (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+            (conv): Conv2d(3, 3, 3)
         )
-        (linear): Linear(in_features=100, out_features=200, bias=True)
+        (linear): Linear(3, 3)
     )
 )
 </pre></div>
@@ -10249,9 +10326,14 @@ looks like this:</p>
 <p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> has a nested
 submodule <code class="docutils literal notranslate"><span class="pre">net_b</span></code>, which itself has two submodules <code class="docutils literal notranslate"><span class="pre">net_c</span></code>
 and <code class="docutils literal notranslate"><span class="pre">linear</span></code>. <code class="docutils literal notranslate"><span class="pre">net_c</span></code> then has a submodule <code class="docutils literal notranslate"><span class="pre">conv</span></code>.)</p>
-<p>To overide the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
-would call
-<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(33,</span> <span class="pre">16))</span></code>.</p>
+<p>To override the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
+could call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(1,</span> <span class="pre">1))</span></code>
+where <code class="docutils literal notranslate"><span class="pre">strict</span></code> could be <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>To add a new submodule <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> to the existing <code class="docutils literal notranslate"><span class="pre">net_b</span></code> module,
+you would call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1))</span></code>.</p>
+<p>In the above if you set <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> and call
+<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1),</span> <span class="pre">strict=True)</span></code>, an AttributeError
+will be raised because <code class="docutils literal notranslate"><span class="pre">net_b</span></code> does not have a submodule named <code class="docutils literal notranslate"><span class="pre">conv</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -10259,14 +10341,18 @@ would call
 to look for. (See above example for how to specify a
 fully-qualified string.)</p></li>
 <li><p><strong>module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>) – The module to set the submodule to.</p></li>
+<li><p><strong>strict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error
+if the submodule doesn’t already exist.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If the target string is empty</p></li>
-<li><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p></li>
+<li><p><strong>ValueError</strong> – If the <code class="docutils literal notranslate"><span class="pre">target</span></code> string is empty or if <code class="docutils literal notranslate"><span class="pre">module</span></code> is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
+<li><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the <code class="docutils literal notranslate"><span class="pre">target</span></code> string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -10689,7 +10775,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.SwiGLU.set_extra_state" title="darts.models.components.glu_variants.SwiGLU.set_extra_state"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_extra_state</span></code></a>(state)</p></td>
 <td><p>Set extra state contained in the loaded <cite>state_dict</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.SwiGLU.set_submodule" title="darts.models.components.glu_variants.SwiGLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.SwiGLU.set_submodule" title="darts.models.components.glu_variants.SwiGLU.set_submodule"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_submodule</span></code></a>(target, module[, strict])</p></td>
 <td><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.components.glu_variants.SwiGLU.share_memory" title="darts.models.components.glu_variants.SwiGLU.share_memory"><code class="xref py py-obj docutils literal notranslate"><span class="pre">share_memory</span></code></a>()</p></td>
@@ -10732,7 +10818,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.SwiGLU.T_destination">
 <span class="sig-name descname"><span class="pre">T_destination</span></span><a class="headerlink" href="#darts.models.components.glu_variants.SwiGLU.T_destination" title="Permalink to this definition">¶</a></dt>
-<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">Dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
+<dd><p>alias of TypeVar(‘T_destination’, bound=<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">Any</span></code>])</p>
 </dd></dl>
 
 <dl class="py method">
@@ -10857,7 +10943,7 @@ are direct members of this module.</p>
 <dd class="field-odd"><p><em>Module</em> – a child module</p>
 </dd>
 <dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -11121,9 +11207,9 @@ fully-qualified string.)</p>
 <dd class="field-odd"><p>torch.nn.Module</p>
 </dd>
 <dt class="field-even">Raises</dt>
-<dd class="field-even"><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p>
+<dd class="field-even"><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the target string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -11255,7 +11341,7 @@ example, <code class="docutils literal notranslate"><span class="pre">l</span></
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[Module]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -11312,7 +11398,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -11335,7 +11421,7 @@ are direct members of this module. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, Module]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -11347,7 +11433,7 @@ are direct members of this module. Defaults to True.</p></li>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Set</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
+<li><p><strong>memo</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code>[Module], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – a memo to store the set of modules already added to the result</p></li>
 <li><p><strong>prefix</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – a prefix that will be added to the name of the module</p></li>
 <li><p><strong>remove_duplicate</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – whether to remove the duplicated module instances in the result
 or not</p></li>
@@ -11405,7 +11491,7 @@ parameters in the result. Defaults to True.</p></li>
 </div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -11521,9 +11607,9 @@ output possibly modified. The hook should have the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired
 before all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_hook()</span></code> will fire before all hooks
 registered by this method.
@@ -11574,9 +11660,9 @@ the following signature:</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">forward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_forward_pre_hook()</span></code> will fire before all
 hooks registered by this method.
@@ -11629,9 +11715,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks on
-this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -11675,9 +11761,9 @@ will raise an error.</p>
 <li><p><strong>hook</strong> (<em>Callable</em>) – The user-defined hook to be registered.</p></li>
 <li><p><strong>prepend</strong> (<em>bool</em>) – If true, the provided <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired before
 all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks on this
-<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Otherwise, the provided
+<code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Otherwise, the provided
 <code class="docutils literal notranslate"><span class="pre">hook</span></code> will be fired after all existing <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks
-on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.modules.Module</span></code>. Note that global
+on this <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.nn.Module</span></code>. Note that global
 <code class="docutils literal notranslate"><span class="pre">backward_pre</span></code> hooks registered with
 <code class="xref py py-func docutils literal notranslate"><span class="pre">register_module_full_backward_pre_hook()</span></code> will fire before
 all hooks registered by this method.</p></li>
@@ -11839,16 +11925,23 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.SwiGLU.set_submodule">
-<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.SwiGLU.set_submodule" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">set_submodule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.SwiGLU.set_submodule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set the submodule given by <code class="docutils literal notranslate"><span class="pre">target</span></code> if it exists, otherwise throw an error.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">False</span></code> (default), the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">strict</span></code> is set to <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error if
+the submodule does not exist.</p>
+</div>
 <p>For example, let’s say you have an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code> that
 looks like this:</p>
 <div class="highlight-text notranslate"><div class="highlight"><pre><span></span>A(
     (net_b): Module(
         (net_c): Module(
-            (conv): Conv2d(16, 33, kernel_size=(3, 3), stride=(2, 2))
+            (conv): Conv2d(3, 3, 3)
         )
-        (linear): Linear(in_features=100, out_features=200, bias=True)
+        (linear): Linear(3, 3)
     )
 )
 </pre></div>
@@ -11856,9 +11949,14 @@ looks like this:</p>
 <p>(The diagram shows an <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code> <code class="docutils literal notranslate"><span class="pre">A</span></code>. <code class="docutils literal notranslate"><span class="pre">A</span></code> has a nested
 submodule <code class="docutils literal notranslate"><span class="pre">net_b</span></code>, which itself has two submodules <code class="docutils literal notranslate"><span class="pre">net_c</span></code>
 and <code class="docutils literal notranslate"><span class="pre">linear</span></code>. <code class="docutils literal notranslate"><span class="pre">net_c</span></code> then has a submodule <code class="docutils literal notranslate"><span class="pre">conv</span></code>.)</p>
-<p>To overide the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
-would call
-<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(33,</span> <span class="pre">16))</span></code>.</p>
+<p>To override the <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> with a new submodule <code class="docutils literal notranslate"><span class="pre">Linear</span></code>, you
+could call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.net_c.conv&quot;,</span> <span class="pre">nn.Linear(1,</span> <span class="pre">1))</span></code>
+where <code class="docutils literal notranslate"><span class="pre">strict</span></code> could be <code class="docutils literal notranslate"><span class="pre">True</span></code> or <code class="docutils literal notranslate"><span class="pre">False</span></code></p>
+<p>To add a new submodule <code class="docutils literal notranslate"><span class="pre">Conv2d</span></code> to the existing <code class="docutils literal notranslate"><span class="pre">net_b</span></code> module,
+you would call <code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1))</span></code>.</p>
+<p>In the above if you set <code class="docutils literal notranslate"><span class="pre">strict=True</span></code> and call
+<code class="docutils literal notranslate"><span class="pre">set_submodule(&quot;net_b.conv&quot;,</span> <span class="pre">nn.Conv2d(1,</span> <span class="pre">1,</span> <span class="pre">1),</span> <span class="pre">strict=True)</span></code>, an AttributeError
+will be raised because <code class="docutils literal notranslate"><span class="pre">net_b</span></code> does not have a submodule named <code class="docutils literal notranslate"><span class="pre">conv</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -11866,14 +11964,18 @@ would call
 to look for. (See above example for how to specify a
 fully-qualified string.)</p></li>
 <li><p><strong>module</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>) – The module to set the submodule to.</p></li>
+<li><p><strong>strict</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <code class="docutils literal notranslate"><span class="pre">False</span></code>, the method will replace an existing submodule
+or create a new submodule if the parent module exists. If <code class="docutils literal notranslate"><span class="pre">True</span></code>,
+the method will only attempt to replace an existing submodule and throw an error
+if the submodule doesn’t already exist.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
 <dd class="field-even"><ul class="simple">
-<li><p><strong>ValueError</strong> – If the target string is empty</p></li>
-<li><p><strong>AttributeError</strong> – If the target string references an invalid
-path or resolves to something that is not an
-<code class="docutils literal notranslate"><span class="pre">nn.Module</span></code></p></li>
+<li><p><strong>ValueError</strong> – If the <code class="docutils literal notranslate"><span class="pre">target</span></code> string is empty or if <code class="docutils literal notranslate"><span class="pre">module</span></code> is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
+<li><p><strong>AttributeError</strong> – If at any point along the path resulting from
+the <code class="docutils literal notranslate"><span class="pre">target</span></code> string the (sub)path resolves to a non-existent
+attribute name or an object that is not an instance of <code class="docutils literal notranslate"><span class="pre">nn.Module</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-odd">Return type</dt>

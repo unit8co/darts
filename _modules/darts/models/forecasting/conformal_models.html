@@ -311,7 +311,7 @@
 <span class="sd">            `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number</span>
 <span class="sd">            of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).</span>
 <span class="sd">        random_state</span>
-<span class="sd">            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.</span>
+<span class="sd">            Controls the randomness for reproducible forecasting.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">GlobalForecastingModel</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">model</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
@@ -426,6 +426,7 @@
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Forecasts calibrated quantile intervals (or samples from calibrated intervals) for `n` time steps after the</span>
@@ -482,6 +483,8 @@
 <span class="sd">            If set to `True`, generates the quantile predictions directly. Only supported with `num_samples = 1`.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            Whether to show warnings related auto-regression and past covariates usage.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness of probabilistic predictions.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optional keyword arguments that will passed to the underlying forecasting model&#39;s `predict()` and</span>
 <span class="sd">            `historical_forecasts()` methods.</span>
@@ -540,6 +543,7 @@
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">show_warnings</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
             <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">cal_preds</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calibrate_forecasts</span><span class="p">(</span>
@@ -555,6 +559,7 @@
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
             <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># convert historical forecasts output to simple forecast / prediction</span>
         <span class="k">if</span> <span class="n">called_with_single_series</span><span class="p">:</span>
@@ -587,6 +592,7 @@
         <span class="n">fit_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">predict_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates calibrated historical forecasts by simulating predictions at various points in time throughout the</span>
 <span class="sd">        history of the provided (potentially multiple) `series`. This process involves retrospectively applying the</span>
@@ -698,6 +704,8 @@
 <span class="sd">            Optionally, some additional arguments passed to the model `predict()` method.</span>
 <span class="sd">        sample_weight</span>
 <span class="sd">            Currently ignored by conformal models.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness of probabilistic predictions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -752,6 +760,7 @@
             <span class="n">data_transformers</span><span class="o">=</span><span class="n">data_transformers</span><span class="p">,</span>
             <span class="n">fit_kwargs</span><span class="o">=</span><span class="n">fit_kwargs</span><span class="p">,</span>
             <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="n">calibrated_forecasts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calibrate_forecasts</span><span class="p">(</span>
             <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
@@ -766,6 +775,7 @@
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
             <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">calibrated_forecasts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -803,6 +813,7 @@
         <span class="n">fit_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">predict_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.</span>
 
@@ -935,6 +946,8 @@
 <span class="sd">            Optionally, some additional arguments passed to the model `predict()` method.</span>
 <span class="sd">        sample_weight</span>
 <span class="sd">            Currently ignored by conformal models.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness of probabilistic predictions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -985,6 +998,7 @@
             <span class="n">fit_kwargs</span><span class="o">=</span><span class="n">fit_kwargs</span><span class="p">,</span>
             <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
             <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="ConformalModel.residuals"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalModel.residuals">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">residuals</span><span class="p">(</span>
@@ -1017,6 +1031,7 @@
         <span class="n">predict_kwargs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">values_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the residuals that the model produced for historical forecasts on (potentially multiple) `series`.</span>
 
@@ -1156,6 +1171,8 @@
 <span class="sd">            Currently ignored by conformal models.</span>
 <span class="sd">        values_only</span>
 <span class="sd">            Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness of probabilistic predictions.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1195,6 +1212,7 @@
             <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
             <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
             <span class="n">values_only</span><span class="o">=</span><span class="n">values_only</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
         <span class="p">)</span></div>
 
     <span class="nd">@random_method</span>
@@ -1212,6 +1230,7 @@
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate calibrated historical forecasts.</span>
 
@@ -1433,7 +1452,7 @@
                 <span class="n">inner_iterator</span> <span class="o">=</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">s_hfcs</span><span class="p">[</span><span class="n">first_fc_idx</span><span class="p">:</span><span class="n">last_fc_idx</span><span class="p">:</span><span class="n">rel_stride</span><span class="p">])</span>
 
             <span class="n">comp_names_out</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">component_names</span><span class="p">(</span><span class="n">series_</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">component_names</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series_</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">predict_likelihood_parameters</span>
                 <span class="k">else</span> <span class="kc">None</span>
             <span class="p">)</span>
@@ -1463,6 +1482,7 @@
                     <span class="p">),</span>
                     <span class="n">with_static_covs</span><span class="o">=</span><span class="ow">not</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span>
                     <span class="n">with_hierarchy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">pred</span> <span class="ow">in</span> <span class="n">inner_iterator</span><span class="p">:</span>
@@ -1475,6 +1495,7 @@
                         <span class="n">time_index</span><span class="o">=</span><span class="n">pred</span><span class="o">.</span><span class="n">_time_index</span><span class="p">,</span>
                         <span class="n">with_static_covs</span><span class="o">=</span><span class="ow">not</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span>
                         <span class="n">with_hierarchy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                        <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                     <span class="p">)</span>
                     <span class="n">cp_preds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cp_pred</span><span class="p">)</span>
             <span class="n">cp_hfcs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cp_preds</span><span class="p">)</span>

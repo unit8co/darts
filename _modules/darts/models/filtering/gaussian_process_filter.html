@@ -184,8 +184,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.gaussian_process</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianProcessRegressor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.gaussian_process.kernels</span><span class="w"> </span><span class="kn">import</span> <span class="n">Kernel</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.filtering.filtering_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">FilteringModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 
 
 <div class="viewcode-block" id="GaussianProcessFilter"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.gaussian_process_filter.html#darts.models.filtering.gaussian_process_filter.GaussianProcessFilter">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">GaussianProcessFilter</span><span class="p">(</span><span class="n">FilteringModel</span><span class="p">):</span>
@@ -248,7 +248,13 @@
 
         <span class="n">filtered_values</span> <span class="o">=</span> <span class="n">filtered_values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">times</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">filtered_values</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span>
+            <span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+            <span class="n">values</span><span class="o">=</span><span class="n">filtered_values</span><span class="p">,</span>
+            <span class="n">components</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
+            <span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">series</span><span class="o">.</span><span class="n">_attrs</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
 </pre></div>
 
               </div>

@@ -211,7 +211,7 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="20-RegressionModel-examples.html">
+  <a class="reference internal" href="20-SKLearnModel-examples.html">
    Regression Models
   </a>
  </li>
@@ -709,7 +709,7 @@ div.rendered_html tbody tr:hover {
     <span class="n">NaiveDrift</span><span class="p">,</span>
     <span class="n">NaiveEnsembleModel</span><span class="p">,</span>
     <span class="n">NaiveSeasonal</span><span class="p">,</span>
-    <span class="n">RandomForest</span><span class="p">,</span>
+    <span class="n">RandomForestModel</span><span class="p">,</span>
     <span class="n">RegressionEnsembleModel</span><span class="p">,</span>
     <span class="n">TCNModel</span><span class="p">,</span>
 <span class="p">)</span>
@@ -800,7 +800,7 @@ NaiveEnsemble (naive) MAPE: 11.87818
 </div>
 </div>
 <p><strong>Note</strong>: after looking at the each model’s MAPE, one would notice that <code class="docutils literal notranslate"><span class="pre">NaiveSeasonal</span></code> is actually performing better on its own than ensembled with <code class="docutils literal notranslate"><span class="pre">NaiveDrift</span></code>. Checking the performance of the single models is in general a good practice before defining an ensemble.</p>
-<p>Before creating the new <code class="docutils literal notranslate"><span class="pre">NaiveEnsemble</span></code>, we will screen models to identify which ones would do well together. The candidates are : - <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> : classic and simple model - <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code> : moving window model - <code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> : a filter-based model - <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code> : decision trees model</p>
+<p>Before creating the new <code class="docutils literal notranslate"><span class="pre">NaiveEnsemble</span></code>, we will screen models to identify which ones would do well together. The candidates are : - <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> : classic and simple model - <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code> : moving window model - <code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> : a filter-based model - <code class="docutils literal notranslate"><span class="pre">RandomForestModel</span></code> : decision trees model</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
@@ -810,7 +810,7 @@ NaiveEnsemble (naive) MAPE: 11.87818
     <span class="s2">&quot;LinearRegression&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;lags&quot;</span><span class="p">:</span> <span class="mi">12</span><span class="p">}),</span>
     <span class="s2">&quot;ExponentialSmoothing&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="p">{}),</span>
     <span class="s2">&quot;KalmanForecaster&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">KalmanForecaster</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;dim_x&quot;</span><span class="p">:</span> <span class="mi">12</span><span class="p">}),</span>
-    <span class="s2">&quot;RandomForest&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">RandomForest</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;lags&quot;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span> <span class="s2">&quot;random_state&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span>
+    <span class="s2">&quot;RandomForestModel&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">RandomForestModel</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;lags&quot;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span> <span class="s2">&quot;random_state&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}),</span>
 <span class="p">}</span>
 
 <span class="n">backtest_models</span> <span class="o">=</span> <span class="p">[]</span>
@@ -830,9 +830,9 @@ NaiveEnsemble (naive) MAPE: 11.87818
 <div class="output_area docutils container">
 <div class="highlight"><pre>
 LinearRegression MAPE: 4.64008
-ExponentialSmoothing MAPE: 4.44874
+ExponentialSmoothing MAPE: 4.44774
 KalmanForecaster MAPE: 4.5539
-RandomForest MAPE: 8.02264
+RandomForestModel MAPE: 8.02264
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
@@ -862,7 +862,7 @@ RandomForest MAPE: 8.02264
 <img alt="../_images/examples_19-EnsembleModel-examples_9_0.png" src="../_images/examples_19-EnsembleModel-examples_9_0.png" />
 </div>
 </div>
-<p>The historical forecasts obtained with the <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> look quite similar whereas <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code> tends to understimate the true values and <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code> is failing to capture the peaks. To benefits from the ensemble, we will favor diversity and continue with the <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>.</p>
+<p>The historical forecasts obtained with the <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> look quite similar whereas <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code> tends to understimate the true values and <code class="docutils literal notranslate"><span class="pre">RandomForestModel</span></code> is failing to capture the peaks. To benefits from the ensemble, we will favor diversity and continue with the <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>.£</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
@@ -993,7 +993,7 @@ NaiveEnsemble (w/ future covariates) MAPE: 4.07502
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">forecasting_models</span></code> is a list of forecasting models whose predictions we want to ensemble.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">regression_train_n_points</span></code> is the number of time steps to use for fitting the “ensemble regression” model (i.e., the inner model that combines the forecasts).</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">regression_model</span></code> is, optionally, a sklearn-compatible regression model or a Darts <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> to be used for the ensemble regression. If not specified, Darts’ <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> is used. Using a sklearn model is easy out-of-the-box, but using one of Darts’ regression models allows to potentially take arbitrary lags of the individual forecasts as inputs of the regression model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">regression_model</span></code> is, optionally, a sklearn-compatible regression model or a Darts <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> to be used for the ensemble regression. If not specified, Darts’ <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> is used. Using a sklearn model is easy out-of-the-box, but using one of Darts’ regression models allows to potentially take arbitrary lags of the individual forecasts as inputs of the regression model.</p></li>
 </ul>
 <p>Once these elements are in place, a <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code> can be used like a regular forecasting model:</p>
 <div class="nbinput docutils container">
@@ -1104,15 +1104,15 @@ available, making it possible to use <code class="docutils literal notranslate">
 <p>This can be activated with <code class="docutils literal notranslate"><span class="pre">train_using_historical_forecasts=True</span></code>.</p>
 <p>Under the hood, the ensemble model will trigger historical forecasting for each model with <code class="docutils literal notranslate"><span class="pre">forecast_horizon=model.output_chunk_length</span></code>, <code class="docutils literal notranslate"><span class="pre">stride=model.output_chunk_length</span></code>, <code class="docutils literal notranslate"><span class="pre">last_points_only=False</span></code>, and <code class="docutils literal notranslate"><span class="pre">overlap_end=False</span></code> to predict the last <code class="docutils literal notranslate"><span class="pre">regression_train_n_points</span></code> points of the target series.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># replacing the ExponentialSmoothing (local) with RandomForest (global)</span>
+<span></span><span class="c1"># replacing the ExponentialSmoothing (local) with RandomForestModel (global)</span>
 <span class="n">ensemble</span> <span class="o">=</span> <span class="n">RegressionEnsembleModel</span><span class="p">(</span>
     <span class="n">forecasting_models</span><span class="o">=</span><span class="p">[</span>
         <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">),</span>
-        <span class="n">RandomForest</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">RandomForestModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
     <span class="p">],</span>
     <span class="n">regression_train_n_points</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
     <span class="n">train_using_historical_forecasts</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
@@ -1122,7 +1122,7 @@ available, making it possible to use <code class="docutils literal notranslate">
 <span class="n">ensemble_hist_fct</span> <span class="o">=</span> <span class="n">RegressionEnsembleModel</span><span class="p">(</span>
     <span class="n">forecasting_models</span><span class="o">=</span><span class="p">[</span>
         <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">),</span>
-        <span class="n">RandomForest</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">RandomForestModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
     <span class="p">],</span>
     <span class="n">regression_train_n_points</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
     <span class="n">train_using_historical_forecasts</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>

@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>darts.models.forecasting.regression_model &#8212; darts  documentation</title>
+    <title>darts.models.forecasting.sklearn_model &#8212; darts  documentation</title>
     
   <link href="../../../../_static/css/theme.css" rel="stylesheet">
   <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -172,11 +172,11 @@
               
               <div>
                 
-  <h1>Source code for darts.models.forecasting.regression_model</h1><div class="highlight"><pre>
+  <h1>Source code for darts.models.forecasting.sklearn_model</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Regression Model</span>
-<span class="sd">----------------</span>
-<span class="sd">A `RegressionModel` forecasts future values of a target series based on</span>
+<span class="sd">SKLearn Model</span>
+<span class="sd">-------------</span>
+<span class="sd">A `SKLearnModel` forecasts future values of a target series based on</span>
 
 <span class="sd">* The target series (past lags only)</span>
 
@@ -190,10 +190,17 @@
 <span class="sd">The regression models are learned in a supervised way, and they can wrap around any &quot;scikit-learn like&quot; regression model</span>
 <span class="sd">acting on tabular data having ``fit()`` and ``predict()`` methods.</span>
 
-<span class="sd">Darts also provides :class:`LinearRegressionModel` and :class:`RandomForest`, which are regression models</span>
-<span class="sd">wrapping around scikit-learn linear regression and random forest regression, respectively.</span>
+<span class="sd">Darts also provides the following models:</span>
 
-<span class="sd">Behind the scenes this model is tabularizing the time series data to make it work with regression models.</span>
+<span class="sd">- :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` : wrapping around scikit-learn&#39;s</span>
+<span class="sd">  `LinearRegression`</span>
+<span class="sd">- :class:`~darts.models.forecasting.random_forest.RandomForestModel` : wrapping around scikit-learn&#39;s</span>
+<span class="sd">  `RandomForestRegressor`</span>
+<span class="sd">- :class:`~darts.models.forecasting.xgboost.XGBModel` : wrapping around XGBoost&#39;s `XGBRegressor`</span>
+<span class="sd">- :class:`~darts.models.forecasting.lgbm.LightGBMModel` : wrapping around LightGBM&#39;s `LGBMRegressor`</span>
+<span class="sd">- :class:`~darts.models.forecasting.catboost_model.CatBoostModel` : wrapping around CatBoost&#39;s `CatBoostRegressor`</span>
+
+<span class="sd">Behind the scenes this model tabularizes the time series data to make it work with regression models.</span>
 
 <span class="sd">The lags can be specified either using an integer - in which case it represents the _number_ of (past or future) lags</span>
 <span class="sd">to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values</span>
@@ -212,9 +219,15 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">LinearRegression</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.utils.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">has_fit_parameter</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">get_logger</span><span class="p">,</span>
+    <span class="n">raise_deprecation_warning</span><span class="p">,</span>
+    <span class="n">raise_if</span><span class="p">,</span>
+    <span class="n">raise_if_not</span><span class="p">,</span>
+    <span class="n">raise_log</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.timeseries</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.tabularization</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_create_lagged_data_autoregression</span><span class="p">,</span>
     <span class="n">create_lagged_component_names</span><span class="p">,</span>
@@ -229,6 +242,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span><span class="p">,</span> <span class="n">SKLearnLikelihood</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.multioutput</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_single_series</span><span class="p">,</span> <span class="n">seq2series</span><span class="p">,</span> <span class="n">series2seq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">random_method</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -238,7 +252,8 @@
 <span class="p">]</span>
 
 
-<div class="viewcode-block" id="RegressionModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RegressionModel</span><span class="p">(</span><span class="n">GlobalForecastingModel</span><span class="p">):</span>
+<div class="viewcode-block" id="SKLearnModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">SKLearnModel</span><span class="p">(</span><span class="n">GlobalForecastingModel</span><span class="p">):</span>
+    <span class="nd">@random_method</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -250,6 +265,7 @@
         <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">multi_models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Regression Model</span>
 <span class="sd">        Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.</span>
@@ -340,11 +356,13 @@
 <span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
 <span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
 <span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness for reproducible forecasting.</span>
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
 <span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
-<span class="sd">        &gt;&gt;&gt; from darts.models import RegressionModel</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import SKLearnModel</span>
 <span class="sd">        &gt;&gt;&gt; from sklearn.linear_model import Ridge</span>
 <span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>
 <span class="sd">        &gt;&gt;&gt; # predicting atmospheric pressure</span>
@@ -354,7 +372,7 @@
 <span class="sd">        &gt;&gt;&gt; # optionally, use future temperatures (pretending this component is a forecast)</span>
 <span class="sd">        &gt;&gt;&gt; future_cov = series[&#39;T (degC)&#39;][:106]</span>
 <span class="sd">        &gt;&gt;&gt; # wrap around the sklearn Ridge model</span>
-<span class="sd">        &gt;&gt;&gt; model = RegressionModel(</span>
+<span class="sd">        &gt;&gt;&gt; model = SKLearnModel(</span>
 <span class="sd">        &gt;&gt;&gt;     model=Ridge(),</span>
 <span class="sd">        &gt;&gt;&gt;     lags=12,</span>
 <span class="sd">        &gt;&gt;&gt;     lags_past_covariates=4,</span>
@@ -677,7 +695,7 @@
     <span class="k">def</span><span class="w"> </span><span class="nf">output_chunk_shift</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_output_chunk_shift</span>
 
-<div class="viewcode-block" id="RegressionModel.get_estimator"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel.get_estimator">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_estimator</span><span class="p">(</span>
+<div class="viewcode-block" id="SKLearnModel.get_estimator"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel.get_estimator">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_estimator</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">target_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.</span>
@@ -753,6 +771,7 @@
         <span class="n">val_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">val_sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the</span>
 <span class="sd">        validation set. This method can be overridden if the model requires a different logic to add the eval set.&quot;&quot;&quot;</span>
@@ -763,6 +782,7 @@
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">sample_weight</span><span class="o">=</span><span class="n">val_sample_weight</span><span class="p">,</span>
             <span class="n">last_static_covariates_shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_static_covariates_shape</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="c1"># create validation sets for MultiOutputRegressor</span>
         <span class="k">if</span> <span class="n">val_labels</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">):</span>
@@ -786,6 +806,7 @@
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">last_static_covariates_shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="p">(</span>
@@ -810,6 +831,7 @@
             <span class="n">check_inputs</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">concatenate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
             <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="n">expected_nb_feat</span> <span class="o">=</span> <span class="p">(</span>
@@ -871,6 +893,7 @@
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">val_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">val_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">val_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -888,6 +911,7 @@
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
             <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
             <span class="n">last_static_covariates_shape</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">supports_val_set</span> <span class="ow">and</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -898,6 +922,7 @@
                 <span class="n">val_future_covariates</span><span class="o">=</span><span class="n">val_future_covariates</span><span class="p">,</span>
                 <span class="n">val_sample_weight</span><span class="o">=</span><span class="n">val_sample_weight</span><span class="p">,</span>
                 <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+                <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
             <span class="p">)</span>
 
         <span class="c1"># only use `sample_weight` if model supports it</span>
@@ -930,7 +955,7 @@
             <span class="p">)</span>
         <span class="p">)</span>
 
-<div class="viewcode-block" id="RegressionModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
+<div class="viewcode-block" id="SKLearnModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -938,6 +963,7 @@
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">n_jobs_multioutput_wrapper</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -971,6 +997,10 @@
 <span class="sd">            `&quot;linear&quot;` or `&quot;exponential&quot;` decay - the further in the past, the lower the weight. The weights are</span>
 <span class="sd">            computed globally based on the length of the longest series in `series`. Then for each series, the weights</span>
 <span class="sd">            are extracted from the end of the global weights. This gives a common time weighting across all series.</span>
+<span class="sd">        stride</span>
+<span class="sd">            The number of time steps between consecutive samples, applied starting from the end of the series. The same</span>
+<span class="sd">            stride will be applied to both the training and evaluation set (if supplied and supported). This should be</span>
+<span class="sd">            used with caution as it might introduce bias in the forecasts.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional keyword arguments passed to the `fit` method of the model.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1061,7 +1091,7 @@
                 <span class="s2">&quot;eval_weight_name&quot;</span><span class="p">:</span> <span class="n">val_weight_name</span><span class="p">,</span>
                 <span class="s2">&quot;n_jobs&quot;</span><span class="p">:</span> <span class="n">n_jobs_multioutput_wrapper</span><span class="p">,</span>
             <span class="p">}</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputRegressor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">mor_kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputRegressor</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="o">**</span><span class="n">mor_kwargs</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span>
             <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">,</span> <span class="n">MultiOutputRegressor</span><span class="p">)</span>
@@ -1133,11 +1163,12 @@
             <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
             <span class="n">val_sample_weight</span><span class="o">=</span><span class="n">val_sample_weight</span><span class="p">,</span>
             <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
-<div class="viewcode-block" id="RegressionModel.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel.predict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
+<div class="viewcode-block" id="SKLearnModel.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel.predict">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1147,6 +1178,7 @@
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Forecasts values for `n` time steps after the end of the series.</span>
@@ -1174,11 +1206,13 @@
 <span class="sd">            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only</span>
 <span class="sd">            supported for probabilistic models with a likelihood, `num_samples = 1` and `n&lt;=output_chunk_length`.</span>
 <span class="sd">            Default: ``False``</span>
+<span class="sd">        show_warnings</span>
+<span class="sd">            Optionally, control whether warnings are shown. Not effective for all models.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness of probabilistic predictions.</span>
 <span class="sd">        **kwargs : dict, optional</span>
 <span class="sd">            Additional keyword arguments passed to the `predict` method of the model. Only works with</span>
 <span class="sd">            univariate target series.</span>
-<span class="sd">        show_warnings</span>
-<span class="sd">            Optionally, control whether warnings are shown. Not effective for all models.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># then there must be a single TS, and that was saved in super().fit as self.training_series</span>
@@ -1365,7 +1399,11 @@
 
             <span class="c1"># X has shape (n_series * n_samples, n_regression_features)</span>
             <span class="n">prediction</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span>
-                <span class="n">X</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+                <span class="n">X</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="p">,</span>
+                <span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="c1"># prediction shape (n_series * n_samples, output_chunk_length, n_components)</span>
             <span class="c1"># append prediction to final predictions</span>
@@ -1385,7 +1423,7 @@
                 <span class="n">points_preds</span><span class="o">=</span><span class="n">row</span><span class="p">,</span>
                 <span class="n">input_series</span><span class="o">=</span><span class="n">input_tgt</span><span class="p">,</span>
                 <span class="n">custom_components</span><span class="o">=</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">component_names</span><span class="p">(</span><span class="n">input_tgt</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">component_names</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">input_tgt</span><span class="p">)</span>
                     <span class="k">if</span> <span class="n">predict_likelihood_parameters</span>
                     <span class="k">else</span> <span class="kc">None</span>
                 <span class="p">),</span>
@@ -1399,11 +1437,13 @@
 
         <span class="k">return</span> <span class="n">predictions</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">predictions</span></div>
 
+    <span class="nd">@random_method</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generate predictions.</span>
@@ -1531,10 +1571,11 @@
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        For RegressionModels we create the lagged prediction data once per series using a moving window.</span>
+<span class="sd">        For SKLearnModels we create the lagged prediction data once per series using a moving window.</span>
 <span class="sd">        With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each</span>
 <span class="sd">        forecastable index and series.</span>
 <span class="sd">        Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.</span>
@@ -1568,6 +1609,7 @@
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
                 <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1585,6 +1627,7 @@
                 <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
                 <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+                <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">hfc</span><span class="p">,</span> <span class="n">seq_type_out</span><span class="o">=</span><span class="n">series_seq_type</span><span class="p">)</span>
@@ -1607,7 +1650,7 @@
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
 
-<div class="viewcode-block" id="RegressionModelWithCategoricalCovariates"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModelWithCategoricalCovariates">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RegressionModelWithCategoricalCovariates</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+<div class="viewcode-block" id="SKLearnModelWithCategoricalCovariates"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModelWithCategoricalCovariates">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">SKLearnModelWithCategoricalCovariates</span><span class="p">(</span><span class="n">SKLearnModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">model</span><span class="p">,</span>
@@ -1622,9 +1665,10 @@
         <span class="n">categorical_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">categorical_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">categorical_static_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Extension of `RegressionModel` for regression models that support categorical covariates.</span>
+<span class="sd">        Extension of `SKLearnModel` for regression models that support categorical covariates.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1719,6 +1763,8 @@
 <span class="sd">        categorical_static_covariates</span>
 <span class="sd">            Optionally, string or list of strings specifying the static covariates that should be treated as</span>
 <span class="sd">            categorical.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness for reproducible forecasting.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
@@ -1730,6 +1776,7 @@
             <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
             <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">categorical_static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">use_static_covariates</span><span class="p">:</span>
@@ -1887,7 +1934,7 @@
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Custom fit function for `RegressionModelWithCategoricalCovariates` models, adding logic to let the model</span>
+<span class="sd">        Custom fit function for `SKLearnModelWithCategoricalCovariates` models, adding logic to let the model</span>
 <span class="sd">        handle categorical features directly.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">cat_col_indices</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_categorical_features</span><span class="p">(</span>
@@ -1933,6 +1980,165 @@
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_categorical_indices</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_validate_categorical_components</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">samples</span><span class="p">,</span> <span class="n">labels</span></div>
+
+
+<div class="viewcode-block" id="RegressionModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.RegressionModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RegressionModel</span><span class="p">(</span><span class="n">SKLearnModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">FUTURE_LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">model</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">multi_models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Regression Model</span>
+<span class="sd">        Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.</span>
+
+<span class="sd">        Note: `RegressionModel` is deprecated and will be removed in a future version. Use</span>
+<span class="sd">        :class:`~darts.models.forecasting.sklearn_model.SKLearnModel` instead.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lags</span>
+<span class="sd">            Lagged target `series` values used to predict the next time step/s.</span>
+<span class="sd">            If an integer, must be &gt; 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`</span>
+<span class="sd">            corresponds the first predicted time step of each sample. If `output_chunk_shift &gt; 0`, then</span>
+<span class="sd">            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.</span>
+<span class="sd">            If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.</span>
+<span class="sd">            If a dictionary, the keys correspond to the `series` component names (of the first series when</span>
+<span class="sd">            using multiple series) and the values correspond to the component lags (integer or list of integers). The</span>
+<span class="sd">            key &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
+<span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
+<span class="sd">        lags_past_covariates</span>
+<span class="sd">            Lagged `past_covariates` values used to predict the next time step/s.</span>
+<span class="sd">            If an integer, must be &gt; 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,</span>
+<span class="sd">            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift &gt; 0`, then</span>
+<span class="sd">            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.</span>
+<span class="sd">            If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.</span>
+<span class="sd">            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when</span>
+<span class="sd">            using multiple series) and the values correspond to the component lags (integer or list of integers). The</span>
+<span class="sd">            key &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
+<span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
+<span class="sd">        lags_future_covariates</span>
+<span class="sd">            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the</span>
+<span class="sd">            first step in the output chunk, even when `output_chunk_shift &gt; 0`.</span>
+<span class="sd">            If a tuple of `(past, future)`, both values must be &gt; 0. Uses the last `n=past` past lags and `n=future`</span>
+<span class="sd">            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first</span>
+<span class="sd">            predicted time step of each sample. If `output_chunk_shift &gt; 0`, the position of negative lags differ from</span>
+<span class="sd">            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same</span>
+<span class="sd">            step as a target lag of `-5 + output_chunk_shift`.</span>
+<span class="sd">            If a list of integers, uses only the specified values as lags.</span>
+<span class="sd">            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when</span>
+<span class="sd">            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key</span>
+<span class="sd">            &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
+<span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast</span>
+<span class="sd">            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a</span>
+<span class="sd">            one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents auto-regression. This is</span>
+<span class="sd">            useful when the covariates don&#39;t extend far enough into the future, or to prohibit the model from using</span>
+<span class="sd">            future values of past and / or future covariates for prediction (depending on the model&#39;s covariate</span>
+<span class="sd">            support).</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the</span>
+<span class="sd">            input chunk end). This will create a gap between the input (history of target and past covariates) and</span>
+<span class="sd">            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first</span>
+<span class="sd">            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the</span>
+<span class="sd">            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions</span>
+<span class="sd">            (`n &gt; output_chunk_length`).</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.dataprocessing.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
+<span class="sd">        model</span>
+<span class="sd">            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn&#39;t</span>
+<span class="sd">            support multi-output regression for multivariate timeseries, in which case one regressor</span>
+<span class="sd">            will be used per component in the multivariate series.</span>
+<span class="sd">            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.</span>
+<span class="sd">        multi_models</span>
+<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model</span>
+<span class="sd">            is trained to predict all the steps in &#39;output_chunk_length&#39; (features lags are shifted back by</span>
+<span class="sd">            `output_chunk_length - n` for each step `n`). Default: True.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
+<span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
+<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness for reproducible forecasting.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import RegressionModel</span>
+<span class="sd">        &gt;&gt;&gt; from sklearn.linear_model import Ridge</span>
+<span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; # predicting atmospheric pressure</span>
+<span class="sd">        &gt;&gt;&gt; target = series[&#39;p (mbar)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use past observed rainfall (pretending to be unknown beyond index 100)</span>
+<span class="sd">        &gt;&gt;&gt; past_cov = series[&#39;rain (mm)&#39;][:100]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use future temperatures (pretending this component is a forecast)</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = series[&#39;T (degC)&#39;][:106]</span>
+<span class="sd">        &gt;&gt;&gt; # wrap around the sklearn Ridge model</span>
+<span class="sd">        &gt;&gt;&gt; model = RegressionModel(</span>
+<span class="sd">        &gt;&gt;&gt;     model=Ridge(),</span>
+<span class="sd">        &gt;&gt;&gt;     lags=12,</span>
+<span class="sd">        &gt;&gt;&gt;     lags_past_covariates=4,</span>
+<span class="sd">        &gt;&gt;&gt;     lags_future_covariates=(0,6),</span>
+<span class="sd">        &gt;&gt;&gt;     output_chunk_length=6</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[1005.73340676],</span>
+<span class="sd">                [1005.71159051],</span>
+<span class="sd">                [1005.7322616 ],</span>
+<span class="sd">                [1005.76314504],</span>
+<span class="sd">                [1005.82204348],</span>
+<span class="sd">                [1005.89100967]])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_deprecation_warning</span><span class="p">(</span>
+            <span class="s2">&quot;`RegressionModel` is deprecated and will be removed in a future version. &quot;</span>
+            <span class="s2">&quot;Use `SKLearnModel` instead.&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
+            <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
+            <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+            <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
+            <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

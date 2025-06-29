@@ -674,9 +674,9 @@
 
         <span class="k">if</span> <span class="n">component_mask</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">return_ts</span><span class="p">:</span>
-                <span class="n">out</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="n">series</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">series_</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span> <span class="k">for</span> <span class="n">series_</span> <span class="ow">in</span> <span class="n">series</span><span class="p">]</span>
+                <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">series_</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">series_</span> <span class="ow">in</span> <span class="n">series</span><span class="p">]</span>
             <span class="k">return</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">called_with_single_series</span> <span class="k">else</span> <span class="n">out</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span>
@@ -759,12 +759,14 @@
                     <span class="p">),</span>
                     <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
                 <span class="p">)</span>
-            <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals_</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
-                <span class="n">unmasked</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">vals_</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
-                <span class="c1"># Remove timepoints not present in transformed data:</span>
-                <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">vals_</span><span class="p">)</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">unmasked</span><span class="p">)</span>
+                <span class="c1"># remove timepoints not present in transformed data (returns a copy)</span>
+                <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">vals_</span><span class="p">)</span>
+                <span class="c1"># populate with new values</span>
+                <span class="n">unmasked_vals</span> <span class="o">=</span> <span class="n">unmasked</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+                <span class="n">unmasked_vals</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">vals_</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
+                <span class="n">unmasked</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
                 <span class="n">unmasked</span><span class="p">[:,</span> <span class="n">component_mask</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">vals_</span>
 
             <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">unmasked</span><span class="p">)</span>
@@ -801,7 +803,7 @@
 <span class="sd">            by concatenating all of the samples of the `i`th component in `vals`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span>
+            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">shape</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">shape</span>
         <span class="n">new_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
         <span class="n">stacked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">new_shape</span><span class="p">)</span>

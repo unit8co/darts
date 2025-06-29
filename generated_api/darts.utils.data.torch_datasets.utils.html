@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Horizon-Based Training Dataset &#8212; darts  documentation</title>
+    <title>&lt;no title&gt; &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -39,8 +39,8 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Inference Dataset" href="darts.utils.data.inference_dataset.html" />
-    <link rel="prev" title="TimeSeries Datasets" href="darts.utils.data.html" />
+    <link rel="next" title="&lt;no title&gt;" href="darts.utils.data.utils.html" />
+    <link rel="prev" title="Training Datasets" href="darts.utils.data.torch_datasets.training_dataset.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -95,7 +95,7 @@
  </a>
 </li>
 
-<li class="toctree-l1 current active nav-item">
+<li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="darts.html">
   API Reference
  </a>
@@ -154,7 +154,7 @@
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
   <div class="bd-toc-item active">
-    <ul class="current nav bd-sidenav">
+    <ul class="nav bd-sidenav">
  <li class="toctree-l1 has-children">
   <a class="reference internal" href="darts.ad.html">
    Anomaly Detection
@@ -477,7 +477,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for RegressionModels
+     Shap Explainer for SKLearnModels
     </a>
    </li>
    <li class="toctree-l2">
@@ -642,11 +642,6 @@
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
-       Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
       </a>
@@ -697,6 +692,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
+       SKLearn Model
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
        Temporal Convolutional Network
       </a>
@@ -740,49 +740,39 @@
    </li>
   </ul>
  </li>
- <li class="toctree-l1 current active has-children">
+ <li class="toctree-l1 has-children">
   <a class="reference internal" href="darts.utils.html">
    Utils
   </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
+  <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
   <label for="toctree-checkbox-16">
    <i class="fas fa-chevron-down">
    </i>
   </label>
-  <ul class="current">
-   <li class="toctree-l2 current active has-children">
+  <ul>
+   <li class="toctree-l2 has-children">
     <a class="reference internal" href="darts.utils.data.html">
      TimeSeries Datasets
     </a>
-    <input checked="" class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
+    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
     <label for="toctree-checkbox-17">
      <i class="fas fa-chevron-down">
      </i>
     </label>
-    <ul class="current">
-     <li class="toctree-l3 current active">
-      <a class="current reference internal" href="#">
-       Horizon-Based Training Dataset
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
+       Dataset Base Class
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
-       Inference Dataset
+      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
+       Inference Datasets
       </a>
      </li>
      <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
-       Sequential Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
-       Shifted Training Dataset
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.training_dataset.html">
-       Training Datasets Base Classes
+      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
+       Training Datasets
       </a>
      </li>
     </ul>
@@ -801,7 +791,7 @@
       <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
        Likelihoods for
        <cite>
-        RegressionModel
+        SKLearnModel
        </cite>
       </a>
      </li>
@@ -885,9 +875,14 @@
               
               <div class="toc-item">
                 
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
 
 <nav id="bd-toc-nav">
-    
+    <ul class="simple visible nav section-nav flex-column">
+</ul>
+
 </nav>
               </div>
               
@@ -907,80 +902,24 @@
               
               <div>
                 
-  <span class="target" id="module-darts.utils.data.horizon_based_dataset"></span><section id="horizon-based-training-dataset">
-<h1>Horizon-Based Training Dataset<a class="headerlink" href="#horizon-based-training-dataset" title="Permalink to this heading">¶</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="darts.utils.data.horizon_based_dataset.HorizonBasedDataset">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.horizon_based_dataset.</span></span><span class="sig-name descname"><span class="pre">HorizonBasedDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1,</span> <span class="pre">3)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/horizon_based_dataset.html#HorizonBasedDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.horizon_based_dataset.HorizonBasedDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.PastCovariatesTrainingDataset" title="darts.utils.data.training_dataset.PastCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTrainingDataset</span></code></a></p>
-<p>A time series dataset containing tuples of (past_target, past_covariates, static_covariates, sample weights,
-future_target)
-arrays,
-in a way inspired by the N-BEATS way of training on the M4 dataset: <a class="reference external" href="https://arxiv.org/abs/1905.10437">https://arxiv.org/abs/1905.10437</a>.</p>
-<p>The “past” series have length <cite>lookback * output_chunk_length</cite>, and the “future” series has length
-<cite>output_chunk_length</cite>.</p>
-<p>Given the horizon <cite>output_chunk_length</cite> of a model, this dataset will compute some “past/future”
-splits as follows:
-First a “forecast point” is selected in the the range of the last
-<cite>(min_lh * output_chunk_length, max_lh * output_chunk_length)</cite> points before the end of the time series.
-The “future” then consists in the following <cite>output_chunk_length</cite> points, and the “past” will be the preceding
-<cite>lookback * output_chunk_length</cite> points.</p>
-<p>All the series in the provided sequence must be long enough; i.e. have length at least
-<cite>(lookback + max_lh) * output_chunk_length</cite>, and <cite>min_lh</cite> must be at least 1
-(to have targets of length exactly <cite>1 * output_chunk_length</cite>).
-The target and covariates time series are sliced together using their time indexes for alignment.</p>
-<p>The sampling is uniform both over the number of time series and the number of samples per series;
-i.e. the i-th sample of this dataset has 1/(N*M) chance of coming from any of the M samples in any of the N
-time series in the sequence.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>target_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – One or a sequence of target <cite>TimeSeries</cite>.</p></li>
-<li><p><strong>covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of <cite>TimeSeries</cite> containing past-observed covariates. If this parameter is set,
-the provided sequence must have the same length as that of <cite>target_series</cite>. Moreover, all
-covariates in the sequence must have a time span large enough to contain all the required slices.
-The joint slicing of the target and covariates is relying on the time axes of both series.</p></li>
-<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the “output” series emitted by the model</p></li>
-<li><p><strong>lh</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – A <cite>(min_lh, max_lh)</cite> interval for the forecast point, starting from the end of the series.
-For example, <cite>(1, 3)</cite> will select forecast points uniformly between <cite>1*H</cite> and <cite>3*H</cite> points
-before the end of the series. It is required that <cite>min_lh &gt;= 1</cite>.</p></li>
-<li><p><strong>lookback</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – A integer interval for the length of the input in the emitted input and output splits, expressed as a
-multiple of <cite>output_chunk_length</cite>. For instance, <cite>lookback=3</cite> will emit “inputs” of lengths
-<cite>3 * output_chunk_length</cite>.</p></li>
-<li><p><strong>use_static_covariates</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use/include static covariate data from input series.</p></li>
-<li><p><strong>sample_weight</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
-per label (each step in <cite>output_chunk_length</cite>), and per component.
-If a series or sequence of series, then those weights are used. If the weight series only have a single
-component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
-component-specific weights, the number of components must match those of <cite>series</cite>.
-If a string, then the weights are generated using built-in weighting functions. The available options are
-<cite>“linear”</cite> or <cite>“exponential”</cite> decay - the further in the past, the lower the weight. The weights are
-computed globally based on the length of the longest series in <cite>series</cite>. Then for each series, the weights
-are extracted from the end of the global weights. This gives a common time weighting across all series.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-</section>
-
+  <span class="target" id="module-darts.utils.data.torch_datasets.utils"></span>
 
               </div>
               
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.utils.data.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.utils.data.torch_datasets.training_dataset.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">TimeSeries Datasets</p>
+            <p class="prev-next-title">Training Datasets</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.utils.data.inference_dataset.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.utils.data.utils.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Inference Dataset</p>
+        <p class="prev-next-title">&lt;no title&gt;</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

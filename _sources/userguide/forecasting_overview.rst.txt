@@ -56,15 +56,15 @@ All forecasting models support saving the model on the filesystem, by calling th
 
 .. code-block:: python
 
-   from darts.models import RegressionModel
+   from darts.models import SKLearnModel
 
-   model = RegressionModel(lags=4)
+   model = SKLearnModel(lags=4)
 
    model.save("my_model.pkl")
-   model_loaded = RegressionModel.load("my_model.pkl")
+   model_loaded = SKLearnModel.load("my_model.pkl")
 
 The parameter ``path`` specifies a path or file handle under which to save the model at its current state. If no ``path`` is specified, the model is automatically
-saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``. E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
+saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``. E.g., ``"SKLearnModel_2020-01-01_12:00:00.pkl"``.
 Optionally there is also pickle specific keyword arguments ``protocol``\ , ``fix_imports`` and ``buffer_callback``.
 More info: `pickle.dump() <https://docs.python.org/3/library/pickle.html?highlight=dump#pickle.dump>`_
 
@@ -138,11 +138,11 @@ You can also find out programmatically, whether a model supports multiple series
 
 .. code-block:: python
 
-   from darts.models import RegressionModel
+   from darts.models import SKLearnModel
    from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
    # when True, multiple time series are supported
-   supports_multi_ts = issubclass(RegressionModel, GlobalForecastingModel)
+   supports_multi_ts = issubclass(SKLearnModel, GlobalForecastingModel)
 
 `This article <https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844>`_ provides more explanations about training models on multiple series.
 

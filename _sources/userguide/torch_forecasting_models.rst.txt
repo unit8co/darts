@@ -296,7 +296,7 @@ Now we can create a model and train it! Figure 2 shows you how ``TFTModel`` will
 
 **Figure 2: Overview of a single sequence from our ice-cream sales example**\ ; Mon1 - Sun1 stand for the first 7 days from our training dataset (week 1 of the year). Mon2 is the Monday of week 2.
 
-When calling ``fit()``\ , the models will build an appropriate ``darts.utils.data.TrainingDataset``\ , which specifies how to slice the data to obtain training samples. If you want to control this slicing yourself, you can instantiate your own ``TrainingDataset`` and call ``model.fit_from_dataset()`` instead of ``fit()``. By default, most models (though not all) will build *sequential* datasets, which basically means that all sub-slices of length ``input_chunk_length + output_chunk_length`` in the provided series will be used for training.
+When calling ``fit()``\ , the models will build an appropriate ``darts.utils.data.TorchTrainingDataset``\ , which specifies how to slice the data to obtain training samples. If you want to control this slicing yourself, you can instantiate your own ``TorchTrainingDataset`` and call ``model.fit_from_dataset()`` instead of ``fit()``. By default, most models (though not all) will build *sequential* datasets, which basically means that all sub-slices of length ``input_chunk_length + output_chunk_length`` in the provided series will be used for training.
 
 So during training, the torch models will go through the training data in sequences (see Figure 3). Using information from the **input chunk** and **output chunk**\ , the model predicts the future target on the output chunk. The training loss is evaluated between the predicted future target and the actual target value on the output chunk. The model trains itself by minimizing the loss over all sequences.
 
@@ -730,7 +730,7 @@ which means that for big datasets, you can write your own ``Sequence`` implement
 Do not use *all* possible sub-series for training
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-By default, when calling ``fit()``\ , the models in Darts will build a ``TrainingDataset`` instance that is
+By default, when calling ``fit()``\ , the models in Darts will build a ``TorchTrainingDataset`` instance that is
 suitable for the model that you are using (e.g., ``PastCovariatesTorchModel``\ , ``FutureCovariatesTorchModel``\ , etc.).
 By default, these training datasets will often contain *all* possible consecutive (input, output) subseries present
 in each ``TimeSeries``. If your ``TimeSeries`` are long, this can result in a large amount of training samples, which directly (linearly)
@@ -739,7 +739,7 @@ impacts the time required to train the model for one epoch. You have two options
 
 * Specify some ``max_samples_per_ts`` argument to the ``fit()`` function. This will use only the most recent ``max_samples_per_ts`` samples
   per ``TimeSeries`` for training.
-* If this option does not do what you want, you can implement your own ``TrainingDataset`` instance, and define
+* If this option does not do what you want, you can implement your own ``TorchTrainingDataset`` instance, and define
   how to slice your ``TimeSeries`` for training yourself. We suggest to have a look at `this submodule <https://github.com/unit8co/darts/tree/master/darts/utils/data>`_
   to see examples of how to do it.
 

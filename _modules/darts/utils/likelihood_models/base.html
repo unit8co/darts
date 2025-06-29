@@ -180,6 +180,9 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="LikelihoodType"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.LikelihoodType">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LikelihoodType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
@@ -212,7 +215,7 @@
 <span class="sd">        Base class for all likelihoods.</span>
 
 <span class="sd">        * likelihoods for torch models</span>
-<span class="sd">        * likelihoods for sklearn-like models (e.g. RegressionModel subclasses)</span>
+<span class="sd">        * likelihoods for sklearn-like models (e.g. SKLearnModel subclasses)</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -231,10 +234,21 @@
             <span class="s2">&quot;ignore_attrs_equality&quot;</span><span class="p">,</span>
         <span class="p">]</span>
 
-<div class="viewcode-block" id="Likelihood.component_names"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood.component_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">component_names</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<div class="viewcode-block" id="Likelihood.component_names"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood.component_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">component_names</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates names for the parameters of the Likelihood.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">components</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only one of `series` or `components` must be specified.&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">components</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">components</span>
         <span class="k">return</span> <span class="n">likelihood_component_names</span><span class="p">(</span>
-            <span class="n">components</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_names</span>
+            <span class="n">components</span><span class="o">=</span><span class="n">components</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_names</span>
         <span class="p">)</span></div>
 
     <span class="nd">@property</span>

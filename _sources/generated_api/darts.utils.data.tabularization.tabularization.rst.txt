@@ -1,0 +1,3 @@
+.. automodule:: darts.utils.data.tabularization.tabularization
+   :members:
+   :undoc-members:
