@@ -456,7 +456,7 @@ class _VariableSelectionNetwork(nn.Module):
     @property
     def input_size_total(self):
         return sum(
-            size if name in self.input_embedding_flags else size
+            self.hidden_size if self.input_embedding_flags.get(name, False) else size
             for name, size in self.input_sizes.items()
         )
 
