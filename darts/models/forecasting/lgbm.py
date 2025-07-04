@@ -190,16 +190,13 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._model_container = None
 
         # parse likelihood
         if likelihood is not None:
             _check_likelihood(likelihood, ["quantile", "poisson"])
             self.kwargs["objective"] = likelihood
-            if likelihood == "quantile":
-                self._model_container = _QuantileModelContainer()
 
-        self._likelihood = _get_likelihood(
+        likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
@@ -220,6 +217,10 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
             categorical_static_covariates=categorical_static_covariates,
             random_state=random_state,
         )
+
+        self._likelihood = likelihood
+        if isinstance(likelihood, QuantileRegression):
+            self._model_container = _QuantileModelContainer()
 
     def fit(
         self,
@@ -299,6 +300,7 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
                     val_sample_weight=val_sample_weight,
                     **kwargs,
                 )
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
             return self
 
