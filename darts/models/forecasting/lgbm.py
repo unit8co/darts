@@ -25,11 +25,7 @@ from darts.models.forecasting.sklearn_model import (
     _QuantileModelContainer,
 )
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import (
-    QuantileRegression,
-    SKLearnLikelihood,
-    _get_likelihood,
-)
+from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
 
 logger = get_logger(__name__)
 
@@ -192,9 +188,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._model_container = None
 
-        self._likelihood: Optional[SKLearnLikelihood] = None
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
@@ -236,11 +230,12 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
         )
 
-        # parse likelihood
-        if likelihood is not None:
-            self.kwargs["objective"] = likelihood
-            if likelihood == LikelihoodType.Quantile.value:
-                self._model_container = _QuantileModelContainer()
+        if likelihood is None:
+            return
+
+        self.kwargs["objective"] = likelihood
+        if likelihood == LikelihoodType.Quantile.value:
+            self._model_container = _QuantileModelContainer()
 
     def fit(
         self,
@@ -320,6 +315,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
                     val_sample_weight=val_sample_weight,
                     **kwargs,
                 )
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
             return self
 
@@ -560,7 +556,6 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
         Check and set the likelihood.
         Only ClassProbability is supported for LightGBMClassifierModel.
         """
-
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,

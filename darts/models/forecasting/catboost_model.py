@@ -22,11 +22,7 @@ from darts.models.forecasting.sklearn_model import (
     _QuantileModelContainer,
 )
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import (
-    QuantileRegression,
-    SKLearnLikelihood,
-    _get_likelihood,
-)
+from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
 
 logger = get_logger(__name__)
 
@@ -194,9 +190,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._model_container = None
 
-        self._likelihood: Optional[SKLearnLikelihood] = None
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
@@ -238,18 +232,9 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         multi_models: bool,
         quantiles: Optional[list[float]] = None,
     ):
-        if likelihood is None:
-            return
-
         if likelihood == "RMSEWithUncertainty":
             # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
             likelihood = "gaussian"
-
-        likelihood_map = {
-            "quantile": None,
-            "poisson": "Poisson",
-            "gaussian": "RMSEWithUncertainty",
-        }
 
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
@@ -262,6 +247,14 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             ],
         )
 
+        if likelihood is None:
+            return
+
+        likelihood_map = {
+            "quantile": None,
+            "poisson": "Poisson",
+            "gaussian": "RMSEWithUncertainty",
+        }
         if likelihood == LikelihoodType.Quantile.value:
             self._model_container = _QuantileModelContainer()
         else:
@@ -351,6 +344,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                     verbose=verbose,
                     **kwargs,
                 )
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
             return self
 
@@ -666,7 +660,6 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         Check and set the likelihood.
         Only ClassProbability is supported for CatBoostClassifierModel.
         """
-
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,

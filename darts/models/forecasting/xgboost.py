@@ -23,11 +23,7 @@ from darts.models.forecasting.sklearn_model import (
     _QuantileModelContainer,
 )
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import (
-    QuantileRegression,
-    SKLearnLikelihood,
-    _get_likelihood,
-)
+from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
 
 logger = get_logger(__name__)
 
@@ -193,9 +189,7 @@ class XGBModel(SKLearnModel):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._model_container = None
 
-        self._likelihood: Optional[SKLearnLikelihood] = None
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
@@ -233,12 +227,15 @@ class XGBModel(SKLearnModel):
             quantiles=quantiles,
             available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
         )
-        if likelihood is not None:
-            if likelihood == LikelihoodType.Poisson.value:
-                self.kwargs["objective"] = f"count:{likelihood}"
-            else:  # quantile
-                self.kwargs["objective"] = "reg:quantileerror"
-                self._model_container = _QuantileModelContainer()
+
+        if likelihood is None:
+            return
+
+        if likelihood == LikelihoodType.Poisson.value:
+            self.kwargs["objective"] = f"count:{likelihood}"
+        else:  # quantile
+            self.kwargs["objective"] = "reg:quantileerror"
+            self._model_container = _QuantileModelContainer()
 
     def fit(
         self,
@@ -320,6 +317,7 @@ class XGBModel(SKLearnModel):
                     val_sample_weight=val_sample_weight,
                     **kwargs,
                 )
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
             return self
 

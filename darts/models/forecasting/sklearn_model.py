@@ -234,6 +234,15 @@ class SKLearnModel(GlobalForecastingModel):
         self._lagged_feature_names: Optional[list[str]] = None
         self._lagged_label_names: Optional[list[str]] = None
 
+        # optionally, the model can be wrapped in a likelihood model
+        self._likelihood: Optional[SKLearnLikelihood] = getattr(
+            self, "_likelihood", None
+        )
+        # for quantile likelihood models, the model container is a dict of quantile -> model
+        self._model_container: Optional[_QuantileModelContainer] = getattr(
+            self, "_model_container", None
+        )
+
         # check and set output_chunk_length
         raise_if_not(
             isinstance(output_chunk_length, int) and output_chunk_length > 0,
@@ -544,9 +553,11 @@ class SKLearnModel(GlobalForecastingModel):
     ):
         """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
 
-        For probabilistic models fitting quantiles, it is possible to also specify the quantile.
+        For probabilistic models fitting quantiles, a desired `quantile` can also be passed. If not passed, it will
+        return the model predicting the median (quantile=0.5).
 
-        The model is returned directly if it supports multi-output natively.
+        If the (quantile) model supports multi-output natively, it will return the model that can predict the entire
+        horizon and all target components jointly.
 
         Note: Internally, estimators are grouped by `output_chunk_length` position, then by component. For probabilistic
         models fitting quantiles, there is an additional abstraction layer, grouping the estimators by `quantile`.
@@ -558,13 +569,38 @@ class SKLearnModel(GlobalForecastingModel):
         target_dim
             The index of the target component.
         quantile
-            Optionally, for probabilistic model with `likelihood="quantile"`, a quantile value.
+            Optionally, for probabilistic model with `likelihood="quantile"`, the desired quantile value. If `None` and
+            `likelihood="quantile"`, returns the model predicting the median (quantile=0.5).
         """
-        if not isinstance(self.model, MultiOutputMixin):
+        likelihood = self.likelihood
+        if isinstance(likelihood, QuantileRegression):
+            # for quantile-models, the estimators are grouped by quantiles
+            if quantile is None:
+                quantile = likelihood.quantiles[likelihood._median_idx]
+            elif quantile not in self._model_container:
+                raise_log(
+                    ValueError(
+                        f"Invalid `quantile={quantile}`. Must be one of the fitted quantiles "
+                        f"`{list(self._model_container.keys())}`."
+                    ),
+                    logger,
+                )
+            model = self._model_container[quantile]
+        elif quantile is not None:
+            raise_log(
+                ValueError(
+                    "`quantile` is only supported for probabilistic models that use `likelihood='quantile'`."
+                ),
+                logger=logger,
+            )
+        else:
+            model = self.model
+
+        if not isinstance(model, MultiOutputMixin):
             logger.warning(
                 "Model supports multi-output; a single estimator forecasts all the horizons and components."
             )
-            return self.model
+            return model
 
         if not 0 <= horizon < self.output_chunk_length:
             raise_log(
@@ -585,27 +621,7 @@ class SKLearnModel(GlobalForecastingModel):
         idx_estimator = (
             self.multi_models * self.input_dim["target"] * horizon + target_dim
         )
-        if quantile is None:
-            return self.model.estimators_[idx_estimator]
-
-        # for quantile-models, the estimators are also grouped by quantiles
-        if not isinstance(self.likelihood, QuantileRegression):
-            raise_log(
-                ValueError(
-                    "`quantile` is only supported for probabilistic models that "
-                    "use `likelihood='quantile'`."
-                ),
-                logger,
-            )
-        if quantile not in self._model_container:
-            raise_log(
-                ValueError(
-                    f"Invalid `quantile={quantile}`. Must be one of the fitted quantiles "
-                    f"`{list(self._model_container.keys())}`."
-                ),
-                logger,
-            )
-        return self._model_container[quantile].estimators_[idx_estimator]
+        return model.estimators_[idx_estimator]
 
     def _add_val_set_to_kwargs(
         self,

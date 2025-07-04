@@ -1494,6 +1494,7 @@ class TestSKLearnModels:
                 multi_models=True,
                 likelihood="quantile",
                 quantiles=[0.5],
+                **xgb_test_params,
             )
             m.fit(ts)
 
@@ -1541,70 +1542,125 @@ class TestSKLearnModels:
         # estimators_[3] labels : [3]
         helper_check_overfitted_estimators(ts, ocl)
 
-    def test_get_estimator_single_model(self):
-        """Check estimator getter when multi_models=False"""
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [
+                    (LinearRegressionModel, {}),
+                    (XGBModel, xgb_test_params),
+                ]
+                + [(LightGBMModel, lgbm_test_params)]
+                if lgbm_available
+                else [] + [(CatBoostModel, cb_test_params)]
+                if cb_available
+                else []
+            ),
+            [True, False],  # multi_models
+            [True, False],  # multi components
+        ),
+    )
+    def test_get_estimator(self, config):
+        """Check estimator getter for different model configurations."""
+        (model_cls, kwargs), multi_models, multi_components = config
         # multivariate, one sub-model per component
-        ocl = 2
-        ts = TimeSeries.from_values(
-            np.array([
-                [0, 0, 0, 0, 1],
-                [0, 0, 0, 0, 2],
-            ]).T
-        )
-        # estimators_[0] labels : [1]
-        # estimators_[1] labels : [2]
+        ocl = 3
+        lags = 3
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
 
-        # since xgboost==2.1.0, the regular deterministic models have native multi output regression
-        # -> we use a quantile likelihood to activate Darts' MultiOutputRegressor
-        m = XGBModel(
-            lags=3,
+        m = model_cls(
+            lags=lags,
             output_chunk_length=ocl,
-            multi_models=False,
-            likelihood="quantile",
-            quantiles=[0.5],
+            multi_models=multi_models,
+            **kwargs,
         )
         m.fit(ts)
 
-        # one estimator is reused for all the horizon of a given component
-        assert len(m.model.estimators_) == ts.width
+        # check that retrieve sub-models prediction match the "wrapper" model predictions
+        pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
+        pred = m.predict(n=ocl, series=pred_input)
 
-        dummy_feats = np.array([[0, 0, 0] * ts.width])
-        for i in range(ocl):
-            for j in range(ts.width):
+        is_mor = isinstance(m.model, MultiOutputRegressor)
+
+        for j in range(ts.width):
+            for i in range(ocl):
+                if multi_models:
+                    dummy_feats = pred_input.values()[:lags]
+                else:
+                    dummy_feats = pred_input.values()[i : +i + lags]
+                dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
                 sub_model = m.get_estimator(horizon=i, target_dim=j)
-                pred = sub_model.predict(dummy_feats)[0]
-                # sub-model forecast only depend on the target_dim
-                assert np.abs(j + 1 - pred) < 1e-2
+                pred_sub_model = sub_model.predict(dummy_feats)[0]
 
-    @pytest.mark.parametrize("multi_models", [True, False])
-    def test_get_estimator_quantile(self, multi_models):
+                if is_mor:
+                    # MultiOutputRegressor has a dedicated model per component and horizon
+                    assert pred_sub_model == pred[ts.components[j]].values()[i][0]
+                elif multi_models:
+                    # native multi output support with multi_models gives all components and horizon together
+                    assert (
+                        pred_sub_model.reshape((ocl, ts.width)) == pred.values()
+                    ).all()
+                else:
+                    # native multi output support without multi_models gives all components per horizon
+                    assert (pred_sub_model == pred.values()[i]).all()
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [
+                    (LinearRegressionModel, {}),
+                    (XGBModel, xgb_test_params),
+                ]
+                + [(LightGBMModel, lgbm_test_params)]
+                if lgbm_available
+                else [] + [(CatBoostModel, cb_test_params)]
+                if cb_available
+                else []
+            ),
+            [True, False],  # multi_models
+            [True, False],  # multi components
+        ),
+    )
+    def test_get_estimator_quantile(self, config):
         """Check estimator getter when using quantile value"""
+        (model_cls, kwargs), multi_models, multi_components = config
         ocl = 3
         lags = 3
         quantiles = [0.01, 0.5, 0.99]
-        ts = tg.sine_timeseries(length=100, column_name="sine").stack(
-            tg.linear_timeseries(length=100, column_name="linear"),
-        )
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
 
-        m = XGBModel(
+        m = model_cls(
             lags=lags,
             output_chunk_length=ocl,
             multi_models=multi_models,
             likelihood="quantile",
             quantiles=quantiles,
-            random_state=1,
+            **kwargs,
         )
         m.fit(ts)
 
         assert len(m._model_container) == len(quantiles)
         assert sorted(list(m._model_container.keys())) == sorted(quantiles)
         for quantile_container in m._model_container.values():
-            # one sub-model per quantile, per component, per horizon
             if multi_models:
+                # one sub-model per quantile, per component, per horizon
                 assert len(quantile_container.estimators_) == ocl * ts.width
-            # one sub-model per quantile, per component
-            else:
+            elif multi_components:
+                # one sub-model per quantile, per component
                 assert len(quantile_container.estimators_) == ts.width
+            else:
+                # only one sub-model per quantile (one component, one predicted horizon)
+                assert not isinstance(quantile_container, MultiOutputRegressor)
+                assert not hasattr(quantile_container, "estimators_")
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
         pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]

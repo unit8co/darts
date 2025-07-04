@@ -173,7 +173,6 @@ class LinearRegressionModel(SKLearnModel):
                [1005.81830675]])
         """
         self.kwargs = kwargs
-        self._model_container = None
 
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
@@ -247,7 +246,7 @@ class LinearRegressionModel(SKLearnModel):
                     sample_weight=sample_weight,
                     **kwargs,
                 )
-
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
 
             # replace the last trained QuantileRegressor with the dictionary of Regressors.
