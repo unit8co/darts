@@ -900,7 +900,6 @@ class TestProbabilisticClassifierModels:
             _ = _get_likelihood(
                 likelihood="does_not_exist",
                 n_outputs=1,
-                random_state=None,
                 available_likelihoods=[LikelihoodType.ClassProbability],
             )
         assert (
@@ -1114,7 +1113,7 @@ class TestProbabilisticClassifierModels:
                 return Tags(estimator_type="classifier", target_tags=None)
 
         model = NoClassLabelsModel()
-        likelihood = ClassProbabilityLikelihood(n_outputs=1, random_state=42)
+        likelihood = ClassProbabilityLikelihood(n_outputs=1)
         with pytest.raises(ValueError) as err:
             likelihood.fit(model)
         assert (
