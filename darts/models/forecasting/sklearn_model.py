@@ -577,7 +577,7 @@ class SKLearnModel(GlobalForecastingModel):
             logger.warning(
                 "Model supports multi-output; a single estimator forecasts all the horizons and components."
             )
-            return self.model
+            return model
 
         if not 0 <= horizon < self.output_chunk_length:
             raise_log(
