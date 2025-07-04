@@ -13,6 +13,7 @@ from typing import Optional, Union
 import numpy as np
 import xgboost as xgb
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
@@ -21,7 +22,6 @@ from darts.models.forecasting.sklearn_model import (
     _ClassifierMixin,
     _QuantileModelContainer,
 )
-from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
@@ -148,8 +148,7 @@ class XGBModel(SKLearnModel):
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
-            Control the randomness in the fitting procedure and for sampling.
-            Default: ``None``.
+            Controls the randomness for reproducible forecasting.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model
             is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
@@ -200,7 +199,6 @@ class XGBModel(SKLearnModel):
         self._set_likelihood(
             likelihood=likelihood,
             output_chunk_length=output_chunk_length,
-            random_state=random_state,
             multi_models=multi_models,
             quantiles=quantiles,
         )
@@ -215,6 +213,7 @@ class XGBModel(SKLearnModel):
             multi_models=multi_models,
             model=self._create_model(**self.kwargs),
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )
 
     @staticmethod
@@ -225,14 +224,12 @@ class XGBModel(SKLearnModel):
         self,
         likelihood: Optional[str],
         output_chunk_length: int,
-        random_state: Optional[int],
         multi_models: bool,
         quantiles: Optional[list[float]] = None,
     ):
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
-            random_state=random_state,
             quantiles=quantiles,
             available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
         )
@@ -466,8 +463,7 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
             in `predict()` will forecast class probabilities.
             Default: 'classprobability'
         random_state
-            Control the randomness in the fitting procedure and for sampling.
-            Default: ``None``.
+            Controls the randomness for reproducible forecasting.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model
             is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
@@ -535,14 +531,12 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
         self,
         likelihood: Optional[str],
         output_chunk_length: int,
-        random_state: Optional[int],
         multi_models: bool,
         quantiles: Optional[list[float]] = None,
     ):
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
-            random_state=random_state,
             available_likelihoods=[LikelihoodType.ClassProbability],
         )
 

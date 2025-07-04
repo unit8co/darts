@@ -1,3 +1,4 @@
+import copy
 import itertools
 import platform
 
@@ -5,16 +6,24 @@ import numpy as np
 import pytest
 
 from darts import TimeSeries
+from darts.datasets import IceCreamHeaterDataset
 from darts.logging import get_logger
 from darts.metrics import mae
 from darts.models import (
     ARIMA,
     TBATS,
+    VARIMA,
+    AutoARIMA,
     CatBoostModel,
     ConformalNaiveModel,
+    EnsembleModel,
     ExponentialSmoothing,
+    KalmanForecaster,
     LightGBMModel,
     LinearRegressionModel,
+    NaiveEnsembleModel,
+    Prophet,
+    RegressionEnsembleModel,
     XGBModel,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
@@ -60,16 +69,22 @@ if TORCH_AVAILABLE:
 
 lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 cb_available = not isinstance(CatBoostModel, NotImportedModule)
+prophet_available = not isinstance(Prophet, NotImportedModule)
+
+np.random.seed(0)
+constant_ts = tg.constant_timeseries(length=200, value=0.5)
+constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
+constant_noisy_ts_short = constant_noisy_ts[:31]
 
 # conformal models require a fitted base model
 # in tests below, the model is re-trained for new input series.
 # using a fake trained model should allow the same API with conformal models
 conformal_forecaster = LinearRegressionModel(lags=10, output_chunk_length=5)
-conformal_forecaster._fit_called = True
+conformal_forecaster.fit(constant_noisy_ts_short)
 
 # model_cls, model_kwargs, err_univariate, err_multivariate
 models_cls_kwargs_errs = [
-    (ExponentialSmoothing, {}, 0.3, None),
+    (ExponentialSmoothing, {"random_state": 3}, 0.3, None),
     (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03, None),
     (
         TBATS,
@@ -228,41 +243,287 @@ if TORCH_AVAILABLE:
         ),
     ]
 
+extra_configs = [
+    (ExponentialSmoothing, {"random_state": 42}, 0.3, None),
+    (VARIMA, {"random_state": 42}, 0.03, None),
+    (KalmanForecaster, {"random_state": 42}, 0.03, None),
+    (
+        AutoARIMA,
+        {
+            "random_state": 42,
+            "season_length": 12,
+        },
+        0.04,
+        0.04,
+    ),
+    (
+        LinearRegressionModel,
+        {
+            "lags": 12,
+            "likelihood": "quantile",
+            "quantiles": [0.1, 0.5, 0.9],
+            "random_state": 42,
+        },
+        0.04,
+        0.04,
+    ),
+    (
+        XGBModel,
+        {
+            "lags": 12,
+            "likelihood": "quantile",
+            "quantiles": [0.1, 0.5, 0.9],
+            "random_state": 42,
+            **xgb_test_params,
+        },
+        0.03,
+        None,
+    ),
+    (
+        NaiveEnsembleModel,
+        {
+            "forecasting_models": [
+                LinearRegressionModel(
+                    lags=2,
+                    likelihood="quantile",
+                    quantiles=[0.1, 0.5, 0.9],
+                    random_state=42,
+                ),
+                LinearRegressionModel(
+                    lags=4,
+                    likelihood="quantile",
+                    quantiles=[0.1, 0.5, 0.9],
+                    random_state=42,
+                ),
+            ],
+        },
+        0.04,
+        0.04,
+    ),
+    (
+        RegressionEnsembleModel,
+        {
+            "forecasting_models": [
+                LinearRegressionModel(
+                    lags=2,
+                    likelihood="quantile",
+                    random_state=42,
+                    quantiles=[0.1, 0.5, 0.9],
+                ),
+                LinearRegressionModel(
+                    lags=4,
+                    likelihood="quantile",
+                    random_state=42,
+                    quantiles=[0.1, 0.5, 0.9],
+                ),
+            ],
+            "regression_model": LinearRegressionModel(
+                lags=None,
+                lags_past_covariates=None,
+                lags_future_covariates=[0],
+                likelihood="quantile",
+                quantiles=[0.1, 0.5, 0.9],
+                random_state=42,
+            ),
+            "regression_train_n_points": 3,
+        },
+        0.04,
+        0.04,
+    ),
+]
+
+if lgbm_available:
+    extra_configs += [
+        (
+            LightGBMModel,
+            {
+                "lags": 12,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.5, 0.9],
+                "random_state": 42,
+                **lgbm_test_params,
+            },
+            0.03,
+            None,
+        ),
+    ]
+if cb_available:
+    extra_configs += [
+        (
+            CatBoostModel,
+            {
+                "lags": 12,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.5, 0.9],
+                "random_state": 42,
+                **cb_test_params,
+            },
+            0.03,
+            None,
+        ),
+    ]
+if prophet_available:
+    extra_configs += [(Prophet, {"random_state": 42}, 0.03, None)]
+
 
 @pytest.mark.slow
 class TestProbabilisticModels:
     np.random.seed(0)
 
-    constant_ts = tg.constant_timeseries(length=200, value=0.5)
-    constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
+    constant_ts = constant_ts
+    constant_noisy_ts = constant_noisy_ts
     constant_multivar_ts = constant_ts.stack(constant_ts)
     constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
     num_samples = 5
 
-    constant_noisy_ts_short = constant_noisy_ts[:30]
+    constant_noisy_ts_short = constant_noisy_ts_short
+    constant_noisy_multivar_ts_short = constant_noisy_multivar_ts[:30]
+
+    ts_ice_heater = IceCreamHeaterDataset().load()
+    ts_ice_heater_short = ts_ice_heater[:31]
 
     @pytest.mark.slow
-    @pytest.mark.parametrize("config", models_cls_kwargs_errs)
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
     def test_fit_predict_determinism(self, config):
         model_cls, model_kwargs, _, _ = config
         if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
             fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
         else:
             fit_kwargs = {}
-        # whether the first predictions of two models initiated with the same random state are the same
-        model = model_cls(**model_kwargs)
-        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
-        pred1 = model.predict(n=10, num_samples=2).values()
+        if issubclass(model_cls, VARIMA):
+            series = self.constant_noisy_multivar_ts_short
+        else:
+            series = self.constant_noisy_ts_short
 
-        model = model_cls(**model_kwargs)
-        model.fit(self.constant_noisy_ts_short, **fit_kwargs)
-        pred2 = model.predict(n=10, num_samples=2).values()
+        series_copy = series.copy()
+        # test that two consecutive predictions without random state at `predict()` are different
+        model = self.instantiate_model(model_cls, model_kwargs)
+        model.fit(series, **fit_kwargs)
+        pred1 = model.predict(n=10, num_samples=2).all_values()
+        pred2 = model.predict(n=10, num_samples=2).all_values()
+        assert (pred2 != pred1).any()
 
-        assert (pred1 == pred2).all()
+        # check that fit predict did not mutate input series
+        assert series == series_copy
 
-        # test whether the next prediction of the same model is different
-        pred3 = model.predict(n=10, num_samples=2).values()
-        assert (pred2 != pred3).any()
+        # test that first prediction without same random state at model creation is identical to the previous model
+        model = self.instantiate_model(model_cls, model_kwargs)
+        model.fit(series, **fit_kwargs)
+        pred3 = model.predict(n=10, num_samples=2).all_values()
+        assert (pred1 == pred3).all()
+
+        # test whether two consecutive predictions with a random_state specified are the same
+        pred4 = model.predict(n=10, num_samples=2, random_state=38).all_values()
+        pred5 = model.predict(n=10, num_samples=2, random_state=38).all_values()
+        assert (pred5 == pred4).all()
+
+        # predicting again without random state resumes original randomness
+        pred6 = model.predict(n=10, num_samples=2).all_values()
+        assert (pred6 == pred2).all()
+
+        pred7 = model.predict(n=10, num_samples=2, random_state=32).all_values()
+        assert (pred7 != pred5).any()
+
+    @pytest.mark.slow
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
+    def test_historical_forecast(self, config):
+        model_cls, model_kwargs, _, _ = config
+        if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
+            fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
+        else:
+            fit_kwargs = {}
+        if issubclass(model_cls, VARIMA):
+            series = self.ts_ice_heater_short
+        else:
+            series = self.constant_noisy_ts_short
+
+        kwargs_hist_forecast = {
+            "series": series,
+            "num_samples": 2,
+            "start": -1,
+            "forecast_horizon": 10,
+            "overlap_end": True,
+            "fit_kwargs": fit_kwargs,
+            "retrain": True,
+            "enable_optimization": False,
+        }
+
+        # test that two consecutive historical forecasts with `retrain=True` and without random state at `predict()`
+        # are equal due to the `random_state` set at model creation
+        model = self.instantiate_model(model_cls, model_kwargs)
+        pred1 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+        pred2 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+        if issubclass(model_cls, ConformalNaiveModel):
+            # Conformal models are the exception since they are not retrained at each historical forecast
+            assert (pred2 != pred1).any()
+        else:
+            # check all equal
+            assert (pred2 == pred1).all()
+
+        # test whether two consecutive historical forecasts with a random_state specified are the same
+        pred3 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=38
+        ).all_values()
+        pred4 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=38
+        ).all_values()
+        assert (pred3 == pred4).all()
+
+        # test that another historical forecast with a different random_state specified is different
+        pred5 = model.historical_forecasts(
+            **kwargs_hist_forecast, random_state=32
+        ).all_values()
+        assert (pred4 != pred5).any()
+
+        # same test with `retrain=False` and optimized historical forecasts
+        if model.supports_optimized_historical_forecasts:
+            model = self.instantiate_model(model_cls, model_kwargs)
+            model.fit(series, **fit_kwargs)
+
+            # test that two consecutive historical forecasts with `retrain=False` and without random state at
+            # `predict()` are different
+            kwargs_hist_forecast["retrain"] = False
+            kwargs_hist_forecast["enable_optimization"] = True
+            pred1 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+            pred2 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+            assert (pred2 != pred1).any()
+
+            # test whether two consecutive historical forecasts with a random_state specified are the same
+            pred3 = model.historical_forecasts(
+                **kwargs_hist_forecast, random_state=38
+            ).all_values()
+            pred4 = model.historical_forecasts(
+                **kwargs_hist_forecast, random_state=38
+            ).all_values()
+            assert (pred3 == pred4).all()
+
+            # test that another historical forecast with a different random_state specified is different
+            pred5 = model.historical_forecasts(
+                **kwargs_hist_forecast, random_state=32
+            ).all_values()
+            assert (pred4 != pred5).any()
+
+    @pytest.mark.parametrize("config", models_cls_kwargs_errs + extra_configs)
+    def test_fit_predict_randomized(self, config):
+        model_cls, model_kwargs, _, _ = config
+        model_kwargs = {k: v for k, v in model_kwargs.items() if k != "random_state"}
+        if issubclass(model_cls, VARIMA):
+            series = self.constant_noisy_multivar_ts_short
+        else:
+            series = self.constant_noisy_ts_short
+        if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
+            fit_kwargs = {"epochs": 1, "max_samples_per_ts": 3}
+        else:
+            fit_kwargs = {}
+
+        model = self.instantiate_model(model_cls, model_kwargs)
+        model.fit(series, **fit_kwargs)
+        pred1 = model.predict(n=10, num_samples=2).all_values()
+
+        model.fit(series, **fit_kwargs)
+        pred2 = model.predict(n=10, num_samples=2).all_values()
+
+        assert (pred1 != pred2).any()
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_probabilistic_forecast_accuracy_univariate(self, config):
@@ -289,7 +550,6 @@ class TestProbabilisticModels:
     def helper_test_probabilistic_forecast_accuracy(self, model, err, ts, noisy_ts):
         model.fit(noisy_ts[:100])
         pred = model.predict(n=50, num_samples=100)
-
         # test accuracy of the median prediction compared to the noiseless ts
         mae_err_median = mae(ts[100:], pred)
         assert mae_err_median < err
@@ -298,7 +558,7 @@ class TestProbabilisticModels:
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
@@ -306,9 +566,14 @@ class TestProbabilisticModels:
         tested_quantiles = [0.3, 0.2, 0.1, 0.01]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
+
+    def instantiate_model(self, model_cls, kwargs):
+        if issubclass(model_cls, EnsembleModel):
+            return model_cls(**copy.deepcopy(kwargs))
+        return model_cls(**kwargs)
 
     @pytest.mark.slow
     @pytest.mark.parametrize(

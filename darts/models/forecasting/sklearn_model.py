@@ -46,6 +46,7 @@ from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.svm import SVC
 from sklearn.utils.validation import has_fit_parameter
 
+from darts import TimeSeries
 from darts.logging import (
     get_logger,
     raise_deprecation_warning,
@@ -54,7 +55,6 @@ from darts.logging import (
     raise_log,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.timeseries import TimeSeries
 from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
     create_lagged_component_names,
@@ -74,7 +74,7 @@ from darts.utils.likelihood_models.sklearn import (
 )
 from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
-from darts.utils.utils import ModelType
+from darts.utils.utils import ModelType, random_method
 
 logger = get_logger(__name__)
 
@@ -85,6 +85,7 @@ FUTURE_LAGS_TYPE = Union[
 
 
 class SKLearnModel(GlobalForecastingModel):
+    @random_method
     def __init__(
         self,
         lags: Optional[LAGS_TYPE] = None,
@@ -96,6 +97,7 @@ class SKLearnModel(GlobalForecastingModel):
         model=None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        random_state: Optional[int] = None,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -186,6 +188,8 @@ class SKLearnModel(GlobalForecastingModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        random_state
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -1027,6 +1031,7 @@ class SKLearnModel(GlobalForecastingModel):
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
@@ -1056,6 +1061,8 @@ class SKLearnModel(GlobalForecastingModel):
             Default: ``False``
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
+        random_state
+            Controls the randomness of probabilistic predictions.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
@@ -1245,7 +1252,11 @@ class SKLearnModel(GlobalForecastingModel):
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict(
-                X, num_samples, predict_likelihood_parameters, **kwargs
+                X,
+                num_samples,
+                predict_likelihood_parameters,
+                random_state=random_state,
+                **kwargs,
             )
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
@@ -1279,11 +1290,13 @@ class SKLearnModel(GlobalForecastingModel):
 
         return predictions[0] if called_with_single_series else predictions
 
+    @random_method
     def _predict(
         self,
         x: np.ndarray,
         num_samples: int,
         predict_likelihood_parameters: bool,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> np.ndarray:
         """Generate predictions.
@@ -1411,6 +1424,7 @@ class SKLearnModel(GlobalForecastingModel):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
@@ -1448,6 +1462,7 @@ class SKLearnModel(GlobalForecastingModel):
                 show_warnings=show_warnings,
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
                 **kwargs,
             )
         else:
@@ -1465,6 +1480,7 @@ class SKLearnModel(GlobalForecastingModel):
                 show_warnings=show_warnings,
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
                 **kwargs,
             )
         return series2seq(hfc, seq_type_out=series_seq_type)
@@ -1506,6 +1522,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        random_state: Optional[int] = None,
     ):
         """
         Extension of `SKLearnModel` for regression models that support categorical features.
@@ -1603,6 +1620,8 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         categorical_static_covariates
             Optionally, string or list of strings specifying the static covariates that should be treated as
             categorical.
+        random_state
+            Controls the randomness for reproducible forecasting.
         """
         super().__init__(
             lags=lags,
@@ -1614,6 +1633,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )
 
         if categorical_static_covariates is not None and not use_static_covariates:
@@ -1837,6 +1857,7 @@ class RegressionModel(SKLearnModel):
         model=None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        random_state: Optional[int] = None,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -1930,6 +1951,8 @@ class RegressionModel(SKLearnModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        random_state
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -1977,6 +2000,7 @@ class RegressionModel(SKLearnModel):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )
 
 
@@ -2070,10 +2094,10 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
-        random_state: Optional[int] = None,
         likelihood: Optional[str] = LikelihoodType.ClassProbability.value,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        random_state: Optional[int] = None,
     ):
         """SKLearn Classifier Model
 
@@ -2169,9 +2193,6 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
             Default: 'classprobability'
-        random_state
-            Control the randomness in the fitting procedure and for sampling.
-            Default: ``None``.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
@@ -2179,6 +2200,8 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        random_state
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -2235,7 +2258,6 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
-            random_state=random_state,
             available_likelihoods=[LikelihoodType.ClassProbability],
         )
 
@@ -2249,4 +2271,5 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
             add_encoders=add_encoders,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )

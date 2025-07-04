@@ -6,9 +6,9 @@ Window Transformer
 from collections.abc import Mapping
 from typing import Any, Optional, Union
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

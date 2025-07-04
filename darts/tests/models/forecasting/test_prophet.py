@@ -239,7 +239,7 @@ class TestProphet:
                 pred_raw_df[["ds", "yhat"]], time_col="ds"
             )
             compare_preds += [
-                pred_darts_stochastic.quantile_timeseries(0.5),
+                pred_darts_stochastic.quantile(0.5),
                 pred_raw,
             ]
 

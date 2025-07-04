@@ -8,14 +8,14 @@ from typing import Any, Union
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers.fittable_data_transformer import (
     FittableDataTransformer,
 )
 from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
-from darts.logging import get_logger, raise_if, raise_if_not
-from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
@@ -125,17 +125,17 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
     def ts_fit(series: TimeSeries, params: Mapping[str, Any], **kwargs) -> Any:
         lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         lags_sum = sum(lags)
-        raise_if(
-            series.n_timesteps <= lags_sum,
-            (
-                f"Series requires at least {lags_sum + 1} timesteps "
-                f"to difference with lags {lags}; series only has "
-                f"{series.n_timesteps} timesteps."
-            ),
-            logger,
-        )
+        if series.n_timesteps <= lags_sum:
+            raise_log(
+                ValueError(
+                    f"Series requires at least {lags_sum + 1} timesteps "
+                    f"to difference with lags {lags}; series only has "
+                    f"{series.n_timesteps} timesteps."
+                ),
+                logger,
+            )
         component_mask = Diff._get_component_mask(kwargs, dropna)
-        vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
+        vals = Diff.apply_component_mask(series, component_mask, return_ts=False).copy()
         # First `lags_sum` values of time series will be 'lost' due to differencing;
         # need to remember these values to 'undifference':
         start_vals = vals[:lags_sum, :, :]
@@ -170,54 +170,54 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
     ) -> TimeSeries:
         lags, dropna = params["fixed"]["_lags"], params["fixed"]["_dropna"]
         start_vals, fit_component_mask, start_time, freq = params["fitted"]
-        raise_if_not(
-            series.freq == freq,
-            (
-                f"Series is of frequency {series.freq}, but "
-                f"transform was fitted to data of frequency {freq}."
-            ),
-            logger,
-        )
+        if series.freq != freq:
+            raise_log(
+                ValueError(
+                    f"Series is of frequency {series.freq}, but "
+                    f"transform was fitted to data of frequency {freq}."
+                ),
+                logger,
+            )
         # Start dates 'missing' from differenced series if dropna = True, so need to shift forward:
         expected_start = start_time + sum(lags) * series.freq if dropna else start_time
-        raise_if_not(
-            series.start_time() == expected_start,
-            (
-                f"Expected series to begin at time {expected_start}; "
-                f"instead, it begins at time {series.start_time()}."
-            ),
-            logger,
-        )
+        if series.start_time() != expected_start:
+            raise_log(
+                ValueError(
+                    f"Expected series to begin at time {expected_start}; "
+                    f"instead, it begins at time {series.start_time()}."
+                ),
+                logger,
+            )
         component_mask = Diff._get_component_mask(kwargs, dropna)
-        raise_if_not(
-            np.all(fit_component_mask == component_mask),
-            (
-                "Provided `component_mask` does not match "
-                "`component_mask` specified when `fit` was called."
-            ),
-            logger,
-        )
+        if np.any(fit_component_mask != component_mask):
+            raise_log(
+                ValueError(
+                    "Provided `component_mask` does not match "
+                    "`component_mask` specified when `fit` was called."
+                ),
+                logger,
+            )
         if dropna:
             nan_shape = (sum(lags), series.n_components, series.n_samples)
             nan_vals = np.full(nan_shape, fill_value=np.nan)
             series = series.prepend_values(nan_vals)
-        vals = Diff.apply_component_mask(series, component_mask, return_ts=False)
-        raise_if_not(
-            vals.shape[1] == start_vals.shape[1],
-            (
-                f"Expected series to have {start_vals.shape[1]} components; "
-                f"instead, it has {vals.shape[1]}."
-            ),
-            logger,
-        )
-        raise_if_not(
-            vals.shape[2] == start_vals.shape[2],
-            (
-                f"Expected series to have {start_vals.shape[2]} samples; "
-                f"instead, it has {vals.shape[2]}."
-            ),
-            logger,
-        )
+        vals = Diff.apply_component_mask(series, component_mask, return_ts=False).copy()
+        if vals.shape[1] != start_vals.shape[1]:
+            raise_log(
+                ValueError(
+                    f"Expected series to have {start_vals.shape[1]} components; "
+                    f"instead, it has {vals.shape[1]}."
+                ),
+                logger,
+            )
+        if vals.shape[2] != start_vals.shape[2]:
+            raise_log(
+                ValueError(
+                    f"Expected series to have {start_vals.shape[2]} samples; "
+                    f"instead, it has {vals.shape[2]}."
+                ),
+                logger,
+            )
         cutoff = sum(lags)
         for lag in reversed(lags):
             cutoff -= lag
@@ -227,18 +227,24 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
                 to_undiff[i::lag, :, :] = np.cumsum(to_undiff[i::lag, :, :], axis=0)
             vals[cutoff:, :, :] = to_undiff
         vals = Diff.unapply_component_mask(series, vals, component_mask)
-        return series.with_values(vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @staticmethod
     def _get_component_mask(kwargs, dropna):
         component_mask = kwargs.get("component_mask", None)
-        raise_if(
-            dropna and (component_mask is not None),
-            (
-                "Cannot specify `component_mask` with `dropna = True`, "
-                "since differenced and undifferenced components will be "
-                "of different lengths."
-            ),
-            logger,
-        )
+        if dropna and (component_mask is not None):
+            raise_log(
+                ValueError(
+                    "Cannot specify `component_mask` with `dropna = True`, "
+                    "since differenced and undifferenced components will be "
+                    "of different lengths."
+                ),
+                logger,
+            )
         return component_mask

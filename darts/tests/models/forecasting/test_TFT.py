@@ -376,11 +376,9 @@ class TestTFTModel:
         )
 
         if isinstance(y_hat, TimeSeries):
-            y_hat = y_hat.quantile_timeseries(0.5) if y_hat.n_samples > 1 else y_hat
+            y_hat = y_hat.quantile(0.5) if y_hat.n_samples > 1 else y_hat
         else:
-            y_hat = [
-                ts.quantile_timeseries(0.5) if ts.n_samples > 1 else ts for ts in y_hat
-            ]
+            y_hat = [ts.quantile(0.5) if ts.n_samples > 1 else ts for ts in y_hat]
         return y_hat
 
     def test_layer_norm(self):

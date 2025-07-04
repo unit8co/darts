@@ -42,13 +42,12 @@ else:
 import numpy as np
 import pandas as pd
 
-from darts import metrics
+from darts import TimeSeries, metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.metrics import METRIC_TYPE
-from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
@@ -341,6 +340,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
@@ -354,6 +354,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -421,6 +423,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         add_kwargs = {}
@@ -447,7 +450,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if self.supports_likelihood_parameter_prediction:
             add_kwargs["predict_likelihood_parameters"] = predict_likelihood_parameters
-        return self.predict(n=n, **add_kwargs, **kwargs)
+        return self.predict(n=n, random_state=random_state, **add_kwargs, **kwargs)
 
     @property
     def min_train_series_length(self) -> int:
@@ -608,6 +611,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             with_static_covs=with_static_covs,
             with_hierarchy=with_hierarchy,
             pred_start=pred_start,
+            copy=False,
         )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
@@ -680,6 +684,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Generates historical forecasts by simulating predictions at various points in time throughout the history of
         the provided (potentially multiple) `series`. This process involves retrospectively applying the model to
@@ -829,6 +834,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If a string, then the weights are generated using built-in weighting functions. The available options are
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed per time `series`.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -995,6 +1002,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 verbose=verbose,
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
+                random_state=random_state,
                 **predict_kwargs,
             )
 
@@ -1212,13 +1220,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
                 # to support `predict()`
                 if len(train_series) == 0:
-                    train_series = TimeSeries.from_times_and_values(
+                    train_series = TimeSeries(
                         times=generate_index(
                             start=pred_time - 1 * series_.freq,
                             length=1,
                             freq=series_.freq,
+                            name=series_._time_index.name,
                         ),
                         values=np.array([np.nan]),
+                        copy=False,
                     )
 
                 forecast = model._predict_wrapper(
@@ -1230,6 +1240,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     verbose=verbose,
                     predict_likelihood_parameters=predict_likelihood_parameters,
                     show_warnings=show_predict_warnings,
+                    random_state=random_state,
                     **predict_kwargs,
                 )
 
@@ -1253,14 +1264,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             if last_points_only and last_points_values:
                 forecasts_list.append(
-                    TimeSeries.from_times_and_values(
-                        generate_index(
+                    TimeSeries(
+                        times=generate_index(
                             start=last_points_times[0],
                             end=last_points_times[-1],
                             freq=series_.freq * stride,
+                            name=series_._time_index.name,
                         ),
-                        np.array(last_points_values),
-                        columns=(
+                        values=np.array(last_points_values),
+                        components=(
                             forecast_components
                             if forecast_components is not None
                             else series_.columns
@@ -1276,6 +1288,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             else None
                         ),
                         metadata=series_.metadata,
+                        copy=False,
                     )
                 )
             else:
@@ -1313,6 +1326,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        random_state: Optional[int] = None,
     ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
         """Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
 
@@ -1467,6 +1481,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If a string, then the weights are generated using built-in weighting functions. The available options are
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed per time `series`.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1533,6 +1549,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             fit_kwargs=fit_kwargs,
             predict_kwargs=predict_kwargs,
             sample_weight=sample_weight,
+            random_state=random_state,
         )
 
         # remember input series type
@@ -1646,6 +1663,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         fit_kwargs: Optional[dict[str, Any]] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, str]] = None,
+        random_state: Optional[int] = None,
     ) -> tuple["ForecastingModel", dict[str, Any], float]:
         """
         Find the best hyper-parameters among a given set using a grid search.
@@ -1787,6 +1805,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             the number of components must match those of `series`.
             If a string, then the weights are generated using built-in weighting functions. The available options are
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1900,8 +1920,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     sample_weight=sample_weight,
                     **fit_kwargs,
                 )
-                fitted_values = TimeSeries.from_times_and_values(
-                    series.time_index, model.fitted_values
+                fitted_values = TimeSeries(
+                    times=series.time_index,
+                    values=model.fitted_values,
+                    copy=False,
                 )
                 if data_transformers and "series" in data_transformers:
                     fitted_values = _apply_inverse_data_transformers(
@@ -1930,6 +1952,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     fit_kwargs=fit_kwargs,
                     predict_kwargs=predict_kwargs,
                     sample_weight=sample_weight,
+                    random_state=random_state,
                 )
             else:  # split mode
                 if data_transformers:
@@ -1962,6 +1985,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates=future_covariates_,
                     num_samples=1,
                     verbose=verbose,
+                    random_state=random_state,
                     **predict_kwargs,
                 )
                 pred = _apply_inverse_data_transformers(
@@ -2017,6 +2041,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         predict_kwargs: Optional[dict[str, Any]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         values_only: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
         """Compute the residuals that the model produced for historical forecasts on (potentially multiple) `series`.
 
@@ -2177,6 +2202,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             computed per time `series`.
         values_only
             Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -2218,6 +2245,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             predict_kwargs=predict_kwargs,
             overlap_end=overlap_end,
             sample_weight=sample_weight,
+            random_state=random_state,
         )
 
         # remember input series type
@@ -2243,6 +2271,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             reduction=None,
             data_transformers=data_transformers,
             metric_kwargs=metric_kwargs,
+            random_state=random_state,
         )
 
         # sanity check residual output
@@ -2293,14 +2322,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 elif (q is None and q_interval is None) and res.shape[
                     1
                 ] == fc.n_components:
-                    res = fc.with_values(res)
+                    res = TimeSeries(
+                        times=fc.time_index,
+                        values=res,
+                        components=fc.components,
+                        copy=False,
+                        **fc._attrs,
+                    )
                 else:
                     # quantile (interval) metrics created different number of components;
                     # create new series with unknown components
-                    res = TimeSeries.from_times_and_values(
-                        times=fc._time_index,
+                    res = TimeSeries(
+                        times=fc.time_index,
                         values=res,
-                        columns=comp_names,
+                        components=comp_names,
+                        copy=False,
                     )
                 res_list_out.append(res)
 
@@ -2821,6 +2857,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         data_transformers: Optional[dict[str, BaseDataTransformer]] = None,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         logger.warning(
@@ -3029,6 +3066,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         verbose: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Forecasts values for `n` time steps after the end of the series.
 
@@ -3068,6 +3106,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             Default: ``False``
         show_warnings
             Whether to show warnings related auto-regression and past covariates usage.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -3079,7 +3119,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, random_state=random_state)
         if predict_likelihood_parameters:
             self._sanity_check_predict_likelihood_parameters(
                 n, self.output_chunk_length, num_samples
@@ -3236,6 +3276,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
@@ -3260,12 +3301,14 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, random_state=random_state)
         if predict_likelihood_parameters:
             self._sanity_check_predict_likelihood_parameters(
                 n, self.output_chunk_length, num_samples
@@ -3306,6 +3349,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             future_covariates=future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
             **kwargs,
         )
 
@@ -3317,6 +3361,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
@@ -3418,6 +3463,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         """If the `series` parameter is not set, forecasts values for `n` time steps after the end of the training
@@ -3450,6 +3496,8 @@ class TransferableFutureCovariatesLocalForecastingModel(
             Optionally, set the prediction verbosity. Not effective for all models.
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -3497,6 +3545,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
             future_covariates=future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
             **kwargs,
         )
 
@@ -3538,6 +3587,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
         TransferableFutureCovariatesLocalForecastingModel must implement the predict logic in this method.

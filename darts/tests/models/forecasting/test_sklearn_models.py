@@ -458,10 +458,6 @@ class TestSKLearnModels:
             self.sine_univariate1.drop_after(50), self.sine_univariate2
         )
         new_model.fit(self.sine_univariate1.drop_after(50), self.sine_univariate2)
-
-        print(new_model.predict(5))
-        print(deprecated_model.predict(5))
-
         assert new_model.predict(5) == deprecated_model.predict(5)
 
     @pytest.mark.parametrize("config", product(models, [True, False]))
@@ -1036,6 +1032,8 @@ class TestSKLearnModels:
     def test_models_runnability(self, config):
         model, mode = config
         train_y, test_y = self.sine_univariate1.split_before(0.7)
+        series_copy = train_y.copy()
+
         # testing past covariates
         model_instance = model(lags=4, lags_past_covariates=None, multi_models=mode)
         with pytest.raises(ValueError):
@@ -1065,10 +1063,13 @@ class TestSKLearnModels:
             model_instance.fit(series=self.sine_univariate1)
 
         # testing input_dim
+        past_cov = self.sine_univariate1.stack(self.sine_univariate1)
+        past_cov_copy = past_cov.copy()
+
         model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
         model_instance.fit(
             series=train_y,
-            past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
+            past_covariates=past_cov,
         )
 
         assert model_instance.input_dim == {
@@ -1083,6 +1084,10 @@ class TestSKLearnModels:
         # while it should work with n = 1
         prediction = model_instance.predict(n=1)
         assert len(prediction) == 1
+
+        # check that fit predict did not mutate input series
+        assert train_y == series_copy
+        assert past_cov == past_cov_copy
 
     @pytest.mark.parametrize(
         "config",
@@ -3044,6 +3049,12 @@ class TestSKLearnModels:
             "future": {"future_covariates": fc},
             "mixed": {"past_covariates": pc, "future_covariates": fc},
         }
+        covariates_examples_copy = {
+            "past": {"past_covariates": pc.copy()},
+            "future": {"future_covariates": fc.copy()},
+            "mixed": {"past_covariates": pc.copy(), "future_covariates": fc.copy()},
+        }
+
         encoder_examples = {
             "past": {"datetime_attribute": {"past": ["hour"]}},
             "future": {"cyclic": {"future": ["hour"]}},
@@ -3167,6 +3178,9 @@ class TestSKLearnModels:
             _ = model.predict(n=1, series=ts, **covariates)
             _ = model.predict(n=3, series=ts, **covariates)
             _ = model.predict(n=8, series=ts, **covariates)
+
+        # check that fit predict did not mutate input series
+        assert covariates_examples == covariates_examples_copy
 
     @pytest.mark.parametrize("config", product([True, False], [True, False]))
     def test_encoders_from_covariates_input(self, config):
@@ -3992,7 +4006,6 @@ class TestProbabilisticSKLearnModels:
             _ = _get_likelihood(
                 likelihood="does_not_exist",
                 n_outputs=1,
-                random_state=None,
                 quantiles=None,
                 available_likelihoods=[
                     LikelihoodType.Gaussian,
@@ -4032,6 +4045,29 @@ class TestProbabilisticSKLearnModels:
         pred3 = model.predict(n=10, num_samples=2).values()
         assert (pred2 != pred3).any()
 
+        # test whether two consecutive predictions with a random_state specified are the same
+        pred4 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred5 = model.predict(n=10, num_samples=2, random_state=38).values()
+        assert (pred4 == pred5).all()
+
+        # additional tests :
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_multivar_ts)
+        pred6 = model.predict(n=10, num_samples=2).values()
+        pred7 = model.predict(n=10, num_samples=2).values()
+
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_multivar_ts)
+        pred8 = model.predict(n=10, num_samples=2).values()
+        pred9 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred10 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred11 = model.predict(n=10, num_samples=2).values()
+
+        assert (pred6 != pred7).any()
+        assert (pred8 == pred6).all()
+        assert (pred9 == pred10).all()
+        assert (pred11 == pred7).all()
+
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_probabilistic_forecast_accuracy_univariate(self, config):
         (model_cls, model_kwargs, err), mode = config
@@ -4069,7 +4105,7 @@ class TestProbabilisticSKLearnModels:
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
@@ -4077,7 +4113,7 @@ class TestProbabilisticSKLearnModels:
         tested_quantiles = [0.3, 0.2, 0.1, 0.01]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 

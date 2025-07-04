@@ -31,12 +31,14 @@ class TestMissingValues:
                 [np.nan] * 5 + [2.0] * 5 + [np.nan] * 5 + [2.0] * 10 + [np.nan] * 5
             ),
         )
+        input_series_copy = [self.series1.copy(), seriesA.copy()]
 
         # Check that no changes are made if there are no missing values
         assert self.series1 == fill_missing_values(self.series1, "auto")
 
         # Check that a constant function is filled to a constant function
         assert self.series1 == fill_missing_values(seriesA, "auto")
+        assert [self.series1, seriesA] == input_series_copy
 
     def test_linear(self):
         seriesB: TimeSeries = TimeSeries.from_times_and_values(

@@ -11,13 +11,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.timeseries import TimeSeries
 from darts.utils.data import ShiftedTorchTrainingDataset, TorchTrainingDataset
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
@@ -393,9 +393,7 @@ class TCNModel(PastCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic

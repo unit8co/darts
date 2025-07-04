@@ -15,22 +15,25 @@ from typing import Optional
 import numpy as np
 from nfoursid.kalman import Kalman
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
+from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
 
 
 class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
+    @random_method
     def __init__(
         self,
         dim_x: int = 1,
         kf: Optional[Kalman] = None,
         add_encoders: Optional[dict] = None,
+        random_state: Optional[int] = None,
     ):
         """Kalman filter Forecaster
 
@@ -79,6 +82,8 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
+        random_state
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -126,13 +131,22 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> TimeSeries:
         # we override `predict()` to pass a non-None `series`, so that historic_future_covariates
         # will be passed to `_predict()`
         series = series if series is not None else self.training_series
-        return super().predict(n, series, future_covariates, num_samples, **kwargs)
+        return super().predict(
+            n,
+            series,
+            future_covariates,
+            num_samples,
+            random_state=random_state,
+            **kwargs,
+        )
 
+    @random_method
     def _predict(
         self,
         n: int,
@@ -142,19 +156,19 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         verbose: bool = False,
+        random_state: Optional[int] = None,
     ) -> TimeSeries:
         super()._predict(
             n, series, historic_future_covariates, future_covariates, num_samples
         )
         time_index = self._generate_new_dates(n, input_series=series)
         placeholder_vals = np.zeros((n, self.training_series.width)) * np.nan
-        series_future = TimeSeries.from_times_and_values(
-            time_index,
-            placeholder_vals,
-            columns=self.training_series.columns,
-            static_covariates=self.training_series.static_covariates,
-            hierarchy=self.training_series.hierarchy,
-            metadata=self.training_series.metadata,
+        series_future = TimeSeries(
+            times=time_index,
+            values=placeholder_vals,
+            components=self.training_series.columns,
+            copy=False,
+            **self.training_series._attrs,
         )
 
         series = series.append(series_future)
