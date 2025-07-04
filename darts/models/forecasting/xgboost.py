@@ -191,7 +191,6 @@ class XGBModel(SKLearnModel):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._model_container = None
 
         # parse likelihood
         if likelihood is not None:
@@ -200,9 +199,8 @@ class XGBModel(SKLearnModel):
                 self.kwargs["objective"] = f"count:{likelihood}"
             elif likelihood == "quantile":
                 self.kwargs["objective"] = "reg:quantileerror"
-                self._model_container = _QuantileModelContainer()
 
-        self._likelihood = _get_likelihood(
+        likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
@@ -220,6 +218,10 @@ class XGBModel(SKLearnModel):
             use_static_covariates=use_static_covariates,
             random_state=random_state,
         )
+
+        self._likelihood = likelihood
+        if isinstance(likelihood, QuantileRegression):
+            self._model_container = _QuantileModelContainer()
 
     def fit(
         self,
@@ -301,6 +303,7 @@ class XGBModel(SKLearnModel):
                     val_sample_weight=val_sample_weight,
                     **kwargs,
                 )
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
             return self
 

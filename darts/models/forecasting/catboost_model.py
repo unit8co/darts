@@ -192,7 +192,6 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._model_container = None
 
         # parse likelihood
         if likelihood is not None:
@@ -207,12 +206,10 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
                 # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
                 likelihood = "gaussian"
 
-            if likelihood == "quantile":
-                self._model_container = _QuantileModelContainer()
-            else:
+            if likelihood != "quantile":
                 self.kwargs["loss_function"] = likelihood_map[likelihood]
 
-        self._likelihood = _get_likelihood(
+        likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
@@ -240,6 +237,10 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
 
         # if no loss provided, get the default loss from the model
         self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
+
+        self._likelihood = likelihood
+        if isinstance(likelihood, QuantileRegression):
+            self._model_container = _QuantileModelContainer()
 
     def fit(
         self,
@@ -325,6 +326,7 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
                     verbose=verbose,
                     **kwargs,
                 )
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
             return self
 

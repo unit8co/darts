@@ -1473,6 +1473,7 @@ class TestSKLearnModels:
                 multi_models=True,
                 likelihood="quantile",
                 quantiles=[0.5],
+                **xgb_test_params,
             )
             m.fit(ts)
 
@@ -1541,6 +1542,7 @@ class TestSKLearnModels:
             multi_models=False,
             likelihood="quantile",
             quantiles=[0.5],
+            **xgb_test_params,
         )
         m.fit(ts)
 
@@ -1571,7 +1573,7 @@ class TestSKLearnModels:
             multi_models=multi_models,
             likelihood="quantile",
             quantiles=quantiles,
-            random_state=1,
+            **xgb_test_params,
         )
         m.fit(ts)
 
