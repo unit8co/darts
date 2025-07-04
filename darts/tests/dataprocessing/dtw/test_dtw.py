@@ -3,9 +3,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from darts import TimeSeries
 from darts.dataprocessing import dtw
 from darts.metrics import dtw_metric, mae, mape
-from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 
 
@@ -61,6 +61,9 @@ class TestDynamicTimeWarping:
         series1 = _series_from_values(input1)
         series2 = _series_from_values(input2)
 
+        series1_copy = series1.copy()
+        series2_copy = series2.copy()
+
         exact_alignment = dtw.dtw(series1, series2, multi_grid_radius=-1)
 
         assert exact_alignment.distance() == 0, (
@@ -70,6 +73,10 @@ class TestDynamicTimeWarping:
             np.testing.assert_array_equal(exact_alignment.path(), expected_path),
             "Incorrect path",
         )
+
+        # input series should not be modified
+        assert series1 == series1_copy
+        assert series2 == series2_copy
 
     def test_multi_grid(self):
         size = 2**5 - 1  # test odd size
@@ -81,11 +88,17 @@ class TestDynamicTimeWarping:
 
         series1 = _series_from_values(input1)
         series2 = _series_from_values(input2)
+        series1_copy = series1.copy()
+        series2_copy = series2.copy()
 
         exact_distance = dtw.dtw(series1, series2, multi_grid_radius=-1).distance()
         approx_distance = dtw.dtw(series1, series2, multi_grid_radius=1).distance()
 
         assert round(abs(exact_distance - approx_distance), 3) == 0
+
+        # input series should not be modified
+        assert series1 == series1_copy
+        assert series2 == series2_copy
 
     def test_sakoe_chiba_window(self):
         window = 2
@@ -148,6 +161,8 @@ class TestDynamicTimeWarping:
         static_covs = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
         series1 = TimeSeries.from_xarray(xa1).with_static_covariates(static_covs)
         series2 = TimeSeries.from_xarray(xa2).with_static_covariates(static_covs)
+        series1_copy = series1.copy()
+        series2_copy = series2.copy()
 
         alignment = dtw.dtw(series1, series2)
 
@@ -155,6 +170,10 @@ class TestDynamicTimeWarping:
         assert round(abs(alignment.mean_distance() - mae(warped1, warped2)), 7) == 0
         assert warped1.static_covariates.equals(series1.static_covariates)
         assert warped2.static_covariates.equals(series2.static_covariates)
+
+        # input series should not be modified
+        assert series1 == series1_copy
+        assert series2 == series2_copy
 
         """
         See DTWAlignment.warped for why this functionality is currently disabled

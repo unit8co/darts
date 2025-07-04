@@ -14,12 +14,12 @@ from typing import Any, Optional
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
 from darts.logging import get_logger, raise_if_not
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -76,7 +76,13 @@ def _reconcile_from_S_and_G(
     """
     y_hat = series.all_values(copy=False)
     reconciled_values = S @ G @ y_hat  # (n, m) * (m, n) * (time, n, samples)
-    return series.with_values(reconciled_values)
+    return TimeSeries(
+        times=series.time_index,
+        values=reconciled_values,
+        components=series.components,
+        copy=False,
+        **series._attrs,
+    )
 
 
 class BottomUpReconciliator(BaseDataTransformer):
