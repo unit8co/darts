@@ -519,7 +519,6 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
                [1.],
                [0.]])
         """
-
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,
         # by setting `predict_likelihood_parameters`to `True` in `predict()`
@@ -531,7 +530,6 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             likelihood=likelihood,
-            quantiles=None,  # quantiles are not supported for LightGBMClassifierModel
             random_state=random_state,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,

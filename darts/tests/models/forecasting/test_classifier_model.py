@@ -1126,10 +1126,7 @@ class TestProbabilisticClassifierModels:
             SKLearnClassifierModel(model=SVC(gamma=2, C=1, random_state=42), lags=2)
             assert any(record.levelname == "WARNING" for record in caplog.records)
             assert any([
-                message.startswith(
-                    "`model` has no method with name `predict_proba()`. "
-                    "Set `probability=True` at `SVC` model creation "
-                )
+                message.startswith("`model` has no method with name `predict_proba()`.")
                 for message in caplog.messages
             ])
 
@@ -1212,11 +1209,11 @@ class TestProbabilisticClassifierModels:
         )
 
         component_names = [
-            "component1_p_0",
-            "component1_p_1",
-            "component1_p_2",
-            "component2_p_0",
-            "component2_p_1",
+            "component1_p0",
+            "component1_p1",
+            "component1_p2",
+            "component2_p0",
+            "component2_p1",
         ]
 
         model = SKLearnClassifierModel(lags=1, output_chunk_length=2)
@@ -1224,18 +1221,28 @@ class TestProbabilisticClassifierModels:
         # component_names before fit throws an error
         with pytest.raises(ValueError) as err:
             model.likelihood.component_names(series_train)
-        assert (
-            str(err.value) == "`component_names` requires the likelihood to be fitted."
-        )
+        assert str(err.value) == "The likelihood has not been fitted yet."
 
         # once fitted, component_names are correct
         model.fit(series_train)
-        assert model.likelihood.component_names(series_train) == component_names
+        assert model.likelihood.component_names(series=series_train) == component_names
+        assert (
+            model.likelihood.component_names(components=series_train.components)
+            == component_names
+        )
 
         # predicted component names are correct
         preds = model.predict(n=2, predict_likelihood_parameters=True)
 
         assert np.all(preds.components == component_names)
+
+        with pytest.raises(ValueError) as err:
+            _ = model.likelihood.component_names(
+                series=series_train, components=series_train.components
+            )
+        assert (
+            str(err.value) == "Only one of `series` or `components` must be specified."
+        )
 
     @pytest.mark.parametrize(
         "clf_params",

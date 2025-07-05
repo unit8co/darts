@@ -502,7 +502,6 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
                [1.],
                [1.]])
         """
-
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,
         # by setting `predict_likelihood_parameters`to `True` in `predict()`
@@ -514,7 +513,6 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
             output_chunk_shift=output_chunk_shift,
             add_encoders=add_encoders,
             likelihood=likelihood,
-            quantiles=None,
             random_state=random_state,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,

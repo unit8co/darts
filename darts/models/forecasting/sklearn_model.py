@@ -43,7 +43,6 @@ import numpy as np
 import pandas as pd
 from sklearn.base import is_classifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
-from sklearn.svm import SVC
 from sklearn.utils.validation import has_fit_parameter
 
 from darts import TimeSeries
@@ -950,9 +949,7 @@ class SKLearnModel(GlobalForecastingModel):
                 "eval_weight_name": val_weight_name,
                 "n_jobs": n_jobs_multioutput_wrapper,
             }
-
-            if self._model_type == ModelType.FORECASTING_CLASSIFIER:
-                mor_kwargs["output_chunk_length"] = self._output_chunk_length
+            mor_kwargs["output_chunk_length"] = self.output_chunk_length
 
             self.model = get_multioutput_estimator_cls(self._model_type)(
                 estimator=self.model, **mor_kwargs
@@ -2025,10 +2022,10 @@ class _ClassifierMixin:
     Mixin for sklearn-like classification forecasting models
     """
 
-    multi_models: bool
-    _output_chunk_length: int
-    class_labels: Union[list[np.ndarray], np.ndarray]
     model: Any
+    multi_models: bool
+    class_labels: Union[list[np.ndarray], np.ndarray]
+    _output_chunk_length: int
 
     def fit(
         self,
@@ -2041,9 +2038,8 @@ class _ClassifierMixin:
         )
 
         classes = self.class_labels
-        # means multiple models have seen sub-part of the same components
-        # thus we need to make sure they have seen the same classes during training
         if self.multi_models and self._output_chunk_length > 1:
+            # make sure that all individual models have seen the same classes during training
             num_components = len(classes) // self._output_chunk_length
 
             # classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ..]
@@ -2068,9 +2064,9 @@ class _ClassifierMixin:
         classes = getattr(self.model, "classes_", None)
         if classes is None:
             return None
-        # single-labels and single-model tasks should return a array of classes
-        # multi-labels or multi-models tasks should return a list of arraya of classes
         # unify `class_labels` to a list of arrays of classes for simplicity
+        # - single-labels and single-model tasks return a single array of classes
+        # - multi-labels or multi-models tasks return a list of arrays of classes
         if not isinstance(classes, list):
             classes = [classes]
         return classes
@@ -2260,15 +2256,9 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
                 logger,
             )
         if not hasattr(model, "predict_proba"):
-            message = "`model` has no method with name `predict_proba()`. "
-            if isinstance(model, SVC):
-                message += (
-                    "Set `probability=True` at `SVC` model creation "
-                    "to activate support for probabilistic forecasting."
-                )
-            else:
-                message += "Probabilistic forecasting support deactivated."
-            logger.warning(message)
+            logger.warning(
+                "`model` has no method with name `predict_proba()`. Probabilistic forecasting support deactivated."
+            )
             likelihood = None
 
         self._likelihood = _get_likelihood(

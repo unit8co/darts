@@ -77,6 +77,8 @@ class Likelihood:
             )
         if series is not None:
             components = series.components
+
+        # format: <component_name>_<parameter_name>
         return likelihood_component_names(
             components=components, parameter_names=self.parameter_names
         )

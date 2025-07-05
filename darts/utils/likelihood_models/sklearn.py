@@ -409,7 +409,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
             parameter_names=[],
         )
         self._index_first_param_per_component: Optional[np.ndarray] = None
-        self._classes: list[np.ndarray] = None
+        self._classes: Optional[list[np.ndarray]] = None
 
     def fit(self, model):
         """
@@ -446,7 +446,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         )
 
         self._parameter_names = [
-            f"p_{int(label)}"
+            f"p{int(label)}"
             for i in range(num_components)
             for label in self._classes[i]
         ]
@@ -459,9 +459,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
     ) -> list[str]:
         """Generates names for the parameters of the Likelihood."""
         if self._index_first_param_per_component is None:
-            raise_log(
-                ValueError("`component_names` requires the likelihood to be fitted.")
-            )
+            raise_log(ValueError("The likelihood has not been fitted yet."))
         if (series is not None) == (components is not None):
             raise_log(
                 ValueError("Only one of `series` or `components` must be specified."),
@@ -470,7 +468,7 @@ class ClassProbabilityLikelihood(SKLearnLikelihood):
         if series is not None:
             components = series.components
 
-        # format: <component_name>_p_<label>
+        # format: <component_name>_p<label>
         return [
             f"{component_name}_{parameter_name}"
             for i, component_name in enumerate(components)
@@ -628,7 +626,6 @@ def _get_likelihood(
         The list of available likelihood types for the model.
     quantiles
         Optionally, a list of quantiles. Only effective for `likelihood='quantile'`.
-
     """
     if likelihood is None:
         return None
