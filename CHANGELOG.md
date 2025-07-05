@@ -11,6 +11,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added support for classification forecasting for SKLearn-like forecasting models. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+ - Implemented `SklearnClassifierModel`to support any sklearn-like classifier model.
+ - Implemented `LightGBMClassifierModel`, `XGBClassifierModel` and `CatBoostClassifierModel` relying on classification abilities of the respectice librairies.
+ - Implemented `ClassProbabilityLikelihood` and set it as the default likelihood for classifiers to predict class probabilities when `predict_likelihood_parameters`is set in `predict`call.
+
 **Fixed**
 
 - Fixed a bug in `SKLearnModel.get_estimator()` for univariate quantile models that use `multi_models=False` , where using `quantile` did not return the correct fitted quantile model / estimator. [#2838](https://github.com/unit8co/darts/pull/2838) by [Dennis Bader](https://github.com/dennisbader).
@@ -18,6 +23,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
+
+- Added support for classification forecasting for SKLearn-like forecasting models. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+ - Refactored `RegressionModelWithCategoricalCovariates` into `RegressionModelWithCategoricalFeatures` to support categorical target.
+ - Refactored `MultiOutputRegressor` into `MultiOutputMixin`and added `MultiOutputClassifier` to support classifier.
 
 ## [0.36.0](https://github.com/unit8co/darts/tree/0.36.0) (2025-06-29)
 
