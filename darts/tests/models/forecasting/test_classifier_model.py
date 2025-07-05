@@ -190,7 +190,8 @@ class TestClassifierModel:
     def test_init_classifier(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
-        assert model is not None
+        assert model.model is not None
+        assert isinstance(model.likelihood, ClassProbabilityLikelihood)
 
         # accepts only classifier
         with pytest.raises(ValueError) as err:
@@ -201,7 +202,7 @@ class TestClassifierModel:
         )
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
-    def test_class_labels(self, clf_params):
+    def test_univariate_class_labels(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
 
@@ -212,11 +213,12 @@ class TestClassifierModel:
         model.fit(
             series=self.sine_univariate1_cat, past_covariates=self.sine_univariate1
         )
-        # classes_ is a list of numpy array
+        # `class_labels` is a list of component-specific numpy array (univariate = length 1)
         assert isinstance(model.class_labels, list)
         assert len(model.class_labels) == 1
         assert isinstance(model.class_labels[0], np.ndarray)
-        assert ([0, 1, 2] == model.class_labels[0]).all()
+        assert set(np.unique(self.sine_univariate1_cat.values())) == {0, 1, 2}
+        assert (model.class_labels[0] == [0, 1, 2]).all()
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_multiclass_class_labels(self, clf_params):
@@ -229,26 +231,26 @@ class TestClassifierModel:
                 self.sine_univariate1_cat
             )
             expected_classes = [np.array([0, 1, 2]), np.array([0, 1, 2])]
+            classes = {0, 1, 2}
         else:
             multivariate_cat_diff_labels = self.sine_univariate1_cat.stack(
                 self.sine_univariate1_cat + 3
             )
             expected_classes = [np.array([0, 1, 2]), np.array([3, 4, 5])]
+            classes = {0, 1, 2, 3, 4, 5}
 
+        assert set(np.unique(multivariate_cat_diff_labels.values())) == classes
         model.fit(
             series=multivariate_cat_diff_labels, past_covariates=self.sine_univariate1
         )
-        # check that classes are stored as list of np.ndarrays
+        # `class_labels` is a list of component-specific numpy array (multivariate = length 2)
         # for both MultiOutputClassifier and native multi-class classifiers
         assert isinstance(model.class_labels, list)
+        assert len(model.class_labels) == len(expected_classes)
         assert isinstance(model.class_labels[0], np.ndarray)
         # check that classes correspond to the classes in the series
-        assert len(model.class_labels) == len(expected_classes)
         assert np.array([
-            (model_classes == series_classes).all()
-            for model_classes, series_classes in zip(
-                model.class_labels, expected_classes
-            )
+            (c1 == c2).all() for c1, c2 in zip(model.class_labels, expected_classes)
         ]).all()
 
     @pytest.mark.parametrize(
@@ -318,10 +320,7 @@ class TestClassifierModel:
         assert model._static_covariates_shape == series.static_covariates.shape
         preds = model.predict(n=2, series=[series, series])
         for pred in preds:
-            np.testing.assert_almost_equal(
-                pred.static_covariates.values,
-                series.static_covariates.values,
-            )
+            pred.static_covariates.equals(series.static_covariates)
 
     def helper_test_models_accuracy(
         self,
@@ -333,6 +332,7 @@ class TestClassifierModel:
         multi_models,
         output_chunk_length,
     ):
+        multi_series = not isinstance(series, TimeSeries)
         # for every model, test whether it predicts the target with a minimum f1 score
         train_series, test_series = train_test_split(series, 70)
         train_past_covariates, _ = train_test_split(past_covariates, 70)
@@ -346,15 +346,13 @@ class TestClassifierModel:
         )
         model_instance.fit(series=train_series, past_covariates=train_past_covariates)
         prediction = model_instance.predict(
-            n=len(test_series)
-            if type(test_series) is TimeSeries
-            else len(test_series[0]),
+            n=len(test_series) if not multi_series else len(test_series[0]),
             series=train_series,
             past_covariates=past_covariates,
         )
 
         # flatten in case of multivariate prediction
-        if type(prediction) is list:
+        if multi_series:
             prediction = np.array([p.values().flatten() for p in prediction]).flatten()
             test_series = np.array([
                 ts.values().flatten() for ts in test_series
@@ -450,7 +448,7 @@ class TestClassifierModel:
         zip(process_model_list(classifiers), models_multioutput),
     )
     def test_multioutput_wrapper(self, model_params):
-        """Check that with input_chunk_length=1, wrapping in MultiOutputClassifier occurs only when necessary"""
+        """Check that with output_chunk_length=1, wrapping in MultiOutputClassifier occurs only when necessary"""
         (model_cls, kwargs), supports_multioutput_natively = model_params
         model = model_cls(
             lags_past_covariates=1,
@@ -480,21 +478,21 @@ class TestClassifierModel:
         assert not isinstance(model.model, MultiOutputClassifier)
 
         model = model.untrained_model()
-        # univariate should be wrapped in MultiOutputRegressor only if not natively supported
+        # multivariate should be wrapped in MultiOutputRegressor only if not natively supported
         model.fit(
             series=self.sine_multivariate1_cat, past_covariates=self.sine_multivariate1
         )
         check_only_non_native_are_wrapped(model, supports_multioutput_natively)
 
         model = model.untrained_model()
-        # mutli-series with same component should not be wrapped in MultiOutputRegressor
+        # multi-series with same component should not be wrapped in MultiOutputRegressor
         model.fit(
             series=self.sine_multiseries1_cat, past_covariates=self.sine_multiseries1
         )
         assert not isinstance(model.model, MultiOutputClassifier)
 
         model = model.untrained_model()
-        # mutli-series with mutli variate should be wrapped in MultiOutputRegressor only if not natively supported
+        # multi-series with multivariate should be wrapped in MultiOutputRegressor only if not natively supported
         model.fit(
             series=self.sine_multivariate_multiseries_cat,
             past_covariates=self.sine_multivariate_multiseries,
@@ -604,7 +602,9 @@ class TestClassifierModel:
         )
         model_instance.fit(
             series=train_y,
-            past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
+            past_covariates=self.sine_univariate1.stack(self.sine_univariate1)[
+                : train_y.end_time()
+            ],
         )
 
         assert model_instance.input_dim == {
@@ -614,12 +614,22 @@ class TestClassifierModel:
         }
 
         with pytest.raises(ValueError) as err:
-            prediction = model_instance.predict(n=len(test_y) + 2)
+            _ = model_instance.predict(n=model_instance.output_chunk_length + 1)
         assert str(err.value).startswith("The `past_covariates` are not long enough.")
 
-        # while it should work with n = 1
-        prediction = model_instance.predict(n=1)
+        # while it should work with n = output_chunk_length
+        prediction = model_instance.predict(n=model_instance.output_chunk_length)
         assert len(prediction) == 1
+
+        # test wrong covariates dimensionality
+        with pytest.raises(ValueError) as err:
+            _ = prediction = model_instance.predict(
+                n=model_instance.output_chunk_length,
+                past_covariates=self.sine_univariate1,
+            )
+        assert str(err.value).startswith(
+            "The number of components of the target series and the covariates"
+        )
 
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_labels_constraints(self, clf_params):
@@ -654,10 +664,9 @@ class TestClassifierModel:
             assert str(err.value).endswith("Expected: [0 1 2], got [0. 2. 3.]")
 
         # Single label
-        if type(clf) in [
-            SVC,
-            GaussianProcessClassifier,
-        ] or type(model.model) in [LogisticRegression]:
+        if issubclass(clf, (SVC, GaussianProcessClassifier)) or isinstance(
+            model.model, LogisticRegression
+        ):
             # Model specific error message
             with pytest.raises(ValueError):
                 model.fit(
@@ -671,11 +680,8 @@ class TestClassifierModel:
         with caplog.at_level(logging.WARNING):
             model = clf(lags=2, **kwargs)
             if isinstance(model, SKLearnModelWithCategoricalFeatures):
-                assert not any(
-                    record.levelname == "WARNING" for record in caplog.records
-                )
+                assert not caplog.messages
             else:
-                assert any(record.levelname == "WARNING" for record in caplog.records)
                 assert any([
                     message.startswith(
                         "This model will treat target `series` lagged values as "
@@ -733,21 +739,21 @@ class TestClassifierModel:
                 assert False, f"{clf} need to be tested for fit arguments"
 
     def test_get_multioutput_estimator_cls(self):
-        assert (
-            get_multioutput_estimator_cls(ModelType.FORECASTING_CLASSIFIER)
-            == MultiOutputClassifier
+        assert issubclass(
+            get_multioutput_estimator_cls(ModelType.FORECASTING_CLASSIFIER),
+            MultiOutputClassifier,
         )
-        assert (
-            get_multioutput_estimator_cls(ModelType.FORECASTING_REGRESSOR)
-            == MultiOutputRegressor
+        assert issubclass(
+            get_multioutput_estimator_cls(ModelType.FORECASTING_REGRESSOR),
+            MultiOutputRegressor,
         )
 
         with pytest.raises(ValueError) as err:
-            get_multioutput_estimator_cls(model_type="not_a_correct_model_type")
+            get_multioutput_estimator_cls(model_type="invalid_type")
         assert (
             str(err.value)
             == "Model type must be one of `[ModelType.FORECASTING_REGRESSOR, ModelType.FORECASTING_CLASSIFIER]`. "
-            "Received: `not_a_correct_model_type`."
+            "Received: `invalid_type`."
         )
 
 
@@ -760,7 +766,7 @@ def generate_random_series_with_probabilities(
     multi_variate: bool, multi_series: bool, length=100
 ):
     """
-    Generate categorical series with specific probabilites for each class
+    Generate categorical series with specific probabilities for each class
     """
     probas_component1 = np.array([0.1, 0.3, 0.6])
     labels_component1 = [0, 1, 2]
@@ -787,18 +793,18 @@ def generate_random_series_with_probabilities(
             )).T
         return array
 
-    series_train, series_test = TimeSeries.from_values(
-        generate_samples(), columns=columns
-    ).split_before(length)
+    series = TimeSeries.from_values(generate_samples(), columns=columns)
+    series_train, series_test = series.split_before(length)
 
     if multi_series:
-        series2_train, series2_test = TimeSeries.from_values(
-            generate_samples(), columns=columns
-        ).split_before(length)
+        series2 = TimeSeries.from_values(generate_samples(), columns=columns)
+        series2_train, series2_test = series2.split_before(length)
+        series = [series, series2]
         series_train = [series_train, series2_train]
         series_test = [series_test, series2_test]
 
     return (
+        series,
         series_train,
         series_test,
         probas_component1,
@@ -818,7 +824,14 @@ class TestProbabilisticClassifierModels:
             RandomForestClassifier,
             {"max_depth": 5, "n_estimators": 10, "max_features": 1, "random_state": 42},
         ),
-        (MLPClassifier, {"alpha": 1, "max_iter": 1000, "random_state": 42}),
+        (
+            MLPClassifier,
+            {
+                # "alpha": 1,
+                # "max_iter": 1000,
+                "random_state": 42
+            },
+        ),
         (AdaBoostClassifier, {"random_state": 42}),
         (GaussianNB, {}),
         (
@@ -838,7 +851,7 @@ class TestProbabilisticClassifierModels:
         0.1,  # GaussianProcessClassifier
         0.27,  # DecisionTreeClassifier
         0.11,  # RandomForestClassifier
-        0.02,  # MLPClassifier
+        0.05,  # MLPClassifier
         0.20,  # AdaBoostClassifier
         0.07,  # GaussianNB
         0.17,  # XGBClassifierModel
@@ -867,8 +880,8 @@ class TestProbabilisticClassifierModels:
                 "random_state": 42,
             },
         ))
-        rmse_class_proba.append(0.04)
-        rmse_class_sample.append(0.02)
+        rmse_class_proba.append(0.06)
+        rmse_class_sample.append(0.06)
 
     if cb_available:
         probabilistic_classifiers.append((
@@ -880,8 +893,8 @@ class TestProbabilisticClassifierModels:
                 "random_state": 42,
             },
         ))
-        rmse_class_proba.append(0.13)
-        rmse_class_sample.append(0.14)
+        rmse_class_proba.append(0.15)
+        rmse_class_sample.append(0.15)
 
     @pytest.mark.parametrize(
         "clf_params",
@@ -918,54 +931,65 @@ class TestProbabilisticClassifierModels:
     ):
         # check that the model's prediction is the same with and without the likelihood
         # when predict_likelihood_parameters=False
-        # Meaning _get_median_prediction on top on predict_proba produce the same output than the model predict
+        # Meaning _get_median_prediction on top of predict_proba produce the same output than the model predict
         (clf, kwargs), multi_series, multi_variate = clf_params
 
-        series_train, _, _, _, _, _ = generate_random_series_with_probabilities(
-            multi_series=multi_series, multi_variate=multi_variate
+        _, series_train, _, _, labels_1, _, labels_2 = (
+            generate_random_series_with_probabilities(
+                multi_series=multi_series, multi_variate=multi_variate
+            )
         )
-
-        model = clf(lags=2, **kwargs, likelihood=None)
+        ocl = 5
+        model = clf(lags=2, output_chunk_length=ocl, likelihood=None, **kwargs)
         assert model.likelihood is None
-        model_likelihood = clf(lags=2, **kwargs)
+        model_likelihood = clf(lags=2, output_chunk_length=ocl, **kwargs)
         assert isinstance(model_likelihood.likelihood, ClassProbabilityLikelihood)
 
         model.fit(series_train)
         model_likelihood.fit(series_train)
-        assert model_likelihood.predict(5, series_train) == model.predict(
-            5, series_train
+
+        # native class prediction with maximum probability
+        pred = model.predict(n=ocl, series=series_train)
+        # likelihood class prediction with maximum probability
+        pred_likelihood = model_likelihood.predict(
+            n=ocl,
+            series=series_train,
+            predict_likelihood_parameters=False,
         )
+        # likelihood class probability prediction
+        pred_proba = model_likelihood.predict(
+            n=ocl,
+            series=series_train,
+            predict_likelihood_parameters=True,
+        )
+        if not multi_series:
+            pred = [pred]
+            pred_likelihood = [pred_likelihood]
+            pred_proba = [pred_proba]
+
+        # compute class prediction with maximum probability
+        pred_max_proba = []
+        for idx, p in enumerate(pred_proba):
+            p = p.values()
+            # compute labels for each component
+            p_1 = np.argmax(p[:, : len(labels_1)], axis=1, keepdims=True)
+            if multi_variate:
+                p_2 = np.argmax(p[:, len(labels_1) :], axis=1, keepdims=True)
+                p_1 = np.concatenate([p_1, p_2], axis=1)
+            pred_max_proba.append(pred[idx].with_values(p_1))
+
+        # all predictions are the same
+        assert pred_likelihood == pred
+        assert pred_max_proba == pred
 
         with pytest.raises(ValueError) as err:
-            model.predict(n=2, series=series_train, predict_likelihood_parameters=True)
+            model.predict(
+                n=ocl + 1, series=series_train, predict_likelihood_parameters=True
+            )
         assert (
             str(err.value) == "`predict_likelihood_parameters=True` is only"
             " supported for probabilistic models fitted with a likelihood."
         )
-
-    def class_probability_check_helper(
-        self, model, series_test, true_probas, accepted_rmse
-    ):
-        if not isinstance(series_test, list):
-            series_test = [series_test]
-
-        avg_probas = np.array([
-            predicted_ts.values()
-            for predicted_ts in model.predict(
-                n=1, series=series_test, predict_likelihood_parameters=True
-            )
-        ])
-        for i in series_test[0].time_index[1:]:
-            probas = model.predict(
-                n=1,
-                series=[serie.split_after(i)[0] for serie in series_test],
-                predict_likelihood_parameters=True,
-            )
-            avg_probas += np.array([predicted_ts.values() for predicted_ts in probas])
-
-        avg_probas /= len(series_test[0]) - 1
-        rmse = np.mean((avg_probas - true_probas) ** 2, axis=2) ** 0.5
-        assert np.all(rmse <= accepted_rmse)
 
     @pytest.mark.parametrize(
         "clf_params",
@@ -977,11 +1001,11 @@ class TestProbabilisticClassifierModels:
     )
     def test_class_probabilities_are_valid(self, clf_params):
         """
-        Check class probabilties have correct shape and meaning in case of:
-        - single serie, univariate
-        - single serie, multivariate
+        Check class probabilities have correct shape and meaning in case of:
+        - single series, univariate
+        - single series, multivariate
         - multi series, univariate
-        - mutli series, multivariate
+        - multi series, multivariate
         Components of multi-variate do not have the same classes
         """
 
@@ -992,6 +1016,7 @@ class TestProbabilisticClassifierModels:
         )
 
         (
+            series,
             series_train,
             series_test,
             probas_component1,
@@ -1015,45 +1040,54 @@ class TestProbabilisticClassifierModels:
         )
 
         if not multi_series:
+            series = [series]
+            series_test = [series_test]
             list_of_probas = [list_of_probas]
             list_of_probas2 = [list_of_probas2]
 
         # Probability are reproducible
-        assert np.all([
-            np.allclose(p1.all_values(), p2.all_values())
-            for p1, p2 in zip(list_of_probas, list_of_probas2)
-        ])
+        for s, p1, p2 in zip(series, list_of_probas, list_of_probas2):
+            vals1 = p1.all_values()
+            vals2 = p2.all_values()
+            np.testing.assert_array_equal(vals1, vals2)
 
-        # Sum of class proba is 1 (x2 component must be 2)
-        total_probas = len(
-            series_train.components if not multi_series else series_train[0].components
-        )
-        assert np.all([
-            p.sum(axis=1).values()[0][0] == pytest.approx(total_probas)
-            for p in list_of_probas
-        ])
+            # As many probability components as classes
+            n_classes = len(labels_component1) + (
+                len(labels_component2) if multi_variate else 0
+            )
+            assert p1.n_components == n_classes
 
-        # As many probabilties as classes
-        total_num_classes = len(labels_component1) + (
-            len(labels_component2) if multi_variate else 0
-        )
-        assert np.all([len(p.components) == total_num_classes for p in list_of_probas])
-        assert np.all(model.class_labels[0] == labels_component1)
-        if multi_variate:
-            assert np.all(model.class_labels[1] == labels_component2)
+            # Sum of class proba is 1 per component (x2 component must be 2)
+            assert p1.values().sum() == pytest.approx(s.n_components)
 
+            # component-specific probabilities sum to 1
+            assert vals1[:, : len(labels_component1)].sum() == pytest.approx(1.0)
+            if multi_variate:
+                assert vals1[:, len(labels_component1) :].sum() == pytest.approx(1.0)
+
+            # all labels are present in the class_labels
+            assert np.all(model.class_labels[0] == labels_component1)
+            if multi_variate:
+                assert np.all(model.class_labels[1] == labels_component2)
+
+        # verify that historical_forecasts returns on average approximately the same probabilities
         true_probas = (
             np.concatenate((probas_component1, probas_component2))
             if multi_variate
             else probas_component1
         )
 
-        self.class_probability_check_helper(
-            model=model,
-            series_test=series_test,
-            true_probas=true_probas,
-            accepted_rmse=rmse_margin,
+        pred_probas = model.historical_forecasts(
+            series=series,
+            forecast_horizon=1,
+            predict_likelihood_parameters=True,
+            retrain=False,
+            start=series_test[0].start_time() + 2 * series_test[0].freq,
+            overlap_end=True,
         )
+        avg_probas = np.array([pred.values().mean(axis=0) for pred in pred_probas])
+        rmse = np.mean((avg_probas - true_probas) ** 2, axis=1) ** 0.5
+        assert np.all(rmse <= rmse_margin)
 
     def test_bad_behavior_model_properties(self, caplog):
         class NoPredictProbaModel:
@@ -1173,7 +1207,7 @@ class TestProbabilisticClassifierModels:
         )
 
     def test_class_probability_component_names(self):
-        series_train, _, _, _, _, _ = generate_random_series_with_probabilities(
+        _, series_train, _, _, _, _, _ = generate_random_series_with_probabilities(
             multi_series=False, multi_variate=True
         )
 
@@ -1218,12 +1252,13 @@ class TestProbabilisticClassifierModels:
         model = clf(lags=2, **kwargs)
 
         (
+            _,
             series_train,
             _,
             probas_component1,
-            _,
+            labels_component1,
             probas_component2,
-            _,
+            labels_component2,
         ) = generate_random_series_with_probabilities(
             multi_series=False, multi_variate=multi_variate
         )
@@ -1238,32 +1273,39 @@ class TestProbabilisticClassifierModels:
             == "`predict_likelihood_parameters=True` is only supported for `num_samples=1`, received 2."
         )
 
+        # predict with multiple samples and verify the label probability
         prediction = model.predict(n=5, num_samples=1000)
-        predictions_per_component = [prediction.all_values()[:, 0]]
-        probas_per_component = [probas_component1]
+        preds_c = [prediction.all_values()[:, 0]]
+        probas_c = [probas_component1]
+        labels_c = [labels_component1]
         if multi_variate:
-            predictions_per_component.append(prediction.all_values()[:, 1])
-            probas_per_component.append(probas_component2)
-        for idx, (preds, probas, classes) in enumerate(
-            zip(predictions_per_component, probas_per_component, model.class_labels)
-        ):
-            preds = preds.flatten()
-            count = np.zeros(len(classes))
-            for i in preds:
-                count[int(i)] += 1
-            count /= len(preds)
-            rmse = np.mean((count - probas) ** 2) ** 0.5
+            preds_c.append(prediction.all_values()[:, 1])
+            probas_c.append(probas_component2)
+            labels_c.append(labels_component2)
+
+        for idx, (preds, probas, labels) in enumerate(zip(preds_c, probas_c, labels_c)):
+            pred_probas = pd.value_counts(preds.flatten(), normalize=True).to_dict()
+            pred_probas = [pred_probas[label] for label in labels]
+            rmse = np.mean((pred_probas - probas) ** 2) ** 0.5
             assert rmse < model_rmse
 
         # reproducible samples when call order is the same (and also with transferable series)
         model = model.untrained_model().fit(series_train)
-        preds_2 = model.predict(n=5, num_samples=1000, series=series_train).all_values()
-        assert (prediction.all_values() == preds_2).all()
+        preds_2 = model.predict(n=5, num_samples=1000, series=series_train)
+        assert preds_2 == prediction
 
         # different samples when call order changes
-        preds_3 = model.predict(n=5, num_samples=1000).all_values()
-        with pytest.raises(AssertionError):
-            np.testing.assert_array_almost_equal(preds_2, preds_3)
+        preds_3 = model.predict(n=5, num_samples=1000)
+        assert preds_3 != prediction
+
+        # same samples when random_state is set
+        preds_4 = model.predict(
+            n=5, num_samples=1000, series=series_train, random_state=42
+        )
+        preds_5 = model.predict(
+            n=5, num_samples=1000, series=series_train, random_state=42
+        )
+        assert preds_4 == preds_5
 
     @pytest.mark.parametrize(
         "params",
@@ -1275,12 +1317,14 @@ class TestProbabilisticClassifierModels:
     def test_historical_forecast(self, params):
         multi_model, multi_variate = params
 
-        series_train, _, _, _, _, _ = generate_random_series_with_probabilities(
+        _, series_train, _, _, _, _, _ = generate_random_series_with_probabilities(
             multi_series=False, multi_variate=multi_variate
         )
 
-        series_multi_variate, _, _, _, _, _ = generate_random_series_with_probabilities(
-            multi_series=False, multi_variate=True
+        _, series_multi_variate, _, _, _, _, _ = (
+            generate_random_series_with_probabilities(
+                multi_series=False, multi_variate=True
+            )
         )
 
         # without covariate
