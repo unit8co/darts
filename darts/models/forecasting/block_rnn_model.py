@@ -33,6 +33,7 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         target_size: int,
         nr_params: int,
         num_layers_out_fc: Optional[list] = None,
+        decoder_hidden_size: int = 128,
         dropout: float = 0.0,
         activation: str = "ReLU",
         future_cov_integ: Optional[str] = None,
@@ -85,6 +86,7 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         self.target_size = target_size
         self.nr_params = nr_params
         self.num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
+        self.decoder_hidden_size = decoder_hidden_size
         self.dropout = dropout
         self.activation = activation
         self.future_cov_integ = future_cov_integ
@@ -173,6 +175,13 @@ class _BlockRNNModule(CustomBlockRNNModule):
                 self.future_cov_dim * self.out_len, self.future_cov_dim
             )
             last = self.hidden_dim + self.future_cov_dim
+        elif self.future_cov_integ == "nf":
+            self.upsampling_out = nn.Linear(self.input_chunk_length, self.out_len)
+            last = (
+                (self.hidden_dim + self.future_cov_dim)
+                if self.future_cov_dim > 0
+                else self.hidden_dim
+            )
         else:
             if self.future_cov_integ == "add":
                 self.future_cov_proj_add = nn.Linear(
@@ -184,9 +193,11 @@ class _BlockRNNModule(CustomBlockRNNModule):
         # The RNN module is followed by a fully connected layer, which maps the last hidden layer
         # to the output of desired length
         feats = []
-        for index, feature in enumerate(
-            self.num_layers_out_fc + [self.out_len * self.target_size * self.nr_params]
-        ):
+        if self.future_cov_integ == "nf":
+            out_dim = self.nr_params * self.target_size
+        else:
+            out_dim = self.out_len * self.target_size * self.nr_params
+        for index, feature in enumerate(self.num_layers_out_fc + [out_dim]):
             feats.append(nn.Linear(last, feature))
 
             # Add activation only between layers, but not on the final layer
@@ -198,14 +209,17 @@ class _BlockRNNModule(CustomBlockRNNModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        x_past, x_future, _ = x_in
+        x_past, x_future, x_static = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         if x_future is not None:
-            start_future_cov = x_past.size(-1) - self.future_cov_dim
-            full_future_cov = torch.cat(
-                [x_past[:, 1:, start_future_cov:], x_future[:, :1, :]], dim=1
-            )
-            x_past[:, :, start_future_cov:] = full_future_cov
+            if self.future_cov_integ != "nf":
+                start_future_cov = x_past.size(-1) - self.future_cov_dim
+                full_future_cov = torch.cat(
+                    [x_past[:, 1:, start_future_cov:], x_future[:, :1, :]], dim=1
+                )
+                x_past[:, :, start_future_cov:] = full_future_cov
+        if x_static is not None:
+            x_past = torch.cat([x_past, x_static], dim=-1)
         batch_size = x_past.size(0)
 
         # out is of size (batch_size, input_chunk_length, hidden_dim)
@@ -216,7 +230,14 @@ class _BlockRNNModule(CustomBlockRNNModule):
         """
         if self.name == "LSTM":
             hidden = hidden[0]
-        predictions = hidden[-1, :, :]
+        if self.future_cov_integ == "nf":
+            out = out.permute(0, 2, 1)
+            out = self.upsampling_out(out)
+            predictions = out.permute(0, 2, 1)
+            if x_future is not None:
+                predictions = torch.cat([predictions, x_future], dim=-1)
+        else:
+            predictions = hidden[-1, :, :]
         if self.future_cov_integ == "concat":
             x_future = x_future.reshape(batch_size, -1)
             x_future = self.future_cov_proj_cat(x_future)

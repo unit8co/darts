@@ -48,6 +48,7 @@ class TestBlockRNNModel:
         input_chunk_length=1,
         output_chunk_length=1,
         output_chunk_shift=0,
+        future_cov_dim=0,
         hidden_dim=25,
         target_size=1,
         nr_params=1,
