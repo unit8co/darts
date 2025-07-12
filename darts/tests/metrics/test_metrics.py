@@ -224,6 +224,7 @@ class TestMetrics:
             (metrics.sape, False, {"time_reduction": np.mean}),
             (metrics.arre, False, {"time_reduction": np.mean}),
             (metrics.ql, True, {"time_reduction": np.mean}),
+            (metrics.acc, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, False, {}),
             (metrics.mae, False, {}),
@@ -819,6 +820,7 @@ class TestMetrics:
                 (metrics.sape, False),
                 (metrics.arre, False),
                 (metrics.ql, True),
+                (metrics.acc, True),
                 # time aggregates
                 (metrics.merr, False),
                 (metrics.mae, False),
@@ -923,6 +925,7 @@ class TestMetrics:
             (metrics.sape, 0, False, {"time_reduction": np.mean}),
             (metrics.arre, 0, False, {"time_reduction": np.mean}),
             (metrics.ql, 0, True, {"time_reduction": np.mean}),
+            (metrics.acc, 1, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, 0, False, {}),
             (metrics.mae, 0, False, {}),
@@ -1376,6 +1379,7 @@ class TestMetrics:
             (metrics.ape, "max", {"time_reduction": np.nanmean}),
             (metrics.sape, "max", {"time_reduction": np.nanmean}),
             (metrics.arre, "max", {"time_reduction": np.nanmean}),
+            (metrics.acc, "max", {"time_reduction": np.nanmean}),
             (metrics.merr, "min", {}),
             (metrics.mae, "max", {}),
             (metrics.mse, "max", {}),
@@ -1466,6 +1470,7 @@ class TestMetrics:
             (metrics.ape, sklearn_mape, {}, {"time_reduction": np.nanmean}),
             (metrics.sape, metric_smape, {}, {"time_reduction": np.nanmean}),
             (metrics.arre, metric_marre, {}, {"time_reduction": np.nanmean}),
+            (metrics.acc, metric_macc, {}, {"time_reduction": np.nanmean}),
             (metrics.merr, metric_residuals, {}, {}),
             (metrics.mae, sklearn.metrics.mean_absolute_error, {}, {}),
             (metrics.mse, sklearn.metrics.mean_squared_error, {}, {}),

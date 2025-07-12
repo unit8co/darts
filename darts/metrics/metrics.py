@@ -851,7 +851,7 @@ def err(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -863,8 +863,8 @@ def err(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -939,7 +939,7 @@ def merr(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -1030,7 +1030,7 @@ def ae(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -1042,8 +1042,8 @@ def ae(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -1118,7 +1118,7 @@ def mae(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -1226,7 +1226,7 @@ def ase(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -1244,8 +1244,8 @@ def ase(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -1340,7 +1340,7 @@ def mase(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -1443,7 +1443,7 @@ def se(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -1455,8 +1455,8 @@ def se(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -1531,7 +1531,7 @@ def mse(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -1639,7 +1639,7 @@ def sse(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -1657,8 +1657,8 @@ def sse(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -1753,7 +1753,7 @@ def msse(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -1850,7 +1850,7 @@ def rmse(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -1951,7 +1951,7 @@ def rmsse(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -2053,7 +2053,7 @@ def sle(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -2065,8 +2065,8 @@ def sle(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -2144,7 +2144,7 @@ def rmsle(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -2240,7 +2240,7 @@ def ape(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -2257,8 +2257,8 @@ def ape(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -2343,7 +2343,7 @@ def mape(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -2434,7 +2434,7 @@ def wmape(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -2543,7 +2543,7 @@ def sape(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -2560,8 +2560,8 @@ def sape(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -2649,7 +2649,7 @@ def smape(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -2741,7 +2741,7 @@ def ope(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -2848,7 +2848,7 @@ def arre(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -2865,8 +2865,8 @@ def arre(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -2952,7 +2952,7 @@ def marre(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Raises
     ------
@@ -3041,7 +3041,7 @@ def r2_score(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -3135,7 +3135,7 @@ def coefficient_of_variation(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -3226,7 +3226,7 @@ def dtw_metric(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -3315,7 +3315,7 @@ def qr(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -3431,7 +3431,7 @@ def ql(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -3443,8 +3443,8 @@ def ql(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
         `len(q) > 1`. For:
 
         - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
@@ -3528,7 +3528,7 @@ def mql(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -3627,7 +3627,7 @@ def iw(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -3639,8 +3639,8 @@ def iw(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
-        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
         `len(q_interval) > 1`. For:
 
         - the input from the `float` return case above but with `len(q_interval) > 1`.
@@ -3723,7 +3723,7 @@ def miw(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -3829,7 +3829,7 @@ def iws(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -3841,8 +3841,8 @@ def iws(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
-        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
         `len(q_interval) > 1`. For:
 
         - the input from the `float` return case above but with `len(q_interval) > 1`.
@@ -3944,7 +3944,7 @@ def miws(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -4053,7 +4053,7 @@ def ic(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -4065,8 +4065,8 @@ def ic(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
-        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
         `len(q_interval) > 1`. For:
 
         - the input from the `float` return case above but with `len(q_interval) > 1`.
@@ -4147,7 +4147,7 @@ def mic(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -4251,7 +4251,7 @@ def incs_qr(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -4263,8 +4263,8 @@ def incs_qr(
         - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
           `time_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
-        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
         `len(q_interval) > 1`. For:
 
         - the input from the `float` return case above but with `len(q_interval) > 1`.
@@ -4352,7 +4352,7 @@ def mincs_qr(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -4386,6 +4386,100 @@ def mincs_qr(
         ),
         axis=TIME_AX,
     )
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def acc(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    time_reduction: Optional[Callable[..., np.ndarray]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Accuracy (ACC).
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+     .. math:: \\mathbb{I}(y_t = \\hat{y}_t)
+
+    Where :math::`mathbb{I}` is the indicator function.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    time_reduction
+        Optionally, a function to aggregate the metrics over the time axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(c,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        time axis. If `None`, will return a metric per time step.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and
+          `time_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n time steps, n components) without time-
+        and component reductions, and shape (n time steps,) without time- but with component reduction.
+        For:
+
+        - a single multivariate series and at least `component_reduction=None`.
+        - a single uni/multivariate series and at least `time_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and at least one of
+          `component_reduction=None` or `time_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+    return np.array(y_true == y_pred, dtype=y_true.dtype)
 
 
 @classification_support
@@ -4440,7 +4534,7 @@ def macc(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress
+        Optionally, whether to print operations progress.
 
     Returns
     -------
@@ -4451,7 +4545,7 @@ def macc(
         - a single multivariate series with `component_reduction`.
         - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
     np.ndarray
-        A numpy array of metric scores. The array has shape (n components,1) without component reduction.
+        A numpy array of metric scores. The array has shape (n components,) without component reduction.
         For:
 
         - a single multivariate series and at least `component_reduction=None`.
@@ -4461,16 +4555,11 @@ def macc(
     list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
     """
-
-    y_true, y_pred = _get_values_or_raise(
-        actual_series,
-        pred_series,
-        intersect,
-        remove_nan_union=False,
-        is_classification=True,
-    )
-
-    return np.mean(
-        y_true == y_pred,
+    return np.nanmean(
+        _get_wrapped_metric(acc, n_wrappers=3)(
+            actual_series,
+            pred_series,
+            intersect,
+        ),
         axis=TIME_AX,
     )
