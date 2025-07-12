@@ -76,6 +76,7 @@ class TestTimeSeries:
         assert tests[1][0]["ssr_ftest"][1] > 0.01
 
     def test_stationarity_tests(self):
+        np.random.seed(42)
         series_1 = constant_timeseries(start=0, end=9999).stack(
             constant_timeseries(start=0, end=9999)
         )
@@ -115,6 +116,7 @@ class TestSeasonalDecompose:
     ts = trend + season
 
     def test_extract(self):
+        series_copy = self.ts.copy()
         # test default (naive) method
         calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6)
         diff = self.trend - calc_trend
@@ -169,6 +171,8 @@ class TestSeasonalDecompose:
             calc_trend, _ = extract_trend_and_seasonality(
                 self.ts, freq=[3, 6], method="MSTL", model=ModelMode.MULTIPLICATIVE
             )
+
+        assert self.ts == series_copy
 
     def test_remove_seasonality(self):
         # test default (naive) method

@@ -5,8 +5,8 @@ from typing import Literal, Optional, Union
 import numpy as np
 import pandas as pd
 
+from darts import TimeSeries
 from darts.logging import get_logger
-from darts.timeseries import TimeSeries
 from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_boundaries,
     _process_predict_start_points_bounds,
@@ -31,6 +31,7 @@ def _optimized_historical_forecasts(
     show_warnings: bool = True,
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
+    random_state: Optional[int] = None,
     **kwargs,
 ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
@@ -121,6 +122,7 @@ def _optimized_historical_forecasts(
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
         values_only=last_points_only,
+        random_state=random_state,
         **kwargs,
     )
 
@@ -153,6 +155,7 @@ def _optimized_historical_forecasts(
                 pred_start=pred_start,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 likelihood_component_names_fn=likelihood_component_names_fn,
+                copy=False,
             )
         else:
             # model output is already a sequence of forecasted `TimeSeries`

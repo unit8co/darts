@@ -1267,6 +1267,10 @@ class TestHistoricalforecast:
         ts, model_config, multi_models, overlap_end, forecast_horizon = config
         # slightly longer to not affect the last predictable timestamp
         ts_covs = self.ts_covs
+
+        ts_copy = ts.copy()
+        ts_covs_copy = ts_covs.copy()
+
         start = 14
 
         model_cls = LinearRegressionModel
@@ -1334,6 +1338,10 @@ class TestHistoricalforecast:
                     )
 
                     self.helper_compare_hf(hist_fct, opti_hist_fct)
+
+        # check that historical forecasts did not mutate input series
+        assert ts == ts_copy
+        assert ts_covs == ts_covs_copy
 
     @pytest.mark.parametrize(
         "config",
@@ -1607,6 +1615,11 @@ class TestHistoricalforecast:
             pc = [pc, pc.shift(1)] if pc is not None else None
             fc = [fc, fc.shift(1)] if fc is not None else None
 
+        # check that historical forecasts did not mutate input series
+        series_val_copy = series_val.copy()
+        pc_copy = pc.copy() if pc is not None else None
+        fc_copy = fc.copy() if fc is not None else None
+
         hist_fct = model.historical_forecasts(
             series=series_val,
             past_covariates=pc,
@@ -1628,6 +1641,10 @@ class TestHistoricalforecast:
             stride=stride,
             forecast_horizon=horizon,
         )
+
+        assert series_val == series_val_copy
+        assert pc == pc_copy
+        assert fc == fc_copy
 
         if not isinstance(series_val, list):
             series_val = [series_val]

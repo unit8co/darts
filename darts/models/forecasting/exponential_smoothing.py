@@ -7,23 +7,25 @@ from typing import Any, Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
+from sklearn.utils import check_random_state
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
-from darts.timeseries import TimeSeries
-from darts.utils.utils import ModelMode, SeasonalityMode
+from darts.utils.utils import ModelMode, SeasonalityMode, random_method
 
 logger = get_logger(__name__)
 
 
 class ExponentialSmoothing(LocalForecastingModel):
+    @random_method
     def __init__(
         self,
         trend: Optional[ModelMode] = ModelMode.ADDITIVE,
         damped: Optional[bool] = False,
         seasonal: Optional[SeasonalityMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
-        random_state: int = 0,
+        random_state: Optional[int] = None,
         kwargs: Optional[dict[str, Any]] = None,
         **fit_kwargs,
     ):
@@ -61,6 +63,8 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
+        random_state
+            Controls the randomness for reproducible forecasting.
         kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing()`.
@@ -99,7 +103,6 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.constructor_kwargs = dict() if kwargs is None else kwargs
         self.fit_kwargs = fit_kwargs
         self.model = None
-        np.random.seed(random_state)
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -136,20 +139,25 @@ class ExponentialSmoothing(LocalForecastingModel):
 
         return self
 
+    @random_method
     def predict(
         self,
         n: int,
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
 
         if num_samples == 1:
             forecast = self.model.forecast(n)
         else:
+            rng = check_random_state(random_state)
+
             forecast = np.expand_dims(
-                self.model.simulate(n, repetitions=num_samples), axis=1
+                self.model.simulate(n, repetitions=num_samples, random_state=rng),
+                axis=1,
             )
 
         return self._build_forecast_series(forecast)

@@ -25,7 +25,6 @@ class SKLearnLikelihood(Likelihood, ABC):
         likelihood_type: LikelihoodType,
         parameter_names: list[str],
         n_outputs: int,
-        random_state: Optional[int] = None,
     ):
         """Base class for sklearn wrapper (e.g. `SKLearnModel`) likelihoods.
 
@@ -38,17 +37,14 @@ class SKLearnLikelihood(Likelihood, ABC):
         n_outputs
             The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
             `output_chunk_length`.
-        random_state
-            Optionally, control the randomness of the sampling.
         """
         self._n_outputs = n_outputs
-        self._rng = np.random.default_rng(seed=random_state)
         super().__init__(
             likelihood_type=likelihood_type,
             parameter_names=parameter_names,
         )
         # ignore additional attrs for equality tests
-        self.ignore_attrs_equality += ["_n_outputs", "_rng"]
+        self.ignore_attrs_equality += ["_n_outputs"]
 
     def predict(
         self,
@@ -125,11 +121,7 @@ class SKLearnLikelihood(Likelihood, ABC):
 
 
 class GaussianLikelihood(SKLearnLikelihood):
-    def __init__(
-        self,
-        n_outputs: int,
-        random_state: Optional[int] = None,
-    ):
+    def __init__(self, n_outputs: int):
         """
         Gaussian distribution [1]_.
 
@@ -138,8 +130,6 @@ class GaussianLikelihood(SKLearnLikelihood):
         n_outputs
             The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
             `output_chunk_length`.
-        random_state
-            Optionally, control the randomness of the sampling.
 
         References
         ----------
@@ -149,7 +139,6 @@ class GaussianLikelihood(SKLearnLikelihood):
             likelihood_type=LikelihoodType.Gaussian,
             parameter_names=["mu", "sigma"],
             n_outputs=n_outputs,
-            random_state=random_state,
         )
 
     def sample(self, model_output: np.ndarray) -> np.ndarray:
@@ -158,7 +147,7 @@ class GaussianLikelihood(SKLearnLikelihood):
         n_entries, n_samples, n_params = model_output.shape
 
         # get samples (n_components * output_chunk_length, n_series * n_samples)
-        samples = self._rng.normal(
+        samples = np.random.normal(
             model_output[:, :, 0],  # mean
             model_output[:, :, 1],  # variance
         )
@@ -217,11 +206,7 @@ class GaussianLikelihood(SKLearnLikelihood):
 
 
 class PoissonLikelihood(SKLearnLikelihood):
-    def __init__(
-        self,
-        n_outputs: int,
-        random_state: Optional[int] = None,
-    ):
+    def __init__(self, n_outputs: int):
         """
         Poisson distribution [1]_.
 
@@ -230,8 +215,6 @@ class PoissonLikelihood(SKLearnLikelihood):
         n_outputs
             The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
             `output_chunk_length`.
-        random_state
-            Optionally, control the randomness of the sampling.
 
         References
         ----------
@@ -241,12 +224,11 @@ class PoissonLikelihood(SKLearnLikelihood):
             likelihood_type=LikelihoodType.Poisson,
             parameter_names=["lambda"],
             n_outputs=n_outputs,
-            random_state=random_state,
         )
 
     def sample(self, model_output: np.ndarray) -> np.ndarray:
         # shape (n_series * n_samples, output_chunk_length, n_components)
-        return self._rng.poisson(lam=model_output).astype(float)
+        return np.random.poisson(lam=model_output).astype(float)
 
     def predict_likelihood_parameters(self, model_output: np.ndarray) -> np.ndarray:
         # lambdas on the last dimension, grouped by component
@@ -272,7 +254,6 @@ class QuantileRegression(SKLearnLikelihood):
     def __init__(
         self,
         n_outputs: int,
-        random_state: Optional[int] = None,
         quantiles: Optional[list[float]] = None,
     ):
         """
@@ -283,8 +264,6 @@ class QuantileRegression(SKLearnLikelihood):
         n_outputs
             The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
             `output_chunk_length`.
-        random_state
-            Optionally, control the randomness of the sampling.
         quantiles
             A list of quantiles. Default: `[0.01, 0.05, 0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]`.
 
@@ -314,7 +293,6 @@ class QuantileRegression(SKLearnLikelihood):
             likelihood_type=LikelihoodType.Quantile,
             parameter_names=quantile_names(self.quantiles),
             n_outputs=n_outputs,
-            random_state=random_state,
         )
         self.ignore_attrs_equality += ["_median_idx"]
 
@@ -325,7 +303,7 @@ class QuantileRegression(SKLearnLikelihood):
         k, n_times, n_components, n_quantiles = model_output.shape
 
         # obtain samples
-        probs = self._rng.uniform(
+        probs = np.random.uniform(
             size=(
                 k,
                 n_times,
@@ -393,7 +371,6 @@ class QuantileRegression(SKLearnLikelihood):
         k = x.shape[0]
         model_outputs = []
         for quantile, fitted in model._model_container.items():
-            model.model = fitted
             # model output has shape (n_series * n_samples, output_chunk_length, n_components)
             model_output = fitted.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
             model_outputs.append(model_output)
@@ -434,7 +411,6 @@ def _check_likelihood(likelihood: str, available_likelihoods: list[str]):
 def _get_likelihood(
     likelihood: Optional[str],
     n_outputs: int,
-    random_state: Optional[int],
     quantiles: Optional[list[float]],
 ) -> Optional[SKLearnLikelihood]:
     """Get the `Likelihood` object for `SKLearnModel`.
@@ -446,21 +422,17 @@ def _get_likelihood(
     n_outputs
         The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise
         `output_chunk_length`.
-    random_state
-        Optionally, control the randomness of the sampling.
     quantiles
         Optionally, a list of quantiles. Only effective for `likelihood='quantile'`.
     """
     if likelihood is None:
         return None
     elif likelihood == "gaussian":
-        return GaussianLikelihood(n_outputs=n_outputs, random_state=random_state)
+        return GaussianLikelihood(n_outputs=n_outputs)
     elif likelihood == "poisson":
-        return PoissonLikelihood(n_outputs=n_outputs, random_state=random_state)
+        return PoissonLikelihood(n_outputs=n_outputs)
     elif likelihood == "quantile":
-        return QuantileRegression(
-            n_outputs=n_outputs, random_state=random_state, quantiles=quantiles
-        )
+        return QuantileRegression(n_outputs=n_outputs, quantiles=quantiles)
     else:
         raise_log(
             ValueError(
