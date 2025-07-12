@@ -82,6 +82,7 @@ from darts.metrics.metrics import (
     incs_qr,
     iw,
     iws,
+    macc,
     mae,
     mape,
     marre,
@@ -146,6 +147,7 @@ ALL_METRICS = {
     mic,
     incs_qr,
     mincs_qr,
+    macc,
 }
 
 TIME_DEPENDENT_METRICS = {
@@ -214,4 +216,5 @@ __all__ = [
     "mic",
     "incs_qr",
     "mincs_qr",
+    "macc",
 ]

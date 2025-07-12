@@ -8,7 +8,7 @@ import pytest
 import sklearn.metrics
 
 from darts import TimeSeries, concatenate
-from darts.metrics import forecasting_classification, metrics
+from darts.metrics import metrics
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
@@ -243,7 +243,7 @@ class TestMetrics:
             (metrics.qr, True, {}),
             (metrics.mql, True, {}),
             (metrics.dtw_metric, False, {}),
-            (forecasting_classification.macc, False, {}),
+            (metrics.macc, False, {}),
         ],
     )
     def test_output_type_time_aggregated(self, config):
@@ -533,6 +533,7 @@ class TestMetrics:
             (metrics.sape, False),
             (metrics.arre, False),
             (metrics.ql, True),
+            # TODO: add `acc`
         ],
     )
     def test_output_type_time_dependent(self, config):
@@ -837,7 +838,7 @@ class TestMetrics:
                 (metrics.qr, True),
                 (metrics.mql, True),
                 (metrics.dtw_metric, False),
-                (forecasting_classification.macc, False),
+                (metrics.macc, False),
             ],
             ["time", "component", "series"],
         ),
@@ -941,7 +942,7 @@ class TestMetrics:
             (metrics.qr, 0, True, {}),
             (metrics.mql, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
-            (forecasting_classification.macc, 1, False, {}),
+            (metrics.macc, 1, False, {}),
         ],
     )
     def test_same(self, config):
@@ -1387,7 +1388,7 @@ class TestMetrics:
             (metrics.marre, "max", {}),
             (metrics.r2_score, "min", {}),
             (metrics.coefficient_of_variation, "max", {}),
-            (forecasting_classification.macc, "max", {}),
+            (metrics.macc, "max", {}),
         ],
     )
     def test_multiple_ts(self, config):
@@ -1477,7 +1478,7 @@ class TestMetrics:
             (metrics.marre, metric_marre, {}, {}),
             (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
             (metrics.coefficient_of_variation, metric_cov, {}, {}),
-            (forecasting_classification.macc, metric_macc, {}, {}),
+            (metrics.macc, metric_macc, {}, {}),
         ],
     )
     def test_metrics_deterministic(self, config):
@@ -1654,41 +1655,39 @@ class TestMetrics:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [
-                    # time dependent but with time reduction
-                    metrics.err,
-                    metrics.ae,
-                    metrics.se,
-                    metrics.sle,
-                    metrics.ase,
-                    metrics.sse,
-                    metrics.ape,
-                    metrics.sape,
-                    metrics.arre,
-                    metrics.ql,
-                    # time aggregates
-                    metrics.merr,
-                    metrics.mae,
-                    metrics.mse,
-                    metrics.rmse,
-                    metrics.rmsle,
-                    metrics.mase,
-                    metrics.msse,
-                    metrics.rmsse,
-                    metrics.mape,
-                    metrics.wmape,
-                    metrics.smape,
-                    metrics.ope,
-                    metrics.marre,
-                    metrics.r2_score,
-                    metrics.coefficient_of_variation,
-                    metrics.mql,
-                ],
-                [True, False],  # univariate series
-                [True, False],  # single series
-            )
+        itertools.product(
+            [
+                # time dependent but with time reduction
+                metrics.err,
+                metrics.ae,
+                metrics.se,
+                metrics.sle,
+                metrics.ase,
+                metrics.sse,
+                metrics.ape,
+                metrics.sape,
+                metrics.arre,
+                metrics.ql,
+                # time aggregates
+                metrics.merr,
+                metrics.mae,
+                metrics.mse,
+                metrics.rmse,
+                metrics.rmsle,
+                metrics.mase,
+                metrics.msse,
+                metrics.rmsse,
+                metrics.mape,
+                metrics.wmape,
+                metrics.smape,
+                metrics.ope,
+                metrics.marre,
+                metrics.r2_score,
+                metrics.coefficient_of_variation,
+                metrics.mql,
+            ],
+            [True, False],  # univariate series
+            [True, False],  # single series
         ),
     )
     def test_metric_quantiles(self, config):

@@ -33,6 +33,9 @@ TIME_AX = 0
 COMP_AX = 1
 SMPL_AX = 2
 
+# class probabilities suffix
+PROBA_SUFFIX = "_p"
+
 # Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
 # don't "unpack" parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
@@ -46,20 +49,12 @@ METRIC_TYPE = Callable[
 
 def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """
-    This decorator adds support for classification metrics with sanity checks and
-    handling of class probabilities and categorical samples.
+    This decorator adds support for classification metrics including sanity checks and handling of class
+    probabilities and categorical samples.
     """
 
     @wraps(func)
     def wrapper_interval_support(*args, **kwargs):
-        q = kwargs.get("q")
-        if q is not None:
-            raise_log(ValueError("`q` is not supported for classification metrics."))
-        q_interval = kwargs.get("q_interval")
-        if q_interval is not None:
-            raise_log(
-                ValueError("`q_interval` is not supported for classification metrics.")
-            )
         kwargs["is_classification"] = True
         return func(*args, **kwargs)
 
@@ -285,9 +280,22 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     univariate metrics using a `component_reduction` subroutine passed as argument to the metric function.
     """
 
-    def _quantile_handling(actual_series, pred_series, q, params, kwargs):
-        q_comp_names = None
-        if q is not None:
+    def _regression_handling(actual_series, pred_series, params, kwargs):
+        q, q_comp_names = kwargs.get("q"), None
+        if q is None:
+            # without quantiles, the number of components must match
+            if actual_series.n_components != pred_series.n_components:
+                raise_log(
+                    ValueError(
+                        f"Mismatch between number of components in `actual_series` "
+                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
+                    ),
+                    logger=logger,
+                )
+            # compute median for stochastic predictions
+            if pred_series.is_stochastic:
+                q = np.array([0.5])
+        else:
             # `q` is required to be a tuple (handled by `multi_ts_support` wrapper)
             if not isinstance(q, tuple) or not len(q) == 2:
                 raise_log(
@@ -319,33 +327,35 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                         ),
                         logger=logger,
                     )
-        else:
-            # without quantiles, the number of components must match
-            if actual_series.n_components != pred_series.n_components:
-                raise_log(
-                    ValueError(
-                        f"Mismatch between number of components in `actual_series` "
-                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
-                    ),
-                    logger=logger,
-                )
-                # compute median for stochastic predictions
-            if pred_series.is_stochastic:
-                q = np.array([0.5])
 
         if "q" in params:
             kwargs["q"] = (q, q_comp_names)
         return kwargs
 
-    def _is_valid_component(actual_series, pred_series, is_classification):
-        if actual_series.n_components != pred_series.n_components:
-            raise_log(
-                ValueError(
-                    f"Mismatch between number of components in `actual_series` "
-                    f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
-                ),
-                logger=logger,
+    def _classification_handling(actual_series, pred_series):
+        # This assumes class probabilities components follow the "<component_name>_p<label>" convention
+        # Note: the correct number of labels per component is not checked here
+        if not pred_series.components.equals(actual_series.components):
+            # "<component_name>_p<label>" -> "<component_name>"
+            predicted_components = (
+                pred_series.components.str.split(PROBA_SUFFIX)
+                .str[:-1]
+                .str.join(PROBA_SUFFIX)
+                .unique()
             )
+            if not predicted_components.equals(actual_series.components):
+                raise_log(
+                    ValueError(
+                        f"Could not resolve the predicted components for the classification metric. "
+                        f"Mismatch between number of components in `actual_series` "
+                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
+                        "If `pred_series` represents class probabilities, it must contain a dedicated component "
+                        "per original component and label following the naming convention `<component_name>_p<label>`. "
+                        f"Original components: {actual_series.components}, predicted components: "
+                        f"{pred_series.components}."
+                    ),
+                    logger=logger,
+                )
 
     @wraps(func)
     def wrapper_multivariate_support(*args, **kwargs) -> METRIC_OUTPUT_TYPE:
@@ -354,43 +364,11 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         actual_series = args[0]
         pred_series = args[1]
         num_series_in_args = 2
-        print("DECO")
 
         if kwargs.pop("is_classification", False):
-            # TODO add constant for separator
-            # This assumes class probabilites components follow the "<component_name>_p_<label>" convention
-            # Note: the correct number of labels per component is not checked here
-            if np.any(pred_series.components != actual_series.components):
-                predicted_components = (
-                    pred_series.components.str.split("_p")
-                    .str[:-1]
-                    .str.join("_p")
-                    .unique()
-                )
-            if np.any(predicted_components != actual_series.components):
-                raise_log(
-                    ValueError(
-                        f"Mismatch between number of components in `actual_series` "
-                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
-                        "Class probabilities series must have one component per original component and label"
-                        "following the naming convention `<component_name>_p_<label>`."
-                        f"Original components: {actual_series.components}"
-                        f"Predicted components: {pred_series.components}"
-                    ),
-                    logger=logger,
-                )
+            _classification_handling(actual_series, pred_series)
         else:
-            q = kwargs.get("q")
-            if q is None:
-                if actual_series.n_components != pred_series.n_components:
-                    raise_log(
-                        ValueError(
-                            f"Mismatch between number of components in `actual_series` "
-                            f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
-                        ),
-                        logger=logger,
-                    )
-            kwargs = _quantile_handling(actual_series, pred_series, q, params, kwargs)
+            kwargs = _regression_handling(actual_series, pred_series, params, kwargs)
 
         # handle `insample` parameters for scaled metrics
         input_series = (actual_series, pred_series)
@@ -456,11 +434,12 @@ def _get_values(
     vals_components: pd.Index,
     actual_components: pd.Index,
     q: Optional[tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
+    is_classification: bool = False,
 ) -> np.ndarray:
     """
     Returns a deterministic or probabilistic numpy array from the values of a time series of shape
     (times, components, samples / quantiles).
-    To extract quantile (sample) values from quantile or stachastic `vals`, use `q`.
+    To extract quantile (sample) values from quantile or stochastic `vals`, use `q`.
 
     Parameters
     ----------
@@ -475,6 +454,18 @@ def _get_values(
         If not `None`, must a tuple with (quantile values,
         `None` if `pred_series` is stochastic else the quantile component names).
     """
+    # classification metrics
+    if is_classification:
+        if vals.shape[SMPL_AX] != 1:  # sampled class labels
+            vals = _get_highest_count_label(vals)
+        elif vals.shape[COMP_AX] != len(actual_components):  # class label probabilities
+            vals = _get_highest_probability_label(
+                vals=vals,
+                vals_components=vals_components,
+                actual_components=actual_components,
+            )
+        return vals
+
     # return values as is (times, components, samples)
     if q is None:
         return vals
@@ -497,34 +488,42 @@ def _get_values(
 
 
 def _get_values_or_raise(
-    series_a: TimeSeries,
-    series_b: TimeSeries,
+    actual_series: TimeSeries,
+    pred_series: TimeSeries,
     intersect: bool,
     q: Optional[tuple[Sequence[float], Union[Optional[pd.Index]]]] = None,
     remove_nan_union: bool = False,
     is_insample: bool = False,
+    is_classification: bool = False,
 ) -> tuple[np.ndarray, np.ndarray]:
     """Returns the processed numpy values of two time series. Processing can be customized with arguments
-    `intersect, q, remove_nan_union`.
+    `intersect, q, remove_nan_union, is_classification`.
 
     Parameters
     ----------
-    series_a
+    actual_series
         A deterministic ``TimeSeries`` instance. If `is_insample=False`, it is the `actual_series`.
         Otherwise, it is the `insample` series.
-    series_b
+    pred_series
         A deterministic or stochastic ``TimeSeries`` instance (the predictions `pred_series`).
     intersect
-        A boolean for whether to only consider the time intersection between `series_a` and `series_b`
+        A boolean for whether to only consider the time intersection between `actual_series` and `pred_series`
     q
         Optionally, for predicted stochastic or quantile series, return deterministic quantile values.
         If not `None`, must a tuple with (quantile values,
         `None` if `pred_series` is stochastic else the quantile component names).
     remove_nan_union
-        By setting `remove_non_union` to True, sets all values from `series_a` and `series_b` to `np.nan` at indices
-        where any of the two series contain a NaN value. Only effective when `is_insample=False`.
+        By setting `remove_non_union` to True, sets all values from `actual_series` and `pred_series` to `np.nan` at
+        indices where any of the two series contain a NaN value. Only effective when `is_insample=False`.
     is_insample
-        Whether `series_a` corresponds to the `insample` series for scaled metrics.
+        Whether `actual_series` corresponds to the `insample` series for scaled metrics.
+    is_classification
+        Whether the metric is a classification metric. If `True`, the values are processed as class labels.
+        If `pred_series` contains class probabilities, it will extract the class label with the highest
+        probability for each time step and component.
+        If `pred_series` contains sampled class labels, it will extract the class label with the highest frequency.
+        If `pred_series` is deterministic and has the same number of components as `actual_series`, it will return the
+        class labels as is.
 
     Raises
     ------
@@ -534,29 +533,36 @@ def _get_values_or_raise(
     make_copy = False
     if not is_insample:
         # get the time intersection and values of the two series (corresponds to `actual_series` and `pred_series`
-        if series_a.has_same_time_as(series_b) or not intersect:
-            vals_a_common = series_a.all_values(copy=make_copy)
-            vals_b_common = series_b.all_values(copy=make_copy)
+        if actual_series.has_same_time_as(pred_series) or not intersect:
+            vals_actual_common = actual_series.all_values(copy=make_copy)
+            vals_pred_common = pred_series.all_values(copy=make_copy)
         else:
-            vals_a_common = series_a.slice_intersect_values(series_b, copy=make_copy)
-            vals_b_common = series_b.slice_intersect_values(series_a, copy=make_copy)
+            vals_actual_common = actual_series.slice_intersect_values(
+                pred_series, copy=make_copy
+            )
+            vals_pred_common = pred_series.slice_intersect_values(
+                actual_series, copy=make_copy
+            )
 
         vals_b = _get_values(
-            vals=vals_b_common,
-            vals_components=series_b.components,
-            actual_components=series_a.components,
+            vals=vals_pred_common,
+            vals_components=pred_series.components,
+            actual_components=actual_series.components,
             q=q,
+            is_classification=is_classification,
         )
     else:
         # for `insample` series we extract only values up until before start of `pred_series`
-        # find how many steps `insample` overlaps into `series_b`
+        # find how many steps `insample` overlaps into `pred_series`
         end = (
             n_steps_between(
-                end=series_b.start_time(), start=series_a.end_time(), freq=series_a.freq
+                end=pred_series.start_time(),
+                start=actual_series.end_time(),
+                freq=actual_series.freq,
             )
             - 1
         )
-        if end > 0 or abs(end) >= len(series_a):
+        if end > 0 or abs(end) >= len(actual_series):
             raise_log(
                 ValueError(
                     "The `insample` series must start before the `pred_series` and "
@@ -565,12 +571,12 @@ def _get_values_or_raise(
                 logger=logger,
             )
         end = end or None
-        vals_a_common = series_a.all_values(copy=make_copy)[:end]
+        vals_actual_common = actual_series.all_values(copy=make_copy)[:end]
         vals_b = None
     vals_a = _get_values(
-        vals=vals_a_common,
-        vals_components=series_a.components,
-        actual_components=series_a.components,
+        vals=vals_actual_common,
+        vals_components=actual_series.components,
+        actual_components=actual_series.components,
         q=([0.5], None),
     )
 
@@ -609,6 +615,80 @@ def _get_quantile_intervals(
     # - `q_interval` holds (lower q, upper q) in that order
     q_idx = np.searchsorted(q, q_interval.flatten()).reshape(q_interval.shape)
     return vals[:, :, q_idx[:, 0]], vals[:, :, q_idx[:, 1]]
+
+
+def _mode(vals: np.ndarray) -> np.ndarray:
+    """Computes the mode (value with the highest frequency) of a 1D numpy array.
+
+    Parameters
+    ----------
+    arr
+        A numpy array representing the predicted samples of a specific time step and component.
+    """
+    vals, cnts = np.unique(vals, return_counts=True)
+    return vals[cnts.argmax()]
+
+
+def _get_highest_count_label(vals: np.ndarray) -> np.ndarray:
+    """Computes the mode (value with the highest frequency) for all time steps and components.
+
+    Parameters
+    ----------
+    vals
+        A numpy array with predicted class label samples of shape (n times, n components, n samples).
+    """
+    return np.apply_along_axis(func1d=_mode, axis=SMPL_AX, arr=vals).reshape(
+        vals.shape[:SMPL_AX] + (1,)
+    )
+
+
+def _get_highest_probability_label(
+    vals: np.ndarray,
+    vals_components: Sequence[str],
+    actual_components: Sequence[str],
+) -> np.ndarray:
+    """Computes the class label with highest probability for all time steps and components.
+
+    Parameters
+    ----------
+    vals
+        A numpy array with predicted class label probabilities of shape (n times, n components * n class labels, 1).
+    vals_components
+        The class probability component names, which must follow the naming convention
+        "<component_name: str>_p<label: int>".
+    actual_components
+        The components of the actual TimeSeries.
+    """
+    names_indices_label = []
+    for idx, name in enumerate(vals_components):
+        # format {component_name: unique str}_p{class label: int}
+        name_split = name.split(PROBA_SUFFIX)
+        c_name = PROBA_SUFFIX.join(name_split[:-1])
+        label = name_split[-1]
+        try:
+            label = int(label)
+        except Exception:
+            raise_log(
+                ValueError(
+                    f"Could not parse class label from name: {name}. "
+                    f"The component names must follow the naming convention: '<component_name: str>_p<label: int>'."
+                ),
+            )
+        names_indices_label.append((c_name, idx, label))
+
+    # get label with highest probability for each component and time step
+    comp_labels = np.zeros((len(vals), len(actual_components), 1), dtype=vals.dtype)
+    for comp_idx, component_name in enumerate(actual_components):
+        labels, indices = [], []
+        for name, param_idx, label in names_indices_label:
+            if name == component_name:
+                labels.append(label)
+                indices.append(param_idx)
+
+        comp_labels[:, comp_idx, :] = np.take(
+            labels, np.apply_along_axis(np.argmax, COMP_AX, vals[:, indices])
+        )
+    return comp_labels
 
 
 def _get_wrapped_metric(
@@ -4304,5 +4384,93 @@ def mincs_qr(
             q_interval=q_interval,
             symmetric=symmetric,
         ),
+        axis=TIME_AX,
+    )
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def macc(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Accuracy (MACC).
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+     .. math:: \\frac{1}{T}\\sum_{t=1}^T\\mathbb{I}(y_t = \\hat{y}_t)
+
+    Where :math::`mathbb{I}` is the indicator function.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components,1) without component reduction.
+        For:
+
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+
+    return np.mean(
+        y_true == y_pred,
         axis=TIME_AX,
     )
