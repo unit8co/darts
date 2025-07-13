@@ -47,20 +47,6 @@ METRIC_TYPE = Callable[
 ]
 
 
-def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
-    """
-    This decorator adds support for classification metrics including sanity checks and handling of class
-    probabilities and categorical samples.
-    """
-
-    @wraps(func)
-    def wrapper_interval_support(*args, **kwargs):
-        kwargs["is_classification"] = True
-        return func(*args, **kwargs)
-
-    return wrapper_interval_support
-
-
 def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """
     This decorator adds support for quantile interval metrics with sanity checks, processing, and extraction of
@@ -101,6 +87,20 @@ def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             )
         kwargs["q_interval"] = q_interval
         kwargs["q"] = np.sort(np.unique(q_interval))
+        return func(*args, **kwargs)
+
+    return wrapper_interval_support
+
+
+def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
+    """
+    This decorator adds support for classification metrics including sanity checks and handling of class
+    probabilities and categorical samples.
+    """
+
+    @wraps(func)
+    def wrapper_interval_support(*args, **kwargs):
+        kwargs["is_classification"] = True
         return func(*args, **kwargs)
 
     return wrapper_interval_support
@@ -280,83 +280,6 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     univariate metrics using a `component_reduction` subroutine passed as argument to the metric function.
     """
 
-    def _regression_handling(actual_series, pred_series, params, kwargs):
-        q, q_comp_names = kwargs.get("q"), None
-        if q is None:
-            # without quantiles, the number of components must match
-            if actual_series.n_components != pred_series.n_components:
-                raise_log(
-                    ValueError(
-                        f"Mismatch between number of components in `actual_series` "
-                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
-                    ),
-                    logger=logger,
-                )
-            # compute median for stochastic predictions
-            if pred_series.is_stochastic:
-                q = np.array([0.5])
-        else:
-            # `q` is required to be a tuple (handled by `multi_ts_support` wrapper)
-            if not isinstance(q, tuple) or not len(q) == 2:
-                raise_log(
-                    ValueError(
-                        "`q` must be of tuple of `(np.ndarray, Optional[pd.Index])` "
-                        "where the (quantile values, optional quantile component names). "
-                        f"Received `q={q}`."
-                    ),
-                    logger=logger,
-                )
-            q, q_comp_names = q
-            if not pred_series.is_stochastic:
-                # quantile component names are required if the predictions are not stochastic (as for stochastic
-                # predictions, the quantiles can be retrieved from the sample dimension for each component)
-                if q_comp_names is None:
-                    q_comp_names = pd.Index(
-                        likelihood_component_names(
-                            components=actual_series.components,
-                            parameter_names=quantile_names(q=q),
-                        )
-                    )
-                if not q_comp_names.isin(pred_series.components).all():
-                    raise_log(
-                        ValueError(
-                            f"Computing a metric with quantile(s) `q={q}` is only supported for probabilistic "
-                            f"`pred_series` (num samples > 1) or `pred_series` containing the predicted "
-                            f"quantiles as columns / components. Either pass a probabilistic `pred_series` or "
-                            f"a series containing the expected quantile components: {q_comp_names.tolist()} "
-                        ),
-                        logger=logger,
-                    )
-
-        if "q" in params:
-            kwargs["q"] = (q, q_comp_names)
-        return kwargs
-
-    def _classification_handling(actual_series, pred_series):
-        # This assumes class probabilities components follow the "<component_name>_p<label>" convention
-        # Note: the correct number of labels per component is not checked here
-        if not pred_series.components.equals(actual_series.components):
-            # "<component_name>_p<label>" -> "<component_name>"
-            predicted_components = (
-                pred_series.components.str.split(PROBA_SUFFIX)
-                .str[:-1]
-                .str.join(PROBA_SUFFIX)
-                .unique()
-            )
-            if not predicted_components.equals(actual_series.components):
-                raise_log(
-                    ValueError(
-                        f"Could not resolve the predicted components for the classification metric. "
-                        f"Mismatch between number of components in `actual_series` "
-                        f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
-                        "If `pred_series` represents class probabilities, it must contain a dedicated component "
-                        "per original component and label following the naming convention `<component_name>_p<label>`. "
-                        f"Original components: {actual_series.components}, predicted components: "
-                        f"{pred_series.components}."
-                    ),
-                    logger=logger,
-                )
-
     @wraps(func)
     def wrapper_multivariate_support(*args, **kwargs) -> METRIC_OUTPUT_TYPE:
         params = signature(func).parameters
@@ -427,6 +350,87 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         return vals
 
     return wrapper_multivariate_support
+
+
+def _regression_handling(actual_series, pred_series, params, kwargs):
+    """Handles the regression metrics input parameters and checks."""
+    q, q_comp_names = kwargs.get("q"), None
+    if q is None:
+        # without quantiles, the number of components must match
+        if actual_series.n_components != pred_series.n_components:
+            raise_log(
+                ValueError(
+                    f"Mismatch between number of components in `actual_series` "
+                    f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
+                ),
+                logger=logger,
+            )
+        # compute median for stochastic predictions
+        if pred_series.is_stochastic:
+            q = np.array([0.5])
+    else:
+        # `q` is required to be a tuple (handled by `multi_ts_support` wrapper)
+        if not isinstance(q, tuple) or not len(q) == 2:
+            raise_log(
+                ValueError(
+                    "`q` must be of tuple of `(np.ndarray, Optional[pd.Index])` "
+                    "where the (quantile values, optional quantile component names). "
+                    f"Received `q={q}`."
+                ),
+                logger=logger,
+            )
+        q, q_comp_names = q
+        if not pred_series.is_stochastic:
+            # quantile component names are required if the predictions are not stochastic (as for stochastic
+            # predictions, the quantiles can be retrieved from the sample dimension for each component)
+            if q_comp_names is None:
+                q_comp_names = pd.Index(
+                    likelihood_component_names(
+                        components=actual_series.components,
+                        parameter_names=quantile_names(q=q),
+                    )
+                )
+            if not q_comp_names.isin(pred_series.components).all():
+                raise_log(
+                    ValueError(
+                        f"Computing a metric with quantile(s) `q={q}` is only supported for probabilistic "
+                        f"`pred_series` (num samples > 1) or `pred_series` containing the predicted "
+                        f"quantiles as columns / components. Either pass a probabilistic `pred_series` or "
+                        f"a series containing the expected quantile components: {q_comp_names.tolist()} "
+                    ),
+                    logger=logger,
+                )
+
+    if "q" in params:
+        kwargs["q"] = (q, q_comp_names)
+    return kwargs
+
+
+def _classification_handling(actual_series, pred_series):
+    """Handles the classification metrics input parameters and checks."""
+    # This assumes class probabilities components follow the "<component_name>_p<label>" convention
+    # Note: the correct number of labels per component is not checked here
+    if not pred_series.components.equals(actual_series.components):
+        # "<component_name>_p<label>" -> "<component_name>"
+        predicted_components = (
+            pred_series.components.str.split(PROBA_SUFFIX)
+            .str[:-1]
+            .str.join(PROBA_SUFFIX)
+            .unique()
+        )
+        if not predicted_components.equals(actual_series.components):
+            raise_log(
+                ValueError(
+                    f"Could not resolve the predicted components for the classification metric. "
+                    f"Mismatch between number of components in `actual_series` "
+                    f"(n={actual_series.width}) and `pred_series` (n={pred_series.width})."
+                    "If `pred_series` represents class probabilities, it must contain a dedicated component "
+                    "per original component and label following the naming convention `<component_name>_p<label>`. "
+                    f"Original components: {actual_series.components}, predicted components: "
+                    f"{pred_series.components}."
+                ),
+                logger=logger,
+            )
 
 
 def _get_values(

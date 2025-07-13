@@ -71,6 +71,7 @@ For Dynamic Time Warping (DTW) (aggregated over time):
 """
 
 from darts.metrics.metrics import (
+    acc,
     ae,
     ape,
     arre,
@@ -112,6 +113,7 @@ from darts.metrics.metrics import (
 
 ALL_METRICS = {
     ae,
+    acc,
     ape,
     arre,
     ase,
@@ -152,6 +154,7 @@ ALL_METRICS = {
 
 TIME_DEPENDENT_METRICS = {
     ae,
+    acc,
     ape,
     arre,
     ase,
@@ -216,5 +219,6 @@ __all__ = [
     "mic",
     "incs_qr",
     "mincs_qr",
+    "acc",
     "macc",
 ]
