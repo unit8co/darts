@@ -79,6 +79,7 @@ from darts.metrics.metrics import (
     coefficient_of_variation,
     dtw_metric,
     err,
+    f1_score,
     ic,
     incs_qr,
     iw,
@@ -150,6 +151,7 @@ ALL_METRICS = {
     incs_qr,
     mincs_qr,
     macc,
+    f1_score,
 }
 
 TIME_DEPENDENT_METRICS = {
@@ -221,4 +223,5 @@ __all__ = [
     "mincs_qr",
     "acc",
     "macc",
+    "f1_score",
 ]

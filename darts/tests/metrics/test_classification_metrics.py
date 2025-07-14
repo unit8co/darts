@@ -1,20 +1,25 @@
+import itertools
+
 import numpy as np
 import pytest
 
+import darts.metrics.metrics as metrics
 from darts import TimeSeries
-from darts.metrics.metrics import (
-    _get_highest_count_label,
-    _get_highest_probability_label,
-    _mode,
-    macc,
-)
 
 
 class TestClassificationMetrics:
     np.random.seed(42)
 
-    @pytest.mark.parametrize("is_sampled", [True, False])
-    def test_probabilistic_metric(self, is_sampled):
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [True, False],
+            [(metrics.f1_score, [1.0, 5 / 12]), (metrics.macc, [1.0, 0.5])],
+        ),
+    )
+    def test_probabilistic_metric(self, config):
+        is_sampled, (metric, expected_scores) = config
+        expected_scores = np.array(expected_scores)
         comp1_labels = [2, 4]
         comp1_probas = np.array([
             [0.1, 0.9],
@@ -48,6 +53,8 @@ class TestClassificationMetrics:
                 )
 
         # predicted labels are comp1: [4, 4, 2, 2], comp2: [4, 1, 3, 4]
+        # TODO: check against sklearn f1
+
         y_pred = TimeSeries.from_values(vals, names)
         y_true = TimeSeries.from_values(
             np.array([
@@ -58,23 +65,23 @@ class TestClassificationMetrics:
         )
 
         # without component reduction
-        np.testing.assert_array_equal(
-            macc(
+        np.testing.assert_array_almost_equal(
+            metric(
                 y_true,
                 y_pred,
                 component_reduction=None,
             ),
-            np.array([1.0, 0.5]),  # comp1: 1.0, comp2: 0.5
+            expected_scores,
         )
 
         # with mean component reduction
-        np.testing.assert_array_equal(
-            macc(
+        np.testing.assert_array_almost_equal(
+            metric(
                 y_true,
                 y_pred,
                 component_reduction=np.mean,
             ),
-            np.array(0.75),
+            np.mean(expected_scores),
         )
 
     def test_wrong_pred_component_names(self):
@@ -86,12 +93,12 @@ class TestClassificationMetrics:
             values=np.array([[4, 3]]),
             columns=["comp0", "comp1"],
         )
-        assert macc(y_true, y_pred) == 1.0
+        assert metrics.macc(y_true, y_pred) == 1.0
 
         # pred components should have names ["comp0*", "comp1*"]
         y_pred._components = y_pred._components.str.replace("comp0", "comp3")
         with pytest.raises(ValueError) as err:
-            macc(y_true, y_pred)
+            metrics.macc(y_true, y_pred)
         assert str(err.value).startswith(
             "Could not resolve the predicted components for the classification metric"
         )
@@ -108,7 +115,7 @@ class TestClassificationMetrics:
 
         # pred should have 3 components
         with pytest.raises(ValueError) as err:
-            macc(y_true, y_pred)
+            metrics.macc(y_true, y_pred)
         assert str(err.value).startswith(
             "Could not resolve the predicted components for the classification metric"
         )
@@ -125,7 +132,7 @@ class TestClassificationMetrics:
 
         # pred should have 3 components
         with pytest.raises(ValueError) as err:
-            macc(y_true, y_pred)
+            metrics.macc(y_true, y_pred)
         assert str(err.value).startswith(
             "Could not parse class label from name: comp0_p2.5"
         )
@@ -133,44 +140,44 @@ class TestClassificationMetrics:
     def test_mode(self):
         # Test with a simple list of integers
         data = np.array([2, 1, 2, 3, 4])
-        assert _mode(data) == 2
+        assert metrics._mode(data) == 2
 
         # Test with a list of strings
         data = np.array(["apple", "banana", "apple", "orange"])
-        assert _mode(data) == "apple"
+        assert metrics._mode(data) == "apple"
 
         # Test with a list where all elements are unique; gives first element with highest count
         data = np.array([1, 2, 3, 4])
-        assert _mode(data) == 1
+        assert metrics._mode(data) == 1
 
     def test_get_highest_count_label_single_step_single_component(self):
         # Test with a simple list of integers
         data = np.array([2, 1, 2, 3, 4]).reshape((1, 1, 5))
-        res = _get_highest_count_label(data)
+        res = metrics._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.all(res == 2)
 
         # Test with a list of integers with NaN values
         data = np.array([2, 1, 2, np.nan, 4]).reshape((1, 1, 5))
-        res = _get_highest_count_label(data)
+        res = metrics._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.all(res == 2)
 
         # Test with a list of integers where NaN values have highest count
         data = np.array([2, 1, np.nan, np.nan, 4]).reshape((1, 1, 5))
-        res = _get_highest_count_label(data)
+        res = metrics._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.isnan(res)
 
         # Test with a list of strings
         data = np.array(["apple", "banana", "apple", "orange"]).reshape((1, 1, 4))
-        res = _get_highest_count_label(data)
+        res = metrics._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.all(res == "apple")
 
         # Test with a list where all elements are unique; gives lowest value element with highest count
         data = np.array([4, 1, 3, 2]).reshape((1, 1, 4))
-        res = _get_highest_count_label(data)
+        res = metrics._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.all(res == 1)
 
@@ -181,7 +188,7 @@ class TestClassificationMetrics:
             [[1, 2, 3, 4, 5], [2, 5, 5, 4, 4]],
             [[-1, 0, 0, -1, 5], [0, 0, 0, 0, 0]],
         ])
-        res = _get_highest_count_label(data)
+        res = metrics._get_highest_count_label(data)
         assert res.shape == (3, 2, 1)
         assert np.all(
             res
@@ -195,25 +202,31 @@ class TestClassificationMetrics:
     def test_get_highest_probability_label_single_step_single_component(self):
         # Test with a binary labels
         data = np.array([0.1, 0.9]).reshape((1, 2, 1))
-        res = _get_highest_probability_label(data, ["a_p0", "a_p1"], ["a"])
+        res = metrics._get_highest_probability_label(data, ["a_p0", "a_p1"], ["a"])
         assert res.shape == (1, 1, 1)
         assert np.all(res == 1)
 
         # Test with three labels and unsorted label names
         data = np.array([0.1, 0.8, 0.1]).reshape((1, 3, 1))
-        res = _get_highest_probability_label(data, ["a_p0", "a_p2", "a_p1"], ["a"])
+        res = metrics._get_highest_probability_label(
+            data, ["a_p0", "a_p2", "a_p1"], ["a"]
+        )
         assert res.shape == (1, 1, 1)
         assert np.all(res == 2)
 
         # Test with three labels where two labels have the highest probability (returns the first one)
         data = np.array([0.4, 0.2, 0.4]).reshape((1, 3, 1))
-        res = _get_highest_probability_label(data, ["a_p3", "a_p2", "a_p1"], ["a"])
+        res = metrics._get_highest_probability_label(
+            data, ["a_p3", "a_p2", "a_p1"], ["a"]
+        )
         assert res.shape == (1, 1, 1)
         assert np.all(res == 3)
 
         with pytest.raises(ValueError) as err:
             # label cannot be converted to integer
-            _get_highest_probability_label(data, ["a_p3", "a_p2.0", "a_p1"], ["a"])
+            metrics._get_highest_probability_label(
+                data, ["a_p3", "a_p2.0", "a_p1"], ["a"]
+            )
         assert str(err.value).startswith(
             "Could not parse class label from name: a_p2.0"
         )
@@ -225,7 +238,7 @@ class TestClassificationMetrics:
             [[0.3], [0.7], [0.4], [0.5], [0.1]],
             [[0.5], [0.5], [0.2], [0.0], [0.8]],
         ])
-        res = _get_highest_probability_label(
+        res = metrics._get_highest_probability_label(
             data, ["a_p0", "a_p1", "b_p5", "b_p4", "b_p1"], ["a", "b"]
         )
         assert res.shape == (3, 2, 1)
