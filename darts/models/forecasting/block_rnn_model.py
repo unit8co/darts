@@ -170,33 +170,22 @@ class _BlockRNNModule(CustomBlockRNNModule):
 
         # Should the output of the future cov projection should have hidden_dim dimension or
         # n_future_cov dimension (input_size) ?
-        if self.future_cov_integ == "concat":
-            self.future_cov_proj_cat = nn.Linear(
-                self.future_cov_dim * self.out_len, self.future_cov_dim
-            )
-            last = self.hidden_dim + self.future_cov_dim
-        elif self.future_cov_integ == "nf":
+
+        if self.future_cov_dim > 0:
             self.upsampling_out = nn.Linear(self.input_chunk_length, self.out_len)
             last = (
                 (self.hidden_dim + self.future_cov_dim)
                 if self.future_cov_dim > 0
                 else self.hidden_dim
             )
+            out_dim = self.nr_params * self.target_size
         else:
-            if self.future_cov_integ == "add":
-                self.future_cov_proj_add = nn.Linear(
-                    self.future_cov_dim * self.out_len,
-                    self.out_len * self.target_size * self.nr_params,
-                )
             last = self.hidden_dim
+            out_dim = self.out_len * self.target_size * self.nr_params
 
         # The RNN module is followed by a fully connected layer, which maps the last hidden layer
         # to the output of desired length
         feats = []
-        if self.future_cov_integ == "nf":
-            out_dim = self.nr_params * self.target_size
-        else:
-            out_dim = self.out_len * self.target_size * self.nr_params
         for index, feature in enumerate(self.num_layers_out_fc + [out_dim]):
             feats.append(nn.Linear(last, feature))
 
@@ -212,15 +201,16 @@ class _BlockRNNModule(CustomBlockRNNModule):
         x_past, x_future, x_static = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         if x_future is not None:
-            if self.future_cov_integ != "nf":
-                start_future_cov = x_past.size(-1) - self.future_cov_dim
-                full_future_cov = torch.cat(
-                    [x_past[:, 1:, start_future_cov:], x_future[:, :1, :]], dim=1
-                )
-                x_past[:, :, start_future_cov:] = full_future_cov
-        if x_static is not None:
-            x_past = torch.cat([x_past, x_static], dim=-1)
+            start_future_cov = x_past.size(-1) - self.future_cov_dim
+            full_future_cov = torch.cat(
+                [x_past[:, 1:, start_future_cov:], x_future[:, :1, :]], dim=1
+            )
+            x_past[:, :, start_future_cov:] = full_future_cov
+
         batch_size = x_past.size(0)
+        if x_static is not None:
+            x_static = x_static.reshape(batch_size, -1)
+            x_past = torch.concat([x_past, x_static], dim=-1)
 
         # out is of size (batch_size, input_chunk_length, hidden_dim)
         # hidden is of size (num_layers, batch_size, hidden_dim)
@@ -228,25 +218,13 @@ class _BlockRNNModule(CustomBlockRNNModule):
 
         """ Here, we apply the FC network only on the last output point (at the last time step)
         """
-        if self.name == "LSTM":
-            hidden = hidden[0]
-        if self.future_cov_integ == "nf":
-            out = out.permute(0, 2, 1)
-            out = self.upsampling_out(out)
-            predictions = out.permute(0, 2, 1)
-            if x_future is not None:
-                predictions = torch.cat([predictions, x_future], dim=-1)
-        else:
-            predictions = hidden[-1, :, :]
-        if self.future_cov_integ == "concat":
-            x_future = x_future.reshape(batch_size, -1)
-            x_future = self.future_cov_proj_cat(x_future)
-            predictions = torch.cat([predictions, x_future], dim=1)
+        out = out.permute(0, 2, 1)
+        out = self.upsampling_out(out)
+        predictions = out.permute(0, 2, 1)
+        if x_future is not None:
+            predictions = torch.cat([predictions, x_future], dim=-1)
         predictions = self.fc(predictions)
-        if self.future_cov_integ == "add":
-            x_future = x_future.reshape(batch_size, -1)
-            encoded_cov = self.future_cov_proj_add(x_future)
-            predictions += encoded_cov
+
         predictions = predictions.view(
             batch_size, self.out_len, self.target_size, self.nr_params
         )
