@@ -14,12 +14,12 @@ import numpy as np
 import pandas as pd
 from catboost import CatBoostRegressor, Pool
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
     SKLearnModelWithCategoricalCovariates,
     _QuantileModelContainer,
 )
-from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
     _check_likelihood,
@@ -132,8 +132,7 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
-            Control the randomness in the fitting procedure and for sampling.
-            Default: ``None``.
+            Controls the randomness for reproducible forecasting.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model
             is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
@@ -193,7 +192,6 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
-        self._model_container = None
 
         # parse likelihood
         if likelihood is not None:
@@ -208,12 +206,10 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
                 # RMSEWithUncertainty returns mean and variance which is equivalent to gaussian
                 likelihood = "gaussian"
 
-            if likelihood == "quantile":
-                self._model_container = _QuantileModelContainer()
-            else:
+            if likelihood != "quantile":
                 self.kwargs["loss_function"] = likelihood_map[likelihood]
 
-        self._likelihood = _get_likelihood(
+        likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
@@ -241,6 +237,10 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
 
         # if no loss provided, get the default loss from the model
         self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
+
+        self._likelihood = likelihood
+        if isinstance(likelihood, QuantileRegression):
+            self._model_container = _QuantileModelContainer()
 
     def fit(
         self,
@@ -326,6 +326,7 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
                     verbose=verbose,
                     **kwargs,
                 )
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
             return self
 

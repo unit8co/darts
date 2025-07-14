@@ -2,6 +2,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any, Union
 
 import numpy as np
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers.invertible_data_transformer import (
@@ -150,22 +151,29 @@ class TestInvertibleDataTransformer:
 
             return series.with_values(vals)
 
-    def test_input_transformed_single_series(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True])])
+    def test_input_transformed_single_series(self, component_mask):
         """
         Tests for correct (inverse) transformation of single series.
         """
         test_input = constant_timeseries(value=1, length=10)
+        test_input_copy = test_input.copy()
 
         mock = self.DataTransformerMock(scale=2, translation=10)
 
-        transformed = mock.transform(test_input)
-
+        transformed = mock.transform(test_input, component_mask=component_mask)
         # 2 * 1 + 10 = 12
         expected = constant_timeseries(value=12, length=10)
         assert transformed == expected
+        assert test_input == test_input_copy
 
         # Should get input back:
-        assert mock.inverse_transform(transformed) == test_input
+        transformed_copy = transformed.copy()
+        assert (
+            mock.inverse_transform(transformed, component_mask=component_mask)
+            == test_input
+        )
+        assert transformed == transformed_copy
 
     def test_input_transformed_multiple_series(self):
         """

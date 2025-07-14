@@ -22,11 +22,11 @@ else:
 from sklearn.utils import check_random_state
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
 from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
@@ -106,7 +106,7 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
                 }
             ..
         random_state: int or None
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------

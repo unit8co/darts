@@ -101,7 +101,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
             with `num_samples > 1` or `predict_likelihood_parameters=True`.
         random_state
-            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+            Controls the randomness for reproducible forecasting.
 
         Examples
         --------
@@ -144,7 +144,10 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             target = series.values(copy=False).flatten()
         else:
             # perform OLS and get in-sample residuals
-            self._linreg = LinearRegressionModel(lags_future_covariates=[0])
+            self._linreg = LinearRegressionModel(
+                lags_future_covariates=[0],
+                use_static_covariates=False,
+            )
             self._linreg.fit(series, future_covariates=future_covariates)
             target = self._get_target_residuals(series, future_covariates)
 
@@ -243,6 +246,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             custom_columns=comp_names_out,
             with_static_covs=not predict_likelihood_parameters,
             with_hierarchy=not predict_likelihood_parameters,
+            copy=False,
         )
 
     def _estimator_predict(

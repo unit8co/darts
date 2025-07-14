@@ -53,11 +53,15 @@ class TestMIDAS:
         """
         # to quarter start
         midas_1 = MIDAS(low_freq="QS")
+        monthly_ts_copy = self.monthly_ts.copy()
         quarterly_ts_midas = midas_1.fit_transform(self.monthly_ts)
         assert quarterly_ts_midas == self.quarterly_ts
+        assert self.monthly_ts == monthly_ts_copy
 
+        quarterly_ts_midas_copy = quarterly_ts_midas.copy()
         inversed_quarterly_ts_midas = midas_1.inverse_transform(quarterly_ts_midas)
         assert self.monthly_ts == inversed_quarterly_ts_midas
+        assert quarterly_ts_midas == quarterly_ts_midas_copy
 
         # to quarter end
         midas_2 = MIDAS(low_freq=freqs["QE"])

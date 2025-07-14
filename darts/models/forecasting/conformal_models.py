@@ -136,7 +136,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             `quantiles`). Uses `1` for deterministic models. The actual conformal forecasts can have a different number
             of samples given with parameter `num_samples` in downstream tasks (e.g. predict, historical forecasts, ...).
         random_state
-            Control the randomness of probabilistic conformal forecasts (sample generation) across different runs.
+            Controls the randomness for reproducible forecasting.
         """
         if not isinstance(model, GlobalForecastingModel) or not model._fit_called:
             raise_log(
@@ -772,7 +772,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         sample_weight
             Currently ignored by conformal models.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -997,7 +997,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         values_only
             Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1307,6 +1307,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                     ),
                     with_static_covs=not predict_likelihood_parameters,
                     with_hierarchy=False,
+                    copy=False,
                 )
             else:
                 for idx, pred in inner_iterator:
@@ -1319,6 +1320,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
                         time_index=pred._time_index,
                         with_static_covs=not predict_likelihood_parameters,
                         with_hierarchy=False,
+                        copy=False,
                     )
                     cp_preds.append(cp_pred)
             cp_hfcs.append(cp_preds)

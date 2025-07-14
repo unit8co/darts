@@ -395,12 +395,16 @@ class TestProbabilisticModels:
         else:
             series = self.constant_noisy_ts_short
 
+        series_copy = series.copy()
         # test that two consecutive predictions without random state at `predict()` are different
         model = self.instantiate_model(model_cls, model_kwargs)
         model.fit(series, **fit_kwargs)
         pred1 = model.predict(n=10, num_samples=2).all_values()
         pred2 = model.predict(n=10, num_samples=2).all_values()
         assert (pred2 != pred1).any()
+
+        # check that fit predict did not mutate input series
+        assert series == series_copy
 
         # test that first prediction without same random state at model creation is identical to the previous model
         model = self.instantiate_model(model_cls, model_kwargs)
@@ -440,6 +444,8 @@ class TestProbabilisticModels:
             "forecast_horizon": 10,
             "overlap_end": True,
             "fit_kwargs": fit_kwargs,
+            "retrain": True,
+            "enable_optimization": False,
         }
 
         # test that two consecutive historical forecasts with `retrain=True` and without random state at `predict()`
@@ -477,26 +483,23 @@ class TestProbabilisticModels:
             # test that two consecutive historical forecasts with `retrain=False` and without random state at
             # `predict()` are different
             kwargs_hist_forecast["retrain"] = False
-            pred1 = model.historical_forecasts(
-                **kwargs_hist_forecast, enable_optimization=True
-            ).all_values()
-            pred2 = model.historical_forecasts(
-                **kwargs_hist_forecast, enable_optimization=True
-            ).all_values()
+            kwargs_hist_forecast["enable_optimization"] = True
+            pred1 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
+            pred2 = model.historical_forecasts(**kwargs_hist_forecast).all_values()
             assert (pred2 != pred1).any()
 
             # test whether two consecutive historical forecasts with a random_state specified are the same
             pred3 = model.historical_forecasts(
-                **kwargs_hist_forecast, random_state=38, enable_optimization=True
+                **kwargs_hist_forecast, random_state=38
             ).all_values()
             pred4 = model.historical_forecasts(
-                **kwargs_hist_forecast, random_state=38, enable_optimization=True
+                **kwargs_hist_forecast, random_state=38
             ).all_values()
             assert (pred3 == pred4).all()
 
             # test that another historical forecast with a different random_state specified is different
             pred5 = model.historical_forecasts(
-                **kwargs_hist_forecast, random_state=32, enable_optimization=True
+                **kwargs_hist_forecast, random_state=32
             ).all_values()
             assert (pred4 != pred5).any()
 
@@ -555,7 +558,7 @@ class TestProbabilisticModels:
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
@@ -563,7 +566,7 @@ class TestProbabilisticModels:
         tested_quantiles = [0.3, 0.2, 0.1, 0.01]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 

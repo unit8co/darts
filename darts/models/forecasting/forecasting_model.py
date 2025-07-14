@@ -42,13 +42,12 @@ else:
 import numpy as np
 import pandas as pd
 
-from darts import metrics
+from darts import TimeSeries, metrics
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.metrics import METRIC_TYPE
-from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
@@ -612,6 +611,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             with_static_covs=with_static_covs,
             with_hierarchy=with_hierarchy,
             pred_start=pred_start,
+            copy=False,
         )
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
@@ -835,7 +835,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed per time `series`.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1220,13 +1220,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
                 # to support `predict()`
                 if len(train_series) == 0:
-                    train_series = TimeSeries.from_times_and_values(
+                    train_series = TimeSeries(
                         times=generate_index(
                             start=pred_time - 1 * series_.freq,
                             length=1,
                             freq=series_.freq,
+                            name=series_._time_index.name,
                         ),
                         values=np.array([np.nan]),
+                        copy=False,
                     )
 
                 forecast = model._predict_wrapper(
@@ -1262,14 +1264,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             if last_points_only and last_points_values:
                 forecasts_list.append(
-                    TimeSeries.from_times_and_values(
-                        generate_index(
+                    TimeSeries(
+                        times=generate_index(
                             start=last_points_times[0],
                             end=last_points_times[-1],
                             freq=series_.freq * stride,
+                            name=series_._time_index.name,
                         ),
-                        np.array(last_points_values),
-                        columns=(
+                        values=np.array(last_points_values),
+                        components=(
                             forecast_components
                             if forecast_components is not None
                             else series_.columns
@@ -1285,6 +1288,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             else None
                         ),
                         metadata=series_.metadata,
+                        copy=False,
                     )
                 )
             else:
@@ -1478,7 +1482,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed per time `series`.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1802,7 +1806,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If a string, then the weights are generated using built-in weighting functions. The available options are
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1916,8 +1920,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     sample_weight=sample_weight,
                     **fit_kwargs,
                 )
-                fitted_values = TimeSeries.from_times_and_values(
-                    series.time_index, model.fitted_values
+                fitted_values = TimeSeries(
+                    times=series.time_index,
+                    values=model.fitted_values,
+                    copy=False,
                 )
                 if data_transformers and "series" in data_transformers:
                     fitted_values = _apply_inverse_data_transformers(
@@ -2197,7 +2203,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         values_only
             Whether to return the residuals as `np.ndarray`. If `False`, returns residuals as `TimeSeries`.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -2316,14 +2322,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 elif (q is None and q_interval is None) and res.shape[
                     1
                 ] == fc.n_components:
-                    res = fc.with_values(res)
+                    res = TimeSeries(
+                        times=fc.time_index,
+                        values=res,
+                        components=fc.components,
+                        copy=False,
+                        **fc._attrs,
+                    )
                 else:
                     # quantile (interval) metrics created different number of components;
                     # create new series with unknown components
-                    res = TimeSeries.from_times_and_values(
-                        times=fc._time_index,
+                    res = TimeSeries(
+                        times=fc.time_index,
                         values=res,
-                        columns=comp_names,
+                        components=comp_names,
+                        copy=False,
                     )
                 res_list_out.append(res)
 

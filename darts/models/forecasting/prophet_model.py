@@ -12,11 +12,11 @@ import numpy as np
 import pandas as pd
 import prophet
 
+from darts import TimeSeries
 from darts.logging import execute_and_suppress_output, get_logger, raise_if, raise_log
 from darts.models.forecasting.forecasting_model import (
     FutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
 from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
@@ -135,7 +135,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
             where each number indicates the carrying capacity at this index.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness for reproducible forecasting.
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:

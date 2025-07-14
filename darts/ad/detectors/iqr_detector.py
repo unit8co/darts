@@ -13,10 +13,10 @@ from typing import Union
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.ad.detectors.quantile_detector import QuantileDetector
 from darts.ad.detectors.threshold_detector import ThresholdDetector
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

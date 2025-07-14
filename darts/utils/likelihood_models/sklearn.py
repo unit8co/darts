@@ -371,7 +371,6 @@ class QuantileRegression(SKLearnLikelihood):
         k = x.shape[0]
         model_outputs = []
         for quantile, fitted in model._model_container.items():
-            model.model = fitted
             # model output has shape (n_series * n_samples, output_chunk_length, n_components)
             model_output = fitted.predict(x, **kwargs).reshape(k, self._n_outputs, -1)
             model_outputs.append(model_output)

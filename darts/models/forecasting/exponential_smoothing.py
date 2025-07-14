@@ -9,9 +9,9 @@ import numpy as np
 import statsmodels.tsa.holtwinters as hw
 from sklearn.utils import check_random_state
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
-from darts.timeseries import TimeSeries
 from darts.utils.utils import ModelMode, SeasonalityMode, random_method
 
 logger = get_logger(__name__)
@@ -64,7 +64,7 @@ class ExponentialSmoothing(LocalForecastingModel):
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
         random_state
-            Controls the model randomness for reproducible forecasting.
+            Controls the randomness for reproducible forecasting.
         kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing()`.
