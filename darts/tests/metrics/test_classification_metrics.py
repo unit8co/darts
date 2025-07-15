@@ -2,6 +2,7 @@ import itertools
 
 import numpy as np
 import pytest
+import sklearn.metrics as sklearn_metrics
 
 import darts.metrics.metrics as metrics
 from darts import TimeSeries
@@ -13,21 +14,39 @@ class TestClassificationMetrics:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [True, False],
-            [(metrics.f1_score, [1.0, 5 / 12]), (metrics.macc, [1.0, 0.5])],
+            [0, 1, 2],  # deterministic labels, class probabilities, sampled labels
+            [
+                (
+                    metrics.confusion_matrix,
+                    sklearn_metrics.confusion_matrix,
+                    {"labels": [1, 2, 3, 4]},
+                    np.nansum,
+                ),
+                (
+                    metrics.f1_score,
+                    sklearn_metrics.f1_score,
+                    {"average": "macro"},
+                    np.nanmean,
+                ),
+                (
+                    metrics.macc,
+                    sklearn_metrics.accuracy_score,
+                    {},
+                    np.nanmean,
+                ),
+            ],
         ),
     )
-    def test_probabilistic_metric(self, config):
-        is_sampled, (metric, expected_scores) = config
-        expected_scores = np.array(expected_scores)
-        comp1_labels = [2, 4]
+    def test_classification_metric(self, config):
+        method, (metric, skl_metric, skl_kwargs, comp_reduction) = config
+        comp1_labels = np.array([2, 4])
         comp1_probas = np.array([
             [0.1, 0.9],
             [0.4, 0.6],
             [0.9, 0.1],
             [0.7, 0.3],
         ])
-        comp2_labels = [1, 3, 4]
+        comp2_labels = np.array([1, 3, 4])
         comp2_probas = np.array([
             [0.3, 0.2, 0.5],
             [0.6, 0.1, 0.3],
@@ -35,7 +54,17 @@ class TestClassificationMetrics:
             [0.3, 0.1, 0.6],
         ])
 
-        if not is_sampled:
+        if method == 0:
+            # deterministic class labels
+            names = ["comp1", "comp2"]
+            vals = np.concatenate(
+                [
+                    comp1_labels[np.argmax(comp1_probas, axis=1), None],
+                    comp2_labels[np.argmax(comp2_probas, axis=1), None],
+                ],
+                axis=1,
+            )
+        elif method == 1:
             # class probabilities
             names = ["comp1_p2", "comp1_p4", "comp2_p1", "comp2_p3", "comp2_p4"]
             vals = np.concatenate([comp1_probas, comp2_probas], axis=1)
@@ -53,8 +82,6 @@ class TestClassificationMetrics:
                 )
 
         # predicted labels are comp1: [4, 4, 2, 2], comp2: [4, 1, 3, 4]
-        # TODO: check against sklearn f1
-
         y_pred = TimeSeries.from_values(vals, names)
         y_true = TimeSeries.from_values(
             np.array([
@@ -64,14 +91,27 @@ class TestClassificationMetrics:
             ["comp1", "comp2"],
         )
 
+        # get predicted labels with highest probability / frequency
+        y_true_vals, y_pred_vals = metrics._get_values_or_raise(
+            y_true, y_pred, True, remove_nan_union=False, is_classification=True
+        )
+
+        # compare with sklearn metrics
+        scores_expected = np.array([
+            skl_metric(y_true_vals[:, i], y_pred_vals[:, i], **skl_kwargs)
+            for i in range(y_true_vals.shape[1])
+        ])
         # without component reduction
+        scores_actual = metric(
+            y_true,
+            y_pred,
+            component_reduction=None,
+        )
+        # replace NaNs with 0.0 to compare with sklearn metrics
+        scores_actual[np.isnan(scores_actual)] = 0.0
         np.testing.assert_array_almost_equal(
-            metric(
-                y_true,
-                y_pred,
-                component_reduction=None,
-            ),
-            expected_scores,
+            scores_actual,
+            scores_expected,
         )
 
         # with mean component reduction
@@ -79,9 +119,8 @@ class TestClassificationMetrics:
             metric(
                 y_true,
                 y_pred,
-                component_reduction=np.mean,
             ),
-            np.mean(expected_scores),
+            comp_reduction(scores_expected, axis=0),
         )
 
     def test_wrong_pred_component_names(self):

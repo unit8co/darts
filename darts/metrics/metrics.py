@@ -288,10 +288,14 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         pred_series = args[1]
         num_series_in_args = 2
 
-        if kwargs.pop("is_classification", False):
+        is_classification = kwargs.pop("is_classification", False)
+        if is_classification:
             _classification_handling(actual_series, pred_series)
+            # confusion matrix is special; returns 4 # dimensions: (1, n components, n labels, n labels)
+            is_confusion_matrix = func.__name__ == "confusion_matrix"
         else:
             kwargs = _regression_handling(actual_series, pred_series, params, kwargs)
+            is_confusion_matrix = False
 
         # handle `insample` parameters for scaled metrics
         input_series = (actual_series, pred_series)
@@ -309,18 +313,25 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             num_series_in_args += 1
 
         vals = func(*input_series, *args[num_series_in_args:], **kwargs)
-        # bring vals to shape (n_time, n_comp, n_quantile)
-        if not 2 <= len(vals.shape) <= 3:
-            raise_log(
-                ValueError(
-                    "Metric output must have 2 dimensions (n components, n quantiles) "
-                    "for aggregated metrics (e.g. `mae()`, ...), "
-                    "or 3 dimension (n times, n components, n quantiles)  "
-                    "for time dependent metrics (e.g. `ae()`, ...)"
-                ),
-                logger=logger,
-            )
-        if len(vals.shape) == 2:
+        # bring vals to shape (n time, n components, *QL); *QL stands for quantile or class label dimensions
+        n_dims = len(vals.shape)
+        if not 2 <= n_dims <= 3:
+            if n_dims == 4 and is_confusion_matrix:
+                # confusion matrix returns 4 # dimensions: (1, n components, n labels, n labels)
+                pass
+            else:
+                raise_log(
+                    ValueError(
+                        "Metric output must have 2 dimensions (n components, n quantiles or n labels) "
+                        "for aggregated metrics (e.g. `mae()`, ...), "
+                        "or 3 dimensions (n times, n components, n quantiles or n labels)  "
+                        "for time dependent metrics (e.g. `ae()`, ...)"
+                    ),
+                    logger=logger,
+                )
+
+        if n_dims == 2:
+            # quantile metrics aggregated over time -> (1, n components, *QL)
             vals = np.expand_dims(vals, TIME_AX)
 
         time_reduction = _get_reduction(
@@ -331,7 +342,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             sanity_check=False,
         )
         if time_reduction is not None:
-            # -> (1, n_comp, n_quantile)
+            # -> (1, n components, *QL)
             vals = np.expand_dims(time_reduction(vals, axis=TIME_AX), axis=TIME_AX)
 
         component_reduction = _get_reduction(
@@ -342,10 +353,10 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             sanity_check=False,
         )
         if component_reduction is not None:
-            # -> (*, n_quantile)
+            # -> (n time, *QL)
             vals = component_reduction(vals, axis=COMP_AX)
-        else:
-            # -> (*, n_comp * n_quantile), with order [c0_q0, c0_q1, ... c1_q0, c1_q1, ...]
+        elif not is_confusion_matrix:
+            # -> (n time, n components * n QL), with order [c0_q0, c0_q1, ... c1_q0, c1_q1, ...]
             vals = vals.reshape(vals.shape[0], -1)
         return vals
 
@@ -4569,13 +4580,131 @@ def macc(
     )
 
 
-def _unique_labels(y_true, y_pred):
+def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     labels = []
     for comp_idx in range(y_true.shape[1]):
         labels_true = np.unique(y_true[:, comp_idx])
         labels_pred = np.unique(y_pred[:, comp_idx])
         labels.append(np.unique(np.concatenate([labels_true, labels_pred])))
     return labels
+
+
+def _confusion_matrix(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    labels: Optional[np.ndarray] = None,
+) -> np.ndarray:
+    """Computes a confusion matrix using numpy for two np.arrays `y_true` and `y_pred`."""
+    n_comps = y_true.shape[COMP_AX]
+
+    labels = labels or np.unique(np.concatenate([y_true, y_pred]))
+    comp_labels = _unique_labels(y_true, y_pred)
+
+    n_labels = len(labels)
+    label_to_index = {label: idx for idx, label in enumerate(labels)}
+
+    conf_matrix = np.zeros(
+        shape=(
+            1,  # for time dimension
+            n_comps,
+            n_labels,
+            n_labels,
+        ),
+        dtype=y_true.dtype,
+    )
+    # fill the confusion matrix
+    for comp_idx in range(n_comps):
+        for label in labels:
+            if label not in comp_labels[comp_idx]:
+                conf_matrix[0, comp_idx, label_to_index[label], :] = np.nan
+                conf_matrix[0, comp_idx, :, label_to_index[label]] = np.nan
+
+        for t_i, p_i in zip(y_true[:, comp_idx, 0], y_pred[:, comp_idx, 0]):
+            conf_matrix[0, comp_idx, label_to_index[t_i], label_to_index[p_i]] += 1
+    return conf_matrix
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def confusion_matrix(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nansum,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Accuracy (MACC).
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+     .. math:: \\frac{1}{T}\\sum_{t=1}^T\\mathbb{I}(y_t = \\hat{y}_t)
+
+    Where :math::`mathbb{I}` is the indicator function.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components,) without component reduction.
+        For:
+
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+    return _confusion_matrix(y_true, y_pred)
 
 
 @classification_support
@@ -4674,6 +4803,6 @@ def f1_score(
             fn = np.sum((y_pred_i != label) & (y_true_i == label))
 
             # accumulate F1 scores over all classes
-            score += 2 * tp / (2 * (tp + fp + fn))
-        scores.append([score / len(labels)])
+            score += 2 * tp / (2 * tp + fp + fn)
+        scores.append([score / len(labels_i)])
     return np.array(scores, dtype=y_true.dtype)
