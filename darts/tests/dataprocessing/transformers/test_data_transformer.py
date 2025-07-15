@@ -14,13 +14,15 @@ class TestDataTransformer:
     col_1 = series1.columns
 
     def test_scaling(self):
-        self.series3 = self.series1[:1]
+        series3 = self.series1[:1]
+        input_series_copy = [s.copy() for s in [self.series1, self.series2, series3]]
         transformer1 = Scaler(MinMaxScaler(feature_range=(0, 2)))
         transformer2 = Scaler(StandardScaler())
 
         series1_tr1 = transformer1.fit_transform(self.series1)
         series1_tr2 = transformer2.fit_transform(self.series1)
-        series3_tr2 = transformer2.transform(self.series3)
+        series3_tr2 = transformer2.transform(series3)
+        tr_series_copy = [s.copy() for s in [series1_tr1, series1_tr2, series3_tr2]]
 
         # should have the defined name above
         assert self.series1.columns[0] == "series1"
@@ -42,6 +44,9 @@ class TestDataTransformer:
         )
         assert series1_recovered.width == self.series1.width
         assert series3_recovered == series1_recovered[:1]
+
+        assert [self.series1, self.series2, series3] == input_series_copy
+        assert [series1_tr1, series1_tr2, series3_tr2] == tr_series_copy
 
     def test_multi_ts_scaling(self):
         transformer1 = Scaler(MinMaxScaler(feature_range=(0, 2)))

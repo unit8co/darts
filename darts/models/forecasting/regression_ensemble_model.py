@@ -8,12 +8,12 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 from collections.abc import Sequence
 from typing import Optional, Union
 
+from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.sklearn_model import SKLearnModel
-from darts.timeseries import TimeSeries, concatenate
 from darts.utils.ts_utils import seq2series, series2seq
 
 logger = get_logger(__name__)

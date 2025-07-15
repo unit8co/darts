@@ -11,13 +11,13 @@ from typing import Optional, Union
 import torch
 import torch.nn as nn
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
-from darts.timeseries import TimeSeries
 from darts.utils.data import ShiftedTorchTrainingDataset
 from darts.utils.data.torch_datasets.utils import (
     PLModuleInput,

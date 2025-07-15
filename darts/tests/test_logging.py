@@ -4,7 +4,6 @@ import re
 import numpy as np
 import pandas as pd
 import pytest
-import xarray as xr
 from testfixtures import LogCapture
 
 from darts import TimeSeries
@@ -51,21 +50,20 @@ def test_raise_if_not():
     assert exception_was_raised
 
 
-def test_timeseries_constructor_error_log():
+def test_timeseries_constructor_error_log(caplog):
     # test assert error log when trying to construct a TimeSeries that is too short
-    empty_series = pd.DataFrame()
-    with LogCapture() as lc:
-        get_logger("darts.timeseries").handlers = []
-        try:
-            TimeSeries(xr.DataArray(empty_series))
-        except Exception:
-            pass
+    array_4d = np.zeros((10, 3, 1, 1))
 
-    lc.check((
-        "darts.timeseries",
-        "ERROR",
-        "ValueError: TimeSeries require DataArray of dimensionality 3 (('time', 'component', 'sample')).",
-    ))
+    with caplog.at_level(logging.ERROR):
+        with pytest.raises(ValueError) as exc:
+            _ = TimeSeries.from_values(values=array_4d)
+
+    message_expected = (
+        "TimeSeries require a `values` array that has or can be expanded to 3 "
+        "dimensions (('time', 'component', 'sample'))."
+    )
+    assert str(exc.value) == message_expected
+    assert f"ValueError: {message_expected}" in caplog.text
 
 
 def test_timeseries_split_error_log():

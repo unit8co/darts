@@ -246,6 +246,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
             custom_columns=comp_names_out,
             with_static_covs=not predict_likelihood_parameters,
             with_hierarchy=not predict_likelihood_parameters,
+            copy=False,
         )
 
     def _estimator_predict(

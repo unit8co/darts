@@ -17,11 +17,11 @@ import pandas as pd
 from sklearn.utils import check_random_state
 from statsmodels.tsa.api import VARMAX as staVARMA
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting.forecasting_model import (
     TransferableFutureCovariatesLocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
 from darts.utils.utils import random_method
 
 logger = get_logger(__name__)
