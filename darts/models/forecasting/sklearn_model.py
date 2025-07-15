@@ -827,7 +827,7 @@ class SKLearnModel(GlobalForecastingModel):
             stride will be applied to both the training and evaluation set (if supplied and supported). This should be
             used with caution as it might introduce bias in the forecasts.
         verbose
-            Optionally, set the prediction verbosity. Not effective for all models.
+            Optionally, set the fit verbosity. Not effective for all models.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """

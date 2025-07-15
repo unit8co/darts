@@ -2978,7 +2978,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             covariates are provided they must have the same number of components. If `future_covariates` is provided,
             it must contain the same number of series as `series`.
         verbose
-            Optionally, set the prediction verbosity. Not effective for all models.
+            Optionally, set the fit verbosity. Not effective for all models.
 
         Returns
         -------
@@ -3199,7 +3199,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             some models as an input. It must contain at least the same time steps/indices as the target `series`.
             If it is longer than necessary, it will be automatically trimmed.
         verbose
-            Optionally, set the prediction verbosity. Not effective for all models.
+            Optionally, set the fit verbosity. Not effective for all models.
 
         Returns
         -------

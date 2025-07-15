@@ -279,7 +279,7 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
         verbose
-            Optionally, set the prediction verbosity. Not effective for all models.
+            Optionally, set the fit verbosity. Not effective for all models.
          **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
