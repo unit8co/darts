@@ -348,6 +348,7 @@ class NaiveEnsembleModel(EnsembleModel):
                     sample_weight=sample_weight
                     if model.supports_sample_weight
                     else None,
+                    verbose=verbose,
                 )
         return self
 
