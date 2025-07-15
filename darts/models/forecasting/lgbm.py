@@ -301,6 +301,7 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    verbose=verbose,
                     **kwargs,
                 )
                 self._model_container[quantile] = self.model
@@ -317,6 +318,7 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            verbose=verbose,
             **kwargs,
         )
         return self

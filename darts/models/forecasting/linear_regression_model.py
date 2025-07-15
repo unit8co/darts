@@ -217,7 +217,7 @@ class LinearRegressionModel(SKLearnModel):
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        verbose: bool = False,  # TODO needed here?
+        verbose: bool = False,
         **kwargs,
     ):
         likelihood = self.likelihood
@@ -252,6 +252,7 @@ class LinearRegressionModel(SKLearnModel):
                     max_samples_per_ts=max_samples_per_ts,
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
+                    verbose=verbose,
                     **kwargs,
                 )
 
@@ -270,6 +271,7 @@ class LinearRegressionModel(SKLearnModel):
                 max_samples_per_ts=max_samples_per_ts,
                 n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                 sample_weight=sample_weight,
+                verbose=verbose,
                 **kwargs,
             )
 
