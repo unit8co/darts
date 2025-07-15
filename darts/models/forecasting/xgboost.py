@@ -236,6 +236,7 @@ class XGBModel(SKLearnModel):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
+        verbose: bool = False,
         **kwargs,
     ):
         """
@@ -277,8 +278,10 @@ class XGBModel(SKLearnModel):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
         **kwargs
-            Additional kwargs passed to `xgb.XGBRegressor.fit()`, e.g. `verbose`.
+            Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
         # TODO: XGBRegressor supports multi quantile reqression which we could leverage in the future
         #  see https://xgboost.readthedocs.io/en/latest/python/examples/quantile_regression.html
@@ -300,6 +303,7 @@ class XGBModel(SKLearnModel):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    verbose=verbose,
                     **kwargs,
                 )
                 self._model_container[quantile] = self.model
@@ -316,6 +320,7 @@ class XGBModel(SKLearnModel):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            verbose=verbose,
             **kwargs,
         )
         return self

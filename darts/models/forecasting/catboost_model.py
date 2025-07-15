@@ -304,8 +304,6 @@ class CatBoostModel(SKLearnModelWithCategoricalCovariates):
             Additional kwargs passed to `catboost.CatboostRegressor.fit()`
         """
         likelihood = self.likelihood
-        # Mask verbose for CatBoost.fit because SKLearnModel will not pass it otherwise
-        kwargs = kwargs | {"_verbose_fit": verbose}
         if isinstance(likelihood, QuantileRegression):
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()

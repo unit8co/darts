@@ -43,6 +43,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.utils.validation import has_fit_parameter
+import inspect
 
 from darts.logging import (
     get_logger,
@@ -718,6 +719,7 @@ class SKLearnModel(GlobalForecastingModel):
         val_past_covariates: Optional[Sequence[TimeSeries]] = None,
         val_future_covariates: Optional[Sequence[TimeSeries]] = None,
         val_sample_weight: Optional[Union[Sequence[TimeSeries], str]] = None,
+        verbose: bool = False,
         **kwargs,
     ):
         """
@@ -756,12 +758,15 @@ class SKLearnModel(GlobalForecastingModel):
                     "`fit()` method does not support it."
                 )
 
-        # Unmask verbose keyword if models supports it (e.g. catboost)
-        if _verbose_fit := kwargs.pop("_verbose_fit", None) is not None:
-            kwargs["verbose"] = _verbose_fit
+        # only pass "verbose" to to underlying model if it supports it
+        if "verbose" in inspect.signature(self.model.fit).parameters:
+            kwargs["verbose"] = verbose
 
         self.model.fit(
-            training_samples, training_labels, **sample_weight_kwargs, **kwargs
+            training_samples,
+            training_labels,
+            **sample_weight_kwargs,
+            **kwargs,
         )
 
         # generate and store the lagged components names (for feature importance analysis)
@@ -991,6 +996,7 @@ class SKLearnModel(GlobalForecastingModel):
             val_sample_weight=val_sample_weight,
             max_samples_per_ts=max_samples_per_ts,
             stride=stride,
+            verbose=verbose,
             **kwargs,
         )
         return self
@@ -1742,6 +1748,7 @@ class SKLearnModelWithCategoricalCovariates(SKLearnModel, ABC):
         future_covariates,
         max_samples_per_ts,
         sample_weight,
+        verbose: bool = False,
         **kwargs,
     ):
         """
@@ -1768,6 +1775,7 @@ class SKLearnModelWithCategoricalCovariates(SKLearnModel, ABC):
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             sample_weight=sample_weight,
+            verbose=verbose,
             **kwargs,
         )
 
