@@ -37,7 +37,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Fixed some issues in `NLinearModel` with `normalize=True` that resulted in decreased predictive accuracy. Using `shared_weights=True` and auto-regressive forecasting now work properly. [#2757](https://github.com/unit8co/darts/pull/2757) by [Timon Erhart](https://github.com/turbotimon).
 - Fixed a bug when training a `TorchForecastingModel`, where using certain `torchmetrics` that require a 2D model output (e.g. R2Score) raised an error. [He Weilin](https://github.com/cnhwl).
-- Fixed a bug in `historical_forecast`: Argument `verbose` now gets passed `fit` during retrain. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
+- Added parameter `verbose` to `ForecastingModel.fit()` that allows to control the verbosity for model fitting. Ignored if the underlying model does not support it. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
+- Fixed a bug in `historical_forecast` where the `verbose` parameter was not propagated to the the model's `fit()` method. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).  
+2805) by [Timon Erhart](https://github.com/turbotimon).
 
 **Dependencies**
 
