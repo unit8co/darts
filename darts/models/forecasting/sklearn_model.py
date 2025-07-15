@@ -34,6 +34,7 @@ When static covariates are present, they are appended to the lagged features. Wh
 if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.
 """
 
+import inspect
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Sequence
@@ -43,7 +44,6 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LinearRegression
 from sklearn.utils.validation import has_fit_parameter
-import inspect
 
 from darts.logging import (
     get_logger,
