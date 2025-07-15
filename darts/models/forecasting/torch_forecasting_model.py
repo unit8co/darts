@@ -40,6 +40,7 @@ import torch
 from pytorch_lightning import loggers as pl_loggers
 from torch.utils.data import DataLoader
 
+from darts import TimeSeries
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.logging import (
     get_logger,
@@ -53,7 +54,6 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
-from darts.timeseries import TimeSeries
 from darts.utils.data import (
     SequentialTorchInferenceDataset,
     SequentialTorchTrainingDataset,
@@ -223,9 +223,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
@@ -1497,6 +1495,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
@@ -1569,6 +1568,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Default: ``False``.
         show_warnings
             Optionally, control whether warnings are shown. Not effective for all models.
+        random_state
+            Controls the randomness of probabilistic predictions.
 
         Returns
         -------
@@ -1646,6 +1647,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             dataloader_kwargs=dataloader_kwargs,
             mc_dropout=mc_dropout,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
         )
 
         return predictions[0] if called_with_single_series else predictions
@@ -1664,6 +1666,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs: Optional[dict[str, Any]] = None,
         mc_dropout: bool = False,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
         values_only: bool = False,
     ) -> Sequence[TimeSeries]:
         """
@@ -1715,6 +1718,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
             Default: ``False``
+        random_state
+            Controls the randomness of probabilistic predictions.
         values_only
             Whether to return the predicted values only. If `False`, will return `TimeSeries` objects. Otherwise, will
             return a tuple of `(np.ndarray, list[dict[str, Any]], list[Union[pd.Timestamp, int]])`. The first element
@@ -1797,7 +1802,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # flatten output for parallelization
         for pred, ss, ps in out:
-            predictions.append(pred)
+            predictions.append(pred.numpy())
             series_schemas += ss
             pred_starts += ps
 
@@ -1828,6 +1833,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     if predict_likelihood_parameters
                     else None
                 ),
+                "copy": False,
             },
         )
         return ts_forecasts
@@ -2439,6 +2445,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
@@ -2470,6 +2477,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             show_warnings=show_warnings,
             verbose=verbose,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
             **kwargs,
         )
         return series2seq(forecasts_list, seq_type_out=series_seq_type)

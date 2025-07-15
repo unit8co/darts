@@ -11,6 +11,7 @@ import pandas as pd
 from scipy.special import inv_boxcox
 from scipy.stats import boxcox, boxcox_normmax
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers.fittable_data_transformer import (
     FittableDataTransformer,
 )
@@ -18,7 +19,6 @@ from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_if
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -170,7 +170,13 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             [boxcox(vals[:, i], lmbda=lmbda[i]) for i in range(series.width)], axis=1
         )
         transformed_vals = BoxCox.unstack_samples(transformed_vals, series=series)
-        return series.with_values(transformed_vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=transformed_vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @staticmethod
     def ts_inverse_transform(
@@ -185,4 +191,10 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         inv_transformed_vals = BoxCox.unstack_samples(
             inv_transformed_vals, series=series
         )
-        return series.with_values(inv_transformed_vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=inv_transformed_vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )

@@ -458,10 +458,6 @@ class TestSKLearnModels:
             self.sine_univariate1.drop_after(50), self.sine_univariate2
         )
         new_model.fit(self.sine_univariate1.drop_after(50), self.sine_univariate2)
-
-        print(new_model.predict(5))
-        print(deprecated_model.predict(5))
-
         assert new_model.predict(5) == deprecated_model.predict(5)
 
     @pytest.mark.parametrize("config", product(models, [True, False]))
@@ -1036,6 +1032,8 @@ class TestSKLearnModels:
     def test_models_runnability(self, config):
         model, mode = config
         train_y, test_y = self.sine_univariate1.split_before(0.7)
+        series_copy = train_y.copy()
+
         # testing past covariates
         model_instance = model(lags=4, lags_past_covariates=None, multi_models=mode)
         with pytest.raises(ValueError):
@@ -1065,10 +1063,13 @@ class TestSKLearnModels:
             model_instance.fit(series=self.sine_univariate1)
 
         # testing input_dim
+        past_cov = self.sine_univariate1.stack(self.sine_univariate1)
+        past_cov_copy = past_cov.copy()
+
         model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
         model_instance.fit(
             series=train_y,
-            past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
+            past_covariates=past_cov,
             verbose=False,
         )
 
@@ -1084,6 +1085,10 @@ class TestSKLearnModels:
         # while it should work with n = 1
         prediction = model_instance.predict(n=1)
         assert len(prediction) == 1
+
+        # check that fit predict did not mutate input series
+        assert train_y == series_copy
+        assert past_cov == past_cov_copy
 
     @pytest.mark.parametrize(
         "config",
@@ -1436,6 +1441,27 @@ class TestSKLearnModels:
         else:
             assert not isinstance(model.model, MultiOutputRegressor)
 
+    def test_model_representation(self):
+        """Check that model representation works with and without MultiOutputRegressor"""
+        model_1 = LinearRegressionModel(lags=4, output_chunk_length=1)
+        model_1.fit(series=self.sine_univariate1)
+        assert not isinstance(model_1.model, MultiOutputRegressor)
+
+        model_2 = XGBModel(
+            lags=4,
+            output_chunk_length=2,
+            multi_models=True,
+            likelihood="quantile",
+            quantiles=[0.1, 0.5, 0.9],
+            **xgb_test_params,
+        )
+        model_2.fit(series=self.sine_univariate1)
+        assert isinstance(model_2.model, MultiOutputRegressor)
+
+        for model in [model_1, model_2]:
+            assert model.__repr__().startswith(model.__class__.__name__)
+            assert model.__str__().startswith(model.model.__class__.__name__)
+
     def test_get_estimator_multi_models(self):
         """Craft training data so that estimator_[i].predict(X) == i + 1"""
 
@@ -1448,6 +1474,7 @@ class TestSKLearnModels:
                 multi_models=True,
                 likelihood="quantile",
                 quantiles=[0.5],
+                **xgb_test_params,
             )
             m.fit(ts)
 
@@ -1495,70 +1522,125 @@ class TestSKLearnModels:
         # estimators_[3] labels : [3]
         helper_check_overfitted_estimators(ts, ocl)
 
-    def test_get_estimator_single_model(self):
-        """Check estimator getter when multi_models=False"""
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [
+                    (LinearRegressionModel, {}),
+                    (XGBModel, xgb_test_params),
+                ]
+                + [(LightGBMModel, lgbm_test_params)]
+                if lgbm_available
+                else [] + [(CatBoostModel, cb_test_params)]
+                if cb_available
+                else []
+            ),
+            [True, False],  # multi_models
+            [True, False],  # multi components
+        ),
+    )
+    def test_get_estimator(self, config):
+        """Check estimator getter for different model configurations."""
+        (model_cls, kwargs), multi_models, multi_components = config
         # multivariate, one sub-model per component
-        ocl = 2
-        ts = TimeSeries.from_values(
-            np.array([
-                [0, 0, 0, 0, 1],
-                [0, 0, 0, 0, 2],
-            ]).T
-        )
-        # estimators_[0] labels : [1]
-        # estimators_[1] labels : [2]
+        ocl = 3
+        lags = 3
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
 
-        # since xgboost==2.1.0, the regular deterministic models have native multi output regression
-        # -> we use a quantile likelihood to activate Darts' MultiOutputRegressor
-        m = XGBModel(
-            lags=3,
+        m = model_cls(
+            lags=lags,
             output_chunk_length=ocl,
-            multi_models=False,
-            likelihood="quantile",
-            quantiles=[0.5],
+            multi_models=multi_models,
+            **kwargs,
         )
         m.fit(ts)
 
-        # one estimator is reused for all the horizon of a given component
-        assert len(m.model.estimators_) == ts.width
+        # check that retrieve sub-models prediction match the "wrapper" model predictions
+        pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
+        pred = m.predict(n=ocl, series=pred_input)
 
-        dummy_feats = np.array([[0, 0, 0] * ts.width])
-        for i in range(ocl):
-            for j in range(ts.width):
+        is_mor = isinstance(m.model, MultiOutputRegressor)
+
+        for j in range(ts.width):
+            for i in range(ocl):
+                if multi_models:
+                    dummy_feats = pred_input.values()[:lags]
+                else:
+                    dummy_feats = pred_input.values()[i : +i + lags]
+                dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
                 sub_model = m.get_estimator(horizon=i, target_dim=j)
-                pred = sub_model.predict(dummy_feats)[0]
-                # sub-model forecast only depend on the target_dim
-                assert np.abs(j + 1 - pred) < 1e-2
+                pred_sub_model = sub_model.predict(dummy_feats)[0]
 
-    @pytest.mark.parametrize("multi_models", [True, False])
-    def test_get_estimator_quantile(self, multi_models):
+                if is_mor:
+                    # MultiOutputRegressor has a dedicated model per component and horizon
+                    assert pred_sub_model == pred[ts.components[j]].values()[i][0]
+                elif multi_models:
+                    # native multi output support with multi_models gives all components and horizon together
+                    assert (
+                        pred_sub_model.reshape((ocl, ts.width)) == pred.values()
+                    ).all()
+                else:
+                    # native multi output support without multi_models gives all components per horizon
+                    assert (pred_sub_model == pred.values()[i]).all()
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [
+                    (LinearRegressionModel, {}),
+                    (XGBModel, xgb_test_params),
+                ]
+                + [(LightGBMModel, lgbm_test_params)]
+                if lgbm_available
+                else [] + [(CatBoostModel, cb_test_params)]
+                if cb_available
+                else []
+            ),
+            [True, False],  # multi_models
+            [True, False],  # multi components
+        ),
+    )
+    def test_get_estimator_quantile(self, config):
         """Check estimator getter when using quantile value"""
+        (model_cls, kwargs), multi_models, multi_components = config
         ocl = 3
         lags = 3
         quantiles = [0.01, 0.5, 0.99]
-        ts = tg.sine_timeseries(length=100, column_name="sine").stack(
-            tg.linear_timeseries(length=100, column_name="linear"),
-        )
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
 
-        m = XGBModel(
+        m = model_cls(
             lags=lags,
             output_chunk_length=ocl,
             multi_models=multi_models,
             likelihood="quantile",
             quantiles=quantiles,
-            random_state=1,
+            **kwargs,
         )
         m.fit(ts)
 
         assert len(m._model_container) == len(quantiles)
         assert sorted(list(m._model_container.keys())) == sorted(quantiles)
         for quantile_container in m._model_container.values():
-            # one sub-model per quantile, per component, per horizon
             if multi_models:
+                # one sub-model per quantile, per component, per horizon
                 assert len(quantile_container.estimators_) == ocl * ts.width
-            # one sub-model per quantile, per component
-            else:
+            elif multi_components:
+                # one sub-model per quantile, per component
                 assert len(quantile_container.estimators_) == ts.width
+            else:
+                # only one sub-model per quantile (one component, one predicted horizon)
+                assert not isinstance(quantile_container, MultiOutputRegressor)
+                assert not hasattr(quantile_container, "estimators_")
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
         pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
@@ -3003,6 +3085,12 @@ class TestSKLearnModels:
             "future": {"future_covariates": fc},
             "mixed": {"past_covariates": pc, "future_covariates": fc},
         }
+        covariates_examples_copy = {
+            "past": {"past_covariates": pc.copy()},
+            "future": {"future_covariates": fc.copy()},
+            "mixed": {"past_covariates": pc.copy(), "future_covariates": fc.copy()},
+        }
+
         encoder_examples = {
             "past": {"datetime_attribute": {"past": ["hour"]}},
             "future": {"cyclic": {"future": ["hour"]}},
@@ -3126,6 +3214,9 @@ class TestSKLearnModels:
             _ = model.predict(n=1, series=ts, **covariates)
             _ = model.predict(n=3, series=ts, **covariates)
             _ = model.predict(n=8, series=ts, **covariates)
+
+        # check that fit predict did not mutate input series
+        assert covariates_examples == covariates_examples_copy
 
     @pytest.mark.parametrize("config", product([True, False], [True, False]))
     def test_encoders_from_covariates_input(self, config):
@@ -3974,7 +4065,6 @@ class TestProbabilisticSKLearnModels:
             _ = _get_likelihood(
                 likelihood="does_not_exist",
                 n_outputs=1,
-                random_state=None,
                 quantiles=None,
             )
         assert (
@@ -4008,6 +4098,29 @@ class TestProbabilisticSKLearnModels:
         # test whether the next prediction of the same model is different
         pred3 = model.predict(n=10, num_samples=2).values()
         assert (pred2 != pred3).any()
+
+        # test whether two consecutive predictions with a random_state specified are the same
+        pred4 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred5 = model.predict(n=10, num_samples=2, random_state=38).values()
+        assert (pred4 == pred5).all()
+
+        # additional tests :
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_multivar_ts)
+        pred6 = model.predict(n=10, num_samples=2).values()
+        pred7 = model.predict(n=10, num_samples=2).values()
+
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_multivar_ts)
+        pred8 = model.predict(n=10, num_samples=2).values()
+        pred9 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred10 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred11 = model.predict(n=10, num_samples=2).values()
+
+        assert (pred6 != pred7).any()
+        assert (pred8 == pred6).all()
+        assert (pred9 == pred10).all()
+        assert (pred11 == pred7).all()
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_probabilistic_forecast_accuracy_univariate(self, config):
@@ -4046,7 +4159,7 @@ class TestProbabilisticSKLearnModels:
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
@@ -4054,7 +4167,7 @@ class TestProbabilisticSKLearnModels:
         tested_quantiles = [0.3, 0.2, 0.1, 0.01]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 

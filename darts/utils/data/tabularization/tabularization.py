@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import as_strided
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
 from darts.utils.utils import n_steps_between

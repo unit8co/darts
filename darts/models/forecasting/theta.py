@@ -9,9 +9,9 @@ from typing import Optional
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
-from darts.timeseries import TimeSeries
 from darts.utils.statistics import (
     check_seasonality,
     extract_trend_and_seasonality,
@@ -158,6 +158,7 @@ class Theta(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ) -> "TimeSeries":
         super().predict(n, num_samples)
 
@@ -405,6 +406,7 @@ class FourTheta(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ) -> "TimeSeries":
         super().predict(n, num_samples)
 

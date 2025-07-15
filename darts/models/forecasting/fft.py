@@ -9,9 +9,9 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import LocalForecastingModel
-from darts.timeseries import TimeSeries
 from darts.utils.missing_values import fill_missing_values
 
 logger = get_logger(__name__)
@@ -328,8 +328,9 @@ class FFT(LocalForecastingModel):
         detrended_values = series.univariate_values() - self.trend_function(
             range(len(series))
         )
-        detrended_series = TimeSeries.from_times_and_values(
-            series.time_index, detrended_values
+        detrended_series = TimeSeries(
+            times=series.time_index,
+            values=detrended_values,
         )
 
         # crop training set to match the seasonality of the first prediction point
@@ -372,6 +373,7 @@ class FFT(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
         trend_forecast = np.array([
