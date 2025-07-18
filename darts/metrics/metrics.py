@@ -7,6 +7,7 @@ Some metrics to compare time series.
 
 import inspect
 from collections.abc import Sequence
+from enum import Enum
 from functools import wraps
 from inspect import signature
 from typing import Any, Callable, Optional, Union
@@ -33,8 +34,28 @@ TIME_AX = 0
 COMP_AX = 1
 SMPL_AX = 2
 
+# (True / False Positive / Negative) indices in the confusion matrix
+_TN_IDX = (slice(None), slice(None), 0, 0)
+_FP_IDX = (slice(None), slice(None), 0, 1)
+_FN_IDX = (slice(None), slice(None), 1, 0)
+_TP_IDX = (slice(None), slice(None), 1, 1)
+
+
 # class probabilities suffix
 PROBA_SUFFIX = "_p"
+
+
+# class label reduction methods
+class _LabelReduction(Enum):
+    NONE = None
+    MACRO = "macro"
+    MICRO = "micro"
+    WEIGHTED = "weighted"
+
+    @classmethod
+    def has_value(cls, value):
+        return value in cls._value2member_map_
+
 
 # Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
@@ -99,11 +120,35 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
     """
 
     @wraps(func)
-    def wrapper_interval_support(*args, **kwargs):
+    def wrapper_classification_support(*args, **kwargs):
+        labels = kwargs.get("labels")
+        if labels is not None:
+            if isinstance(labels, int):
+                labels = np.array([labels])
+            else:
+                labels = np.array(labels)
+            kwargs["labels"] = labels
+
+        params = signature(func).parameters
+        if "label_reduction" in params:
+            label_reduction = kwargs.get(
+                "label_reduction", params["label_reduction"].default
+            )
+            if not isinstance(label_reduction, _LabelReduction):
+                if not _LabelReduction.has_value(label_reduction):
+                    raise_log(
+                        ValueError(
+                            f"Invalid `label_reduction` value: {label_reduction}. "
+                            f"Must be one of {_LabelReduction._value2member_map_.keys()}."
+                        ),
+                        logger=logger,
+                    )
+                kwargs["label_reduction"] = _LabelReduction(label_reduction)
+
         kwargs["is_classification"] = True
         return func(*args, **kwargs)
 
-    return wrapper_interval_support
+    return wrapper_classification_support
 
 
 def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
@@ -355,9 +400,14 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         if component_reduction is not None:
             # -> (n time, *QL)
             vals = component_reduction(vals, axis=COMP_AX)
+            if is_confusion_matrix:
+                vals = np.expand_dims(vals, axis=COMP_AX)
         elif not is_confusion_matrix:
             # -> (n time, n components * n QL), with order [c0_q0, c0_q1, ... c1_q0, c1_q1, ...]
             vals = vals.reshape(vals.shape[0], -1)
+        else:  # confusion matrix
+            # -> (1, n components, n labels, n labels)
+            pass
         return vals
 
     return wrapper_multivariate_support
@@ -4581,6 +4631,7 @@ def macc(
 
 
 def _unique_labels(y_true: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
+    """Returns unique labels for each component in the true and predicted labels."""
     labels = []
     for comp_idx in range(y_true.shape[1]):
         labels_true = np.unique(y_true[:, comp_idx])
@@ -4593,16 +4644,41 @@ def _confusion_matrix(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     labels: Optional[np.ndarray] = None,
-) -> np.ndarray:
-    """Computes a confusion matrix using numpy for two np.arrays `y_true` and `y_pred`."""
+    compute_multilabel: bool = True,
+) -> tuple[np.ndarray, Optional[np.ndarray]]:
+    """Computes a confusion matrix using numpy for two np.arrays `y_true` and `y_pred`.
+
+    Parameters
+    ----------
+    y_true : np.ndarray
+        The true labels.
+    y_pred : np.ndarray
+        The predicted labels.
+    labels : Optional[np.ndarray]
+        The labels to consider for the confusion matrix. If `None`, will use unique labels from `y_true` and `y_pred`.
+    compute_multilabel : bool
+        Whether to compute a multilabel confusion matrix. If `True`, will return a component- and label-specific
+        confusion matrix.
+
+    Returns
+    -------
+    tuple[np.ndarray, Optional[np.ndarray]]
+        The confusion matrix and optionally the multilabel confusion matrix.
+    """
     n_comps = y_true.shape[COMP_AX]
 
-    labels = labels or np.unique(np.concatenate([y_true, y_pred]))
-    comp_labels = _unique_labels(y_true, y_pred)
+    # global unique labels
+    labels_all = np.unique(np.concatenate([y_true, y_pred]))
 
-    n_labels = len(labels)
-    label_to_index = {label: idx for idx, label in enumerate(labels)}
+    # optionally, add user labels (might not be present in global labels)
+    if labels is not None:
+        labels_all = np.unique(np.concatenate([labels, labels_all]))
 
+    # component-specific labels
+    labels_comp = _unique_labels(y_true, y_pred)
+
+    label_to_idx = {label: idx for idx, label in enumerate(labels_all)}
+    n_labels = len(labels_all)
     conf_matrix = np.zeros(
         shape=(
             1,  # for time dimension
@@ -4614,14 +4690,114 @@ def _confusion_matrix(
     )
     # fill the confusion matrix
     for comp_idx in range(n_comps):
-        for label in labels:
-            if label not in comp_labels[comp_idx]:
-                conf_matrix[0, comp_idx, label_to_index[label], :] = np.nan
-                conf_matrix[0, comp_idx, :, label_to_index[label]] = np.nan
+        for label in labels_all:
+            if label not in labels_comp[comp_idx]:
+                conf_matrix[0, comp_idx, label_to_idx[label], :] = np.nan
+                conf_matrix[0, comp_idx, :, label_to_idx[label]] = np.nan
 
         for t_i, p_i in zip(y_true[:, comp_idx, 0], y_pred[:, comp_idx, 0]):
-            conf_matrix[0, comp_idx, label_to_index[t_i], label_to_index[p_i]] += 1
-    return conf_matrix
+            conf_matrix[0, comp_idx, label_to_idx[t_i], label_to_idx[p_i]] += 1
+
+    multilabel_conf_matrix = None
+    if compute_multilabel:
+        # create a component- and label-specific confusion matrix with elements:
+        # [
+        #     ["TN", "FP"],
+        #     ["FN", "TP"],
+        # ]
+        multilabel_conf_matrix = np.zeros(
+            shape=(
+                n_comps,
+                n_labels,
+                2,
+                2,
+            ),
+            dtype=y_true.dtype,
+        )
+        for comp_idx in range(n_comps):
+            cm_total = np.nansum(conf_matrix[0, comp_idx])
+            for t_idx in range(n_labels):
+                # TP
+                tp = conf_matrix[0, comp_idx, t_idx, t_idx]
+                # FN
+                fn = np.nansum(conf_matrix[0, comp_idx, t_idx, :]) - tp
+                # FP
+                fp = np.nansum(conf_matrix[0, comp_idx, :, t_idx]) - tp
+                # TN
+                tn = cm_total - tp - fn - fp
+
+                multilabel_conf_matrix[comp_idx, t_idx] = [[tn, fp], [fn, tp]]
+
+    # optionally, extract specific labels
+    if labels is not None:
+        labels_sel_idx = [label_to_idx.get(label) for label in labels]
+        conf_matrix = conf_matrix[:, :, labels_sel_idx][:, :, :, labels_sel_idx]
+        if compute_multilabel:
+            multilabel_conf_matrix = multilabel_conf_matrix[:, labels_sel_idx]
+    return conf_matrix, multilabel_conf_matrix
+
+
+def _compute_score(
+    y_true,
+    y_pred,
+    score_func: Callable,
+    label_reduction: _LabelReduction,
+    labels: Optional[np.ndarray] = None,
+) -> np.ndarray:
+    """Computes a score on the confusion matrix of two np.arrays `y_true` and `y_pred`.
+
+    Parameters
+    ----------
+    y_true : np.ndarray
+        The true labels.
+    y_pred : np.ndarray
+        The predicted labels.
+    score_func : Callable
+        The function to compute the score from the confusion matrix.
+    label_reduction : Optional[str]
+        The label reduction method to apply. Can be one of `None`, `"micro"`, `"macro"`, or `"weighted"`.
+    labels : Optional[np.ndarray]
+        The labels to consider for the confusion matrix. If `None`, will use unique labels from `y_true` and `y_pred`.
+
+    Returns
+    -------
+    np.ndarray
+        The computed scores based on the confusion matrix.
+    """
+    _, cm = _confusion_matrix(
+        y_true=y_true,
+        y_pred=y_pred,
+        compute_multilabel=True,
+        labels=labels,
+    )
+
+    tn, tp, fp, fn = cm[*_TN_IDX], cm[*_TP_IDX], cm[*_FP_IDX], cm[*_FN_IDX]
+    if label_reduction == _LabelReduction.MICRO:
+        # micro f1 score: 2 * sum(tp) / (2 * sum(tp) + sum(fp) + sum(fn))
+        tn = np.nansum(tn, axis=COMP_AX)
+        tp = np.nansum(tp, axis=COMP_AX)
+        fp = np.nansum(fp, axis=COMP_AX)
+        fn = np.nansum(fn, axis=COMP_AX)
+
+    scores = score_func(tn, fp, fn, tp)
+    if label_reduction == _LabelReduction.NONE:
+        # label-specific score: score_func(x)
+        scores = scores.reshape((1, y_true.shape[COMP_AX], -1))
+    elif label_reduction == _LabelReduction.MACRO:
+        # macro score: mean(score_fun(x))
+        scores = np.nanmean(scores, axis=COMP_AX)
+        scores = scores.reshape((-1, 1))
+    elif label_reduction == _LabelReduction.WEIGHTED:
+        # weighted f1 score: sum(score_func(x) * weights) / sum(weights)
+        # weights are the number of positives (where y_true == label; TP + FN)
+        weights = tp + fn
+        scores = np.nansum(scores * weights, axis=1, keepdims=True) / np.nansum(
+            weights, axis=1, keepdims=True
+        )
+    else:  # "micro"
+        # micro f1 score: score_func(sum(x))
+        scores = scores.reshape((-1, 1))
+    return scores
 
 
 @classification_support
@@ -4632,17 +4808,18 @@ def confusion_matrix(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    labels: Optional[Union[int, list[int], np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nansum,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
-    """Mean Accuracy (MACC).
+    """Confusion Matrix (CM).
 
     For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
-    component/column as:
+    component/column and label as:
 
-     .. math:: \\frac{1}{T}\\sum_{t=1}^T\\mathbb{I}(y_t = \\hat{y}_t)
+    .. math:: CM_{t,c,l} = \\mathbb{I}(y_{t,c} = l, \\hat{y}_{t,c} = l)
 
     Where :math::`mathbb{I}` is the indicator function.
 
@@ -4704,7 +4881,12 @@ def confusion_matrix(
         remove_nan_union=False,
         is_classification=True,
     )
-    return _confusion_matrix(y_true, y_pred)
+    return _confusion_matrix(
+        y_true,
+        y_pred,
+        labels=labels,
+        compute_multilabel=False,
+    )[0]
 
 
 @classification_support
@@ -4715,8 +4897,10 @@ def f1_score(
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
     intersect: bool = True,
     *,
+    labels: Optional[Union[int, list[int], np.ndarray]] = None,
     component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
     series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    label_reduction: Union[Optional[str], _LabelReduction] = _LabelReduction.MACRO,
     n_jobs: int = 1,
     verbose: bool = False,
 ) -> METRIC_OUTPUT_TYPE:
@@ -4788,21 +4972,234 @@ def f1_score(
         is_classification=True,
     )
 
-    # Iterate over each class label
-    labels = _unique_labels(y_true, y_pred)
-    scores = []
-    for comp_idx in range(y_true.shape[1]):
-        y_true_i = y_true[:, comp_idx]
-        y_pred_i = y_pred[:, comp_idx]
-        labels_i = labels[comp_idx]
-        score = 0.0
-        for label in labels_i:
-            # True positives (tp), False positives (fp), False negatives (fn)
-            tp = np.sum((y_pred_i == label) & (y_true_i == label))
-            fp = np.sum((y_pred_i == label) & (y_true_i != label))
-            fn = np.sum((y_pred_i != label) & (y_true_i == label))
+    def _score_func(tn, fp, fn, tp) -> np.ndarray:
+        """Compute F1 score from confusion matrix components."""
+        return 2 * tp / (2 * tp + fp + fn)
 
-            # accumulate F1 scores over all classes
-            score += 2 * tp / (2 * tp + fp + fn)
-        scores.append([score / len(labels_i)])
-    return np.array(scores, dtype=y_true.dtype)
+    scores = _compute_score(
+        y_true,
+        y_pred,
+        score_func=_score_func,
+        label_reduction=label_reduction,
+        labels=labels,
+    )
+
+    # _, cm = _confusion_matrix(y_true, y_pred, compute_multilabel=True)
+
+    # # f1 score: 2 * tp / (2 * tp + fp + fn)
+    # tp, fp, fn = cm[*_TP_IDX], cm[*_FP_IDX], cm[*_FN_IDX]
+    # if label_reduction == "micro":
+    #     # micro f1 score: 2 * sum(tp) / (2 * sum(tp) + sum(fp) + sum(fn))
+    #     tp = np.nansum(tp, axis=COMP_AX)
+    #     fp = np.nansum(fp, axis=COMP_AX)
+    #     fn = np.nansum(fn, axis=COMP_AX)
+    #
+    # scores = 2 * tp / (2 * tp + fp + fn)
+    # if label_reduction is None:
+    #     # label-specific f1 score
+    #     scores = scores.reshape((1, y_true.shape[COMP_AX], -1))
+    # elif label_reduction == "macro":
+    #     # macro f1 score: mean(f1)
+    #     scores = np.nanmean(scores, axis=COMP_AX)
+    #     scores = scores.reshape((-1, 1))
+    # elif label_reduction == "weighted":
+    #     # weighted f1 score: sum(f1 * weights) / sum(weights)
+    #     # weights are the number of positives (where y_true == label; TP + FN)
+    #     weights = cm[*_TP_IDX] + cm[*_FN_IDX]
+    #     scores = np.nansum(scores * weights, axis=1, keepdims=True) / np.nansum(weights, axis=1, keepdims=True)
+    # else:  # "micro"
+    #     # micro f1 score: 2 * sum(tp) / (2 * sum(tp) + sum(fp) + sum(fn))
+    #     scores = scores.reshape((-1, 1))
+    return scores
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def recall_score(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    labels: Optional[Union[int, list[int], np.ndarray]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    label_reduction: Union[Optional[str], _LabelReduction] = _LabelReduction.MACRO,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Accuracy (MACC).
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+     .. math:: \\frac{1}{T}\\sum_{t=1}^T\\mathbb{I}(y_t = \\hat{y}_t)
+
+    Where :math::`mathbb{I}` is the indicator function.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components,) without component reduction.
+        For:
+
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+
+    def _score_func(tn, fp, fn, tp) -> np.ndarray:
+        """Compute F1 score from confusion matrix components."""
+        return tp / (tp + fn)
+
+    return _compute_score(
+        y_true,
+        y_pred,
+        score_func=_score_func,
+        label_reduction=label_reduction,
+        labels=labels,
+    )
+
+
+@classification_support
+@multi_ts_support
+@multivariate_support
+def precision_score(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    labels: Optional[Union[int, list[int], np.ndarray]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    label_reduction: Union[Optional[str], _LabelReduction] = _LabelReduction.MACRO,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Mean Accuracy (MACC).
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per
+    component/column as:
+
+     .. math:: \\frac{1}{T}\\sum_{t=1}^T\\mathbb{I}(y_t = \\hat{y}_t)
+
+    Where :math::`mathbb{I}` is the indicator function.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from
+    each time step and component.
+    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest
+    probability from each time step and component.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+
+    Returns
+    -------
+    float
+        A single metric score for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components,) without component reduction.
+        For:
+
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=False,
+        is_classification=True,
+    )
+
+    def _score_func(tn, fp, fn, tp) -> np.ndarray:
+        """Compute F1 score from confusion matrix components."""
+        return tp / (tp + fp)
+
+    return _compute_score(
+        y_true,
+        y_pred,
+        score_func=_score_func,
+        label_reduction=label_reduction,
+        labels=labels,
+    )

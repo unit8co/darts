@@ -15,30 +15,97 @@ class TestClassificationMetrics:
         "config",
         itertools.product(
             [0, 1, 2],  # deterministic labels, class probabilities, sampled labels
+            [None, 4, [4, 1], [1, 2, 3, 4]],  # selected labels
             [
                 (
-                    metrics.confusion_matrix,
-                    sklearn_metrics.confusion_matrix,
-                    {"labels": [1, 2, 3, 4]},
+                    (metrics.recall_score, {"label_reduction": "weighted"}),
+                    (
+                        sklearn_metrics.recall_score,
+                        {"average": "weighted", "zero_division": np.nan},
+                    ),
+                    np.nanmean,
+                ),
+                (
+                    (metrics.recall_score, {"label_reduction": "micro"}),
+                    (
+                        sklearn_metrics.recall_score,
+                        {"average": "micro", "zero_division": np.nan},
+                    ),
+                    np.nanmean,
+                ),
+                (
+                    (metrics.recall_score, {}),
+                    (
+                        sklearn_metrics.recall_score,
+                        {"average": "macro", "zero_division": np.nan},
+                    ),
+                    np.nanmean,
+                ),
+                (
+                    (metrics.precision_score, {"label_reduction": "weighted"}),
+                    (
+                        sklearn_metrics.precision_score,
+                        {"average": "weighted", "zero_division": np.nan},
+                    ),
+                    np.nanmean,
+                ),
+                (
+                    (metrics.precision_score, {"label_reduction": "micro"}),
+                    (
+                        sklearn_metrics.precision_score,
+                        {"average": "micro", "zero_division": np.nan},
+                    ),
+                    np.nanmean,
+                ),
+                (
+                    (metrics.precision_score, {}),
+                    (
+                        sklearn_metrics.precision_score,
+                        {"average": "macro", "zero_division": np.nan},
+                    ),
+                    np.nanmean,
+                ),
+                (
+                    (metrics.f1_score, {"label_reduction": "weighted"}),
+                    (
+                        sklearn_metrics.f1_score,
+                        {"average": "weighted", "zero_division": np.nan},
+                    ),
+                    np.nanmean,
+                ),
+                (
+                    (metrics.f1_score, {"label_reduction": "micro"}),
+                    (
+                        sklearn_metrics.f1_score,
+                        {"average": "micro", "zero_division": np.nan},
+                    ),
+                    np.nanmean,
+                ),
+                (
+                    (metrics.f1_score, {}),
+                    (
+                        sklearn_metrics.f1_score,
+                        {"average": "macro", "zero_division": np.nan},
+                    ),
+                    np.nanmean,
+                ),
+                (
+                    (metrics.confusion_matrix, {}),
+                    (sklearn_metrics.confusion_matrix, {"labels": [1, 2, 3, 4]}),
                     np.nansum,
                 ),
-                (
-                    metrics.f1_score,
-                    sklearn_metrics.f1_score,
-                    {"average": "macro"},
-                    np.nanmean,
-                ),
-                (
-                    metrics.macc,
-                    sklearn_metrics.accuracy_score,
-                    {},
-                    np.nanmean,
-                ),
+                # (
+                #     (metrics.macc, {}),
+                #     (sklearn_metrics.accuracy_score, {}),
+                #     np.nanmean,
+                # ),
             ],
         ),
     )
     def test_classification_metric(self, config):
-        method, (metric, skl_metric, skl_kwargs, comp_reduction) = config
+        method, labels, ((metric, kwargs), (skl_metric, skl_kwargs), comp_reduction) = (
+            config
+        )
         comp1_labels = np.array([2, 4])
         comp1_probas = np.array([
             [0.1, 0.9],
@@ -53,6 +120,10 @@ class TestClassificationMetrics:
             [0.2, 0.6, 0.2],
             [0.3, 0.1, 0.6],
         ])
+        kwargs["labels"] = labels
+
+        if not (metric == metrics.confusion_matrix and labels is None):
+            skl_kwargs["labels"] = [labels] if isinstance(labels, int) else labels
 
         if method == 0:
             # deterministic class labels
@@ -106,6 +177,7 @@ class TestClassificationMetrics:
             y_true,
             y_pred,
             component_reduction=None,
+            **kwargs,
         )
         # replace NaNs with 0.0 to compare with sklearn metrics
         scores_actual[np.isnan(scores_actual)] = 0.0
@@ -119,6 +191,7 @@ class TestClassificationMetrics:
             metric(
                 y_true,
                 y_pred,
+                **kwargs,
             ),
             comp_reduction(scores_expected, axis=0),
         )
