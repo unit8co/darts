@@ -8,7 +8,7 @@ import pytest
 import sklearn.metrics
 
 from darts import TimeSeries, concatenate
-from darts.metrics import metrics
+from darts.metrics import metrics, utils
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
@@ -2236,3 +2236,18 @@ class TestMetrics:
         assert str(exc.value).startswith(
             "all intervals in `q_interval` must be tuples of (lower q, upper q)"
         )
+
+    def test_regression_handler_invalid_q(self):
+        y = TimeSeries.from_values(np.array([1.0]))
+        with pytest.raises(ValueError) as exc:
+            utils._regression_handling(
+                y, y, params={}, kwargs={"q": (np.array([0.5]), None, None)}
+            )
+        assert str(exc.value).startswith(
+            "`q` must be of tuple of `(np.ndarray, Optional[pd.Index])`"
+        )
+
+    def test_wrapped_metrics(self):
+        with pytest.raises(NotImplementedError) as exc:
+            utils._get_wrapped_metric(None, n_wrappers=4)
+        assert str(exc.value) == "Only 2-3 wrappers are currently supported"

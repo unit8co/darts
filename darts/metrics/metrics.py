@@ -3818,7 +3818,7 @@ def precision(
     )
 
     def _score_func(tn, fp, fn, tp) -> np.ndarray:
-        """Compute F1 score from confusion matrix components."""
+        """Compute score from confusion matrix components."""
         return tp / (tp + fp)
 
     return _compute_score(
@@ -3933,7 +3933,7 @@ def recall(
     )
 
     def _score_func(tn, fp, fn, tp) -> np.ndarray:
-        """Compute F1 score from confusion matrix components."""
+        """Compute score from confusion matrix components."""
         return tp / (tp + fn)
 
     return _compute_score(
@@ -4049,7 +4049,7 @@ def f1(
     )
 
     def _score_func(tn, fp, fn, tp) -> np.ndarray:
-        """Compute F1 score from confusion matrix components."""
+        """Compute score from confusion matrix components."""
         return 2 * tp / (2 * tp + fp + fn)
 
     scores = _compute_score(

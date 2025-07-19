@@ -333,3 +333,11 @@ class TestClassificationMetrics:
                 [[0], [1]],
             ])
         )
+
+    def test_wrong_label_reduction(self):
+        y = TimeSeries.from_values(np.array([[4]]))
+
+        # invalid label reduction method
+        with pytest.raises(ValueError) as err:
+            metrics.recall(y, y, label_reduction="invalid")
+        assert str(err.value).startswith("Invalid `label_reduction` value: `invalid`")

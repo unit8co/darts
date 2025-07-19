@@ -130,8 +130,8 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 if not _LabelReduction.has_value(label_reduction):
                     raise_log(
                         ValueError(
-                            f"Invalid `label_reduction` value: {label_reduction}. "
-                            f"Must be one of {_LabelReduction._value2member_map_.keys()}."
+                            f"Invalid `label_reduction` value: `{label_reduction}`. "
+                            f"Must be one of `{list(_LabelReduction._value2member_map_)}`."
                         ),
                         logger=logger,
                     )
@@ -461,7 +461,7 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
 
 def _classification_handling(actual_series, pred_series):
     """Handles the classification metrics input parameters and checks."""
-    # This assumes class probabilities components follow the "<component_name>_p<label>" convention
+    # This assumes class probability components follow the "<component_name>_p<label>" convention
     # Note: the correct number of labels per component is not checked here
     if not pred_series.components.equals(actual_series.components):
         # "<component_name>_p<label>" -> "<component_name>"
@@ -994,7 +994,7 @@ def _compute_score(
 
     tn, tp, fp, fn = cm[_TN_IDX], cm[_TP_IDX], cm[_FP_IDX], cm[_FN_IDX]
     if label_reduction == _LabelReduction.MICRO:
-        # micro f1 score: 2 * sum(tp) / (2 * sum(tp) + sum(fp) + sum(fn))
+        # micro scores are computed on the sums of tn, fp, fp, fn
         tn = np.nansum(tn, axis=COMP_AX)
         tp = np.nansum(tp, axis=COMP_AX)
         fp = np.nansum(fp, axis=COMP_AX)
