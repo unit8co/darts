@@ -992,7 +992,7 @@ def _compute_score(
         labels=labels,
     )
 
-    tn, tp, fp, fn = cm[*_TN_IDX], cm[*_TP_IDX], cm[*_FP_IDX], cm[*_FN_IDX]
+    tn, tp, fp, fn = cm[_TN_IDX], cm[_TP_IDX], cm[_FP_IDX], cm[_FN_IDX]
     if label_reduction == _LabelReduction.MICRO:
         # micro f1 score: 2 * sum(tp) / (2 * sum(tp) + sum(fp) + sum(fn))
         tn = np.nansum(tn, axis=COMP_AX)
