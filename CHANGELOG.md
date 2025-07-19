@@ -15,6 +15,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
  - Implemented `SklearnClassifierModel`to support any sklearn-like classifier model.
  - Implemented `LightGBMClassifierModel`, `XGBClassifierModel` and `CatBoostClassifierModel` relying on classification abilities of the respectice librairies.
  - Implemented `ClassProbabilityLikelihood` and set it as the default likelihood for classifiers to predict class probabilities when `predict_likelihood_parameters`is set in `predict`call.
+- Added classification metrics `accuracy()`, `f1()`, `precision()`, and `recall()`, `confusion_matrix()` to the `metrics` module. Use these metrics to evaluate the performance of classification models. [#2767](https://github.com/unit8co/darts/pull/2767) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
 
