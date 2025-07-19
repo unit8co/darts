@@ -1,6 +1,9 @@
 """
 Metrics
--------
+=======
+
+Regression Metrics
+------------------
 
 For deterministic forecasts (point predictions with `num_samples == 1`), probabilistic forecasts (`num_samples > 1`),
 and quantile forecasts. For probabilistic and quantile forecasts, use parameter `q` to define the quantile(s) to
@@ -65,26 +68,46 @@ For probabilistic forecasts (storchastic predictions with `num_samples >> 1`) an
         - :func:`IC <darts.metrics.metrics.ic>`: Interval Coverage
         - :func:`INCS_QR <darts.metrics.metrics.incs_qr>`: Interval Non-Conformity Score for Quantile Regression
 
+Classification Metrics
+----------------------
+
+For deterministic forecasts (point predictions with `num_samples == 1`), probabilistic forecasts (`num_samples > 1`),
+and class label probability forecasts. Most metrics allow to extract the scores for specific labels with parameter
+`labels`.
+
+- Aggregated over time:
+    - :func:`Accuracy <darts.metrics.metrics.accuracy>`: Accuracy Score
+    - :func:`Precision <darts.metrics.metrics.precision>`: Precision Score
+    - :func:`Recall <darts.metrics.metrics.recall>`: Recall Score
+    - :func:`F1 <darts.metrics.metrics.f1>`: F1 Score
+    - :func:`CM <darts.metrics.metrics.confusion_matrix>`: Confusion Matrix
+
+Dynamic Time Warping Metrics
+----------------------------
+
 For Dynamic Time Warping (DTW) (aggregated over time):
 
 - :func:`DTW <darts.metrics.metrics.dtw_metric>`: Dynamic Time Warping Metric
+
+
+
 """
 
 from darts.metrics.metrics import (
-    acc,
+    accuracy,
     ae,
     ape,
     arre,
     ase,
     coefficient_of_variation,
+    confusion_matrix,
     dtw_metric,
     err,
-    f1_score,
+    f1,
     ic,
     incs_qr,
     iw,
     iws,
-    macc,
     mae,
     mape,
     marre,
@@ -98,9 +121,11 @@ from darts.metrics.metrics import (
     mse,
     msse,
     ope,
+    precision,
     ql,
     qr,
     r2_score,
+    recall,
     rmse,
     rmsle,
     rmsse,
@@ -112,51 +137,8 @@ from darts.metrics.metrics import (
     wmape,
 )
 
-ALL_METRICS = {
-    ae,
-    acc,
-    ape,
-    arre,
-    ase,
-    coefficient_of_variation,
-    dtw_metric,
-    err,
-    iw,
-    iws,
-    mae,
-    mape,
-    wmape,
-    marre,
-    mase,
-    merr,
-    miw,
-    miws,
-    mql,
-    mse,
-    msse,
-    ope,
-    ql,
-    qr,
-    r2_score,
-    rmse,
-    rmsle,
-    rmsse,
-    sape,
-    se,
-    sle,
-    smape,
-    sse,
-    ic,
-    mic,
-    incs_qr,
-    mincs_qr,
-    macc,
-    f1_score,
-}
-
 TIME_DEPENDENT_METRICS = {
     ae,
-    acc,
     ape,
     arre,
     ase,
@@ -171,18 +153,6 @@ TIME_DEPENDENT_METRICS = {
     ic,
     incs_qr,
 }
-
-Q_INTERVAL_METRICS = {
-    iw,
-    iws,
-    miw,
-    miws,
-    ic,
-    mic,
-    incs_qr,
-}
-
-NON_Q_METRICS = {dtw_metric}
 
 __all__ = [
     "ae",
@@ -221,7 +191,9 @@ __all__ = [
     "mic",
     "incs_qr",
     "mincs_qr",
-    "acc",
-    "macc",
-    "f1_score",
+    "accuracy",
+    "precision",
+    "recall",
+    "f1",
+    "confusion_matrix",
 ]

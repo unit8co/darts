@@ -224,7 +224,6 @@ class TestMetrics:
             (metrics.sape, False, {"time_reduction": np.mean}),
             (metrics.arre, False, {"time_reduction": np.mean}),
             (metrics.ql, True, {"time_reduction": np.mean}),
-            (metrics.acc, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, False, {}),
             (metrics.mae, False, {}),
@@ -244,7 +243,7 @@ class TestMetrics:
             (metrics.qr, True, {}),
             (metrics.mql, True, {}),
             (metrics.dtw_metric, False, {}),
-            (metrics.macc, False, {}),
+            (metrics.accuracy, False, {}),
         ],
     )
     def test_output_type_time_aggregated(self, config):
@@ -534,7 +533,6 @@ class TestMetrics:
             (metrics.sape, False),
             (metrics.arre, False),
             (metrics.ql, True),
-            # TODO: add `acc`
         ],
     )
     def test_output_type_time_dependent(self, config):
@@ -820,7 +818,6 @@ class TestMetrics:
                 (metrics.sape, False),
                 (metrics.arre, False),
                 (metrics.ql, True),
-                (metrics.acc, True),
                 # time aggregates
                 (metrics.merr, False),
                 (metrics.mae, False),
@@ -840,7 +837,7 @@ class TestMetrics:
                 (metrics.qr, True),
                 (metrics.mql, True),
                 (metrics.dtw_metric, False),
-                (metrics.macc, False),
+                (metrics.accuracy, False),
             ],
             ["time", "component", "series"],
         ),
@@ -925,7 +922,6 @@ class TestMetrics:
             (metrics.sape, 0, False, {"time_reduction": np.mean}),
             (metrics.arre, 0, False, {"time_reduction": np.mean}),
             (metrics.ql, 0, True, {"time_reduction": np.mean}),
-            (metrics.acc, 1, True, {"time_reduction": np.mean}),
             # time aggregates
             (metrics.merr, 0, False, {}),
             (metrics.mae, 0, False, {}),
@@ -945,7 +941,7 @@ class TestMetrics:
             (metrics.qr, 0, True, {}),
             (metrics.mql, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
-            (metrics.macc, 1, False, {}),
+            (metrics.accuracy, 1, False, {}),
         ],
     )
     def test_same(self, config):
@@ -1379,7 +1375,6 @@ class TestMetrics:
             (metrics.ape, "max", {"time_reduction": np.nanmean}),
             (metrics.sape, "max", {"time_reduction": np.nanmean}),
             (metrics.arre, "max", {"time_reduction": np.nanmean}),
-            (metrics.acc, "max", {"time_reduction": np.nanmean}),
             (metrics.merr, "min", {}),
             (metrics.mae, "max", {}),
             (metrics.mse, "max", {}),
@@ -1392,7 +1387,7 @@ class TestMetrics:
             (metrics.marre, "max", {}),
             (metrics.r2_score, "min", {}),
             (metrics.coefficient_of_variation, "max", {}),
-            (metrics.macc, "max", {}),
+            (metrics.accuracy, "max", {}),
         ],
     )
     def test_multiple_ts(self, config):
@@ -1470,7 +1465,6 @@ class TestMetrics:
             (metrics.ape, sklearn_mape, {}, {"time_reduction": np.nanmean}),
             (metrics.sape, metric_smape, {}, {"time_reduction": np.nanmean}),
             (metrics.arre, metric_marre, {}, {"time_reduction": np.nanmean}),
-            (metrics.acc, metric_macc, {}, {"time_reduction": np.nanmean}),
             (metrics.merr, metric_residuals, {}, {}),
             (metrics.mae, sklearn.metrics.mean_absolute_error, {}, {}),
             (metrics.mse, sklearn.metrics.mean_squared_error, {}, {}),
@@ -1483,7 +1477,7 @@ class TestMetrics:
             (metrics.marre, metric_marre, {}, {}),
             (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
             (metrics.coefficient_of_variation, metric_cov, {}, {}),
-            (metrics.macc, metric_macc, {}, {}),
+            (metrics.accuracy, metric_macc, {}, {}),
         ],
     )
     def test_metrics_deterministic(self, config):

@@ -19,17 +19,22 @@ class TestClassificationMetrics:
             ["weighted", "micro", "macro", None],  # label reduction
             [
                 (
-                    metrics.recall_score,
+                    metrics.accuracy,
+                    sklearn_metrics.accuracy_score,
+                    np.nanmean,
+                ),
+                (
+                    metrics.recall,
                     sklearn_metrics.recall_score,
                     np.nanmean,
                 ),
                 (
-                    metrics.precision_score,
+                    metrics.precision,
                     sklearn_metrics.precision_score,
                     np.nanmean,
                 ),
                 (
-                    metrics.f1_score,
+                    metrics.f1,
                     sklearn_metrics.f1_score,
                     np.nanmean,
                 ),
@@ -37,11 +42,6 @@ class TestClassificationMetrics:
                     metrics.confusion_matrix,
                     sklearn_metrics.confusion_matrix,
                     np.nansum,
-                ),
-                (
-                    metrics.macc,
-                    sklearn_metrics.accuracy_score,
-                    np.nanmean,
                 ),
             ],
         ),
@@ -63,7 +63,7 @@ class TestClassificationMetrics:
             [0.3, 0.1, 0.6],
         ])
 
-        if metric == metrics.macc:
+        if metric == metrics.accuracy:
             # accuracy is not label specific
             kwargs = {}
             skl_kwargs = {}
@@ -132,7 +132,7 @@ class TestClassificationMetrics:
         scores_expected_ = scores_expected
         if label_reduction is None and metric not in [
             metrics.confusion_matrix,
-            metrics.macc,
+            metrics.accuracy,
         ]:
             # concatenate if reduction is None (e.g. Darts gives label-specific scores in component dim, similar to
             # quantile metrics)
@@ -175,12 +175,12 @@ class TestClassificationMetrics:
             values=np.array([[4, 3]]),
             columns=["comp0", "comp1"],
         )
-        assert metrics.macc(y_true, y_pred) == 1.0
+        assert metrics.accuracy(y_true, y_pred) == 1.0
 
         # pred components should have names ["comp0*", "comp1*"]
         y_pred._components = y_pred._components.str.replace("comp0", "comp3")
         with pytest.raises(ValueError) as err:
-            metrics.macc(y_true, y_pred)
+            metrics.accuracy(y_true, y_pred)
         assert str(err.value).startswith(
             "Could not resolve the predicted components for the classification metric"
         )
@@ -197,7 +197,7 @@ class TestClassificationMetrics:
 
         # pred should have 3 components
         with pytest.raises(ValueError) as err:
-            metrics.macc(y_true, y_pred)
+            metrics.accuracy(y_true, y_pred)
         assert str(err.value).startswith(
             "Could not resolve the predicted components for the classification metric"
         )
@@ -214,7 +214,7 @@ class TestClassificationMetrics:
 
         # pred should have 3 components
         with pytest.raises(ValueError) as err:
-            metrics.macc(y_true, y_pred)
+            metrics.accuracy(y_true, y_pred)
         assert str(err.value).startswith(
             "Could not parse class label from name: comp0_p2.5"
         )
