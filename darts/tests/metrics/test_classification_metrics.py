@@ -5,6 +5,7 @@ import pytest
 import sklearn.metrics as sklearn_metrics
 
 import darts.metrics.metrics as metrics
+import darts.metrics.utils as utils
 from darts import TimeSeries
 
 
@@ -222,44 +223,44 @@ class TestClassificationMetrics:
     def test_mode(self):
         # Test with a simple list of integers
         data = np.array([2, 1, 2, 3, 4])
-        assert metrics._mode(data) == 2
+        assert utils._mode(data) == 2
 
         # Test with a list of strings
         data = np.array(["apple", "banana", "apple", "orange"])
-        assert metrics._mode(data) == "apple"
+        assert utils._mode(data) == "apple"
 
         # Test with a list where all elements are unique; gives first element with highest count
         data = np.array([1, 2, 3, 4])
-        assert metrics._mode(data) == 1
+        assert utils._mode(data) == 1
 
     def test_get_highest_count_label_single_step_single_component(self):
         # Test with a simple list of integers
         data = np.array([2, 1, 2, 3, 4]).reshape((1, 1, 5))
-        res = metrics._get_highest_count_label(data)
+        res = utils._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.all(res == 2)
 
         # Test with a list of integers with NaN values
         data = np.array([2, 1, 2, np.nan, 4]).reshape((1, 1, 5))
-        res = metrics._get_highest_count_label(data)
+        res = utils._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.all(res == 2)
 
         # Test with a list of integers where NaN values have highest count
         data = np.array([2, 1, np.nan, np.nan, 4]).reshape((1, 1, 5))
-        res = metrics._get_highest_count_label(data)
+        res = utils._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.isnan(res)
 
         # Test with a list of strings
         data = np.array(["apple", "banana", "apple", "orange"]).reshape((1, 1, 4))
-        res = metrics._get_highest_count_label(data)
+        res = utils._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.all(res == "apple")
 
         # Test with a list where all elements are unique; gives lowest value element with highest count
         data = np.array([4, 1, 3, 2]).reshape((1, 1, 4))
-        res = metrics._get_highest_count_label(data)
+        res = utils._get_highest_count_label(data)
         assert res.shape == (1, 1, 1)
         assert np.all(res == 1)
 
@@ -270,7 +271,7 @@ class TestClassificationMetrics:
             [[1, 2, 3, 4, 5], [2, 5, 5, 4, 4]],
             [[-1, 0, 0, -1, 5], [0, 0, 0, 0, 0]],
         ])
-        res = metrics._get_highest_count_label(data)
+        res = utils._get_highest_count_label(data)
         assert res.shape == (3, 2, 1)
         assert np.all(
             res
@@ -284,13 +285,13 @@ class TestClassificationMetrics:
     def test_get_highest_probability_label_single_step_single_component(self):
         # Test with a binary labels
         data = np.array([0.1, 0.9]).reshape((1, 2, 1))
-        res = metrics._get_highest_probability_label(data, ["a_p0", "a_p1"], ["a"])
+        res = utils._get_highest_probability_label(data, ["a_p0", "a_p1"], ["a"])
         assert res.shape == (1, 1, 1)
         assert np.all(res == 1)
 
         # Test with three labels and unsorted label names
         data = np.array([0.1, 0.8, 0.1]).reshape((1, 3, 1))
-        res = metrics._get_highest_probability_label(
+        res = utils._get_highest_probability_label(
             data, ["a_p0", "a_p2", "a_p1"], ["a"]
         )
         assert res.shape == (1, 1, 1)
@@ -298,7 +299,7 @@ class TestClassificationMetrics:
 
         # Test with three labels where two labels have the highest probability (returns the first one)
         data = np.array([0.4, 0.2, 0.4]).reshape((1, 3, 1))
-        res = metrics._get_highest_probability_label(
+        res = utils._get_highest_probability_label(
             data, ["a_p3", "a_p2", "a_p1"], ["a"]
         )
         assert res.shape == (1, 1, 1)
@@ -306,7 +307,7 @@ class TestClassificationMetrics:
 
         with pytest.raises(ValueError) as err:
             # label cannot be converted to integer
-            metrics._get_highest_probability_label(
+            utils._get_highest_probability_label(
                 data, ["a_p3", "a_p2.0", "a_p1"], ["a"]
             )
         assert str(err.value).startswith(
@@ -320,7 +321,7 @@ class TestClassificationMetrics:
             [[0.3], [0.7], [0.4], [0.5], [0.1]],
             [[0.5], [0.5], [0.2], [0.0], [0.8]],
         ])
-        res = metrics._get_highest_probability_label(
+        res = utils._get_highest_probability_label(
             data, ["a_p0", "a_p1", "b_p5", "b_p4", "b_p1"], ["a", "b"]
         )
         assert res.shape == (3, 2, 1)

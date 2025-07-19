@@ -139,6 +139,22 @@ def metric_macc(y_true, y_pred):
     return sklearn.metrics.accuracy_score(y_true.flatten(), y_pred.flatten())
 
 
+def metric_recall(y_true, y_pred):
+    return sklearn.metrics.recall_score(
+        y_true.flatten(), y_pred.flatten(), average="macro"
+    )
+
+
+def metric_precision(y_true, y_pred):
+    return sklearn.metrics.precision_score(
+        y_true.flatten(), y_pred.flatten(), average="macro"
+    )
+
+
+def metric_f1(y_true, y_pred):
+    return sklearn.metrics.f1_score(y_true.flatten(), y_pred.flatten(), average="macro")
+
+
 class TestMetrics:
     np.random.seed(42)
     pd_train = pd.Series(
@@ -244,6 +260,9 @@ class TestMetrics:
             (metrics.mql, True, {}),
             (metrics.dtw_metric, False, {}),
             (metrics.accuracy, False, {}),
+            (metrics.precision, False, {}),
+            (metrics.recall, False, {}),
+            (metrics.f1, False, {}),
         ],
     )
     def test_output_type_time_aggregated(self, config):
@@ -838,6 +857,9 @@ class TestMetrics:
                 (metrics.mql, True),
                 (metrics.dtw_metric, False),
                 (metrics.accuracy, False),
+                (metrics.precision, False),
+                (metrics.recall, False),
+                (metrics.f1, False),
             ],
             ["time", "component", "series"],
         ),
@@ -942,6 +964,9 @@ class TestMetrics:
             (metrics.mql, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
             (metrics.accuracy, 1, False, {}),
+            (metrics.precision, 1, False, {}),
+            (metrics.recall, 1, False, {}),
+            (metrics.f1, 1, False, {}),
         ],
     )
     def test_same(self, config):
@@ -1388,6 +1413,9 @@ class TestMetrics:
             (metrics.r2_score, "min", {}),
             (metrics.coefficient_of_variation, "max", {}),
             (metrics.accuracy, "max", {}),
+            (metrics.precision, "max", {}),
+            (metrics.recall, "max", {}),
+            (metrics.f1, "max", {}),
         ],
     )
     def test_multiple_ts(self, config):
@@ -1478,6 +1506,9 @@ class TestMetrics:
             (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
             (metrics.coefficient_of_variation, metric_cov, {}, {}),
             (metrics.accuracy, metric_macc, {}, {}),
+            (metrics.precision, metric_precision, {}, {}),
+            (metrics.recall, metric_recall, {}, {}),
+            (metrics.f1, metric_f1, {}, {}),
         ],
     )
     def test_metrics_deterministic(self, config):
