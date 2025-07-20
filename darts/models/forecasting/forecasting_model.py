@@ -1314,7 +1314,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         overlap_end: bool = False,
         last_points_only: bool = False,
         metric: Union[METRIC_TYPE, list[METRIC_TYPE]] = metrics.mape,
-        reduction: Union[Callable[..., float], None] = np.mean,
+        reduction: Union[Callable[..., float], None] = np.nanmean,
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
@@ -1591,6 +1591,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             # add user supplied metric kwargs
             kwargs = {k: v for k, v in metric_f_kwargs.items()}
             metric_params = inspect.signature(metric_f).parameters
+
+            if (
+                kwargs.get("label_reduction", None) is None
+                or metric_f.__name__ == "confusion_matrix"
+            ) and kwargs.get("labels", None) is None:
+                logger.warning(
+                    f"Parameter `labels` is not set for (classification) metric `{metric_f.__name__}()` that does not "
+                    f"reduce the label-specific scores (either `label_reduction=None` or using the `confusion_matrix` "
+                    f"metric). This may result in inconsistent or failing backtest."
+                )
 
             # scaled metrics require `insample` series
             if "insample" in metric_params:

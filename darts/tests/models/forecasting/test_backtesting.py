@@ -6,6 +6,7 @@ from itertools import product
 import numpy as np
 import pandas as pd
 import pytest
+from sklearn.linear_model import LogisticRegression
 
 import darts.metrics as metrics
 from darts import TimeSeries
@@ -19,6 +20,7 @@ from darts.models import (
     NaiveDrift,
     NaiveSeasonal,
     RandomForestModel,
+    SKLearnClassifierModel,
     Theta,
 )
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
@@ -99,13 +101,18 @@ class TestBacktesting:
         itertools.product(
             [True, False],
             [False, True],
-            [[metrics.mape], [metrics.mape, metrics.mape]],
+            [
+                ([metrics.mape], 100.0),
+                ([metrics.mape, metrics.mape], 100.0),
+                ([metrics.f1], 0.0),
+                ([metrics.f1, metrics.precision], 0.0),
+            ],
         ),
     )
     def test_output_single_series_hfc_lpo_true(self, config):
         """Tests backtest based on historical forecasts generated on a single `series` (or list of one `series`)
         with last_points_only=True"""
-        is_univariate, series_as_list, metric = config
+        is_univariate, series_as_list, (metric, score_expected) = config
         is_multi_metric = len(metric) > 1
         y = ct(value=1.0, length=10)
         hfc = ct(value=2.0, length=10)
@@ -158,11 +165,11 @@ class TestBacktesting:
         bt = bt[0]
         if not is_multi_metric:
             # inner type expected: 1 float
-            assert isinstance(bt, float) and bt == 100.0
+            assert isinstance(bt, float) and bt == score_expected
         else:
             # inner shape expected: (n metrics = 2,)
             assert isinstance(bt, np.ndarray)
-            np.testing.assert_array_almost_equal(bt, np.array([100.0, 100.0]))
+            np.testing.assert_array_almost_equal(bt, np.array([score_expected] * 2))
 
         # with reduction
         bt = model.backtest(
@@ -177,25 +184,31 @@ class TestBacktesting:
         bt = bt[0]
         if not is_multi_metric:
             # inner type expected: 1 float
-            assert isinstance(bt, float) and bt == 100.0
+            assert isinstance(bt, float) and bt == score_expected
         else:
             # inner shape expected: (n metrics = 2,)
             assert isinstance(bt, np.ndarray)
-            np.testing.assert_array_almost_equal(bt, np.array([100.0, 100.0]))
+            np.testing.assert_array_almost_equal(bt, np.array([score_expected] * 2))
 
     @pytest.mark.parametrize(
         "config",
         itertools.product(
             [True, False],
             [False, True],
-            [[metrics.mape], [metrics.mape, metrics.mape]],
+            [
+                ([metrics.mape], [0.0, 100.0]),
+                ([metrics.mape, metrics.mape], [0.0, 100.0]),
+                ([metrics.f1], [1.0, 0.0]),
+                ([metrics.f1, metrics.precision], [1.0, 0.0]),
+            ],
             [1, 2],
         ),
     )
     def test_output_single_series_hfc_lpo_false(self, config):
         """Tests backtest based on historical forecasts generated on a single `series` (or list of one `series`)
         with last_points_only=False"""
-        is_univariate, series_as_list, metric, n_forecasts = config
+        is_univariate, series_as_list, (metric, score_expected), n_forecasts = config
+        score_hi_expected, score_lo_expected = score_expected
         is_multi_metric = len(metric) > 1
         y = ct(value=1.0, length=10)
         hfc = ct(value=2.0, length=10)
@@ -256,12 +269,15 @@ class TestBacktesting:
         if not is_multi_metric:
             # inner shape expected: (n hist forecasts = 2,)
             np.testing.assert_array_almost_equal(
-                bt, np.array([0.0, 100.0])[:n_forecasts]
+                bt, np.array([score_hi_expected, score_lo_expected])[:n_forecasts]
             )
         else:
             # inner shape expected: (n hist forecasts = 2, n metrics = 2)
             np.testing.assert_array_almost_equal(
-                bt, np.array([[0.0, 0.0], [100.0, 100.0]])[:n_forecasts]
+                bt,
+                np.array([[score_hi_expected] * 2, [score_lo_expected] * 2])[
+                    :n_forecasts
+                ],
             )
 
         # with reduction
@@ -275,7 +291,11 @@ class TestBacktesting:
         bt = bt if series_as_list else [bt]
         assert isinstance(bt, list) and len(bt) == 1
         bt = bt[0]
-        score_exp = 0.0 if n_forecasts == 1 else 50.0
+        score_exp = (
+            score_hi_expected
+            if n_forecasts == 1
+            else (score_hi_expected + score_lo_expected) / 2
+        )
         if not is_multi_metric:
             # inner shape expected: 1 float
             assert isinstance(bt, float) and bt == score_exp
@@ -288,12 +308,18 @@ class TestBacktesting:
         "config",
         itertools.product(
             [True, False],
-            [[metrics.mape], [metrics.mape, metrics.mape]],
+            [
+                ([metrics.mape], [0.0, 100.0]),
+                ([metrics.mape, metrics.mape], [0.0, 100.0]),
+                ([metrics.f1], [1.0, 0.0]),
+                ([metrics.f1, metrics.precision], [1.0, 0.0]),
+            ],
         ),
     )
     def test_output_multi_series_hfc_lpo_true(self, config):
         """Tests backtest based on historical forecasts generated on multiple `series` with last_points_only=True"""
-        is_univariate, metric = config
+        is_univariate, (metric, score_expected) = config
+        score_hi_expected, score_lo_expected = score_expected
         is_multi_metric = len(metric) > 1
         y = ct(value=1.0, length=10)
         hfc = ct(value=2.0, length=10)
@@ -342,12 +368,16 @@ class TestBacktesting:
         assert isinstance(bt, list) and len(bt) == 2
         if not is_multi_metric:
             # per series, inner type expected: 1 float
-            assert bt == [0.0, 100.0]
+            assert bt == score_expected
         else:
             # per series, inner shape expected: (n metrics = 2,)
             assert all(isinstance(bt_, np.ndarray) for bt_ in bt)
-            np.testing.assert_array_almost_equal(bt[0], np.array([0.0, 0.0]))
-            np.testing.assert_array_almost_equal(bt[1], np.array([100.0, 100.0]))
+            np.testing.assert_array_almost_equal(
+                bt[0], np.array([score_hi_expected] * 2)
+            )
+            np.testing.assert_array_almost_equal(
+                bt[1], np.array([score_lo_expected] * 2)
+            )
 
         # with reduction
         bt = model.backtest(
@@ -360,25 +390,35 @@ class TestBacktesting:
         assert isinstance(bt, list) and len(bt) == 2
         if not is_multi_metric:
             # per series, inner type expected: 1 float
-            assert bt == [0.0, 100.0]
+            assert bt == score_expected
         else:
             # per series, inner shape expected: (n metrics = 2,)
             assert all(isinstance(bt_, np.ndarray) for bt_ in bt)
-            np.testing.assert_array_almost_equal(bt[0], np.array([0.0, 0.0]))
-            np.testing.assert_array_almost_equal(bt[1], np.array([100.0, 100.0]))
+            np.testing.assert_array_almost_equal(
+                bt[0], np.array([score_hi_expected] * 2)
+            )
+            np.testing.assert_array_almost_equal(
+                bt[1], np.array([score_lo_expected] * 2)
+            )
 
     @pytest.mark.parametrize(
         "config",
         itertools.product(
             [True, False],
-            [[metrics.mape], [metrics.mape, metrics.mape]],
+            [
+                ([metrics.mape], [0.0, 100.0]),
+                ([metrics.mape, metrics.mape], [0.0, 100.0]),
+                ([metrics.f1], [1.0, 0.0]),
+                ([metrics.f1, metrics.precision], [1.0, 0.0]),
+            ],
         ),
     )
     def test_output_multi_series_hfc_lpo_false(self, config):
         """Tests backtest based on historical forecasts generated on multiple `series` with
         last_points_only=False.
         """
-        is_univariate, metric = config
+        is_univariate, (metric, score_expected) = config
+        score_hi_expected, score_lo_expected = score_expected
         is_multi_metric = len(metric) > 1
         y = ct(value=1.0, length=10)
         hfc = ct(value=2.0, length=10)
@@ -423,12 +463,16 @@ class TestBacktesting:
         assert isinstance(bt[1], np.ndarray)
         if not is_multi_metric:
             # inner shape expected: (n hist forecasts = 1,)
-            np.testing.assert_array_almost_equal(bt[0], np.array([0.0]))
-            np.testing.assert_array_almost_equal(bt[1], np.array([100.0]))
+            np.testing.assert_array_almost_equal(bt[0], np.array([score_hi_expected]))
+            np.testing.assert_array_almost_equal(bt[1], np.array([score_lo_expected]))
         else:
             # inner shape expected: (n metrics = 2, n hist forecasts = 1)
-            np.testing.assert_array_almost_equal(bt[0], np.array([[0.0, 0.0]]))
-            np.testing.assert_array_almost_equal(bt[1], np.array([[100.0, 100.0]]))
+            np.testing.assert_array_almost_equal(
+                bt[0], np.array([[score_hi_expected] * 2])
+            )
+            np.testing.assert_array_almost_equal(
+                bt[1], np.array([[score_lo_expected] * 2])
+            )
 
         # with reduction
         bt = model.backtest(
@@ -437,26 +481,36 @@ class TestBacktesting:
         assert isinstance(bt, list) and len(bt) == 2
         if not is_multi_metric:
             # inner type expected: 1 float
-            assert bt == [0.0, 100.0]
+            assert bt == score_expected
         else:
             # inner shape expected: (n metrics = 2,)
             assert isinstance(bt[0], np.ndarray)
-            np.testing.assert_array_almost_equal(bt[0], np.array([0.0, 0.0]))
+            np.testing.assert_array_almost_equal(
+                bt[0], np.array([score_hi_expected] * 2)
+            )
             assert isinstance(bt[1], np.ndarray)
-            np.testing.assert_array_almost_equal(bt[1], np.array([100.0, 100.0]))
+            np.testing.assert_array_almost_equal(
+                bt[1], np.array([score_lo_expected] * 2)
+            )
 
     @pytest.mark.parametrize(
         "config",
         itertools.product(
             [True, False],
-            [[metrics.mape], [metrics.mape, metrics.mape]],
+            [
+                ([metrics.mape], [0.0, 100.0]),
+                ([metrics.mape, metrics.mape], [0.0, 100.0]),
+                ([metrics.f1], [1.0, 0.0]),
+                ([metrics.f1, metrics.precision], [1.0, 0.0]),
+            ],
         ),
     )
     def test_output_multi_series_hfc_lpo_false_different_n_fcs(self, config):
         """Tests backtest based on historical forecasts generated on multiple `series` with
         last_points_only=False, and the historical forecasts have different lengths
         """
-        is_univariate, metric = config
+        is_univariate, (metric, score_expected) = config
+        score_hi_expected, score_lo_expected = score_expected
         is_multi_metric = len(metric) > 1
         y = ct(value=1.0, length=10)
         hfc = ct(value=2.0, length=10)
@@ -489,15 +543,19 @@ class TestBacktesting:
         assert isinstance(bt[1], np.ndarray)
         if not is_multi_metric:
             # inner shape expected: (n hist forecasts = 1,)
-            np.testing.assert_array_almost_equal(bt[0], np.array([0.0]))
+            np.testing.assert_array_almost_equal(bt[0], np.array([score_hi_expected]))
             # inner shape expected: (n hist forecasts = 2,)
-            np.testing.assert_array_almost_equal(bt[1], np.array([100.0, 100.0]))
+            np.testing.assert_array_almost_equal(
+                bt[1], np.array([score_lo_expected] * 2)
+            )
         else:
             # inner shape expected: (n metrics = 2, n hist forecasts = 1)
-            np.testing.assert_array_almost_equal(bt[0], np.array([[0.0, 0.0]]))
+            np.testing.assert_array_almost_equal(
+                bt[0], np.array([[score_hi_expected] * 2])
+            )
             # inner shape expected: (n metrics = 2, n hist forecasts = 2)
             np.testing.assert_array_almost_equal(
-                bt[1], np.array([[100.0, 100.0], [100.0, 100.0]])
+                bt[1], np.array([[score_lo_expected] * 2, [score_lo_expected] * 2])
             )
 
         # with reduction
@@ -507,11 +565,13 @@ class TestBacktesting:
         assert isinstance(bt, list) and len(bt) == 2
         if not is_multi_metric:
             # inner type expected: 1 float
-            assert bt == [0.0, 100.0]
+            assert bt == score_expected
         else:
             # inner shape expected: (n metrics = 2,)
             assert isinstance(bt[0], np.ndarray)
-            np.testing.assert_array_almost_equal(bt[0], np.array([0.0, 0.0]))
+            np.testing.assert_array_almost_equal(
+                bt[0], np.array([score_hi_expected] * 2)
+            )
             assert isinstance(bt[1], np.ndarray)
 
     def test_backtest_forecasting(self):
@@ -889,6 +949,143 @@ class TestBacktesting:
             stride=3,
         )
         assert score > 0.9
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            [
+                "det",
+                "sampled",
+                "lkl_params",
+            ],  # prediction method (0: deterministic, 1: sampled, 2: lkl params)
+            [False, True],  # is multivariate
+            [True, False],  # auto-regression
+        ),
+    )
+    def test_backtest_classification(self, config, caplog):
+        """Tests backtest for classification models with different prediction methods and configurations."""
+        method, is_multivariate, use_autoreg = config
+        random_state = 42
+
+        min_score = 1.0
+        n_reps = 10
+        ocl = 1 if use_autoreg else 3
+        if method == "sampled":
+            # sampled predictions need more training data to be accurate
+            n_reps = 50
+            if use_autoreg:
+                # auto-regression would need even more data
+                min_score = 0.9
+        elif method == "lkl_params":
+            # likelihood parameters prediction cannot perform autoregression
+            ocl = 3
+
+        labels = [4, 3, 2, 1, 0]
+        series = np.array(labels * n_reps)
+        times = generate_index("2000-01-01", length=len(series), freq="D")
+        series = TimeSeries.from_times_and_values(times=times, values=series)
+        if is_multivariate:
+            series = series.stack(series + 10)
+            labels += [14, 13, 12, 11, 10]
+
+        model = SKLearnClassifierModel(
+            lags=1,
+            output_chunk_length=ocl,
+            model=LogisticRegression(),
+            random_state=random_state,
+        ).fit(series)
+        bt_kwargs = {
+            "series": series,
+            "start": pd.Timestamp("20000201"),
+            "forecast_horizon": 3,
+            "retrain": False,
+            "random_state": random_state,
+        }
+        if method == "sampled":
+            bt_kwargs["num_samples"] = 100
+        elif method == "lkl_params":
+            bt_kwargs["predict_likelihood_parameters"] = True
+
+        # base clf metric reduces label-specific scores -> works out of the box
+        for lpo in [True, False]:
+            score = model.backtest(metric=metrics.f1, last_points_only=lpo, **bt_kwargs)
+            assert score >= min_score
+
+        score_expected = np.array([min_score] * len(labels))
+
+        # clf metric without label reduction works for `lpo=True` as all labels are present
+        score = model.backtest(
+            metric=metrics.f1,
+            metric_kwargs={"label_reduction": None},
+            last_points_only=True,
+            **bt_kwargs,
+        )
+        assert score.shape == score_expected.shape
+        assert np.all(score >= score_expected)
+
+        # with `lpo=False` it raises a warning that the results might be inconsistent (we get 3 scores instead of
+        # 5 because metrics on multiple series / forecasts do not know about cross forecast labels)
+        warning_expected = (
+            "Parameter `labels` is not set for (classification) metric `f1()`"
+        )
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            score = model.backtest(
+                metric=metrics.f1,
+                metric_kwargs={"label_reduction": None},
+                last_points_only=False,
+                **bt_kwargs,
+            )
+            score_expected_ = np.array([min_score] * 3 * series.width)
+            assert score.shape == score_expected_.shape
+            assert np.all(score >= score_expected_)
+            assert warning_expected in caplog.text
+        caplog.clear()
+
+        # passing the `labels` parameter gives the expected results and no warning
+        caplog.clear()
+        with caplog.at_level(logging.WARNING):
+            score = model.backtest(
+                metric=metrics.f1,
+                metric_kwargs={"label_reduction": None, "labels": labels},
+                last_points_only=False,
+                **bt_kwargs,
+            )
+            assert score.shape == score_expected.shape
+            assert np.all(score >= score_expected)
+        caplog.clear()
+
+        # no need to check below with sampled predictions using auto-regression, as output is more random
+        if method == "sampled" and use_autoreg:
+            return
+
+        # selecting a subset of labels works as well
+        # sampled predictions are not perfect, so we cannot expect 1.0 score
+        if not is_multivariate:
+            # univariate doesn't contain label `12`
+            scores_expected = [[1.0], [1.0, np.nan]]
+        else:
+            scores_expected = [[1.0], [1.0, 1.0]]
+        for labels_, score_expected in zip([[1.0], [1.0, 12.0]], scores_expected):
+            score = model.backtest(
+                metric=metrics.f1,
+                metric_kwargs={"label_reduction": None, "labels": labels_},
+                last_points_only=False,
+                **bt_kwargs,
+            )
+            np.testing.assert_array_almost_equal(score, score_expected)
+
+        # confusion matrix works as well
+        score = model.backtest(
+            metric=metrics.confusion_matrix,
+            metric_kwargs={"labels": labels},
+            reduction=np.nansum,
+            last_points_only=False,
+            **bt_kwargs,
+        )
+        # only diagonal elements are non-zero (true positives, perfect prediction
+        non_zero_idx = np.argwhere(score > 0)
+        assert np.all(non_zero_idx[:, 0] == non_zero_idx[:, 1])
 
     @pytest.mark.parametrize("model_cls", [Theta, ARIMA])
     def test_backtest_bad_covariates(self, model_cls):
