@@ -707,6 +707,7 @@ class TestHistoricalforecast:
             train_length=None,
             retrain=True,
             overlap_end=False,
+            verbose=False,
         )
 
         # time index with minimum train length

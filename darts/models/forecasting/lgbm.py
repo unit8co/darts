@@ -236,6 +236,7 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
+        verbose: bool = False,
         **kwargs,
     ):
         """
@@ -277,6 +278,8 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
          **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
@@ -298,6 +301,7 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    verbose=verbose,
                     **kwargs,
                 )
                 # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
@@ -315,6 +319,7 @@ class LightGBMModel(SKLearnModelWithCategoricalCovariates):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            verbose=verbose,
             **kwargs,
         )
         return self

@@ -16,6 +16,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed a bug in `SKLearnModel.get_estimator()` for univariate quantile models that use `multi_models=False` , where using `quantile` did not return the correct fitted quantile model / estimator. [#2838](https://github.com/unit8co/darts/pull/2838) by [Dennis Bader](https://github.com/dennisbader).
+- Added parameter `verbose` to `ForecastingModel.fit()` that allows to control the verbosity for model fitting. Ignored if the underlying model does not support it. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
+- Fixed a bug in `historical_forecast` where the `verbose` parameter was not propagated to the the model's `fit()` method. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
+2805) by [Timon Erhart](https://github.com/turbotimon).
 
 **Dependencies**
 
