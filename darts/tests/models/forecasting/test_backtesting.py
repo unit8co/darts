@@ -957,7 +957,7 @@ class TestBacktesting:
                 "det",
                 "sampled",
                 "lkl_params",
-            ],  # prediction method (0: deterministic, 1: sampled, 2: lkl params)
+            ],  # prediction method
             [False, True],  # is multivariate
             [True, False],  # auto-regression
         ),
@@ -1026,7 +1026,7 @@ class TestBacktesting:
         # with `lpo=False` it raises a warning that the results might be inconsistent (we get 3 scores instead of
         # 5 because metrics on multiple series / forecasts do not know about cross forecast labels)
         warning_expected = (
-            "Parameter `labels` is not set for (classification) metric `f1()`"
+            "Parameter `labels` is not set for classification metric `f1()`"
         )
         caplog.clear()
         with caplog.at_level(logging.WARNING):

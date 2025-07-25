@@ -32,6 +32,14 @@ _FP_IDX = (slice(None), slice(None), 0, 1)
 _FN_IDX = (slice(None), slice(None), 1, 0)
 _TP_IDX = (slice(None), slice(None), 1, 1)
 
+# parameter names
+_PARAM_Q = "q"
+_PARAM_Q_INTERVAL = "q_interval"
+_PARAM_LABELS = "labels"
+_PARAM_LABEL_REDUCTION = "label_reduction"
+_PARAM_SERIES_REDUCTION = "series_reduction"
+_PARAM_TIME_REDUCTION = "time_reduction"
+_PARAM_COMPONENT_REDUCTION = "component_reduction"
 
 # class probabilities suffix
 PROBA_SUFFIX = "_p"
@@ -68,17 +76,19 @@ def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
     @wraps(func)
     def wrapper_interval_support(*args, **kwargs):
-        q = kwargs.get("q")
+        q = kwargs.get(_PARAM_Q)
         if q is not None:
             raise_log(
                 ValueError(
-                    "`q` is not supported for quantile interval metrics; use `q_interval` instead."
+                    f"`{_PARAM_Q}` is not supported for quantile interval metrics; use `{_PARAM_Q_INTERVAL}` instead."
                 )
             )
-        q_interval = kwargs.get("q_interval")
+        q_interval = kwargs.get(_PARAM_Q_INTERVAL)
         if q_interval is None:
             raise_log(
-                ValueError("Quantile interval metrics require setting `q_interval`.")
+                ValueError(
+                    f"Quantile interval metrics require setting `{_PARAM_Q_INTERVAL}`."
+                )
             )
         if isinstance(q_interval, tuple):
             q_interval = [q_interval]
@@ -86,20 +96,20 @@ def interval_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         if not q_interval.ndim == 2 or q_interval.shape[1] != 2:
             raise_log(
                 ValueError(
-                    "`q_interval` must be a tuple (float, float) or a sequence of tuples (float, float)."
+                    f"`{_PARAM_Q_INTERVAL}` must be a tuple (float, float) or a sequence of tuples (float, float)."
                 ),
                 logger=logger,
             )
         if not np.all(q_interval[:, 1] - q_interval[:, 0] > 0):
             raise_log(
                 ValueError(
-                    "all intervals in `q_interval` must be tuples of (lower q, upper q) with `lower q > upper q`. "
-                    f"Received `q_interval={q_interval}`"
+                    f"all intervals in `{_PARAM_Q_INTERVAL}` must be tuples of (lower q, upper q) with "
+                    f"`lower q > upper q`. Received `{_PARAM_Q_INTERVAL}={q_interval}`"
                 ),
                 logger=logger,
             )
-        kwargs["q_interval"] = q_interval
-        kwargs["q"] = np.sort(np.unique(q_interval))
+        kwargs[_PARAM_Q_INTERVAL] = q_interval
+        kwargs[_PARAM_Q] = np.sort(np.unique(q_interval))
         return func(*args, **kwargs)
 
     return wrapper_interval_support
@@ -113,29 +123,29 @@ def classification_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
     @wraps(func)
     def wrapper_classification_support(*args, **kwargs):
-        labels = kwargs.get("labels")
+        labels = kwargs.get(_PARAM_LABELS)
         if labels is not None:
             if isinstance(labels, int):
                 labels = np.array([labels])
             else:
                 labels = np.array(labels)
-            kwargs["labels"] = labels
+            kwargs[_PARAM_LABELS] = labels
 
         params = signature(func).parameters
-        if "label_reduction" in params:
+        if _PARAM_LABEL_REDUCTION in params:
             label_reduction = kwargs.get(
-                "label_reduction", params["label_reduction"].default
+                _PARAM_LABEL_REDUCTION, params[_PARAM_LABEL_REDUCTION].default
             )
             if not isinstance(label_reduction, _LabelReduction):
                 if not _LabelReduction.has_value(label_reduction):
                     raise_log(
                         ValueError(
-                            f"Invalid `label_reduction` value: `{label_reduction}`. "
+                            f"Invalid `{_PARAM_LABEL_REDUCTION}` value: `{label_reduction}`. "
                             f"Must be one of `{list(_LabelReduction._value2member_map_)}`."
                         ),
                         logger=logger,
                     )
-                kwargs["label_reduction"] = _LabelReduction(label_reduction)
+                kwargs[_PARAM_LABEL_REDUCTION] = _LabelReduction(label_reduction)
 
         kwargs["is_classification"] = True
         return func(*args, **kwargs)
@@ -176,21 +186,21 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         _ = _get_reduction(
             kwargs=kwargs,
             params=params,
-            red_name="time_reduction",
+            red_name=_PARAM_TIME_REDUCTION,
             axis=TIME_AX,
             sanity_check=True,
         )
         _ = _get_reduction(
             kwargs=kwargs,
             params=params,
-            red_name="component_reduction",
+            red_name=_PARAM_COMPONENT_REDUCTION,
             axis=COMP_AX,
             sanity_check=True,
         )
         series_reduction = _get_reduction(
             kwargs=kwargs,
             params=params,
-            red_name="series_reduction",
+            red_name=_PARAM_SERIES_REDUCTION,
             axis=0,
             sanity_check=True,
         )
@@ -237,12 +247,12 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
             kwargs.pop("insample", 0)
 
         # handle `q` (quantile) parameter for probabilistic (or quantile) forecasts
-        if "q" in params:
+        if _PARAM_Q in params:
             # convert `q` to tuple of (quantile values, optional quantile component names)
-            q = kwargs.get("q", params["q"].default)
+            q = kwargs.get(_PARAM_Q, params[_PARAM_Q].default)
             q_comp_names = None
             if q is None:
-                kwargs["q"] = None
+                kwargs[_PARAM_Q] = None
             else:
                 if isinstance(q, tuple):
                     q, q_comp_names = q
@@ -254,19 +264,19 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
                 if not np.all(q[1:] - q[:-1] > 0.0):
                     raise_log(
                         ValueError(
-                            "`q` must be of type `float`, or a sequence of increasing order with unique values only. "
-                            f"Received `q={q}`."
+                            f"`{_PARAM_Q}` must be of type `float`, or a sequence of increasing order with unique "
+                            f"values only. Received `{_PARAM_Q}={q}`."
                         ),
                         logger=logger,
                     )
                 if not np.all(q >= 0.0) & np.all(q <= 1.0):
                     raise_log(
                         ValueError(
-                            f"All `q` values must be in the range `(>=0,<=1)`. Received `q={q}`."
+                            f"All `{_PARAM_Q}` values must be in the range `(>=0,<=1)`. Received `{_PARAM_Q}={q}`."
                         ),
                         logger=logger,
                     )
-                kwargs["q"] = (q, q_comp_names)
+                kwargs[_PARAM_Q] = (q, q_comp_names)
 
         iterator = _build_tqdm_iterator(
             iterable=zip(*input_series),
@@ -299,7 +309,7 @@ def multi_ts_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
         # reduce metrics along series axis
         if series_reduction is not None:
-            vals = kwargs["series_reduction"](vals, axis=0)
+            vals = kwargs[_PARAM_SERIES_REDUCTION](vals, axis=0)
         elif series_seq_type == SeriesType.SINGLE:
             vals = vals[0]
 
@@ -374,7 +384,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         time_reduction = _get_reduction(
             kwargs=kwargs,
             params=params,
-            red_name="time_reduction",
+            red_name=_PARAM_TIME_REDUCTION,
             axis=TIME_AX,
             sanity_check=False,
         )
@@ -385,7 +395,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
         component_reduction = _get_reduction(
             kwargs=kwargs,
             params=params,
-            red_name="component_reduction",
+            red_name=_PARAM_COMPONENT_REDUCTION,
             axis=COMP_AX,
             sanity_check=False,
         )
@@ -407,7 +417,7 @@ def multivariate_support(func) -> Callable[..., METRIC_OUTPUT_TYPE]:
 
 def _regression_handling(actual_series, pred_series, params, kwargs):
     """Handles the regression metrics input parameters and checks."""
-    q, q_comp_names = kwargs.get("q"), None
+    q, q_comp_names = kwargs.get(_PARAM_Q), None
     if q is None:
         # without quantiles, the number of components must match
         if actual_series.n_components != pred_series.n_components:
@@ -426,9 +436,9 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
         if not isinstance(q, tuple) or not len(q) == 2:
             raise_log(
                 ValueError(
-                    "`q` must be of tuple of `(np.ndarray, Optional[pd.Index])` "
+                    f"`{_PARAM_Q}` must be of tuple of `(np.ndarray, Optional[pd.Index])` "
                     "where the (quantile values, optional quantile component names). "
-                    f"Received `q={q}`."
+                    f"Received `{_PARAM_Q}={q}`."
                 ),
                 logger=logger,
             )
@@ -446,7 +456,7 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
             if not q_comp_names.isin(pred_series.components).all():
                 raise_log(
                     ValueError(
-                        f"Computing a metric with quantile(s) `q={q}` is only supported for probabilistic "
+                        f"Computing a metric with quantile(s) `{_PARAM_Q}={q}` is only supported for probabilistic "
                         f"`pred_series` (num samples > 1) or `pred_series` containing the predicted "
                         f"quantiles as columns / components. Either pass a probabilistic `pred_series` or "
                         f"a series containing the expected quantile components: {q_comp_names.tolist()} "
@@ -454,8 +464,8 @@ def _regression_handling(actual_series, pred_series, params, kwargs):
                     logger=logger,
                 )
 
-    if "q" in params:
-        kwargs["q"] = (q, q_comp_names)
+    if _PARAM_Q in params:
+        kwargs[_PARAM_Q] = (q, q_comp_names)
     return kwargs
 
 
