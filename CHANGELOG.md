@@ -11,6 +11,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added support for classification forecasting with SKLearn-like forecasting models. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
+ - Added `SklearnClassifierModel` which can take any sklearn-like classifier model.
+ - Added `LightGBMClassifierModel`, `XGBClassifierModel` and `CatBoostClassifierModel` which use the classifier models of the respective libraries.
+ - Added `ClassProbabilityLikelihood` and set it as the default likelihood for classifiers to predict class probabilities with `predict_likelihood_parameters=True` when calling `predict()`.
 - Added classification metrics `accuracy()`, `f1()`, `precision()`, and `recall()`, `confusion_matrix()` to the `metrics` module. Use these metrics to evaluate the performance of classification models. [#2767](https://github.com/unit8co/darts/pull/2767) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
@@ -20,6 +24,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
+
+- Renamed `RegressionModelWithCategoricalCovariates` to `RegressionModelWithCategoricalFeatures` which now also supports categorical target features. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+- Added `MultiOutputClassifier` for handling multi-output classification tasks. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
 
 ## [0.36.0](https://github.com/unit8co/darts/tree/0.36.0) (2025-06-29)
 

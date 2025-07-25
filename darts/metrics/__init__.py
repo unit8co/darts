@@ -154,6 +154,14 @@ TIME_DEPENDENT_METRICS = {
     incs_qr,
 }
 
+CLASSIFICATION_METRICS = {
+    accuracy,
+    precision,
+    recall,
+    f1,
+    confusion_matrix,
+}
+
 __all__ = [
     "ae",
     "ape",

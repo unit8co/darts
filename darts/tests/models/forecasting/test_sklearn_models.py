@@ -14,8 +14,6 @@ from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegresso
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 
-import darts
-import darts.utils.utils
 from darts import TimeSeries
 from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
@@ -353,6 +351,8 @@ class TestSKLearnModels:
     sine_multivariate2 = sine_univariate2.stack(sine_univariate3)
     sine_multiseries1 = [sine_univariate1, sine_univariate2, sine_univariate3]
     sine_multiseries2 = [sine_univariate4, sine_univariate5, sine_univariate6]
+
+    sine_multivariate_multiseries = [sine_multivariate1, sine_multivariate2]
 
     lags_1 = {"target": [-3, -2, -1], "past": [-4, -2], "future": [-5, 2]}
 
@@ -1378,22 +1378,43 @@ class TestSKLearnModels:
     )
     def test_multioutput_wrapper(self, config):
         """Check that with input_chunk_length=1, wrapping in MultiOutputRegressor occurs only when necessary"""
+
+        def check_only_non_native_are_wrapped(model, supports_multioutput_natively):
+            if supports_multioutput_natively:
+                assert not isinstance(model.model, MultiOutputRegressor)
+                # single estimator is responsible for both components
+                assert (
+                    model.model
+                    == model.get_estimator(horizon=0, target_dim=0)
+                    == model.get_estimator(horizon=0, target_dim=1)
+                )
+            else:
+                assert isinstance(model.model, MultiOutputRegressor)
+                # one estimator (sub-model) per component
+                assert model.get_estimator(
+                    horizon=0, target_dim=0
+                ) != model.get_estimator(horizon=0, target_dim=1)
+
         model, supports_multioutput_natively = config
+
+        # univariate should not be wrapped in MultiOutputRegressor
+        model.fit(series=self.sine_univariate1)
+        assert not isinstance(model.model, MultiOutputRegressor)
+
+        model = model.untrained_model()
+        # univariate should be wrapped in MultiOutputRegressor only if not natively supported
         model.fit(series=self.sine_multivariate1)
-        if supports_multioutput_natively:
-            assert not isinstance(model.model, MultiOutputRegressor)
-            # single estimator is responsible for both components
-            assert (
-                model.model
-                == model.get_estimator(horizon=0, target_dim=0)
-                == model.get_estimator(horizon=0, target_dim=1)
-            )
-        else:
-            assert isinstance(model.model, MultiOutputRegressor)
-            # one estimator (sub-model) per component
-            assert model.get_estimator(horizon=0, target_dim=0) != model.get_estimator(
-                horizon=0, target_dim=1
-            )
+        check_only_non_native_are_wrapped(model, supports_multioutput_natively)
+
+        model = model.untrained_model()
+        # mutli-series with same component should not be wrapped in MultiOutputRegressor
+        model.fit(series=self.sine_multiseries1)
+        assert not isinstance(model.model, MultiOutputRegressor)
+
+        model = model.untrained_model()
+        # mutli-series with mutli variate should be wrapped in MultiOutputRegressor only if not natively supported
+        model.fit(series=self.sine_multivariate_multiseries)
+        check_only_non_native_are_wrapped(model, supports_multioutput_natively)
 
     model_configs_multioutput = [
         (
@@ -3698,33 +3719,13 @@ class TestSKLearnModels:
     )
     @pytest.mark.parametrize(
         "model_cls_and_module",
-        (
-            [
-                (
-                    LightGBMModel,
-                    lgbm_test_params,
-                    darts.models.forecasting.lgbm.lgb.LGBMRegressor,
-                )
-            ]
-            if lgbm_available
-            else []
-        )
-        + (
-            [
-                (
-                    CatBoostModel,
-                    cb_test_params,
-                    darts.models.forecasting.catboost_model.CatBoostRegressor,
-                )
-            ]
-            if cb_available
-            else []
-        ),
+        ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
+        + ([(CatBoostModel, cb_test_params)] if cb_available else []),
     )
     def test_categorical_features_passed_to_fit_correctly(self, model_cls_and_module):
         """Test whether the categorical features are passed to fit correctly"""
 
-        model_cls, model_kwargs, module = model_cls_and_module
+        model_cls, model_kwargs = model_cls_and_module
 
         model = model_cls(
             lags=1,
@@ -3756,7 +3757,7 @@ class TestSKLearnModels:
             return original_fit(*args, **kwargs)
 
         with patch.object(
-            module,
+            model.model.__class__,
             "fit",
             side_effect=intercept_fit_args,
         ):
@@ -3771,12 +3772,14 @@ class TestSKLearnModels:
 
             expected_cat_indices = [2, 3, 5]
             cat_param_name = model._categorical_fit_param
+            kwargs_cat_indices = intercepted_args["kwargs"][cat_param_name]
             eval_set_param_name, _ = model.val_set_params
+
+            assert kwargs_cat_indices == expected_cat_indices
+
             if model_cls == CatBoostModel:
                 model_cat_indices = model.model.get_cat_feature_indices()
-                kwargs_cat_indices = intercepted_args["kwargs"][cat_param_name]
-
-                assert model_cat_indices == kwargs_cat_indices == expected_cat_indices
+                assert model_cat_indices == expected_cat_indices
 
                 # all evals set have correct cat feature indices
                 eval_set_indices = [
@@ -3791,14 +3794,9 @@ class TestSKLearnModels:
                 X, y = intercepted_args["args"]
                 assert isinstance(X, pd.DataFrame)
                 # all categorical features should be encoded as integers
-                for col in X[model_cat_indices].columns:
-                    assert X[col].dtype == int
-
+                for i, col in enumerate(X.columns):
+                    assert X[col].dtype == (int if i in expected_cat_indices else float)
             elif model_cls == LightGBMModel:
-                assert (
-                    intercepted_args["kwargs"][cat_param_name] == expected_cat_indices
-                )
-
                 # lightgbm accepts np.ndarray with floats without decimals (int-like)
                 X, y = intercepted_args["args"]
                 assert isinstance(X, np.ndarray)
@@ -4065,10 +4063,15 @@ class TestProbabilisticSKLearnModels:
                 likelihood="does_not_exist",
                 n_outputs=1,
                 quantiles=None,
+                available_likelihoods=[
+                    LikelihoodType.Gaussian,
+                    LikelihoodType.Poisson,
+                    LikelihoodType.Quantile,
+                ],
             )
         assert (
             str(exc.value)
-            == "Invalid `likelihood='does_not_exist'`. Must be one of ('gaussian', 'poisson', 'quantile')"
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ['gaussian', 'poisson', 'quantile']"
         )
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
