@@ -19,13 +19,13 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.utils import Tags
 
 from darts.logging import get_logger
-from darts.models.forecasting.catboost_model import CatBoostClassifierModel
-from darts.models.forecasting.lgbm import LightGBMClassifierModel
-from darts.models.forecasting.sklearn_model import (
+from darts.models import (
+    CatBoostClassifierModel,
+    LightGBMClassifierModel,
     SKLearnClassifierModel,
-    SKLearnModelWithCategoricalFeatures,
+    XGBClassifierModel,
 )
-from darts.models.forecasting.xgboost import XGBClassifierModel
+from darts.models.forecasting.sklearn_model import SKLearnModelWithCategoricalFeatures
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import LikelihoodType
