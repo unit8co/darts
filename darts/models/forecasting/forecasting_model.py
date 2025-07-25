@@ -27,6 +27,8 @@ from itertools import product
 from random import sample
 from typing import Any, BinaryIO, Callable, Literal, Optional, Union
 
+from darts.metrics import CLASSIFICATION_METRICS
+from darts.metrics.utils import _PARAM_LABEL_REDUCTION, _PARAM_LABELS
 from darts.utils.likelihood_models.base import (
     Likelihood,
     likelihood_component_names,
@@ -1592,15 +1594,26 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             kwargs = {k: v for k, v in metric_f_kwargs.items()}
             metric_params = inspect.signature(metric_f).parameters
 
-            if (
-                kwargs.get("label_reduction", None) is None
-                or metric_f.__name__ == "confusion_matrix"
-            ) and kwargs.get("labels", None) is None:
-                logger.warning(
-                    f"Parameter `labels` is not set for (classification) metric `{metric_f.__name__}()` that does not "
-                    f"reduce the label-specific scores (either `label_reduction=None` or using the `confusion_matrix` "
-                    f"metric). This may result in inconsistent or failing backtest."
-                )
+            if metric_f in CLASSIFICATION_METRICS:
+                has_labels_p = _PARAM_LABELS in metric_params
+                has_label_reduction_p = _PARAM_LABEL_REDUCTION in metric_params
+                if (
+                    has_labels_p
+                    and kwargs.get(_PARAM_LABELS, None) is None
+                    and (
+                        (
+                            has_label_reduction_p
+                            and kwargs.get(_PARAM_LABEL_REDUCTION, False) is None
+                        )
+                        or metric_f.__name__ == "confusion_matrix"
+                    )
+                ):
+                    logger.warning(
+                        f"Parameter `{_PARAM_LABELS}` is not set for classification metric "
+                        f"`{metric_f.__name__}()` that does not reduce the label-specific scores "
+                        f"(either `{_PARAM_LABEL_REDUCTION}=None` or using the "
+                        f"`confusion_matrix` metric). This may result in inconsistent or failing backtest."
+                    )
 
             # scaled metrics require `insample` series
             if "insample" in metric_params:
