@@ -457,6 +457,75 @@ class SKLearnModel(GlobalForecastingModel):
         else:
             return self.lags.get(lags_type, None)
 
+    def _get_lagged_features(
+        self,
+        series: TimeSeries,
+        past_covariates: Optional[TimeSeries],
+        future_covariates: Optional[TimeSeries],
+    ) -> list[list[tuple[str, str, int]]]:
+        """Returns a list of lagged features for the target, past, future, and static covariates.
+
+        The returned lagged features are in the same order as the features passed to the underlying model.
+        """
+        feature_list = []
+        for series_, lags_name, feature_type, series_name in zip(
+            [series, past_covariates, future_covariates],
+            ["target", "past", "future"],
+            ["target", "past_cov", "fut_cov"],
+            ["series", "past_covariates", "future_covariates"],
+        ):
+            series_ = get_single_series(series_)
+            lags = self._get_lags(lags_name)
+            if lags is None:
+                feature_list.append([])
+                continue
+
+            if series_ is None:
+                raise_log(
+                    ValueError(
+                        f"`{series_name}` cannot be `None` when lags are specified for it."
+                    ),
+                    logger=logger,
+                )
+
+            is_comp_specific = self.component_lags.get(lags_name) is not None
+            series_comps = series_.components.tolist()
+            component_lags = {}
+
+            # create a mapping of lags to components (components are in the same order as in the series)
+            if is_comp_specific:
+                # component-specific lags are specific to each component
+                for comp_name in series_comps:
+                    comp_lags = lags[comp_name]
+                    for lag in comp_lags:
+                        if lag not in component_lags:
+                            component_lags[lag] = [comp_name]
+                        else:
+                            component_lags[lag].append(comp_name)
+            else:
+                # global lags are identical for each component
+                for lag in lags:
+                    component_lags[lag] = series_comps
+
+            # create the feature list (in order of increasing lag)
+            lags_sorted = sorted(component_lags.keys())
+            feature_list.append([
+                (feature_type, component, lag)
+                for lag in lags_sorted
+                for component in component_lags[lag]
+            ])
+
+        # add static covariates at the end
+        target_ts = get_single_series(series)
+        if target_ts.has_static_covariates:
+            feature_list.append([
+                ("static_cov", component, 0)
+                for component in list(target_ts.static_covariates.columns)
+            ])
+        else:
+            feature_list.append([])
+        return feature_list
+
     @property
     def _model_encoder_settings(
         self,
@@ -1723,36 +1792,13 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         if sum(len(cat_cov) for cat_cov in categorical_covariates) == 0:
             return [], []
 
-        past_covs_ts = get_single_series(past_covariates)
-        fut_covs_ts = get_single_series(future_covariates)
-
-        feature_list = [
-            [
-                ("target", component, lag)
-                for lag in self.lags.get("target", [])
-                for component in target_ts.components
-            ],
-            [
-                ("past_cov", component, lag)
-                for lag in self.lags.get("past", [])
-                for component in past_covs_ts.components
-            ],
-            [
-                ("fut_cov", component, lag)
-                for lag in self.lags.get("future", [])
-                for component in fut_covs_ts.components
-            ],
-            (
-                [
-                    ("static_cov", component, 0)
-                    for component in list(target_ts.static_covariates.columns)
-                ]
-                if target_ts.has_static_covariates
-                else []
-            ),
-        ]
-
         # keep track of feature list index to refer to the columns indices
+        feature_list = self._get_lagged_features(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
         index = 0
         indices = []
         col_names = []
