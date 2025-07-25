@@ -3678,27 +3678,74 @@ class TestSKLearnModels:
         not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
     )
     @pytest.mark.parametrize(
-        "model_cls",
-        ([CatBoostModel] if cb_available else [])
-        + ([LightGBMModel] if lgbm_available else []),
+        "config",
+        product(
+            ([(CatBoostModel, cb_test_params)] if cb_available else [])
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            [
+                (
+                    1,
+                    [1],
+                    [2, 3, 5],
+                    [
+                        "past_cov_past_cov_cat_dummy_lag-1",
+                        "fut_cov_fut_cov_promo_mechanism_lag1",
+                        "static_cov_product_id_lag0",
+                    ],
+                ),
+                (
+                    {"default_lags": [-3, -2, -1], "past_cov_cat_dummy": [-3, -1]},
+                    [1],
+                    [2, 5, 6, 8],
+                    [
+                        "past_cov_past_cov_cat_dummy_lag-3",
+                        "past_cov_past_cov_cat_dummy_lag-1",
+                        "fut_cov_fut_cov_promo_mechanism_lag1",
+                        "static_cov_product_id_lag0",
+                    ],
+                ),
+                (
+                    1,
+                    {"default_lags": [0, 1, 2], "fut_cov_promo_mechanism": [0, 2]},
+                    [2, 3, 6, 8],
+                    [
+                        "past_cov_past_cov_cat_dummy_lag-1",
+                        "fut_cov_fut_cov_promo_mechanism_lag0",
+                        "fut_cov_fut_cov_promo_mechanism_lag2",
+                        "static_cov_product_id_lag0",
+                    ],
+                ),
+            ],
+        ),
     )
-    def test_get_categorical_features_helper(self, model_cls):
+    def test_get_categorical_features_helper(self, config):
         """Test helper function responsible for retrieving indices of categorical features"""
-
+        (
+            (model_cls, model_kwargs),
+            (lags_pc, lags_fc, indices_expected, f_names_expected),
+        ) = config
         model = model_cls(
             lags=1,
-            lags_past_covariates=1,
-            lags_future_covariates=[1],
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
             output_chunk_length=1,
             categorical_future_covariates=["fut_cov_promo_mechanism"],
             categorical_past_covariates=["past_cov_cat_dummy"],
             categorical_static_covariates=["product_id"],
+            **model_kwargs,
         )
         (
             series,
             past_covariates,
             future_covariates,
         ) = self.inputs_for_tests_categorical_covariates()
+        # fit the model first for component-specific lags
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
         (
             indices,
             column_names,
@@ -3707,12 +3754,8 @@ class TestSKLearnModels:
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        assert indices == [2, 3, 5]
-        assert column_names == [
-            "past_cov_past_cov_cat_dummy_lag-1",
-            "fut_cov_fut_cov_promo_mechanism_lag1",
-            "static_cov_product_id_lag0",
-        ]
+        assert indices == indices_expected
+        assert column_names == f_names_expected
 
     @pytest.mark.skipif(
         not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
