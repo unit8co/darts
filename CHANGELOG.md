@@ -24,6 +24,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- Removed the upper version cap on `scipy<1.16.0` since `statsmodels` added support in version `0.14.5`. [#2853](https://github.com/unit8co/darts/pull/2853) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 
 - Renamed `RegressionModelWithCategoricalCovariates` to `RegressionModelWithCategoricalFeatures` which now also supports categorical target features. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
