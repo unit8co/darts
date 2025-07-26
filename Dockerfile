@@ -1,18 +1,26 @@
+# Use a specific Python version for better reproducibility
 FROM python:3.10
 
-# install python requirements before copying the rest of the files
-# this way we can cache the requirements and not have to reinstall them
-COPY requirements/ /app/requirements/
-RUN pip install -r /app/requirements/dev-all.txt
-
-# copy local files
-COPY . /app
-
-# set work directory
+# Set work directory
 WORKDIR /app
 
-# install darts
-RUN pip install -e .
+# Copy requirements first for better layer caching
+COPY requirements/ /app/requirements/
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r /app/requirements/dev-all.txt
+
+# Copy only the files explicitly needed for installation
+COPY setup.py pyproject.toml MANIFEST.in README.md /app/
+COPY darts/ /app/darts/
+
+# Install darts in development mode
+RUN pip install --no-cache-dir -e . && \
+    # Clean up pip cache
+    rm -rf ~/.cache/pip
+
+# Copy examples
+COPY examples/ /app/examples/
 
 # assuming you are working from inside your darts directory:
 # docker build . -t darts-test:latest
