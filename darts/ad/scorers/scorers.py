@@ -32,7 +32,7 @@ from darts.ad.utils import (
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_log
-from darts.metrics.metrics import METRIC_TYPE
+from darts.metrics.utils import METRIC_TYPE
 from darts.utils.data.tabularization import create_lagged_data
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply

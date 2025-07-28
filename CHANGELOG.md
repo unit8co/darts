@@ -11,13 +11,27 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added support for classification forecasting with SKLearn-like forecasting models. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
+ - Added `SklearnClassifierModel` which can take any sklearn-like classifier model.
+ - Added `LightGBMClassifierModel`, `XGBClassifierModel` and `CatBoostClassifierModel` which use the classifier models of the respective libraries.
+ - Added `ClassProbabilityLikelihood` and set it as the default likelihood for classifiers to predict class probabilities with `predict_likelihood_parameters=True` when calling `predict()`.
+- Added classification metrics `accuracy()`, `f1()`, `precision()`, and `recall()`, `confusion_matrix()` to the `metrics` module. Use these metrics to evaluate the performance of classification models. [#2767](https://github.com/unit8co/darts/pull/2767) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
+
 **Fixed**
 
 - Fixed a bug in `SKLearnModel.get_estimator()` for univariate quantile models that use `multi_models=False` , where using `quantile` did not return the correct fitted quantile model / estimator. [#2838](https://github.com/unit8co/darts/pull/2838) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `LightGBMModel` and `CatBoostModel` when using component-specific lags and categorical features, where certain lag scenarios could result in incorrect categorical feature declaration. [#2852](https://github.com/unit8co/darts/pull/2852) by [Dennis Bader](https://github.com/dennisbader).
+- Removed `darts/tests` and `examples` from the Darts package distribution. These are only required for internal testing. [#2854](https://github.com/unit8co/darts/pull/2854) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
+- Removed the upper version cap on `scipy<1.16.0` since `statsmodels` added support in version `0.14.5`. [#2853](https://github.com/unit8co/darts/pull/2853) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
+
+- Renamed `RegressionModelWithCategoricalCovariates` to `RegressionModelWithCategoricalFeatures` which now also supports categorical target features. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+- Added `MultiOutputClassifier` for handling multi-output classification tasks. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+- Cleaned up `Dockerfile` to only include the necessary files for building the Darts package. [#2854](https://github.com/unit8co/darts/pull/2854) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.36.0](https://github.com/unit8co/darts/tree/0.36.0) (2025-06-29)
 

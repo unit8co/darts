@@ -2618,7 +2618,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A new series, with length at most `n`, ending at `start_ts`.
+            A new series, with length at most `n`, ending at `end_ts`.
         """
         if n <= 0:
             raise_log(ValueError("n should be a positive integer."), logger)
