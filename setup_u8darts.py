@@ -38,7 +38,7 @@ setup(
     maintainer="Unit8 SA",
     maintainer_email="darts@unit8.co",
     license="Apache License 2.0",
-    packages=find_packages(),
+    packages=find_packages(exclude=["examples*", "darts.tests*"]),
     install_requires=base_reqs,
     extras_require={"all": all_reqs, "torch": torch_reqs, "notorch": no_torch_reqs},
     package_data={
