@@ -681,10 +681,7 @@ def _get_historical_forecastable_time_index(
 
     # longest possible time index for target
     if is_training:
-        start = (
-            series.start_time()
-            + (output_lag - output_chunk_shift - min_target_lag + 1) * series.freq
-        )
+        start = series.start_time() + (output_lag - min_target_lag + 1) * series.freq
     else:
         start = series.start_time() - min_target_lag * series.freq
     end = series.end_time() + 1 * series.freq
