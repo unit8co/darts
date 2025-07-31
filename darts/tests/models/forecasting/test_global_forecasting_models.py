@@ -360,7 +360,8 @@ class TestGlobalForecastingModels:
             loaded_model_clean_str.predict(self.forecasting_horizon)
         assert str(err.value) == (
             "Input `series` must be provided. This is the result either from fitting on multiple series, "
-            "from not having fit the model yet, or from loading a model saved with `clean=True`."
+            "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
+            "model saved with `clean=True`."
         )
 
         # When the serie to predict is provided, the prediction is the same
