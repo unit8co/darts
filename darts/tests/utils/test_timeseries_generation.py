@@ -1,3 +1,4 @@
+import itertools
 from typing import Union
 
 import numpy as np
@@ -697,3 +698,35 @@ class TestTimeSeriesGeneration:
         series_new = series_new.with_static_covariates(static_covs)
         series_new = series_new.with_hierarchy({"new2": ["new1"]})
         assert series_new == series_renamed
+
+    @pytest.mark.parametrize(
+        "config",
+        itertools.product(
+            [np.float32, np.float64],
+            [
+                (autoregressive_timeseries, {"coef": [1.0]}, False),
+                (constant_timeseries, {}, False),
+                (datetime_attribute_timeseries, {"attribute": "dayofweek"}, True),
+                (gaussian_timeseries, {}, False),
+                (holidays_timeseries, {"country_code": "CH"}, True),
+                (linear_timeseries, {}, False),
+                (random_walk_timeseries, {}, False),
+                (sine_timeseries, {}, False),
+            ],
+        ),
+    )
+    def test_generation_dtype(self, config):
+        dtype, (gen_func, gen_kwargs, requires_idx) = config
+
+        if requires_idx:
+            gen_kwargs["time_index"] = generate_index(
+                start="2000-01-01", length=10, freq="D"
+            )
+        else:
+            gen_kwargs["length"] = 10
+
+        # generate a TimeSeries with the specified dtype
+        ts = gen_func(dtype=dtype, **gen_kwargs)
+
+        # check that the dtype of the values is as expected
+        assert ts.dtype == dtype
