@@ -5737,12 +5737,30 @@ class TimeSeries:
                     metadata=self.metadata,
                 )
             elif all(isinstance(i, (int, np.int64)) for i in key):
-                return self.__class__(
-                    times=self._time_index[key],
-                    values=self._values[key],
-                    components=self.components,
-                    **self._attrs,
-                )
+                # convert list of integers to slice (must have constant step size)
+                step_sizes = set(right - left for left, right in zip(key[:-1], key[1:]))
+                if len(step_sizes) > 1:
+                    raise_log(
+                        ValueError(
+                            f"Cannot index a `TimeSeries` with a list of integers with non-constant step sizes. "
+                            f"Observed step sizes: `{step_sizes}`."
+                        ),
+                        logger,
+                    )
+                elif len(step_sizes) == 1:
+                    step_size = step_sizes.pop()
+                else:
+                    step_size = 1
+
+                if step_size <= 0:
+                    raise_log(
+                        ValueError(
+                            "Indexing a `TimeSeries` with a list of integers with `step<=0` is not "
+                            "possible since `TimeSeries` must have a monotonically increasing time index."
+                        ),
+                        logger=logger,
+                    )
+                return self[key[0] : key[-1] + step_size : step_size]
 
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()

@@ -358,10 +358,18 @@ class TestGlobalForecastingModels:
         # The serie to predict need to be provided at prediction time
         with pytest.raises(ValueError) as err:
             loaded_model_clean_str.predict(self.forecasting_horizon)
-        assert str(err.value) == (
-            "Input `series` must be provided. This is the result either from fitting on multiple series, "
-            "from not having fit the model yet, or from loading a model saved with `clean=True`."
-        )
+        if isinstance(model, TorchForecastingModel):
+            assert str(err.value) == (
+                "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
+                "model saved with `clean=True`."
+            )
+        else:
+            assert str(err.value) == (
+                "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                "from not having fit the model yet, or from loading a "
+                "model saved with `clean=True`."
+            )
 
         # When the serie to predict is provided, the prediction is the same
         assert model_prediction == loaded_model_clean_str.predict(
