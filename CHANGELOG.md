@@ -23,6 +23,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed a bug in `LightGBMModel` and `CatBoostModel` when using component-specific lags and categorical features, where certain lag scenarios could result in incorrect categorical feature declaration. [#2852](https://github.com/unit8co/darts/pull/2852) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug in `darts.utils.timeseries_generation.sine_timeseries()`, where the returned series ignored the specified `dtype`. [#2856](https://github.com/unit8co/darts/pull/2856) by [Dennis Bader](https://github.com/dennisbader).
 - Fixed a bug in `TimeSeries.__getitem__()`, where indexing with a list of integers of `length <= 2` resulted in an error. [#2857](https://github.com/unit8co/darts/pull/2857) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `TorchForecastingModel` which raised an error when calling any predict method after training the model with `fit_from_dataset()` on a dataset that uses static covariates. [#2860](https://github.com/unit8co/darts/pull/2860) by [Dennis Bader](https://github.com/dennisbader).
 - Removed `darts/tests` and `examples` from the Darts package distribution. These are only required for internal testing. [#2854](https://github.com/unit8co/darts/pull/2854) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
@@ -34,6 +35,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Renamed `RegressionModelWithCategoricalCovariates` to `RegressionModelWithCategoricalFeatures` which now also supports categorical target features. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
 - Added `MultiOutputClassifier` for handling multi-output classification tasks. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
 - Cleaned up `Dockerfile` to only include the necessary files for building the Darts package. [#2854](https://github.com/unit8co/darts/pull/2854) by [Dennis Bader](https://github.com/dennisbader).
+- Added `ElectricityConsumptionZurichDataset` to the repository instead of downloading it from source to fix failing tests due to continuously updating source data. [#2862](https://github.com/unit8co/darts/pull/2862) and [#2862](https://github.com/unit8co/darts/pull/2863) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.36.0](https://github.com/unit8co/darts/tree/0.36.0) (2025-06-29)
 
