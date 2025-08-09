@@ -678,6 +678,7 @@ class TestHistoricalforecast:
         forecast_horizon = 8
         # if no fit and retrain=false, should fit at first iteration
         model_cls, kwargs, model_kwarg, bounds = config
+        ocs = kwargs.get("output_chunk_shift", 0)
         model = model_cls(**kwargs, **model_kwarg)
         # set train length to be the minimum required training length
         # +1 as sklearn models require min 2 train samples
@@ -720,19 +721,20 @@ class TestHistoricalforecast:
         )
 
         assert len(forecasts_no_train_length) == len(forecasts)
-        theorical_forecast_length = (
+        theoretical_forecast_length = (
             self.ts_val_length
             - train_length  # because we train
             - forecast_horizon  # because we have overlap_end = False
+            - ocs  # because we have output_chunk_shift
             + 1  # because we include the first element
         )
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"Expected {theoretical_forecast_length}, got {len(forecasts)}"
         )
         assert forecasts.time_index.equals(
-            self.ts_pass_val.time_index[-theorical_forecast_length:]
+            self.ts_pass_val.time_index[-theoretical_forecast_length:]
         )
 
         # range index
@@ -745,13 +747,13 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True, overlap_end=False, and a time index of type RangeIndex."
-            f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"Expected {theoretical_forecast_length}, got {len(forecasts)}"
         )
         assert forecasts.time_index.equals(
-            self.ts_pass_val_range.time_index[-theorical_forecast_length:]
+            self.ts_pass_val_range.time_index[-theoretical_forecast_length:]
         )
         start_idx = self.ts_pass_val_range.get_index_at_point(forecasts.start_time())
 
@@ -765,26 +767,20 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
-        theorical_forecast_length = int(
+        theoretical_forecast_length_s2 = int(
             np.floor(
                 (
-                    (
-                        self.ts_val_length
-                        - train_length  # because we train
-                        - forecast_horizon  # because we have overlap_end = False
-                        + 1  # because we include the first element
-                    )
-                    - 1
-                )
-                / 2
-                + 1  # because of stride
+                    theoretical_forecast_length - 1
+                )  # the first is always included, so we calculate a modulo on the rest
+                / 2  # because of stride
+                + 1  # and we add back the first
             )  # if odd number of elements, we keep the floor
         )
 
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length_s2, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False and stride=2. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"Expected {theoretical_forecast_length_s2}, got {len(forecasts)}"
         )
         assert forecasts.time_index.equals(
             self.ts_pass_val_range.time_index[start_idx::2]
@@ -800,25 +796,19 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
-        theorical_forecast_length = np.floor(
+        theoretical_forecast_length_s3 = np.floor(
             (
-                (
-                    self.ts_val_length
-                    - train_length  # because we train
-                    - forecast_horizon  # because we have overlap_end = False
-                    + 1  # because we include the first element
-                )
-                - 1
+                theoretical_forecast_length - 1
             )  # the first is always included, so we calculate a modulo on the rest
             / 3  # because of stride
-            + 1  # and we readd the first
+            + 1  # and we add back the first
         )  # if odd number of elements, we keep the floor
 
         # Here to adapt if forecast_horizon or train_length change
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length_s3, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False and stride=3. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"Expected {theoretical_forecast_length_s3}, got {len(forecasts)}"
         )
         assert forecasts.time_index.equals(
             self.ts_pass_val_range.time_index[start_idx::3]
@@ -835,17 +825,10 @@ class TestHistoricalforecast:
             last_points_only=False,
         )
 
-        theorical_forecast_length = (
-            self.ts_val_length
-            - train_length  # because we train
-            - forecast_horizon  # because we have overlap_end = False
-            + 1  # because we include the first element
-        )
-
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length, (
             f"Model {model_cls} does not return the right number of historical forecasts in the case of "
             f"retrain=True and overlap_end=False, and last_points_only=False. "
-            f"expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"expected {theoretical_forecast_length}, got {len(forecasts)}"
         )
 
         assert len(forecasts[0]) == forecast_horizon, (
@@ -855,7 +838,7 @@ class TestHistoricalforecast:
         last_points_times = np.array([fc.end_time() for fc in forecasts])
         np.testing.assert_equal(
             last_points_times,
-            self.ts_pass_val_range.time_index[-theorical_forecast_length:].values,
+            self.ts_pass_val_range.time_index[-theoretical_forecast_length:].values,
         )
 
         if not model.supports_past_covariates:
@@ -1200,6 +1183,7 @@ class TestHistoricalforecast:
         # minimum required train length (+1 since sklearn models require 2 samples)
         forecast_horizon = 10
         model_cls, kwargs, model_kwargs, bounds = config
+        ocs = kwargs.get("output_chunk_shift", 0)
         train_length = bounds[0] + bounds[1] + 1
         model = model_cls(
             **kwargs,
@@ -1236,21 +1220,22 @@ class TestHistoricalforecast:
             f"Model {model_cls} did not return a list of historical forecasts"
         )
 
-        theorical_forecast_length = (
+        theoretical_forecast_length = (
             self.ts_val_length
             - train_length
             - forecast_horizon  # because we have overlap_end = False
+            - ocs  # because of output_chunk_shift
             + 1  # because we include the first element
         )
 
-        assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length, (
+        assert len(forecasts[0]) == len(forecasts[1]) == theoretical_forecast_length, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}"
+            f"Expected {theoretical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}"
         )
         assert forecasts[0].time_index.equals(forecasts[1].time_index) and forecasts[
             0
-        ].time_index.equals(self.ts_pass_val.time_index[-theorical_forecast_length:])
+        ].time_index.equals(self.ts_pass_val.time_index[-theoretical_forecast_length:])
 
     @pytest.mark.slow
     @pytest.mark.parametrize(
