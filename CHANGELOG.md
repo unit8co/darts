@@ -11,11 +11,22 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added support for classification forecasting with SKLearn-like forecasting models. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
- - Added `SklearnClassifierModel` which can take any sklearn-like classifier model.
- - Added `LightGBMClassifierModel`, `XGBClassifierModel` and `CatBoostClassifierModel` which use the classifier models of the respective libraries.
- - Added `ClassProbabilityLikelihood` and set it as the default likelihood for classifiers to predict class probabilities with `predict_likelihood_parameters=True` when calling `predict()`.
-- Added classification metrics `accuracy()`, `f1()`, `precision()`, and `recall()`, `confusion_matrix()` to the `metrics` module. Use these metrics to evaluate the performance of classification models. [#2767](https://github.com/unit8co/darts/pull/2767) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
+- 🚀🚀 Added the first **classification forecasting models** for time series labeling or forecasting future class labels. Check out [this new notebook](https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html) that demonstrates all added capabilities on the example of time series labeling. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
+  - All models come with the following support:
+    - Uni- and multivariate classification.
+    - Deterministic and probabilistic (predicted class probabilities and / or sampled class labels) forecasting.
+    - Past, future, and static covariates.
+  - `SklearnClassifierModel`: A wrapper around any scikit-learn-like classifier (default: Logistic Regression)
+  - `CatBoostClassifierModel`: Wrapper around CatBoost's CatBoostClassifier with native categorical feature support
+  - `LightGBMClassifierModel`: Wrapper around LightGBM's LGBMClassifier with native categorical feature support.
+  - `XGBClassifierModel`: Wrapper around XGBoost's XGBClassifier
+- Added the first **classification metrics**: Use these metrics to evaluate the performance of the new classification forecasting models. Check out the metrics' documentation for more information on how to extract label-specific metrics, customize aggregation methods, and more. [#2767](https://github.com/unit8co/darts/pull/2767) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
+  - `accuracy()`: Accuracy
+  - `precision()`: Precision
+  - `recall()`: Recall
+  - `f1()`: F1 score
+  - `confusion_matrix()`: Confusion Matrix
+- Added [an example notebook](https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html) that demonstrates how to use and evaluate the new classification models. [#2871](https://github.com/unit8co/darts/pull/2871) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
 
@@ -33,10 +44,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+- Added `ClassProbabilityLikelihood` and set it as the default likelihood for classifiers to predict class probabilities with `predict_likelihood_parameters=True` when calling `predict()`. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
 - Renamed `RegressionModelWithCategoricalCovariates` to `RegressionModelWithCategoricalFeatures` which now also supports categorical target features. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
 - Added `MultiOutputClassifier` for handling multi-output classification tasks. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
 - Cleaned up `Dockerfile` to only include the necessary files for building the Darts package. [#2854](https://github.com/unit8co/darts/pull/2854) by [Dennis Bader](https://github.com/dennisbader).
-- Added `ElectricityConsumptionZurichDataset` to the repository instead of downloading it from source to fix failing tests due to continuously updating source data. [#2862](https://github.com/unit8co/darts/pull/2862) and [#2862](https://github.com/unit8co/darts/pull/2863) by [Dennis Bader](https://github.com/dennisbader).
+- Added `ElectricityConsumptionZurichDataset` to the repository instead of downloading it from source to fix failing tests due to continuously updating source data. [#2862](https://github.com/unit8co/darts/pull/2862) and [#2863](https://github.com/unit8co/darts/pull/2863) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.36.0](https://github.com/unit8co/darts/tree/0.36.0) (2025-06-29)
 
