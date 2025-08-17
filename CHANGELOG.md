@@ -5,7 +5,19 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.36.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.37.0...master)
+
+### For users of the library:
+
+**Improved**
+
+**Fixed**
+
+**Dependencies**
+
+### For developers of the library:
+
+## [0.37.0](https://github.com/unit8co/darts/tree/0.37.0) (2025-08-17)
 
 ### For users of the library:
 
