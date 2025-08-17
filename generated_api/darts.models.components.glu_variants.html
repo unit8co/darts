@@ -1543,19 +1543,19 @@ in <a class="reference internal" href="#darts.models.components.glu_variants.Bil
 <li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
 in the current module are preserved whereas setting it to <code class="docutils literal notranslate"><span class="pre">True</span></code> preserves
 properties of the Tensors in the state dict. The only
-exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
-<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>
+for which the value from the module is preserved. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><dl class="simple">
-<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
@@ -1809,7 +1809,7 @@ the behavior of this function will change in future versions.</p>
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.Bilinear.register_buffer">
 <span class="sig-name descname"><span class="pre">register_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.Bilinear.register_buffer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a buffer to the module.</p>
-<p>This is typically used to register a buffer that should not to be
+<p>This is typically used to register a buffer that should not be
 considered a model parameter. For example, BatchNorm’s <code class="docutils literal notranslate"><span class="pre">running_mean</span></code>
 is not a parameter, but is part of the module’s state. Buffers, by
 default, are persistent and will be saved alongside parameters. This
@@ -1948,10 +1948,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.Bilinear.register_full_backward_hook">
 <span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.Bilinear.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a backward hook on the module.</p>
-<p>The hook will be called every time the gradients with respect to a module
-are computed, i.e. the hook will execute if and only if the gradients with
-respect to module outputs are computed. The hook should have the following
-signature:</p>
+<p>The hook will be called every time the gradients with respect to a module are computed, and its firing rules are as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Ordinarily, the hook fires when the gradients are computed with respect to the module inputs.</p></li>
+<li><p>If none of the module inputs require gradients, the hook will fire when the gradients are computed
+with respect to module outputs.</p></li>
+<li><p>If none of the module outputs require gradients, then the hooks will not fire.</p></li>
+</ol>
+</div></blockquote>
+<p>The hook should have the following signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_input</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
@@ -2252,7 +2258,7 @@ attribute name or an object that is not an instance of <code class="docutils lit
 <dd><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>~T</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -3166,19 +3172,19 @@ in <a class="reference internal" href="#darts.models.components.glu_variants.GEG
 <li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
 in the current module are preserved whereas setting it to <code class="docutils literal notranslate"><span class="pre">True</span></code> preserves
 properties of the Tensors in the state dict. The only
-exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
-<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>
+for which the value from the module is preserved. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><dl class="simple">
-<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
@@ -3432,7 +3438,7 @@ the behavior of this function will change in future versions.</p>
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GEGLU.register_buffer">
 <span class="sig-name descname"><span class="pre">register_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GEGLU.register_buffer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a buffer to the module.</p>
-<p>This is typically used to register a buffer that should not to be
+<p>This is typically used to register a buffer that should not be
 considered a model parameter. For example, BatchNorm’s <code class="docutils literal notranslate"><span class="pre">running_mean</span></code>
 is not a parameter, but is part of the module’s state. Buffers, by
 default, are persistent and will be saved alongside parameters. This
@@ -3571,10 +3577,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GEGLU.register_full_backward_hook">
 <span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GEGLU.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a backward hook on the module.</p>
-<p>The hook will be called every time the gradients with respect to a module
-are computed, i.e. the hook will execute if and only if the gradients with
-respect to module outputs are computed. The hook should have the following
-signature:</p>
+<p>The hook will be called every time the gradients with respect to a module are computed, and its firing rules are as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Ordinarily, the hook fires when the gradients are computed with respect to the module inputs.</p></li>
+<li><p>If none of the module inputs require gradients, the hook will fire when the gradients are computed
+with respect to module outputs.</p></li>
+<li><p>If none of the module outputs require gradients, then the hooks will not fire.</p></li>
+</ol>
+</div></blockquote>
+<p>The hook should have the following signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_input</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
@@ -3875,7 +3887,7 @@ attribute name or an object that is not an instance of <code class="docutils lit
 <dd><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>~T</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -4789,19 +4801,19 @@ in <a class="reference internal" href="#darts.models.components.glu_variants.GEL
 <li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
 in the current module are preserved whereas setting it to <code class="docutils literal notranslate"><span class="pre">True</span></code> preserves
 properties of the Tensors in the state dict. The only
-exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
-<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>
+for which the value from the module is preserved. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><dl class="simple">
-<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
@@ -5055,7 +5067,7 @@ the behavior of this function will change in future versions.</p>
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GELU.register_buffer">
 <span class="sig-name descname"><span class="pre">register_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GELU.register_buffer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a buffer to the module.</p>
-<p>This is typically used to register a buffer that should not to be
+<p>This is typically used to register a buffer that should not be
 considered a model parameter. For example, BatchNorm’s <code class="docutils literal notranslate"><span class="pre">running_mean</span></code>
 is not a parameter, but is part of the module’s state. Buffers, by
 default, are persistent and will be saved alongside parameters. This
@@ -5194,10 +5206,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GELU.register_full_backward_hook">
 <span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GELU.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a backward hook on the module.</p>
-<p>The hook will be called every time the gradients with respect to a module
-are computed, i.e. the hook will execute if and only if the gradients with
-respect to module outputs are computed. The hook should have the following
-signature:</p>
+<p>The hook will be called every time the gradients with respect to a module are computed, and its firing rules are as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Ordinarily, the hook fires when the gradients are computed with respect to the module inputs.</p></li>
+<li><p>If none of the module inputs require gradients, the hook will fire when the gradients are computed
+with respect to module outputs.</p></li>
+<li><p>If none of the module outputs require gradients, then the hooks will not fire.</p></li>
+</ol>
+</div></blockquote>
+<p>The hook should have the following signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_input</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
@@ -5498,7 +5516,7 @@ attribute name or an object that is not an instance of <code class="docutils lit
 <dd><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>~T</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -6412,19 +6430,19 @@ in <a class="reference internal" href="#darts.models.components.glu_variants.GLU
 <li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
 in the current module are preserved whereas setting it to <code class="docutils literal notranslate"><span class="pre">True</span></code> preserves
 properties of the Tensors in the state dict. The only
-exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
-<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>
+for which the value from the module is preserved. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><dl class="simple">
-<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
@@ -6678,7 +6696,7 @@ the behavior of this function will change in future versions.</p>
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GLU.register_buffer">
 <span class="sig-name descname"><span class="pre">register_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GLU.register_buffer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a buffer to the module.</p>
-<p>This is typically used to register a buffer that should not to be
+<p>This is typically used to register a buffer that should not be
 considered a model parameter. For example, BatchNorm’s <code class="docutils literal notranslate"><span class="pre">running_mean</span></code>
 is not a parameter, but is part of the module’s state. Buffers, by
 default, are persistent and will be saved alongside parameters. This
@@ -6817,10 +6835,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.GLU.register_full_backward_hook">
 <span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.GLU.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a backward hook on the module.</p>
-<p>The hook will be called every time the gradients with respect to a module
-are computed, i.e. the hook will execute if and only if the gradients with
-respect to module outputs are computed. The hook should have the following
-signature:</p>
+<p>The hook will be called every time the gradients with respect to a module are computed, and its firing rules are as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Ordinarily, the hook fires when the gradients are computed with respect to the module inputs.</p></li>
+<li><p>If none of the module inputs require gradients, the hook will fire when the gradients are computed
+with respect to module outputs.</p></li>
+<li><p>If none of the module outputs require gradients, then the hooks will not fire.</p></li>
+</ol>
+</div></blockquote>
+<p>The hook should have the following signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_input</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
@@ -7121,7 +7145,7 @@ attribute name or an object that is not an instance of <code class="docutils lit
 <dd><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>~T</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -8035,19 +8059,19 @@ in <a class="reference internal" href="#darts.models.components.glu_variants.ReG
 <li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
 in the current module are preserved whereas setting it to <code class="docutils literal notranslate"><span class="pre">True</span></code> preserves
 properties of the Tensors in the state dict. The only
-exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
-<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>
+for which the value from the module is preserved. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><dl class="simple">
-<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
@@ -8301,7 +8325,7 @@ the behavior of this function will change in future versions.</p>
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReGLU.register_buffer">
 <span class="sig-name descname"><span class="pre">register_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReGLU.register_buffer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a buffer to the module.</p>
-<p>This is typically used to register a buffer that should not to be
+<p>This is typically used to register a buffer that should not be
 considered a model parameter. For example, BatchNorm’s <code class="docutils literal notranslate"><span class="pre">running_mean</span></code>
 is not a parameter, but is part of the module’s state. Buffers, by
 default, are persistent and will be saved alongside parameters. This
@@ -8440,10 +8464,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReGLU.register_full_backward_hook">
 <span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReGLU.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a backward hook on the module.</p>
-<p>The hook will be called every time the gradients with respect to a module
-are computed, i.e. the hook will execute if and only if the gradients with
-respect to module outputs are computed. The hook should have the following
-signature:</p>
+<p>The hook will be called every time the gradients with respect to a module are computed, and its firing rules are as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Ordinarily, the hook fires when the gradients are computed with respect to the module inputs.</p></li>
+<li><p>If none of the module inputs require gradients, the hook will fire when the gradients are computed
+with respect to module outputs.</p></li>
+<li><p>If none of the module outputs require gradients, then the hooks will not fire.</p></li>
+</ol>
+</div></blockquote>
+<p>The hook should have the following signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_input</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
@@ -8744,7 +8774,7 @@ attribute name or an object that is not an instance of <code class="docutils lit
 <dd><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>~T</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -9658,19 +9688,19 @@ in <a class="reference internal" href="#darts.models.components.glu_variants.ReL
 <li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
 in the current module are preserved whereas setting it to <code class="docutils literal notranslate"><span class="pre">True</span></code> preserves
 properties of the Tensors in the state dict. The only
-exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
-<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>
+for which the value from the module is preserved. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><dl class="simple">
-<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
@@ -9924,7 +9954,7 @@ the behavior of this function will change in future versions.</p>
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReLU.register_buffer">
 <span class="sig-name descname"><span class="pre">register_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReLU.register_buffer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a buffer to the module.</p>
-<p>This is typically used to register a buffer that should not to be
+<p>This is typically used to register a buffer that should not be
 considered a model parameter. For example, BatchNorm’s <code class="docutils literal notranslate"><span class="pre">running_mean</span></code>
 is not a parameter, but is part of the module’s state. Buffers, by
 default, are persistent and will be saved alongside parameters. This
@@ -10063,10 +10093,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.ReLU.register_full_backward_hook">
 <span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.ReLU.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a backward hook on the module.</p>
-<p>The hook will be called every time the gradients with respect to a module
-are computed, i.e. the hook will execute if and only if the gradients with
-respect to module outputs are computed. The hook should have the following
-signature:</p>
+<p>The hook will be called every time the gradients with respect to a module are computed, and its firing rules are as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Ordinarily, the hook fires when the gradients are computed with respect to the module inputs.</p></li>
+<li><p>If none of the module inputs require gradients, the hook will fire when the gradients are computed
+with respect to module outputs.</p></li>
+<li><p>If none of the module outputs require gradients, then the hooks will not fire.</p></li>
+</ol>
+</div></blockquote>
+<p>The hook should have the following signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_input</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
@@ -10367,7 +10403,7 @@ attribute name or an object that is not an instance of <code class="docutils lit
 <dd><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>~T</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -11281,19 +11317,19 @@ in <a class="reference internal" href="#darts.models.components.glu_variants.Swi
 <li><p><strong>assign</strong> (<em>bool</em><em>, </em><em>optional</em>) – When set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the properties of the tensors
 in the current module are preserved whereas setting it to <code class="docutils literal notranslate"><span class="pre">True</span></code> preserves
 properties of the Tensors in the state dict. The only
-exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate">
-<span class="pre">Default:</span> <span class="pre">``False`</span></code></p></li>
+exception is the <code class="docutils literal notranslate"><span class="pre">requires_grad</span></code> field of <code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code>
+for which the value from the module is preserved. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code></p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><ul class="simple">
 <li><dl class="simple">
-<dt><strong>missing_keys</strong> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">missing_keys</span></code> is a list of str containing any keys that are expected</dt><dd><p>by this module but missing from the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
-<dt><strong>unexpected_keys</strong> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
+<dt><code class="docutils literal notranslate"><span class="pre">unexpected_keys</span></code> is a list of str containing the keys that are not</dt><dd><p>expected by this module but present in the provided <code class="docutils literal notranslate"><span class="pre">state_dict</span></code>.</p>
 </dd>
 </dl>
 </li>
@@ -11547,7 +11583,7 @@ the behavior of this function will change in future versions.</p>
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.SwiGLU.register_buffer">
 <span class="sig-name descname"><span class="pre">register_buffer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">persistent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.SwiGLU.register_buffer" title="Permalink to this definition">¶</a></dt>
 <dd><p>Add a buffer to the module.</p>
-<p>This is typically used to register a buffer that should not to be
+<p>This is typically used to register a buffer that should not be
 considered a model parameter. For example, BatchNorm’s <code class="docutils literal notranslate"><span class="pre">running_mean</span></code>
 is not a parameter, but is part of the module’s state. Buffers, by
 default, are persistent and will be saved alongside parameters. This
@@ -11686,10 +11722,16 @@ Default: <code class="docutils literal notranslate"><span class="pre">False</spa
 <dt class="sig sig-object py" id="darts.models.components.glu_variants.SwiGLU.register_full_backward_hook">
 <span class="sig-name descname"><span class="pre">register_full_backward_hook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hook</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prepend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.components.glu_variants.SwiGLU.register_full_backward_hook" title="Permalink to this definition">¶</a></dt>
 <dd><p>Register a backward hook on the module.</p>
-<p>The hook will be called every time the gradients with respect to a module
-are computed, i.e. the hook will execute if and only if the gradients with
-respect to module outputs are computed. The hook should have the following
-signature:</p>
+<p>The hook will be called every time the gradients with respect to a module are computed, and its firing rules are as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Ordinarily, the hook fires when the gradients are computed with respect to the module inputs.</p></li>
+<li><p>If none of the module inputs require gradients, the hook will fire when the gradients are computed
+with respect to module outputs.</p></li>
+<li><p>If none of the module outputs require gradients, then the hooks will not fire.</p></li>
+</ol>
+</div></blockquote>
+<p>The hook should have the following signature:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hook</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">grad_input</span><span class="p">,</span> <span class="n">grad_output</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
 </pre></div>
 </div>
@@ -11990,7 +12032,7 @@ attribute name or an object that is not an instance of <code class="docutils lit
 <dd><p>See <code class="xref py py-meth docutils literal notranslate"><span class="pre">torch.Tensor.share_memory_()</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>~T</p>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Self</span></code></p>
 </dd>
 </dl>
 </dd></dl>

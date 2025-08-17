@@ -176,6 +176,7 @@
 <span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">is_classifier</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.multioutput</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOutputClassifier</span> <span class="k">as</span> <span class="n">sk_MultiOutputClassifier</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.multioutput</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOutputRegressor</span> <span class="k">as</span> <span class="n">sk_MultiOutputRegressor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.multioutput</span><span class="w"> </span><span class="kn">import</span> <span class="n">_fit_estimator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.utils.multiclass</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_classification_targets</span>
@@ -187,13 +188,14 @@
 <span class="p">)</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">ModelType</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="MultiOutputRegressor"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputRegressor">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MultiOutputRegressor</span><span class="p">(</span><span class="n">sk_MultiOutputRegressor</span><span class="p">):</span>
+<div class="viewcode-block" id="MultiOutputMixin"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputMixin">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MultiOutputMixin</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    :class:`sklearn.utils.multioutput.MultiOutputRegressor` with a modified ``fit()`` method that also slices</span>
+<span class="sd">    Mixin for :class:`sklearn.utils.multioutput._MultiOutputEstimator` with a modified ``fit()`` method that also slices</span>
 <span class="sd">    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
@@ -202,6 +204,7 @@
         <span class="n">estimator</span><span class="p">,</span>
         <span class="n">eval_set_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">eval_weight_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
@@ -209,8 +212,9 @@
         <span class="c1"># all other params at fitting time must have the suffix `&quot;_&quot;`</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eval_set_name</span> <span class="o">=</span> <span class="n">eval_set_name</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">eval_weight_name</span> <span class="o">=</span> <span class="n">eval_weight_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
 
-<div class="viewcode-block" id="MultiOutputRegressor.fit"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputRegressor.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
+<div class="viewcode-block" id="MultiOutputMixin.fit"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputMixin.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit the model to data, separately for each output variable.</span>
 
 <span class="sd">        Parameters</span>
@@ -251,7 +255,7 @@
         <span class="k">if</span> <span class="n">y</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;`y` must have at least two dimensions for multi-output regression but has only one.&quot;</span>
+                    <span class="s2">&quot;`y` must have at least two dimensions for multi-output but has only one.&quot;</span>
                 <span class="p">),</span>
                 <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
@@ -305,6 +309,39 @@
 <span class="sd">        Whether model supports sample weight for training.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="n">has_fit_parameter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span> <span class="s2">&quot;sample_weight&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="MultiOutputRegressor"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputRegressor">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MultiOutputRegressor</span><span class="p">(</span><span class="n">MultiOutputMixin</span><span class="p">,</span> <span class="n">sk_MultiOutputRegressor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices</span>
+<span class="sd">    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="MultiOutputClassifier"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputClassifier">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">MultiOutputClassifier</span><span class="p">(</span><span class="n">MultiOutputMixin</span><span class="p">,</span> <span class="n">sk_MultiOutputClassifier</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices</span>
+<span class="sd">    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="MultiOutputClassifier.fit"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.MultiOutputClassifier.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">classes_</span> <span class="o">=</span> <span class="p">[</span><span class="n">estimator</span><span class="o">.</span><span class="n">classes_</span> <span class="k">for</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimators_</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span></div></div>
+
+
+<div class="viewcode-block" id="get_multioutput_estimator_cls"><a class="viewcode-back" href="../../../generated_api/darts.utils.multioutput.html#darts.utils.multioutput.get_multioutput_estimator_cls">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">get_multioutput_estimator_cls</span><span class="p">(</span><span class="n">model_type</span><span class="p">:</span> <span class="n">ModelType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">[</span><span class="n">MultiOutputMixin</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">model_type</span> <span class="o">==</span> <span class="n">ModelType</span><span class="o">.</span><span class="n">FORECASTING_REGRESSOR</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">MultiOutputRegressor</span>
+    <span class="k">elif</span> <span class="n">model_type</span> <span class="o">==</span> <span class="n">ModelType</span><span class="o">.</span><span class="n">FORECASTING_CLASSIFIER</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">MultiOutputClassifier</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Model type must be one of `[ModelType.FORECASTING_REGRESSOR, ModelType.FORECASTING_CLASSIFIER]`. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Received: `</span><span class="si">{</span><span class="n">model_type</span><span class="si">}</span><span class="s2">`.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

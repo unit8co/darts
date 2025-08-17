@@ -179,10 +179,12 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Likelihood</span><span class="p">,</span>
@@ -546,7 +548,6 @@
         <span class="n">k</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">model_outputs</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">quantile</span><span class="p">,</span> <span class="n">fitted</span> <span class="ow">in</span> <span class="n">model</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="n">model</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">fitted</span>
             <span class="c1"># model output has shape (n_series * n_samples, output_chunk_length, n_components)</span>
             <span class="n">model_output</span> <span class="o">=</span> <span class="n">fitted</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">model_outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
@@ -565,16 +566,251 @@
         <span class="p">)</span></div>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">available_likelihoods</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check whether the likelihood is supported.</span>
+<div class="viewcode-block" id="ClassProbabilityLikelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ClassProbabilityLikelihood</span><span class="p">(</span><span class="n">SKLearnLikelihood</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Class probability likelihood.</span>
+<span class="sd">        Likelihood to predict the probability of each class for a forecasting classification task.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n_outputs</span>
+<span class="sd">            The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise</span>
+<span class="sd">            `output_chunk_length`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">likelihood_type</span><span class="o">=</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">ClassProbability</span><span class="p">,</span>
+            <span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">,</span>
+            <span class="n">parameter_names</span><span class="o">=</span><span class="p">[],</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_classes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ClassProbabilityLikelihood.fit"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fits the likelihood to the model.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model</span>
+<span class="sd">            The model to fit the likelihood to. The model is expected to be fitted and have a `class_labels` attribute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="s2">&quot;class_labels&quot;</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;The model must have a `class_labels` attribute to fit the likelihood.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_classes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">class_labels</span>
+
+        <span class="c1"># estimators/classes are ordered by chunk then by component: [classes_comp0_chunk0, classes_comp1_chunk0, ...]</span>
+        <span class="c1"># Since classes are same across chunk for same component, we can just take the first chunk for each component</span>
+        <span class="n">num_components</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_classes</span><span class="p">)</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span>
+
+        <span class="c1"># index of the first parameter of each component in the likelihood parameters</span>
+        <span class="c1"># e.g. [0, 2, 4, 6] for 3 components with 2 parameters each</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">([</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">estimator_classes</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">estimator_classes</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classes</span><span class="p">[:</span><span class="n">num_components</span><span class="p">]</span>
+            <span class="p">]),</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="mi">0</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameter_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;p</span><span class="si">{</span><span class="nb">int</span><span class="p">(</span><span class="n">label</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_components</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="ClassProbabilityLikelihood.component_names"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.component_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">component_names</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">components</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Generates names for the parameters of the Likelihood.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The likelihood has not been fitted yet.&quot;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">components</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only one of `series` or `components` must be specified.&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">components</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">components</span>
+
+        <span class="c1"># format: &lt;component_name&gt;_p&lt;label&gt;</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">component_name</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">parameter_name</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">component_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">components</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">parameter_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameter_names</span><span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span><span class="p">[</span>
+                    <span class="n">i</span>
+                <span class="p">]</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="p">]</span>
+        <span class="p">]</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_estimator_predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># list of length n_components * output_chunk_length of numpy arrays of shape (n_samples*n_series, n_classes)</span>
+        <span class="n">model_output</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">model_output</span> <span class="o">=</span> <span class="p">[</span><span class="n">model_output</span><span class="p">]</span>
+
+        <span class="c1"># shape: (output_chunk_length, n_series * n_samples, n_likelihood_parameters)</span>
+        <span class="c1"># n_likelihood_parameters is the sum of the number of classes for each component</span>
+        <span class="n">class_proba</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span><span class="p">,</span>
+            <span class="n">model_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_parameters</span><span class="p">,</span>
+        <span class="p">))</span>
+
+        <span class="c1"># ordered first by _n_outputs then by component: [comp0_chunk0, comp1_chunk0, ..]</span>
+        <span class="n">n_component</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span>
+        <span class="c1"># filling the class_proba array with the predicted probabilities</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">params_proba</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">model_output</span><span class="p">):</span>
+            <span class="n">component_index</span> <span class="o">=</span> <span class="n">i</span> <span class="o">%</span> <span class="n">n_component</span>
+            <span class="n">output_index</span> <span class="o">=</span> <span class="n">i</span> <span class="o">//</span> <span class="n">n_component</span>
+            <span class="n">class_proba</span><span class="p">[</span>
+                <span class="n">output_index</span><span class="p">,</span>
+                <span class="p">:,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span><span class="p">[</span>
+                    <span class="n">component_index</span>
+                <span class="p">]</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span><span class="p">[</span><span class="n">component_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="n">params_proba</span>
+
+        <span class="c1"># shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)</span>
+        <span class="c1"># n_likelihood_parameters is the sum of the number of classes for each component</span>
+        <span class="c1"># n_likelihood_parameters are ordered as in component_names:</span>
+        <span class="c1"># [comp0_l1, comp0_l2, comp1_l1, comp1_l2, comp1_l3,...]</span>
+        <span class="c1"># should be accessed through _index_first_param_per_component (for comp1 =&gt; 2)</span>
+        <span class="k">return</span> <span class="n">class_proba</span>
+
+<div class="viewcode-block" id="ClassProbabilityLikelihood.sample"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.sample">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Samples a prediction from the likelihood distribution and the predicted parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)</span>
+        <span class="n">n_output</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="n">n_component</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_classes</span><span class="p">)</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span>
+
+        <span class="c1"># shape (output_chunk_length, n_series * n_samples, n_components)</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_output</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_component</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="c1"># Some models have an approximation error, the probabilities are adjusted</span>
+        <span class="c1"># if their total is below the 1e-7 tolerance threshold around 1.</span>
+        <span class="k">for</span> <span class="n">component_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">component_start</span><span class="p">,</span> <span class="n">component_end</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+            <span class="nb">zip</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+            <span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">component_probabilities</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">component_start</span><span class="p">:</span><span class="n">component_end</span><span class="p">]</span>
+            <span class="n">total_proba</span> <span class="o">=</span> <span class="n">component_probabilities</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">2</span>
+            <span class="p">)</span>  <span class="c1"># shape  (n_output, n_samples)</span>
+            <span class="n">difference</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">total_proba</span>
+            <span class="n">tolerance</span> <span class="o">=</span> <span class="mf">1e-7</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">difference</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">tolerance</span><span class="p">):</span>
+                <span class="n">raise_log</span><span class="p">(</span>
+                    <span class="ne">ValueError</span><span class="p">(</span>
+                        <span class="s2">&quot;The class probabilities returned by the model do not sum to one&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="n">component_probabilities</span> <span class="o">+=</span> <span class="p">(</span>
+                <span class="n">difference</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">/</span> <span class="n">component_probabilities</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+            <span class="p">)</span>
+
+            <span class="c1"># argmax stops at the first True</span>
+            <span class="c1"># first time the random sample is greater than cumulative probability</span>
+            <span class="c1"># [0.2, 0.1, 0.5, 0.2] -&gt; [0.2, 0.3, 0.8, 1]</span>
+            <span class="c1"># random: 0.7 -&gt; idx = 2, this outcomes has 0.5 probability of happening</span>
+            <span class="n">sampled_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">difference</span><span class="o">.</span><span class="n">shape</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
+                <span class="o">&lt;=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">component_probabilities</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">preds</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">component_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">take</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_classes</span><span class="p">[</span><span class="n">component_idx</span><span class="p">],</span> <span class="n">sampled_idx</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">preds</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ClassProbabilityLikelihood.predict_likelihood_parameters"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.predict_likelihood_parameters">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_likelihood_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns the distribution parameters as a array, extracted from the raw model outputs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># reshape to (n_series * n_samples, output_chunk_length, n_likelihood_parameters)</span>
+        <span class="k">return</span> <span class="n">model_output</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_median_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Gets the class label with highest predicted probability per component extracted</span>
+<span class="sd">         from the model output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># shape (output_chunk_length, n_series * n_samples, n_likelihood_parameters)</span>
+        <span class="n">n_output</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_params</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
+        <span class="c1"># shape (output_chunk_length, n_series * n_samples, n_components)</span>
+        <span class="n">n_component</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_classes</span><span class="p">)</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_outputs</span>
+        <span class="n">preds</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">n_output</span><span class="p">,</span> <span class="n">n_samples</span><span class="p">,</span> <span class="n">n_component</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">int</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">component_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">component_start</span><span class="p">,</span> <span class="n">component_end</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
+            <span class="nb">zip</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_index_first_param_per_component</span><span class="p">[</span><span class="mi">1</span><span class="p">:],</span>
+            <span class="p">)</span>
+        <span class="p">):</span>
+            <span class="c1"># shape (output_chunk_length, n_series * n_samples)</span>
+            <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span>
+                <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">component_start</span><span class="p">:</span><span class="n">component_end</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span>
+            <span class="p">)</span>
+
+            <span class="n">preds</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">component_idx</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_classes</span><span class="p">[</span><span class="n">component_idx</span><span class="p">][</span><span class="n">indices</span><span class="p">]</span>
+
+        <span class="c1"># reshape to (n_series * n_samples, output_chunk_length, n_components)</span>
+        <span class="k">return</span> <span class="n">preds</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span></div>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_get_likelihood</span><span class="p">(</span>
+    <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+    <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">available_likelihoods</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">LikelihoodType</span><span class="p">],</span>
+    <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SKLearnLikelihood</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the `Likelihood` object for `SKLearnModel`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    likelihood</span>
-<span class="sd">        The likelihood name. Must be one of (&#39;gaussian&#39;, &#39;poisson&#39;, &#39;quantile&#39;).</span>
+<span class="sd">        The likelihood name. Must be one of `available_likelihoods` type value or `None`.</span>
+<span class="sd">    n_outputs</span>
+<span class="sd">        The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise</span>
+<span class="sd">        `output_chunk_length`.</span>
 <span class="sd">    available_likelihoods</span>
-<span class="sd">        A list of supported likelihood names.</span>
+<span class="sd">        The list of available likelihood types for the model.</span>
+<span class="sd">    quantiles</span>
+<span class="sd">        Optionally, a list of quantiles. Only effective for `likelihood=&#39;quantile&#39;`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="c1"># Convert LikelihoodType to string</span>
+    <span class="n">available_likelihoods</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">likelihood</span><span class="o">.</span><span class="n">value</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">LikelihoodType</span><span class="p">)</span> <span class="k">else</span> <span class="n">likelihood</span>
+        <span class="k">for</span> <span class="n">likelihood</span> <span class="ow">in</span> <span class="n">available_likelihoods</span>
+    <span class="p">]</span>
+
     <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">available_likelihoods</span><span class="p">:</span>
         <span class="n">raise_log</span><span class="p">(</span>
             <span class="ne">ValueError</span><span class="p">(</span>
@@ -583,37 +819,17 @@
             <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_likelihood</span><span class="p">(</span>
-    <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
-    <span class="n">n_outputs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SKLearnLikelihood</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the `Likelihood` object for `SKLearnModel`.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    likelihood</span>
-<span class="sd">        The likelihood name. Must be one of (&#39;gaussian&#39;, &#39;poisson&#39;, &#39;quantile&#39;).</span>
-<span class="sd">    n_outputs</span>
-<span class="sd">        The number of predicted outputs per model call. `1` if `multi_models=False`, otherwise</span>
-<span class="sd">        `output_chunk_length`.</span>
-<span class="sd">    quantiles</span>
-<span class="sd">        Optionally, a list of quantiles. Only effective for `likelihood=&#39;quantile&#39;`.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;gaussian&quot;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Gaussian</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">GaussianLikelihood</span><span class="p">(</span><span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;poisson&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Poisson</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">PoissonLikelihood</span><span class="p">(</span><span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+    <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">QuantileRegression</span><span class="p">(</span><span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">,</span> <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">ClassProbability</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ClassProbabilityLikelihood</span><span class="p">(</span><span class="n">n_outputs</span><span class="o">=</span><span class="n">n_outputs</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">raise_log</span><span class="p">(</span>
-            <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Invalid `likelihood=&#39;</span><span class="si">{</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">&#39;`. Must be one of (&#39;gaussian&#39;, &#39;poisson&#39;, &#39;quantile&#39;)&quot;</span>
-            <span class="p">),</span>
+            <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unknown `likelihood=&#39;</span><span class="si">{likelihood}</span><span class="s2">&#39;`.&quot;</span><span class="p">),</span>
             <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 </pre></div>

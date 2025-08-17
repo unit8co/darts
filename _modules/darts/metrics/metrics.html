@@ -180,11 +180,8 @@
 <span class="sd">Some metrics to compare time series.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">wraps</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">inspect</span><span class="w"> </span><span class="kn">import</span> <span class="n">signature</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
@@ -192,630 +189,24 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">dtw</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">likelihood_component_names</span><span class="p">,</span>
-    <span class="n">quantile_names</span><span class="p">,</span>
-<span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">SeriesType</span><span class="p">,</span> <span class="n">get_series_seq_type</span><span class="p">,</span> <span class="n">series2seq</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">_build_tqdm_iterator</span><span class="p">,</span>
-    <span class="n">_parallel_apply</span><span class="p">,</span>
-    <span class="n">n_steps_between</span><span class="p">,</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">,</span>
+    <span class="n">SMPL_AX</span><span class="p">,</span>
+    <span class="n">TIME_AX</span><span class="p">,</span>
+    <span class="n">_compute_score</span><span class="p">,</span>
+    <span class="n">_confusion_matrix</span><span class="p">,</span>
+    <span class="n">_get_error_scale</span><span class="p">,</span>
+    <span class="n">_get_quantile_intervals</span><span class="p">,</span>
+    <span class="n">_get_values_or_raise</span><span class="p">,</span>
+    <span class="n">_get_wrapped_metric</span><span class="p">,</span>
+    <span class="n">_LabelReduction</span><span class="p">,</span>
+    <span class="n">classification_support</span><span class="p">,</span>
+    <span class="n">interval_support</span><span class="p">,</span>
+    <span class="n">multi_ts_support</span><span class="p">,</span>
+    <span class="n">multivariate_support</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
-<span class="n">TIME_AX</span> <span class="o">=</span> <span class="mi">0</span>
-<span class="n">COMP_AX</span> <span class="o">=</span> <span class="mi">1</span>
-<span class="n">SMPL_AX</span> <span class="o">=</span> <span class="mi">2</span>
-
-<span class="c1"># Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having</span>
-<span class="c1"># the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators</span>
-<span class="c1"># don&#39;t &quot;unpack&quot; parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take</span>
-<span class="c1"># care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).</span>
-<span class="n">METRIC_OUTPUT_TYPE</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span>
-<span class="n">METRIC_TYPE</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span>
-    <span class="o">...</span><span class="p">,</span>
-    <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">,</span>
-<span class="p">]</span>
-
-
-<div class="viewcode-block" id="interval_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.interval_support">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">interval_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This decorator adds support for quantile interval metrics with sanity checks, processing, and extraction of</span>
-<span class="sd">    quantiles from the intervals.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper_interval_support</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">q</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;q&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;`q` is not supported for quantile interval metrics; use `q_interval` instead.&quot;</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="n">q_interval</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;q_interval&quot;</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">q_interval</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Quantile interval metrics require setting `q_interval`.&quot;</span><span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q_interval</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-            <span class="n">q_interval</span> <span class="o">=</span> <span class="p">[</span><span class="n">q_interval</span><span class="p">]</span>
-        <span class="n">q_interval</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">q_interval</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">q_interval</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">or</span> <span class="n">q_interval</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;`q_interval` must be a tuple (float, float) or a sequence of tuples (float, float).&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">q_interval</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">q_interval</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">):</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;all intervals in `q_interval` must be tuples of (lower q, upper q) with `lower q &gt; upper q`. &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;Received `q_interval=</span><span class="si">{</span><span class="n">q_interval</span><span class="si">}</span><span class="s2">`&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;q_interval&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">q_interval</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">q_interval</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-    <span class="k">return</span> <span class="n">wrapper_interval_support</span></div>
-
-
-<div class="viewcode-block" id="multi_ts_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multi_ts_support">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">multi_ts_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This decorator further adapts the metrics that took as input two (or three for scaled metrics with `insample`)</span>
-<span class="sd">    univariate/multivariate ``TimeSeries`` instances, adding support for equally-sized sequences of ``TimeSeries``</span>
-<span class="sd">    instances. The decorator computes the pairwise metric for ``TimeSeries`` with the same indices, and returns a float</span>
-<span class="sd">    value that is computed as a function of all the pairwise metrics using a `series_reduction` subroutine passed as</span>
-<span class="sd">    argument to the metric function.</span>
-
-<span class="sd">    If a &#39;Sequence[TimeSeries]&#39; is passed as input, this decorator provides also parallelisation of the metric</span>
-<span class="sd">    evaluation regarding different ``TimeSeries`` (if the `n_jobs` parameter is not set 1).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper_multi_ts_support</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="n">actual_series</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;actual_series&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="s2">&quot;actual_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="p">)</span>
-        <span class="n">pred_series</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;pred_series&quot;</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s2">&quot;pred_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span>
-            <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s2">&quot;actual_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span>
-            <span class="k">else</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="p">)</span>
-
-        <span class="n">params</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="n">n_jobs</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;n_jobs&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;n_jobs&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
-        <span class="n">verbose</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;verbose&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;verbose&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
-
-        <span class="c1"># sanity check reduction functions</span>
-        <span class="n">_</span> <span class="o">=</span> <span class="n">_get_reduction</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-            <span class="n">red_name</span><span class="o">=</span><span class="s2">&quot;time_reduction&quot;</span><span class="p">,</span>
-            <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">,</span>
-            <span class="n">sanity_check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">_</span> <span class="o">=</span> <span class="n">_get_reduction</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-            <span class="n">red_name</span><span class="o">=</span><span class="s2">&quot;component_reduction&quot;</span><span class="p">,</span>
-            <span class="n">axis</span><span class="o">=</span><span class="n">COMP_AX</span><span class="p">,</span>
-            <span class="n">sanity_check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="n">series_reduction</span> <span class="o">=</span> <span class="n">_get_reduction</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-            <span class="n">red_name</span><span class="o">=</span><span class="s2">&quot;series_reduction&quot;</span><span class="p">,</span>
-            <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
-            <span class="n">sanity_check</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="n">series_seq_type</span> <span class="o">=</span> <span class="n">get_series_seq_type</span><span class="p">(</span><span class="n">actual_series</span><span class="p">)</span>
-        <span class="n">actual_series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">actual_series</span><span class="p">)</span>
-        <span class="n">pred_series</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">pred_series</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_series</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pred_series</span><span class="p">):</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Mismatch between number of series in `actual_series` (n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">actual_series</span><span class="p">)</span><span class="si">}</span><span class="s2">) and &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;`pred_series` (n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">pred_series</span><span class="p">)</span><span class="si">}</span><span class="s2">).&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="n">num_series_in_args</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="s2">&quot;actual_series&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">+</span> <span class="nb">int</span><span class="p">(</span>
-            <span class="s2">&quot;pred_series&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span>
-        <span class="p">)</span>
-        <span class="n">input_series</span> <span class="o">=</span> <span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">)</span>
-
-        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;actual_series&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-        <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;pred_series&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-        <span class="c1"># handle `insample` parameter for scaled metrics</span>
-        <span class="k">if</span> <span class="s2">&quot;insample&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
-            <span class="n">insample</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;insample&quot;</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">insample</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">insample</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span>
-                    <span class="mi">2</span> <span class="o">-</span> <span class="p">(</span><span class="s2">&quot;actual_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span><span class="s2">&quot;pred_series&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">)</span>
-                <span class="p">]</span>
-
-            <span class="n">insample</span> <span class="o">=</span> <span class="p">[</span><span class="n">insample</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">insample</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span> <span class="k">else</span> <span class="n">insample</span>
-            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_series</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">insample</span><span class="p">):</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Mismatch between number of series in `actual_series` (n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">actual_series</span><span class="p">)</span><span class="si">}</span><span class="s2">) and &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;`insample` series (n=</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">insample</span><span class="p">)</span><span class="si">}</span><span class="s2">).&quot;</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="n">input_series</span> <span class="o">+=</span> <span class="p">(</span><span class="n">insample</span><span class="p">,)</span>
-            <span class="n">num_series_in_args</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="s2">&quot;insample&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">)</span>
-            <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;insample&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-        <span class="c1"># handle `q` (quantile) parameter for probabilistic (or quantile) forecasts</span>
-        <span class="k">if</span> <span class="s2">&quot;q&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
-            <span class="c1"># convert `q` to tuple of (quantile values, optional quantile component names)</span>
-            <span class="n">q</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;q&quot;</span><span class="p">,</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span><span class="p">)</span>
-            <span class="n">q_comp_names</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
-                    <span class="n">q</span><span class="p">,</span> <span class="n">q_comp_names</span> <span class="o">=</span> <span class="n">q</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
-                    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">q</span><span class="p">])</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">q</span><span class="p">)</span>
-
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">q</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span> <span class="o">-</span> <span class="n">q</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">):</span>
-                    <span class="n">raise_log</span><span class="p">(</span>
-                        <span class="ne">ValueError</span><span class="p">(</span>
-                            <span class="s2">&quot;`q` must be of type `float`, or a sequence of increasing order with unique values only. &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;Received `q=</span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                        <span class="p">),</span>
-                        <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">q</span> <span class="o">&gt;=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">q</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">):</span>
-                    <span class="n">raise_log</span><span class="p">(</span>
-                        <span class="ne">ValueError</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;All `q` values must be in the range `(&gt;=0,&lt;=1)`. Received `q=</span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                        <span class="p">),</span>
-                        <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-                    <span class="p">)</span>
-                <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">q_comp_names</span><span class="p">)</span>
-
-        <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span>
-            <span class="n">iterable</span><span class="o">=</span><span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">input_series</span><span class="p">),</span>
-            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
-            <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">actual_series</span><span class="p">),</span>
-            <span class="n">desc</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;metric `</span><span class="si">{</span><span class="n">func</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">()`&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="c1"># `vals` is a list of series metrics of length `len(actual_series)`. Each metric has shape</span>
-        <span class="c1"># `(n time steps, n components)`;</span>
-        <span class="c1"># - n times step is `1` if `time_reduction` is other than `None`</span>
-        <span class="c1"># - n components: is 1 if `component_reduction` is other than `None`</span>
-        <span class="n">vals</span> <span class="o">=</span> <span class="n">_parallel_apply</span><span class="p">(</span>
-            <span class="n">iterator</span><span class="o">=</span><span class="n">iterator</span><span class="p">,</span>
-            <span class="n">fn</span><span class="o">=</span><span class="n">func</span><span class="p">,</span>
-            <span class="n">n_jobs</span><span class="o">=</span><span class="n">n_jobs</span><span class="p">,</span>
-            <span class="n">fn_args</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="n">num_series_in_args</span><span class="p">:],</span>
-            <span class="n">fn_kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="c1"># we flatten metrics along the time axis if n time steps == 1,</span>
-        <span class="c1"># and/or along component axis if n components == 1</span>
-        <span class="n">vals</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">val</span><span class="p">[</span>
-                <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">TIME_AX</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
-                <span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span> <span class="k">if</span> <span class="n">val</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">COMP_AX</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="p">]</span>
-            <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">vals</span>
-        <span class="p">]</span>
-
-        <span class="c1"># reduce metrics along series axis</span>
-        <span class="k">if</span> <span class="n">series_reduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;series_reduction&quot;</span><span class="p">](</span><span class="n">vals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">series_seq_type</span> <span class="o">==</span> <span class="n">SeriesType</span><span class="o">.</span><span class="n">SINGLE</span><span class="p">:</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-
-        <span class="c1"># flatten along series axis if n series == 1</span>
-        <span class="k">return</span> <span class="n">vals</span>
-
-    <span class="k">return</span> <span class="n">wrapper_multi_ts_support</span></div>
-
-
-<div class="viewcode-block" id="multivariate_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multivariate_support">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">multivariate_support</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    This decorator transforms a metric function that takes as input two univariate TimeSeries instances</span>
-<span class="sd">    into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate</span>
-<span class="sd">    metrics for components with the same indices, and returns a float value that is computed as a function of all the</span>
-<span class="sd">    univariate metrics using a `component_reduction` subroutine passed as argument to the metric function.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="nd">@wraps</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">wrapper_multivariate_support</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="c1"># we can avoid checks about args and kwargs since the input is adjusted by the previous decorator</span>
-        <span class="n">actual_series</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">pred_series</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">num_series_in_args</span> <span class="o">=</span> <span class="mi">2</span>
-
-        <span class="n">q</span><span class="p">,</span> <span class="n">q_comp_names</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;q&quot;</span><span class="p">),</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># without quantiles, the number of components must match</span>
-            <span class="k">if</span> <span class="n">actual_series</span><span class="o">.</span><span class="n">n_components</span> <span class="o">!=</span> <span class="n">pred_series</span><span class="o">.</span><span class="n">n_components</span><span class="p">:</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Mismatch between number of components in `actual_series` &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;(n=</span><span class="si">{</span><span class="n">actual_series</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2">) and `pred_series` (n=</span><span class="si">{</span><span class="n">pred_series</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2">).&quot;</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="c1"># compute median for stochastic predictions</span>
-            <span class="k">if</span> <span class="n">pred_series</span><span class="o">.</span><span class="n">is_stochastic</span><span class="p">:</span>
-                <span class="n">q</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">])</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># `q` is required to be a tuple (handled by `multi_ts_support` wrapper)</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="s2">&quot;`q` must be of tuple of `(np.ndarray, Optional[pd.Index])` &quot;</span>
-                        <span class="s2">&quot;where the (quantile values, optional quantile component names). &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;Received `q=</span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="n">q</span><span class="p">,</span> <span class="n">q_comp_names</span> <span class="o">=</span> <span class="n">q</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">pred_series</span><span class="o">.</span><span class="n">is_stochastic</span><span class="p">:</span>
-                <span class="c1"># quantile component names are required if the predictions are not stochastic (as for stochastic</span>
-                <span class="c1"># predictions, the quantiles can be retrieved from the sample dimension for each component)</span>
-                <span class="k">if</span> <span class="n">q_comp_names</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                    <span class="n">q_comp_names</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span>
-                        <span class="n">likelihood_component_names</span><span class="p">(</span>
-                            <span class="n">components</span><span class="o">=</span><span class="n">actual_series</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
-                            <span class="n">parameter_names</span><span class="o">=</span><span class="n">quantile_names</span><span class="p">(</span><span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">),</span>
-                        <span class="p">)</span>
-                    <span class="p">)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="n">q_comp_names</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">pred_series</span><span class="o">.</span><span class="n">components</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
-                    <span class="n">raise_log</span><span class="p">(</span>
-                        <span class="ne">ValueError</span><span class="p">(</span>
-                            <span class="sa">f</span><span class="s2">&quot;Computing a metric with quantile(s) `q=</span><span class="si">{</span><span class="n">q</span><span class="si">}</span><span class="s2">` is only supported for probabilistic &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;`pred_series` (num samples &gt; 1) or `pred_series` containing the predicted &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;quantiles as columns / components. Either pass a probabilistic `pred_series` or &quot;</span>
-                            <span class="sa">f</span><span class="s2">&quot;a series containing the expected quantile components: </span><span class="si">{</span><span class="n">q_comp_names</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="si">}</span><span class="s2"> &quot;</span>
-                        <span class="p">),</span>
-                        <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-                    <span class="p">)</span>
-
-        <span class="k">if</span> <span class="s2">&quot;q&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
-            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;q&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">q_comp_names</span><span class="p">)</span>
-
-        <span class="c1"># handle `insample` parameters for scaled metrics</span>
-        <span class="n">input_series</span> <span class="o">=</span> <span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">)</span>
-        <span class="k">if</span> <span class="s2">&quot;insample&quot;</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
-            <span class="n">insample</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-            <span class="k">if</span> <span class="n">actual_series</span><span class="o">.</span><span class="n">n_components</span> <span class="o">!=</span> <span class="n">insample</span><span class="o">.</span><span class="n">n_components</span><span class="p">:</span>
-                <span class="n">raise_log</span><span class="p">(</span>
-                    <span class="ne">ValueError</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Mismatch between number of components in `actual_series` &quot;</span>
-                        <span class="sa">f</span><span class="s2">&quot;(n=</span><span class="si">{</span><span class="n">actual_series</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2">) and `insample` (n=</span><span class="si">{</span><span class="n">insample</span><span class="o">.</span><span class="n">width</span><span class="si">}</span><span class="s2">.&quot;</span>
-                    <span class="p">),</span>
-                    <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="n">input_series</span> <span class="o">+=</span> <span class="p">(</span><span class="n">insample</span><span class="p">,)</span>
-            <span class="n">num_series_in_args</span> <span class="o">+=</span> <span class="mi">1</span>
-
-        <span class="n">vals</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">input_series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">[</span><span class="n">num_series_in_args</span><span class="p">:],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="c1"># bring vals to shape (n_time, n_comp, n_quantile)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;Metric output must have 2 dimensions (n components, n quantiles) &quot;</span>
-                    <span class="s2">&quot;for aggregated metrics (e.g. `mae()`, ...), &quot;</span>
-                    <span class="s2">&quot;or 3 dimension (n times, n components, n quantiles)  &quot;</span>
-                    <span class="s2">&quot;for time dependent metrics (e.g. `ae()`, ...)&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">TIME_AX</span><span class="p">)</span>
-
-        <span class="n">time_reduction</span> <span class="o">=</span> <span class="n">_get_reduction</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-            <span class="n">red_name</span><span class="o">=</span><span class="s2">&quot;time_reduction&quot;</span><span class="p">,</span>
-            <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">,</span>
-            <span class="n">sanity_check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">time_reduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># -&gt; (1, n_comp, n_quantile)</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">time_reduction</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">)</span>
-
-        <span class="n">component_reduction</span> <span class="o">=</span> <span class="n">_get_reduction</span><span class="p">(</span>
-            <span class="n">kwargs</span><span class="o">=</span><span class="n">kwargs</span><span class="p">,</span>
-            <span class="n">params</span><span class="o">=</span><span class="n">params</span><span class="p">,</span>
-            <span class="n">red_name</span><span class="o">=</span><span class="s2">&quot;component_reduction&quot;</span><span class="p">,</span>
-            <span class="n">axis</span><span class="o">=</span><span class="n">COMP_AX</span><span class="p">,</span>
-            <span class="n">sanity_check</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">component_reduction</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># -&gt; (*, n_quantile)</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">component_reduction</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">COMP_AX</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># -&gt; (*, n_comp * n_quantile), with order [c0_q0, c0_q1, ... c1_q0, c1_q1, ...]</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">vals</span>
-
-    <span class="k">return</span> <span class="n">wrapper_multivariate_support</span></div>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_values</span><span class="p">(</span>
-    <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-    <span class="n">vals_components</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span>
-    <span class="n">actual_components</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span>
-    <span class="n">q</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Returns a deterministic or probabilistic numpy array from the values of a time series of shape</span>
-<span class="sd">    (times, components, samples / quantiles).</span>
-<span class="sd">    To extract quantile (sample) values from quantile or stachastic `vals`, use `q`.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    vals</span>
-<span class="sd">        A numpy array with the values of a TimeSeries (actual values or predictions).</span>
-<span class="sd">    vals_components</span>
-<span class="sd">        The components of the `vals` TimeSeries.</span>
-<span class="sd">    actual_components</span>
-<span class="sd">        The components of the actual TimeSeries.</span>
-<span class="sd">    q</span>
-<span class="sd">        Optionally, for stochastic or quantile series/values, return deterministic quantile values.</span>
-<span class="sd">        If not `None`, must a tuple with (quantile values,</span>
-<span class="sd">        `None` if `pred_series` is stochastic else the quantile component names).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># return values as is (times, components, samples)</span>
-    <span class="k">if</span> <span class="n">q</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">vals</span>
-
-    <span class="n">q</span><span class="p">,</span> <span class="n">q_names</span> <span class="o">=</span> <span class="n">q</span>
-    <span class="k">if</span> <span class="n">vals</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">SMPL_AX</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># deterministic (or quantile components) input</span>
-        <span class="k">if</span> <span class="n">q_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># `q_names` are the component names of the predicted quantile parameters</span>
-            <span class="c1"># we extract the relevant quantile components with shape (times, components * quantiles)</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="p">[:,</span> <span class="n">vals_components</span><span class="o">.</span><span class="n">get_indexer</span><span class="p">(</span><span class="n">q_names</span><span class="p">)]</span>
-            <span class="c1"># rearrange into (times, components, quantiles)</span>
-            <span class="n">vals</span> <span class="o">=</span> <span class="n">vals</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">vals</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">actual_components</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
-        <span class="k">return</span> <span class="n">vals</span>
-
-    <span class="c1"># probabilistic input</span>
-    <span class="c1"># compute multiple quantiles for all times and components; with shape: (quantiles, times, components)</span>
-    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">vals</span><span class="p">,</span> <span class="n">q</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">SMPL_AX</span><span class="p">)</span>
-    <span class="c1"># rearrange into (times, components, quantiles)</span>
-    <span class="k">return</span> <span class="n">out</span><span class="o">.</span><span class="n">transpose</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_values_or_raise</span><span class="p">(</span>
-    <span class="n">series_a</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">series_b</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
-    <span class="n">q</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">remove_nan_union</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-    <span class="n">is_insample</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the processed numpy values of two time series. Processing can be customized with arguments</span>
-<span class="sd">    `intersect, q, remove_nan_union`.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    series_a</span>
-<span class="sd">        A deterministic ``TimeSeries`` instance. If `is_insample=False`, it is the `actual_series`.</span>
-<span class="sd">        Otherwise, it is the `insample` series.</span>
-<span class="sd">    series_b</span>
-<span class="sd">        A deterministic or stochastic ``TimeSeries`` instance (the predictions `pred_series`).</span>
-<span class="sd">    intersect</span>
-<span class="sd">        A boolean for whether to only consider the time intersection between `series_a` and `series_b`</span>
-<span class="sd">    q</span>
-<span class="sd">        Optionally, for predicted stochastic or quantile series, return deterministic quantile values.</span>
-<span class="sd">        If not `None`, must a tuple with (quantile values,</span>
-<span class="sd">        `None` if `pred_series` is stochastic else the quantile component names).</span>
-<span class="sd">    remove_nan_union</span>
-<span class="sd">        By setting `remove_non_union` to True, sets all values from `series_a` and `series_b` to `np.nan` at indices</span>
-<span class="sd">        where any of the two series contain a NaN value. Only effective when `is_insample=False`.</span>
-<span class="sd">    is_insample</span>
-<span class="sd">        Whether `series_a` corresponds to the `insample` series for scaled metrics.</span>
-
-<span class="sd">    Raises</span>
-<span class="sd">    ------</span>
-<span class="sd">    ValueError</span>
-<span class="sd">        If `is_insample=False` and the two time series do not have at least a partially overlapping time index.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">make_copy</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_insample</span><span class="p">:</span>
-        <span class="c1"># get the time intersection and values of the two series (corresponds to `actual_series` and `pred_series`</span>
-        <span class="k">if</span> <span class="n">series_a</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">series_b</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">intersect</span><span class="p">:</span>
-            <span class="n">vals_a_common</span> <span class="o">=</span> <span class="n">series_a</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="n">make_copy</span><span class="p">)</span>
-            <span class="n">vals_b_common</span> <span class="o">=</span> <span class="n">series_b</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="n">make_copy</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">vals_a_common</span> <span class="o">=</span> <span class="n">series_a</span><span class="o">.</span><span class="n">slice_intersect_values</span><span class="p">(</span><span class="n">series_b</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="n">make_copy</span><span class="p">)</span>
-            <span class="n">vals_b_common</span> <span class="o">=</span> <span class="n">series_b</span><span class="o">.</span><span class="n">slice_intersect_values</span><span class="p">(</span><span class="n">series_a</span><span class="p">,</span> <span class="n">copy</span><span class="o">=</span><span class="n">make_copy</span><span class="p">)</span>
-
-        <span class="n">vals_b</span> <span class="o">=</span> <span class="n">_get_values</span><span class="p">(</span>
-            <span class="n">vals</span><span class="o">=</span><span class="n">vals_b_common</span><span class="p">,</span>
-            <span class="n">vals_components</span><span class="o">=</span><span class="n">series_b</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
-            <span class="n">actual_components</span><span class="o">=</span><span class="n">series_a</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
-            <span class="n">q</span><span class="o">=</span><span class="n">q</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="c1"># for `insample` series we extract only values up until before start of `pred_series`</span>
-        <span class="c1"># find how many steps `insample` overlaps into `series_b`</span>
-        <span class="n">end</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">n_steps_between</span><span class="p">(</span>
-                <span class="n">end</span><span class="o">=</span><span class="n">series_b</span><span class="o">.</span><span class="n">start_time</span><span class="p">(),</span> <span class="n">start</span><span class="o">=</span><span class="n">series_a</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">freq</span><span class="o">=</span><span class="n">series_a</span><span class="o">.</span><span class="n">freq</span>
-            <span class="p">)</span>
-            <span class="o">-</span> <span class="mi">1</span>
-        <span class="p">)</span>
-        <span class="k">if</span> <span class="n">end</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="nb">abs</span><span class="p">(</span><span class="n">end</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series_a</span><span class="p">):</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;The `insample` series must start before the `pred_series` and &quot;</span>
-                    <span class="s2">&quot;extend at least until one time step before the start of `pred_series`.&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="n">end</span> <span class="o">=</span> <span class="n">end</span> <span class="ow">or</span> <span class="kc">None</span>
-        <span class="n">vals_a_common</span> <span class="o">=</span> <span class="n">series_a</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="n">make_copy</span><span class="p">)[:</span><span class="n">end</span><span class="p">]</span>
-        <span class="n">vals_b</span> <span class="o">=</span> <span class="kc">None</span>
-    <span class="n">vals_a</span> <span class="o">=</span> <span class="n">_get_values</span><span class="p">(</span>
-        <span class="n">vals</span><span class="o">=</span><span class="n">vals_a_common</span><span class="p">,</span>
-        <span class="n">vals_components</span><span class="o">=</span><span class="n">series_a</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
-        <span class="n">actual_components</span><span class="o">=</span><span class="n">series_a</span><span class="o">.</span><span class="n">components</span><span class="p">,</span>
-        <span class="n">q</span><span class="o">=</span><span class="p">([</span><span class="mf">0.5</span><span class="p">],</span> <span class="kc">None</span><span class="p">),</span>
-    <span class="p">)</span>
-
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">remove_nan_union</span> <span class="ow">or</span> <span class="n">is_insample</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">vals_a</span><span class="p">,</span> <span class="n">vals_b</span>
-
-    <span class="n">isnan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">vals_a</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">vals_b</span><span class="p">))</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">SMPL_AX</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span>
-    <span class="p">)</span>
-    <span class="n">isnan_mask_pred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">isnan_mask</span><span class="p">,</span> <span class="n">vals_b</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">SMPL_AX</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="n">SMPL_AX</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">isnan_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">vals_a</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-        <span class="n">isnan_mask_pred</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">vals_b</span>
-    <span class="p">)</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_quantile_intervals</span><span class="p">(</span>
-    <span class="n">vals</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-    <span class="n">q</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="n">Any</span><span class="p">],</span>
-    <span class="n">q_interval</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the lower and upper bound values from `vals` for all quantile intervals in `q_interval`.</span>
-
-<span class="sd">    Parameters</span>
-<span class="sd">    ----------</span>
-<span class="sd">    vals</span>
-<span class="sd">        A numpy array with predicted quantile values of shape (n times, n components, n quantiles).</span>
-<span class="sd">    q</span>
-<span class="sd">        A tuple with (quantile values, any).</span>
-<span class="sd">    q_interval</span>
-<span class="sd">        A numpy array with the lower and upper quantile interval bound of shape (n intervals, 2).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">q</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">q</span>
-    <span class="c1"># find index of every `q_interval` value in `q`; we have guarantees from support wrappers:</span>
-    <span class="c1"># - `q` has increasing order</span>
-    <span class="c1"># - `vals` has same order as `q` in dim 3 (quantile dim)</span>
-    <span class="c1"># - `q_interval` holds (lower q, upper q) in that order</span>
-    <span class="n">q_idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">q_interval</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">q_interval</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">vals</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">q_idx</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]],</span> <span class="n">vals</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">q_idx</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">]]</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_wrapped_metric</span><span class="p">(</span>
-    <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">],</span> <span class="n">n_wrappers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the inner metric function `func` which bypasses the decorators `multi_ts_support` and</span>
-<span class="sd">    `multivariate_support`. It significantly decreases process time compared to calling `func` directly.</span>
-<span class="sd">    Only use this to compute a pre-defined metric within the scope of another metric.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="mi">2</span> <span class="o">&lt;=</span> <span class="n">n_wrappers</span> <span class="o">&lt;=</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="n">raise_log</span><span class="p">(</span>
-            <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Only 2-3 wrappers are currently supported&quot;</span><span class="p">),</span>
-            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-    <span class="k">if</span> <span class="n">n_wrappers</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">func</span><span class="o">.</span><span class="n">__wrapped__</span><span class="o">.</span><span class="n">__wrapped__</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">func</span><span class="o">.</span><span class="n">__wrapped__</span><span class="o">.</span><span class="n">__wrapped__</span><span class="o">.</span><span class="n">__wrapped__</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_reduction</span><span class="p">(</span>
-    <span class="n">kwargs</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">red_name</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">sanity_check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns the reduction function either from user kwargs or metric default.</span>
-<span class="sd">    Optionally performs sanity checks for presence of `axis` parameter, and correct output type and</span>
-<span class="sd">    reduced shape.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">red_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
-        <span class="k">return</span> <span class="kc">None</span>
-
-    <span class="n">red_fn</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="n">red_name</span><span class="p">]</span> <span class="k">if</span> <span class="n">red_name</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="n">params</span><span class="p">[</span><span class="n">red_name</span><span class="p">]</span><span class="o">.</span><span class="n">default</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">sanity_check</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">red_fn</span>
-
-    <span class="k">if</span> <span class="n">red_fn</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">red_params</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">red_fn</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
-        <span class="k">if</span> <span class="s2">&quot;axis&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">red_params</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Invalid `</span><span class="si">{</span><span class="n">red_name</span><span class="si">}</span><span class="s2">` function: Must have a parameter called `axis`.&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="c1"># verify `red_fn` reduces to array with correct shape</span>
-        <span class="n">shape_in</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="n">red_fn</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape_in</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Invalid `</span><span class="si">{</span><span class="n">red_name</span><span class="si">}</span><span class="s2">` function output type: Expected type &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;`np.ndarray`, received type=`</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="n">shape_invalid</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span>
-        <span class="k">if</span> <span class="n">shape_invalid</span><span class="p">:</span>
-            <span class="n">raise_log</span><span class="p">(</span>
-                <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Invalid `</span><span class="si">{</span><span class="n">red_name</span><span class="si">}</span><span class="s2">` function output shape: The function must reduce an input &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;`np.ndarray` of shape (t, c) to a `np.ndarray` of shape `(c,)`. &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;However, the function reduced a test array of shape `</span><span class="si">{</span><span class="n">shape_in</span><span class="si">}</span><span class="s2">` to &quot;</span>
-                    <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">out</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">`.&quot;</span>
-                <span class="p">),</span>
-                <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-            <span class="p">)</span>
-    <span class="k">return</span> <span class="n">red_fn</span>
-
-
-<span class="k">def</span><span class="w"> </span><span class="nf">_get_error_scale</span><span class="p">(</span>
-    <span class="n">insample</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">pred_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-    <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="n">metric</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
-<span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the error scale based on a naive seasonal forecasts on `insample` values with seasonality `m`.&quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
-        <span class="n">raise_log</span><span class="p">(</span>
-            <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Seasonality `m` must be of type `int`, received `m=</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s2">`&quot;</span><span class="p">),</span>
-            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="c1"># `x_t` are the true `y` values before the start of `y_pred`</span>
-    <span class="n">x_t</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
-        <span class="n">insample</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">is_insample</span><span class="o">=</span><span class="kc">True</span>
-    <span class="p">)</span>
-    <span class="n">diff</span> <span class="o">=</span> <span class="n">x_t</span><span class="p">[</span><span class="n">m</span><span class="p">:]</span> <span class="o">-</span> <span class="n">x_t</span><span class="p">[:</span><span class="o">-</span><span class="n">m</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;mae&quot;</span><span class="p">:</span>
-        <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">diff</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;mse&quot;</span><span class="p">:</span>
-        <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;rmse&quot;</span><span class="p">:</span>
-        <span class="n">scale</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">power</span><span class="p">(</span><span class="n">diff</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">))</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">raise_log</span><span class="p">(</span>
-            <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;unknown `metric=</span><span class="si">{</span><span class="n">metric</span><span class="si">}</span><span class="s2">`. Must be one of (&#39;mae&#39;, &#39;mse&#39;, &#39;rmse&#39;).&quot;</span>
-            <span class="p">),</span>
-            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isclose</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;cannot use MASE with periodical signals&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">scale</span>
 
 
 <div class="viewcode-block" id="err"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.err">[docs]</a><span class="nd">@multi_ts_support</span>
@@ -875,7 +266,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -887,8 +278,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -963,7 +354,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1054,7 +445,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1066,8 +457,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -1142,7 +533,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1250,7 +641,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -1268,8 +659,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -1364,7 +755,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -1467,7 +858,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1479,8 +870,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -1555,7 +946,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1663,7 +1054,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -1681,8 +1072,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -1777,7 +1168,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -1874,7 +1265,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -1975,7 +1366,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2077,7 +1468,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -2089,8 +1480,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -2168,7 +1559,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -2264,7 +1655,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2281,8 +1672,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -2367,7 +1758,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2458,7 +1849,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2567,7 +1958,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2584,8 +1975,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -2673,7 +2064,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2765,7 +2156,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2872,7 +2263,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -2889,8 +2280,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -2976,7 +2367,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Raises</span>
 <span class="sd">    ------</span>
@@ -3065,7 +2456,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3159,7 +2550,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3250,7 +2641,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3339,7 +2730,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3455,7 +2846,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3467,8 +2858,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and</span>
 <span class="sd">        `len(q) &gt; 1`. For:</span>
 
 <span class="sd">        - the same input arguments that result in the `float` return case from above but with `len(q) &gt; 1`.</span>
@@ -3552,7 +2943,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3651,7 +3042,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3663,8 +3054,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and</span>
 <span class="sd">        `len(q_interval) &gt; 1`. For:</span>
 
 <span class="sd">        - the input from the `float` return case above but with `len(q_interval) &gt; 1`.</span>
@@ -3747,7 +3138,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3853,7 +3244,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -3865,8 +3256,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and</span>
 <span class="sd">        `len(q_interval) &gt; 1`. For:</span>
 
 <span class="sd">        - the input from the `float` return case above but with `len(q_interval) &gt; 1`.</span>
@@ -3968,7 +3359,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4077,7 +3468,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4089,8 +3480,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and</span>
 <span class="sd">        `len(q_interval) &gt; 1`. For:</span>
 
 <span class="sd">        - the input from the `float` return case above but with `len(q_interval) &gt; 1`.</span>
@@ -4171,7 +3562,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4275,7 +3666,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4287,8 +3678,8 @@
 <span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction`, `component_reduction` and</span>
 <span class="sd">          `time_reduction`.</span>
 <span class="sd">    np.ndarray</span>
-<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time</span>
-<span class="sd">        and component reductions, and shape (n time steps, n q intervals) without time but component reduction and</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-</span>
+<span class="sd">        and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and</span>
 <span class="sd">        `len(q_interval) &gt; 1`. For:</span>
 
 <span class="sd">        - the input from the `float` return case above but with `len(q_interval) &gt; 1`.</span>
@@ -4376,7 +3767,7 @@
 <span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
 <span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
 <span class="sd">    verbose</span>
-<span class="sd">        Optionally, whether to print operations progress</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -4410,6 +3801,524 @@
         <span class="p">),</span>
         <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">,</span>
     <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="accuracy"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.accuracy">[docs]</a><span class="nd">@classification_support</span>
+<span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">accuracy</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Accuracy Score [1]_.</span>
+
+<span class="sd">    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per</span>
+<span class="sd">    component/column as:</span>
+
+<span class="sd">    .. math:: \\frac{1}{T}\\sum_{t=1}^T\\mathbb{I}(y_t = \\hat{y}_t)</span>
+
+<span class="sd">    Where :math:`\\mathbb{I}` is the indicator function.</span>
+
+<span class="sd">    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from</span>
+<span class="sd">    each time step and component.</span>
+<span class="sd">    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest</span>
+<span class="sd">    probability from each time step and component.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    component_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the</span>
+<span class="sd">        component axis. If `None`, will return a metric per component.</span>
+<span class="sd">    series_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will</span>
+<span class="sd">        return a metric per component.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        A single metric score for:</span>
+
+<span class="sd">        - a single univariate series.</span>
+<span class="sd">        - a single multivariate series with `component_reduction`.</span>
+<span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n components,) without component reduction.</span>
+<span class="sd">        For:</span>
+
+<span class="sd">        - a single multivariate series and at least `component_reduction=None`.</span>
+<span class="sd">        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.</span>
+<span class="sd">    list[float]</span>
+<span class="sd">        Same as for type `float` but for a sequence of series.</span>
+<span class="sd">    list[np.ndarray]</span>
+<span class="sd">        Same as for type `np.ndarray` but for a sequence of series.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://en.wikipedia.org/wiki/Precision_and_recall</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_classification</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_true</span> <span class="o">==</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">y_true</span><span class="o">.</span><span class="n">dtype</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="n">TIME_AX</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="precision"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.precision">[docs]</a><span class="nd">@classification_support</span>
+<span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">precision</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">label_reduction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">_LabelReduction</span><span class="p">]</span> <span class="o">=</span> <span class="n">_LabelReduction</span><span class="o">.</span><span class="n">MACRO</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Precision Score [1]_.</span>
+
+<span class="sd">    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per</span>
+<span class="sd">    component/column as:</span>
+
+<span class="sd">    .. math:: \\frac{TP}{TP + FP}</span>
+
+<span class="sd">    Where :math:`TP` are the true positives, and :math:`FP` are the false positives.</span>
+
+<span class="sd">    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from</span>
+<span class="sd">    each time step and component.</span>
+<span class="sd">    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest</span>
+<span class="sd">    probability from each time step and component.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    labels</span>
+<span class="sd">        Optionally, the labels and their order to compute the metric on. If `None`, will use all unique values from the</span>
+<span class="sd">        actual and predicted series.</span>
+<span class="sd">    component_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the</span>
+<span class="sd">        component axis. If `None`, will return a metric per component.</span>
+<span class="sd">    series_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will</span>
+<span class="sd">        return a metric per component.</span>
+<span class="sd">    label_reduction</span>
+<span class="sd">        The method to reduce the label-specific metrics. Can be one of:</span>
+
+<span class="sd">        - ``None``: no reduction, returns a metric per label.</span>
+<span class="sd">        - ``&#39;micro&#39;``: computes the metric globally by counting the total true positives, false negatives and false</span>
+<span class="sd">          positives.</span>
+<span class="sd">        - ``&#39;macro&#39;``: computes the metric for each label, and returns the unweighted mean.</span>
+<span class="sd">        - ``&#39;weighted&#39;``: computes the metric for each label, and returns the weighted mean by support (the number of</span>
+<span class="sd">          true instances for each label).</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        A single metric score (when `label_reduction != None`) for:</span>
+
+<span class="sd">        - a single univariate series.</span>
+<span class="sd">        - a single multivariate series with `component_reduction`.</span>
+<span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n components * n labels,) without component reduction,</span>
+<span class="sd">        and shape (n labels,) with component reduction. `n labels` is the number of labels when `label_reduction=None`,</span>
+<span class="sd">        and `1` otherwise.</span>
+<span class="sd">        For:</span>
+
+<span class="sd">        - the same input arguments that result in the `float` return case from above but with `label_reduction=None`.</span>
+<span class="sd">        - a single multivariate series and at least `component_reduction=None`.</span>
+<span class="sd">        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.</span>
+<span class="sd">    list[float]</span>
+<span class="sd">        Same as for type `float` but for a sequence of series.</span>
+<span class="sd">    list[np.ndarray]</span>
+<span class="sd">        Same as for type `np.ndarray` but for a sequence of series.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://en.wikipedia.org/wiki/Precision_and_recall</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_classification</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_func</span><span class="p">(</span><span class="n">tn</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">tp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute score from confusion matrix components.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">tp</span> <span class="o">/</span> <span class="p">(</span><span class="n">tp</span> <span class="o">+</span> <span class="n">fp</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_compute_score</span><span class="p">(</span>
+        <span class="n">y_true</span><span class="p">,</span>
+        <span class="n">y_pred</span><span class="p">,</span>
+        <span class="n">score_func</span><span class="o">=</span><span class="n">_score_func</span><span class="p">,</span>
+        <span class="n">label_reduction</span><span class="o">=</span><span class="n">label_reduction</span><span class="p">,</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="recall"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.recall">[docs]</a><span class="nd">@classification_support</span>
+<span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">recall</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">label_reduction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">_LabelReduction</span><span class="p">]</span> <span class="o">=</span> <span class="n">_LabelReduction</span><span class="o">.</span><span class="n">MACRO</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Recall Score [1]_.</span>
+
+<span class="sd">    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per</span>
+<span class="sd">    component/column as:</span>
+
+<span class="sd">    .. math:: \\frac{TP}{TP + FN}</span>
+
+<span class="sd">    Where :math:`TP` are the true positives, and :math:`FN` are the false negatives.</span>
+
+<span class="sd">    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from</span>
+<span class="sd">    each time step and component.</span>
+<span class="sd">    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest</span>
+<span class="sd">    probability from each time step and component.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    labels</span>
+<span class="sd">        Optionally, the labels and their order to compute the metric on. If `None`, will use all unique values from the</span>
+<span class="sd">        actual and predicted series.</span>
+<span class="sd">    component_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the</span>
+<span class="sd">        component axis. If `None`, will return a metric per component.</span>
+<span class="sd">    series_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will</span>
+<span class="sd">        return a metric per component.</span>
+<span class="sd">    label_reduction</span>
+<span class="sd">        The method to reduce the label-specific metrics. Can be one of:</span>
+
+<span class="sd">        - ``None``: no reduction, returns a metric per label.</span>
+<span class="sd">        - ``&#39;micro&#39;``: computes the metric globally by counting the total true positives, false negatives and false</span>
+<span class="sd">          positives.</span>
+<span class="sd">        - ``&#39;macro&#39;``: computes the metric for each label, and returns the unweighted mean.</span>
+<span class="sd">        - ``&#39;weighted&#39;``: computes the metric for each label, and returns the weighted mean by support (the number of</span>
+<span class="sd">          true instances for each label).</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        A single metric score (when `label_reduction != None`) for:</span>
+
+<span class="sd">        - a single univariate series.</span>
+<span class="sd">        - a single multivariate series with `component_reduction`.</span>
+<span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n components * n labels,) without component reduction,</span>
+<span class="sd">        and shape (n labels,) with component reduction. `n labels` is the number of labels when `label_reduction=None`,</span>
+<span class="sd">        and `1` otherwise.</span>
+<span class="sd">        For:</span>
+
+<span class="sd">        - the same input arguments that result in the `float` return case from above but with `label_reduction=None`.</span>
+<span class="sd">        - a single multivariate series and at least `component_reduction=None`.</span>
+<span class="sd">        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.</span>
+<span class="sd">    list[float]</span>
+<span class="sd">        Same as for type `float` but for a sequence of series.</span>
+<span class="sd">    list[np.ndarray]</span>
+<span class="sd">        Same as for type `np.ndarray` but for a sequence of series.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://en.wikipedia.org/wiki/Precision_and_recall</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_classification</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_func</span><span class="p">(</span><span class="n">tn</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">tp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute score from confusion matrix components.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">tp</span> <span class="o">/</span> <span class="p">(</span><span class="n">tp</span> <span class="o">+</span> <span class="n">fn</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">_compute_score</span><span class="p">(</span>
+        <span class="n">y_true</span><span class="p">,</span>
+        <span class="n">y_pred</span><span class="p">,</span>
+        <span class="n">score_func</span><span class="o">=</span><span class="n">_score_func</span><span class="p">,</span>
+        <span class="n">label_reduction</span><span class="o">=</span><span class="n">label_reduction</span><span class="p">,</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="f1"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.f1">[docs]</a><span class="nd">@classification_support</span>
+<span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">f1</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">label_reduction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">_LabelReduction</span><span class="p">]</span> <span class="o">=</span> <span class="n">_LabelReduction</span><span class="o">.</span><span class="n">MACRO</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;F1 Score [1]_.</span>
+
+<span class="sd">    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per</span>
+<span class="sd">    component/column as:</span>
+
+<span class="sd">    .. math:: \\frac{2TP}{2TP + FP + FN}</span>
+
+<span class="sd">    Where :math:`TP` are the true positives, :math:`FP` are the false positives, and :math:`FN` are the false</span>
+<span class="sd">    negatives.</span>
+
+<span class="sd">    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from</span>
+<span class="sd">    each time step and component.</span>
+<span class="sd">    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest</span>
+<span class="sd">    probability from each time step and component.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    labels</span>
+<span class="sd">        Optionally, the labels and their order to compute the metric on. If `None`, will use all unique values from the</span>
+<span class="sd">        actual and predicted series.</span>
+<span class="sd">    component_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the</span>
+<span class="sd">        component axis. If `None`, will return a metric per component.</span>
+<span class="sd">    series_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will</span>
+<span class="sd">        return a metric per component.</span>
+<span class="sd">    label_reduction</span>
+<span class="sd">        The method to reduce the label-specific metrics. Can be one of:</span>
+
+<span class="sd">        - ``None``: no reduction, returns a metric per label.</span>
+<span class="sd">        - ``&#39;micro&#39;``: computes the metric globally by counting the total true positives, false negatives and false</span>
+<span class="sd">          positives.</span>
+<span class="sd">        - ``&#39;macro&#39;``: computes the metric for each label, and returns the unweighted mean.</span>
+<span class="sd">        - ``&#39;weighted&#39;``: computes the metric for each label, and returns the weighted mean by support (the number of</span>
+<span class="sd">          true instances for each label).</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        A single metric score (when `label_reduction != None`) for:</span>
+
+<span class="sd">        - a single univariate series.</span>
+<span class="sd">        - a single multivariate series with `component_reduction`.</span>
+<span class="sd">        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        A numpy array of metric scores. The array has shape (n components * n labels,) without component reduction,</span>
+<span class="sd">        and shape (n labels,) with component reduction. `n labels` is the number of labels when `label_reduction=None`,</span>
+<span class="sd">        and `1` otherwise.</span>
+<span class="sd">        For:</span>
+
+<span class="sd">        - the same input arguments that result in the `float` return case from above but with `label_reduction=None`.</span>
+<span class="sd">        - a single multivariate series and at least `component_reduction=None`.</span>
+<span class="sd">        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.</span>
+<span class="sd">    list[float]</span>
+<span class="sd">        Same as for type `float` but for a sequence of series.</span>
+<span class="sd">    list[np.ndarray]</span>
+<span class="sd">        Same as for type `np.ndarray` but for a sequence of series.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://en.wikipedia.org/wiki/Precision_and_recall</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_classification</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_score_func</span><span class="p">(</span><span class="n">tn</span><span class="p">,</span> <span class="n">fp</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="n">tp</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute score from confusion matrix components.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">tp</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">tp</span> <span class="o">+</span> <span class="n">fp</span> <span class="o">+</span> <span class="n">fn</span><span class="p">)</span>
+
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">_compute_score</span><span class="p">(</span>
+        <span class="n">y_true</span><span class="p">,</span>
+        <span class="n">y_pred</span><span class="p">,</span>
+        <span class="n">score_func</span><span class="o">=</span><span class="n">_score_func</span><span class="p">,</span>
+        <span class="n">label_reduction</span><span class="o">=</span><span class="n">label_reduction</span><span class="p">,</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">scores</span></div>
+
+
+<div class="viewcode-block" id="confusion_matrix"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.confusion_matrix">[docs]</a><span class="nd">@classification_support</span>
+<span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">confusion_matrix</span><span class="p">(</span>
+    <span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+    <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">component_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nansum</span><span class="p">,</span>
+    <span class="n">series_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">METRIC_OUTPUT_TYPE</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Confusion Matrix (CM) [1]_.</span>
+
+<span class="sd">    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, it is computed per</span>
+<span class="sd">    component/column and label as:</span>
+
+<span class="sd">    The confusion matrix :math:`C` is such that :math:`C_{i,j}` is equal to the number of observations</span>
+<span class="sd">    :math:`y` known to be in group :math:`i` and predicted :math:`\\hat{y}` to be in group :math:`j`.</span>
+
+<span class="sd">    If :math:`\\hat{y}_t` are stochastic (contains several samples), it takes the label with the highest count from</span>
+<span class="sd">    each time step and component.</span>
+<span class="sd">    If :math:`\\hat{y}_t` represent the predict class label probabilities, it takes the label with the highest</span>
+<span class="sd">    probability from each time step and component.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The (sequence of) actual series.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The (sequence of) predicted series.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    labels</span>
+<span class="sd">        Optionally, the labels and their order to compute the metric on. If `None`, will use all unique values from the</span>
+<span class="sd">        actual and predicted series.</span>
+<span class="sd">    component_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the</span>
+<span class="sd">        component axis. If `None`, will return a metric per component.</span>
+<span class="sd">    series_reduction</span>
+<span class="sd">        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`</span>
+<span class="sd">        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a</span>
+<span class="sd">        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the</span>
+<span class="sd">        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will</span>
+<span class="sd">        return a metric per component.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    np.ndarray</span>
+<span class="sd">        The Confusion Matrix as a numpy array for a single series. The array has shape (n components, n labels,</span>
+<span class="sd">        n labels) without component reduction, and shape (n labels, n labels) with component reduction.</span>
+<span class="sd">    list[np.ndarray]</span>
+<span class="sd">        Same as for type `np.ndarray` but for a sequence of series.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://en.wikipedia.org/wiki/Confusion_matrix</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span>
+        <span class="n">actual_series</span><span class="p">,</span>
+        <span class="n">pred_series</span><span class="p">,</span>
+        <span class="n">intersect</span><span class="p">,</span>
+        <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">is_classification</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_confusion_matrix</span><span class="p">(</span>
+        <span class="n">y_true</span><span class="p">,</span>
+        <span class="n">y_pred</span><span class="p">,</span>
+        <span class="n">labels</span><span class="o">=</span><span class="n">labels</span><span class="p">,</span>
+        <span class="n">compute_multilabel</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
 </pre></div>
 
               </div>

@@ -900,6 +900,162 @@
   <span class="target" id="module-darts.utils.likelihood_models.sklearn"></span><section id="likelihoods-for-sklearnmodel">
 <h1>Likelihoods for <cite>SKLearnModel</cite><a class="headerlink" href="#likelihoods-for-sklearnmodel" title="Permalink to this heading">¶</a></h1>
 <dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.sklearn.</span></span><span class="sig-name descname"><span class="pre">ClassProbabilityLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/sklearn.html#ClassProbabilityLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnLikelihood</span></code></a></p>
+<p>Class probability likelihood.
+Likelihood to predict the probability of each class for a forecasting classification task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>n_outputs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of predicted outputs per model call. <cite>1</cite> if <cite>multi_models=False</cite>, otherwise
+<cite>output_chunk_length</cite>.</p>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.num_parameters" title="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of distribution parameters for a single target value.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.parameter_names" title="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.parameter_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parameter_names</span></code></a></p></td>
+<td><p>Returns the likelihood parameter names.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.type" title="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">type</span></code></a></p></td>
+<td><p>Returns the likelihood type.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="autosummary longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.component_names" title="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
+<td><p>Generates names for the parameters of the Likelihood.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.fit" title="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.predict" title="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
+<td><p>Generates sampled or direct likelihood parameter predictions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<td><p>Returns the distribution parameters as a array, extracted from the raw model outputs.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.sample" title="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.component_names">
+<span class="sig-name descname"><span class="pre">component_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/sklearn.html#ClassProbabilityLikelihood.component_names"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.component_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates names for the parameters of the Likelihood.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/sklearn.html#ClassProbabilityLikelihood.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>model</strong> – The model to fit the likelihood to. The model is expected to be fitted and have a <cite>class_labels</cite> attribute.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.num_parameters">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of distribution parameters for a single target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.parameter_names">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">parameter_names</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.parameter_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood parameter names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">predict_likelihood_parameters</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates sampled or direct likelihood parameter predictions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model</strong> – The Darts <cite>SKLearnModel</cite>.</p></li>
+<li><p><strong>x</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>) – The input feature array passed to the underlying estimator’s <cite>predict()</cite> method.</p></li>
+<li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from the likelihood model / distribution.
+If <cite>1</cite> and <cite>predict_likelihood_parameters=False</cite>, returns median / mean predictions.</p></li>
+<li><p><strong>predict_likelihood_parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set to <cite>True</cite>, generates likelihood parameter predictions instead of sampling from the
+likelihood model / distribution. Only supported with <cite>num_samples = 1</cite> and
+<cite>n&lt;=output_chunk_length</cite>.</p></li>
+<li><p><strong>kwargs</strong> – Some kwargs passed to the underlying estimator’s <cite>predict()</cite> method.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.predict_likelihood_parameters">
+<span class="sig-name descname"><span class="pre">predict_likelihood_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/sklearn.html#ClassProbabilityLikelihood.predict_likelihood_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.predict_likelihood_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the distribution parameters as a array, extracted from the raw model outputs.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/sklearn.html#ClassProbabilityLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<dd><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.type">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">type</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.LikelihoodType" title="darts.utils.likelihood_models.base.LikelihoodType"><span class="pre">LikelihoodType</span></a></em><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.ClassProbabilityLikelihood.type" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the likelihood type.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.LikelihoodType" title="darts.utils.likelihood_models.base.LikelihoodType"><code class="xref py py-class docutils literal notranslate"><span class="pre">LikelihoodType</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.GaussianLikelihood">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.sklearn.</span></span><span class="sig-name descname"><span class="pre">GaussianLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_outputs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/sklearn.html#GaussianLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnLikelihood</span></code></a></p>
@@ -944,13 +1100,16 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.component_names" title="darts.utils.likelihood_models.sklearn.GaussianLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict" title="darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.fit" title="darts.utils.likelihood_models.sklearn.GaussianLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict" title="darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
 <td><p>Generates sampled or direct likelihood parameter predictions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.GaussianLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a array, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.sample" title="darts.utils.likelihood_models.sklearn.GaussianLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.sample" title="darts.utils.likelihood_models.sklearn.GaussianLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -964,6 +1123,12 @@
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.GaussianLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.GaussianLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1091,13 +1256,16 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood.component_names" title="darts.utils.likelihood_models.sklearn.PoissonLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood.predict" title="darts.utils.likelihood_models.sklearn.PoissonLikelihood.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood.fit" title="darts.utils.likelihood_models.sklearn.PoissonLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood.predict" title="darts.utils.likelihood_models.sklearn.PoissonLikelihood.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
 <td><p>Generates sampled or direct likelihood parameter predictions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.PoissonLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.PoissonLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a array, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood.sample" title="darts.utils.likelihood_models.sklearn.PoissonLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood.sample" title="darts.utils.likelihood_models.sklearn.PoissonLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1111,6 +1279,12 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.PoissonLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.PoissonLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1241,13 +1415,16 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression.component_names" title="darts.utils.likelihood_models.sklearn.QuantileRegression.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression.predict" title="darts.utils.likelihood_models.sklearn.QuantileRegression.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression.fit" title="darts.utils.likelihood_models.sklearn.QuantileRegression.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression.predict" title="darts.utils.likelihood_models.sklearn.QuantileRegression.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
 <td><p>Generates sampled or direct likelihood parameter predictions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.QuantileRegression.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.QuantileRegression.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a array, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression.sample" title="darts.utils.likelihood_models.sklearn.QuantileRegression.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.QuantileRegression.sample" title="darts.utils.likelihood_models.sklearn.QuantileRegression.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1261,6 +1438,12 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.QuantileRegression.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.QuantileRegression.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1386,13 +1569,16 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.component_names" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.fit" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model, x, num_samples, ...)</p></td>
 <td><p>Generates sampled or direct likelihood parameter predictions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a array, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.sample" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.sample" title="darts.utils.likelihood_models.sklearn.SKLearnLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1406,6 +1592,12 @@ likelihood model / distribution. Only supported with <cite>num_samples = 1</cite
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.sklearn.SKLearnLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.sklearn.SKLearnLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">

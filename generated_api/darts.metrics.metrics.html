@@ -41,7 +41,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Models" href="darts.models.html" />
+    <link rel="next" title="&lt;no title&gt;" href="darts.metrics.utils.html" />
     <link rel="prev" title="Metrics" href="darts.metrics.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -903,6 +903,74 @@
 <h1>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">¶</a></h1>
 <p>Some metrics to compare time series.</p>
 <dl class="py function">
+<dt class="sig sig-object py" id="darts.metrics.metrics.accuracy">
+<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">accuracy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#accuracy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.accuracy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Accuracy Score <a class="reference internal" href="#r286b0f002a1b-1" id="id1">[1]</a>.</p>
+<p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
+component/column as:</p>
+<div class="math notranslate nohighlight">
+\[\frac{1}{T}\sum_{t=1}^T\mathbb{I}(y_t = \hat{y}_t)\]</div>
+<p>Where <span class="math notranslate nohighlight">\(\mathbb{I}\)</span> is the indicator function.</p>
+<p>If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> are stochastic (contains several samples), it takes the label with the highest count from
+each time step and component.
+If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> represent the predict class label probabilities, it takes the label with the highest
+probability from each time step and component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+<li><p><strong>intersect</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – For time series that are overlapping in time without having the same time index, setting <cite>True</cite>
+will consider the values only over their common time interval (intersection in time).</p></li>
+<li><p><strong>component_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t,)</cite>. The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>1</cite> corresponding to the
+component axis. If <cite>None</cite>, will return a metric per component.</p></li>
+<li><p><strong>series_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over multiple series. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(s, t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t, c)</cite> The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>0</cite> corresponding to the
+series axis. For example with <cite>np.nanmean</cite>, will return the average over all series metrics. If <cite>None</cite>, will
+return a metric per component.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>float</em> – A single metric score for:</p>
+<ul>
+<li><p>a single univariate series.</p></li>
+<li><p>a single multivariate series with <cite>component_reduction</cite>.</p></li>
+<li><p>a sequence (list) of uni/multivariate series with <cite>series_reduction</cite> and <cite>component_reduction</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n components,) without component reduction.
+For:</p>
+<ul>
+<li><p>a single multivariate series and at least <cite>component_reduction=None</cite>.</p></li>
+<li><p>a sequence of uni/multivariate series including <cite>series_reduction</cite> and <cite>component_reduction=None</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>list[float]</em> – Same as for type <cite>float</cite> but for a sequence of series.</p></li>
+<li><p><em>list[np.ndarray]</em> – Same as for type <cite>np.ndarray</cite> but for a sequence of series.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r286b0f002a1b-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Precision_and_recall">https://en.wikipedia.org/wiki/Precision_and_recall</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.ae">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">ae</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#ae"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.ae" title="Permalink to this definition">¶</a></dt>
 <dd><p>Absolute Error (AE).</p>
@@ -937,7 +1005,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -953,8 +1021,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -1009,7 +1077,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -1028,8 +1096,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -1082,7 +1150,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -1101,8 +1169,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -1123,7 +1191,7 @@ and component reductions, and shape (n time steps, n quantiles) without time but
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.ase">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">ase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#ase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.ase" title="Permalink to this definition">¶</a></dt>
-<dd><p>Absolute Scaled Error (ASE) (see <a class="reference internal" href="#rfa0f437f94df-1" id="id1">[1]</a> for more information on scaled forecasting errors).</p>
+<dd><p>Absolute Scaled Error (ASE) (see <a class="reference internal" href="#rfa0f437f94df-1" id="id2">[1]</a> for more information on scaled forecasting errors).</p>
 <p>It is the Absolute Error (AE) scaled by the Mean AE (MAE) of the naive m-seasonal forecast.</p>
 <p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
 component/column, (optional) quantile, and time step <span class="math notranslate nohighlight">\(t\)</span> as:</p>
@@ -1166,7 +1234,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -1186,8 +1254,8 @@ time step before the start of the corresponding forecast in <cite>pred_series</c
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -1205,7 +1273,7 @@ and component reductions, and shape (n time steps, n quantiles) without time but
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="rfa0f437f94df-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dt class="label" id="rfa0f437f94df-1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/">https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/</a></p>
 </dd>
 </dl>
@@ -1244,7 +1312,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1277,6 +1345,62 @@ For:</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="darts.metrics.metrics.confusion_matrix">
+<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">confusion_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nansum&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#confusion_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.confusion_matrix" title="Permalink to this definition">¶</a></dt>
+<dd><p>Confusion Matrix (CM) <a class="reference internal" href="#r674151549124-1" id="id3">[1]</a>.</p>
+<p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
+component/column and label as:</p>
+<p>The confusion matrix <span class="math notranslate nohighlight">\(C\)</span> is such that <span class="math notranslate nohighlight">\(C_{i,j}\)</span> is equal to the number of observations
+<span class="math notranslate nohighlight">\(y\)</span> known to be in group <span class="math notranslate nohighlight">\(i\)</span> and predicted <span class="math notranslate nohighlight">\(\hat{y}\)</span> to be in group <span class="math notranslate nohighlight">\(j\)</span>.</p>
+<p>If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> are stochastic (contains several samples), it takes the label with the highest count from
+each time step and component.
+If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> represent the predict class label probabilities, it takes the label with the highest
+probability from each time step and component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+<li><p><strong>intersect</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – For time series that are overlapping in time without having the same time index, setting <cite>True</cite>
+will consider the values only over their common time interval (intersection in time).</p></li>
+<li><p><strong>labels</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the labels and their order to compute the metric on. If <cite>None</cite>, will use all unique values from the
+actual and predicted series.</p></li>
+<li><p><strong>component_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t,)</cite>. The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>1</cite> corresponding to the
+component axis. If <cite>None</cite>, will return a metric per component.</p></li>
+<li><p><strong>series_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over multiple series. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(s, t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t, c)</cite> The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>0</cite> corresponding to the
+series axis. For example with <cite>np.nanmean</cite>, will return the average over all series metrics. If <cite>None</cite>, will
+return a metric per component.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>np.ndarray</em> – The Confusion Matrix as a numpy array for a single series. The array has shape (n components, n labels,
+n labels) without component reduction, and shape (n labels, n labels) with component reduction.</p></li>
+<li><p><em>list[np.ndarray]</em> – Same as for type <cite>np.ndarray</cite> but for a sequence of series.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r674151549124-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Confusion_matrix">https://en.wikipedia.org/wiki/Confusion_matrix</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.dtw_metric">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">dtw_metric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mae&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#dtw_metric"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.dtw_metric" title="Permalink to this definition">¶</a></dt>
 <dd><p>Applies Dynamic Time Warping to <cite>actual_series</cite> and <cite>pred_series</cite> before passing it into the metric.
@@ -1301,7 +1425,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1368,7 +1492,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1384,8 +1508,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -1399,6 +1523,90 @@ and component reductions, and shape (n time steps, n quantiles) without time but
 <li><p><em>list[np.ndarray]</em> – Same as for type <cite>np.ndarray</cite> but for a sequence of series.</p></li>
 </ul>
 </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.metrics.metrics.f1">
+<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">f1</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_reduction=_LabelReduction.MACRO</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#f1"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.f1" title="Permalink to this definition">¶</a></dt>
+<dd><p>F1 Score <a class="reference internal" href="#r29fff3769b16-1" id="id4">[1]</a>.</p>
+<p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
+component/column as:</p>
+<div class="math notranslate nohighlight">
+\[\frac{2TP}{2TP + FP + FN}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(TP\)</span> are the true positives, <span class="math notranslate nohighlight">\(FP\)</span> are the false positives, and <span class="math notranslate nohighlight">\(FN\)</span> are the false
+negatives.</p>
+<p>If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> are stochastic (contains several samples), it takes the label with the highest count from
+each time step and component.
+If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> represent the predict class label probabilities, it takes the label with the highest
+probability from each time step and component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+<li><p><strong>intersect</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – For time series that are overlapping in time without having the same time index, setting <cite>True</cite>
+will consider the values only over their common time interval (intersection in time).</p></li>
+<li><p><strong>labels</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the labels and their order to compute the metric on. If <cite>None</cite>, will use all unique values from the
+actual and predicted series.</p></li>
+<li><p><strong>component_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t,)</cite>. The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>1</cite> corresponding to the
+component axis. If <cite>None</cite>, will return a metric per component.</p></li>
+<li><p><strong>series_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over multiple series. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(s, t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t, c)</cite> The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>0</cite> corresponding to the
+series axis. For example with <cite>np.nanmean</cite>, will return the average over all series metrics. If <cite>None</cite>, will
+return a metric per component.</p></li>
+<li><p><strong>label_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_LabelReduction</span></code>]) – <p>The method to reduce the label-specific metrics. Can be one of:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code>: no reduction, returns a metric per label.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'micro'</span></code>: computes the metric globally by counting the total true positives, false negatives and false
+positives.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'macro'</span></code>: computes the metric for each label, and returns the unweighted mean.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'weighted'</span></code>: computes the metric for each label, and returns the weighted mean by support (the number of
+true instances for each label).</p></li>
+</ul>
+</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>float</em> – A single metric score (when <cite>label_reduction != None</cite>) for:</p>
+<ul>
+<li><p>a single univariate series.</p></li>
+<li><p>a single multivariate series with <cite>component_reduction</cite>.</p></li>
+<li><p>a sequence (list) of uni/multivariate series with <cite>series_reduction</cite> and <cite>component_reduction</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n components * n labels,) without component reduction,
+and shape (n labels,) with component reduction. <cite>n labels</cite> is the number of labels when <cite>label_reduction=None</cite>,
+and <cite>1</cite> otherwise.
+For:</p>
+<ul>
+<li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>label_reduction=None</cite>.</p></li>
+<li><p>a single multivariate series and at least <cite>component_reduction=None</cite>.</p></li>
+<li><p>a sequence of uni/multivariate series including <cite>series_reduction</cite> and <cite>component_reduction=None</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>list[float]</em> – Same as for type <cite>float</cite> but for a sequence of series.</p></li>
+<li><p><em>list[np.ndarray]</em> – Same as for type <cite>np.ndarray</cite> but for a sequence of series.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r29fff3769b16-1"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Precision_and_recall">https://en.wikipedia.org/wiki/Precision_and_recall</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -1446,7 +1654,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1462,8 +1670,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
-and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
 <cite>len(q_interval) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the input from the <cite>float</cite> return case above but with <cite>len(q_interval) &gt; 1</cite>.</p></li>
@@ -1522,7 +1730,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1538,8 +1746,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
-and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
 <cite>len(q_interval) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the input from the <cite>float</cite> return case above but with <cite>len(q_interval) &gt; 1</cite>.</p></li>
@@ -1553,18 +1761,6 @@ and component reductions, and shape (n time steps, n q intervals) without time b
 <li><p><em>list[np.ndarray]</em> – Same as for type <cite>np.ndarray</cite> but for a sequence of series.</p></li>
 </ul>
 </p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="darts.metrics.metrics.interval_support">
-<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">interval_support</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#interval_support"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.interval_support" title="Permalink to this definition">¶</a></dt>
-<dd><p>This decorator adds support for quantile interval metrics with sanity checks, processing, and extraction of
-quantiles from the intervals.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[…, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1608,7 +1804,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1624,8 +1820,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
-and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
 <cite>len(q_interval) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the input from the <cite>float</cite> return case above but with <cite>len(q_interval) &gt; 1</cite>.</p></li>
@@ -1646,7 +1842,7 @@ and component reductions, and shape (n time steps, n q intervals) without time b
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.iws">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">iws</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_interval=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#iws"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.iws" title="Permalink to this definition">¶</a></dt>
-<dd><p>Interval Winkler Score (IWS) <a class="reference internal" href="#r6c1f65bad7d3-1" id="id2">[1]</a>.</p>
+<dd><p>Interval Winkler Score (IWS) <a class="reference internal" href="#r6c1f65bad7d3-1" id="id5">[1]</a>.</p>
 <p>IWS gives the length / width of the quantile intervals plus a penalty if the observation is outside the interval.</p>
 <p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted stochastic or quantile series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>,
 it is computed per component/column, quantile interval <span class="math notranslate nohighlight">\((q_l,q_h)\)</span>, and time step <span class="math notranslate nohighlight">\(t\)</span> as:</p>
@@ -1687,7 +1883,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1703,8 +1899,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time
-and component reductions, and shape (n time steps, n q intervals) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n q intervals) without time-
+and component reductions, and shape (n time steps, n q intervals) without time- but with component reduction and
 <cite>len(q_interval) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the input from the <cite>float</cite> return case above but with <cite>len(q_interval) &gt; 1</cite>.</p></li>
@@ -1722,7 +1918,7 @@ and component reductions, and shape (n time steps, n q intervals) without time b
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r6c1f65bad7d3-1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dt class="label" id="r6c1f65bad7d3-1"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
 <dd><p><a class="reference external" href="https://otexts.com/fpp3/distaccuracy.html">https://otexts.com/fpp3/distaccuracy.html</a></p>
 </dd>
 </dl>
@@ -1759,7 +1955,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -1824,7 +2020,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -1891,7 +2087,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -1923,7 +2119,7 @@ passed as input, parallelising operations regarding different <code class="docut
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.mase">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">mase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#mase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.mase" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mean Absolute Scaled Error (MASE) (see <a class="reference internal" href="#rbb997f645b67-1" id="id3">[1]</a> for more information on scaled forecasting errors).</p>
+<dd><p>Mean Absolute Scaled Error (MASE) (see <a class="reference internal" href="#rbb997f645b67-1" id="id6">[1]</a> for more information on scaled forecasting errors).</p>
 <p>It is the Mean Absolute Error (MAE) scaled by the MAE of the naive m-seasonal forecast.</p>
 <p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
 component/column and (optional) quantile as:</p>
@@ -1962,7 +2158,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -1998,7 +2194,7 @@ For:</p>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="rbb997f645b67-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dt class="label" id="rbb997f645b67-1"><span class="brackets"><a class="fn-backref" href="#id6">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/">https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/</a></p>
 </dd>
 </dl>
@@ -2035,7 +2231,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2100,7 +2296,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2167,7 +2363,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2234,7 +2430,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2269,7 +2465,7 @@ For:</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.miws">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">miws</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q_interval=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#miws"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.miws" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mean Interval Winkler Score (IWS) <a class="reference internal" href="#r29534b55a4e8-1" id="id4">[1]</a>.</p>
+<dd><p>Mean Interval Winkler Score (IWS) <a class="reference internal" href="#r29534b55a4e8-1" id="id7">[1]</a>.</p>
 <p>MIWS gives the time-aggregated length / width of the quantile intervals plus a penalty if the observation is
 outside the interval.</p>
 <p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted stochastic or quantile series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>,
@@ -2299,7 +2495,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2331,7 +2527,7 @@ For:</p>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r29534b55a4e8-1"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
+<dt class="label" id="r29534b55a4e8-1"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
 <dd><p><a class="reference external" href="https://otexts.com/fpp3/distaccuracy.html">https://otexts.com/fpp3/distaccuracy.html</a></p>
 </dd>
 </dl>
@@ -2373,7 +2569,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2436,7 +2632,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2471,7 +2667,7 @@ For:</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.msse">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">msse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#msse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.msse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Mean Squared Scaled Error (MSSE) (see <a class="reference internal" href="#rb598f7b954d8-1" id="id5">[1]</a> for more information on scaled forecasting errors).</p>
+<dd><p>Mean Squared Scaled Error (MSSE) (see <a class="reference internal" href="#rb598f7b954d8-1" id="id8">[1]</a> for more information on scaled forecasting errors).</p>
 <p>It is the Mean Squared Error (MSE) scaled by the MSE of the naive m-seasonal forecast.</p>
 <p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
 component/column and (optional) quantile as:</p>
@@ -2510,7 +2706,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -2546,39 +2742,8 @@ For:</p>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="rb598f7b954d8-1"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
+<dt class="label" id="rb598f7b954d8-1"><span class="brackets"><a class="fn-backref" href="#id8">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/">https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="darts.metrics.metrics.multi_ts_support">
-<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">multi_ts_support</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#multi_ts_support"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.multi_ts_support" title="Permalink to this definition">¶</a></dt>
-<dd><p>This decorator further adapts the metrics that took as input two (or three for scaled metrics with <cite>insample</cite>)
-univariate/multivariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances, adding support for equally-sized sequences of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
-instances. The decorator computes the pairwise metric for <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> with the same indices, and returns a float
-value that is computed as a function of all the pairwise metrics using a <cite>series_reduction</cite> subroutine passed as
-argument to the metric function.</p>
-<p>If a ‘Sequence[TimeSeries]’ is passed as input, this decorator provides also parallelisation of the metric
-evaluation regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (if the <cite>n_jobs</cite> parameter is not set 1).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[…, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py function">
-<dt class="sig sig-object py" id="darts.metrics.metrics.multivariate_support">
-<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">multivariate_support</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#multivariate_support"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.multivariate_support" title="Permalink to this definition">¶</a></dt>
-<dd><p>This decorator transforms a metric function that takes as input two univariate TimeSeries instances
-into a function that takes two equally-sized multivariate TimeSeries instances, computes the pairwise univariate
-metrics for components with the same indices, and returns a float value that is computed as a function of all the
-univariate metrics using a <cite>component_reduction</cite> subroutine passed as argument to the metric function.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[…, <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -2615,7 +2780,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -2646,6 +2811,89 @@ For:</p>
 <li><p><em>list[np.ndarray]</em> – Same as for type <cite>np.ndarray</cite> but for a sequence of series.</p></li>
 </ul>
 </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.metrics.metrics.precision">
+<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">precision</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_reduction=_LabelReduction.MACRO</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#precision"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.precision" title="Permalink to this definition">¶</a></dt>
+<dd><p>Precision Score <a class="reference internal" href="#rfbeb0d7db272-1" id="id9">[1]</a>.</p>
+<p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
+component/column as:</p>
+<div class="math notranslate nohighlight">
+\[\frac{TP}{TP + FP}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(TP\)</span> are the true positives, and <span class="math notranslate nohighlight">\(FP\)</span> are the false positives.</p>
+<p>If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> are stochastic (contains several samples), it takes the label with the highest count from
+each time step and component.
+If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> represent the predict class label probabilities, it takes the label with the highest
+probability from each time step and component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+<li><p><strong>intersect</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – For time series that are overlapping in time without having the same time index, setting <cite>True</cite>
+will consider the values only over their common time interval (intersection in time).</p></li>
+<li><p><strong>labels</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the labels and their order to compute the metric on. If <cite>None</cite>, will use all unique values from the
+actual and predicted series.</p></li>
+<li><p><strong>component_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t,)</cite>. The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>1</cite> corresponding to the
+component axis. If <cite>None</cite>, will return a metric per component.</p></li>
+<li><p><strong>series_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over multiple series. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(s, t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t, c)</cite> The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>0</cite> corresponding to the
+series axis. For example with <cite>np.nanmean</cite>, will return the average over all series metrics. If <cite>None</cite>, will
+return a metric per component.</p></li>
+<li><p><strong>label_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_LabelReduction</span></code>]) – <p>The method to reduce the label-specific metrics. Can be one of:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code>: no reduction, returns a metric per label.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'micro'</span></code>: computes the metric globally by counting the total true positives, false negatives and false
+positives.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'macro'</span></code>: computes the metric for each label, and returns the unweighted mean.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'weighted'</span></code>: computes the metric for each label, and returns the weighted mean by support (the number of
+true instances for each label).</p></li>
+</ul>
+</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>float</em> – A single metric score (when <cite>label_reduction != None</cite>) for:</p>
+<ul>
+<li><p>a single univariate series.</p></li>
+<li><p>a single multivariate series with <cite>component_reduction</cite>.</p></li>
+<li><p>a sequence (list) of uni/multivariate series with <cite>series_reduction</cite> and <cite>component_reduction</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n components * n labels,) without component reduction,
+and shape (n labels,) with component reduction. <cite>n labels</cite> is the number of labels when <cite>label_reduction=None</cite>,
+and <cite>1</cite> otherwise.
+For:</p>
+<ul>
+<li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>label_reduction=None</cite>.</p></li>
+<li><p>a single multivariate series and at least <cite>component_reduction=None</cite>.</p></li>
+<li><p>a sequence of uni/multivariate series including <cite>series_reduction</cite> and <cite>component_reduction=None</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>list[float]</em> – Same as for type <cite>float</cite> but for a sequence of series.</p></li>
+<li><p><em>list[np.ndarray]</em> – Same as for type <cite>np.ndarray</cite> but for a sequence of series.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rfbeb0d7db272-1"><span class="brackets"><a class="fn-backref" href="#id9">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Precision_and_recall">https://en.wikipedia.org/wiki/Precision_and_recall</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2689,7 +2937,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2705,8 +2953,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -2759,7 +3007,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2794,7 +3042,7 @@ For:</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.r2_score">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">r2_score</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#r2_score"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.r2_score" title="Permalink to this definition">¶</a></dt>
-<dd><p>Coefficient of Determination <span class="math notranslate nohighlight">\(R^2\)</span> (see <a class="reference internal" href="#r8f5401e9d931-1" id="id6">[1]</a> for more details).</p>
+<dd><p>Coefficient of Determination <span class="math notranslate nohighlight">\(R^2\)</span> (see <a class="reference internal" href="#r8f5401e9d931-1" id="id10">[1]</a> for more details).</p>
 <p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
 component/column and (optional) quantile as:</p>
 <div class="math notranslate nohighlight">
@@ -2824,7 +3072,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2856,8 +3104,91 @@ For:</p>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r8f5401e9d931-1"><span class="brackets"><a class="fn-backref" href="#id6">1</a></span></dt>
+<dt class="label" id="r8f5401e9d931-1"><span class="brackets"><a class="fn-backref" href="#id10">1</a></span></dt>
 <dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Coefficient_of_determination">https://en.wikipedia.org/wiki/Coefficient_of_determination</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="darts.metrics.metrics.recall">
+<span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">recall</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label_reduction=_LabelReduction.MACRO</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#recall"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.recall" title="Permalink to this definition">¶</a></dt>
+<dd><p>Recall Score <a class="reference internal" href="#r3f31feb5f6b0-1" id="id11">[1]</a>.</p>
+<p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
+component/column as:</p>
+<div class="math notranslate nohighlight">
+\[\frac{TP}{TP + FN}\]</div>
+<p>Where <span class="math notranslate nohighlight">\(TP\)</span> are the true positives, and <span class="math notranslate nohighlight">\(FN\)</span> are the false negatives.</p>
+<p>If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> are stochastic (contains several samples), it takes the label with the highest count from
+each time step and component.
+If <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> represent the predict class label probabilities, it takes the label with the highest
+probability from each time step and component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) actual series.</p></li>
+<li><p><strong>pred_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – The (sequence of) predicted series.</p></li>
+<li><p><strong>intersect</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – For time series that are overlapping in time without having the same time index, setting <cite>True</cite>
+will consider the values only over their common time interval (intersection in time).</p></li>
+<li><p><strong>labels</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the labels and their order to compute the metric on. If <cite>None</cite>, will use all unique values from the
+actual and predicted series.</p></li>
+<li><p><strong>component_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t,)</cite>. The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>1</cite> corresponding to the
+component axis. If <cite>None</cite>, will return a metric per component.</p></li>
+<li><p><strong>series_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a function to aggregate the metrics over multiple series. It must reduce a <cite>np.ndarray</cite>
+of shape <cite>(s, t, c)</cite> to a <cite>np.ndarray</cite> of shape <cite>(t, c)</cite> The function takes as input a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> and a
+parameter named <cite>axis</cite>, and returns the reduced array. The <cite>axis</cite> receives value <cite>0</cite> corresponding to the
+series axis. For example with <cite>np.nanmean</cite>, will return the average over all series metrics. If <cite>None</cite>, will
+return a metric per component.</p></li>
+<li><p><strong>label_reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">_LabelReduction</span></code>]) – <p>The method to reduce the label-specific metrics. Can be one of:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code>: no reduction, returns a metric per label.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'micro'</span></code>: computes the metric globally by counting the total true positives, false negatives and false
+positives.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'macro'</span></code>: computes the metric for each label, and returns the unweighted mean.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'weighted'</span></code>: computes the metric for each label, and returns the weighted mean by support (the number of
+true instances for each label).</p></li>
+</ul>
+</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]]</p>
+</dd>
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><ul class="simple">
+<li><p><em>float</em> – A single metric score (when <cite>label_reduction != None</cite>) for:</p>
+<ul>
+<li><p>a single univariate series.</p></li>
+<li><p>a single multivariate series with <cite>component_reduction</cite>.</p></li>
+<li><p>a sequence (list) of uni/multivariate series with <cite>series_reduction</cite> and <cite>component_reduction</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n components * n labels,) without component reduction,
+and shape (n labels,) with component reduction. <cite>n labels</cite> is the number of labels when <cite>label_reduction=None</cite>,
+and <cite>1</cite> otherwise.
+For:</p>
+<ul>
+<li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>label_reduction=None</cite>.</p></li>
+<li><p>a single multivariate series and at least <cite>component_reduction=None</cite>.</p></li>
+<li><p>a sequence of uni/multivariate series including <cite>series_reduction</cite> and <cite>component_reduction=None</cite>.</p></li>
+</ul>
+</li>
+<li><p><em>list[float]</em> – Same as for type <cite>float</cite> but for a sequence of series.</p></li>
+<li><p><em>list[np.ndarray]</em> – Same as for type <cite>np.ndarray</cite> but for a sequence of series.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r3f31feb5f6b0-1"><span class="brackets"><a class="fn-backref" href="#id11">1</a></span></dt>
+<dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Precision_and_recall">https://en.wikipedia.org/wiki/Precision_and_recall</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -2893,7 +3224,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2957,7 +3288,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -2992,7 +3323,7 @@ For:</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.rmsse">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">rmsse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmsse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.rmsse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Root Mean Squared Scaled Error (RMSSE) (see <a class="reference internal" href="#rcf05950e705d-1" id="id7">[1]</a> for more information on scaled forecasting errors).</p>
+<dd><p>Root Mean Squared Scaled Error (RMSSE) (see <a class="reference internal" href="#rcf05950e705d-1" id="id12">[1]</a> for more information on scaled forecasting errors).</p>
 <p>It is the Root Mean Squared Error (RMSE) scaled by the RMSE of the naive m-seasonal forecast.</p>
 <p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
 component/column and (optional) quantile as:</p>
@@ -3031,7 +3362,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -3067,7 +3398,7 @@ For:</p>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="rcf05950e705d-1"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
+<dt class="label" id="rcf05950e705d-1"><span class="brackets"><a class="fn-backref" href="#id12">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/">https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/</a></p>
 </dd>
 </dl>
@@ -3110,7 +3441,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -3129,8 +3460,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -3183,7 +3514,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -3199,8 +3530,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -3254,7 +3585,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -3270,8 +3601,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -3324,7 +3655,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -3362,7 +3693,7 @@ For:</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.sse">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">sse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">insample</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#sse"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.sse" title="Permalink to this definition">¶</a></dt>
-<dd><p>Squared Scaled Error (SSE) (see <a class="reference internal" href="#rd5f48f355bfb-1" id="id8">[1]</a> for more information on scaled forecasting errors).</p>
+<dd><p>Squared Scaled Error (SSE) (see <a class="reference internal" href="#rd5f48f355bfb-1" id="id13">[1]</a> for more information on scaled forecasting errors).</p>
 <p>It is the Squared Error (SE) scaled by the Mean SE (MSE) of the naive m-seasonal forecast.</p>
 <p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed per
 component/column, (optional) quantile, and time step <span class="math notranslate nohighlight">\(t\)</span> as:</p>
@@ -3405,7 +3736,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -3425,8 +3756,8 @@ time step before the start of the corresponding forecast in <cite>pred_series</c
 <cite>time_reduction</cite>.</p></li>
 </ul>
 </li>
-<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time
-and component reductions, and shape (n time steps, n quantiles) without time but component reduction and
+<li><p><em>np.ndarray</em> – A numpy array of metric scores. The array has shape (n time steps, n components * n quantiles) without time-
+and component reductions, and shape (n time steps, n quantiles) without time- but with component reduction and
 <cite>len(q) &gt; 1</cite>. For:</p>
 <ul>
 <li><p>the same input arguments that result in the <cite>float</cite> return case from above but with <cite>len(q) &gt; 1</cite>.</p></li>
@@ -3444,7 +3775,7 @@ and component reductions, and shape (n time steps, n quantiles) without time but
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="rd5f48f355bfb-1"><span class="brackets"><a class="fn-backref" href="#id8">1</a></span></dt>
+<dt class="label" id="rd5f48f355bfb-1"><span class="brackets"><a class="fn-backref" href="#id13">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/">https://www.pmorgan.com.au/tutorials/mae%2C-mape%2C-mase-and-the-scaled-rmse/</a></p>
 </dd>
 </dl>
@@ -3453,7 +3784,7 @@ and component reductions, and shape (n time steps, n quantiles) without time but
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.metrics.metrics.wmape">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">wmape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">actual_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pred_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">q=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">component_reduction=&lt;function</span> <span class="pre">nanmean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series_reduction=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#wmape"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.wmape" title="Permalink to this definition">¶</a></dt>
-<dd><p>Weighted Mean Absolute Percentage Error (WMAPE). (see <a class="reference internal" href="#r383dbe9c3466-1" id="id9">[1]</a> for more information).</p>
+<dd><p>Weighted Mean Absolute Percentage Error (WMAPE). (see <a class="reference internal" href="#r383dbe9c3466-1" id="id14">[1]</a> for more information).</p>
 <p>For the true series <span class="math notranslate nohighlight">\(y\)</span> and predicted series <span class="math notranslate nohighlight">\(\hat{y}\)</span> of length <span class="math notranslate nohighlight">\(T\)</span>, it is computed as a
 percentage value per component/column and (optional) quantile with:</p>
 <div class="math notranslate nohighlight">
@@ -3481,7 +3812,7 @@ return a metric per component.</p></li>
 <li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
 passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Raises</dt>
@@ -3516,7 +3847,7 @@ For:</p>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r383dbe9c3466-1"><span class="brackets"><a class="fn-backref" href="#id9">1</a></span></dt>
+<dt class="label" id="r383dbe9c3466-1"><span class="brackets"><a class="fn-backref" href="#id14">1</a></span></dt>
 <dd><p><a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_percentage_error#WMAPE">https://en.wikipedia.org/wiki/Mean_absolute_percentage_error#WMAPE</a></p>
 </dd>
 </dl>
@@ -3537,10 +3868,10 @@ For:</p>
             <p class="prev-next-title">Metrics</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.models.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.metrics.utils.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Models</p>
+        <p class="prev-next-title">&lt;no title&gt;</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

@@ -938,10 +938,13 @@
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.component_names"><code class="xref py py-obj docutils literal notranslate"><span class="pre">component_names</span></code></a>([series, components])</p></td>
 <td><p>Generates names for the parameters of the Likelihood.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model_output, num_samples)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.fit" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(model_output, num_samples)</p></td>
 <td><p>Generates sampled or direct likelihood parameter predictions.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.sample" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output, num_samples)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.sample" title="darts.utils.likelihood_models.statsforecast.QuantilePrediction.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output, num_samples)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -955,6 +958,12 @@
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</p>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.statsforecast.QuantilePrediction.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.statsforecast.QuantilePrediction.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">

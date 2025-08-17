@@ -875,9 +875,29 @@
               
               <div class="toc-item">
                 
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
 
 <nav id="bd-toc-nav">
-    
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#regression-metrics">
+   Regression Metrics
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#classification-metrics">
+   Classification Metrics
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#dynamic-time-warping-metrics">
+   Dynamic Time Warping Metrics
+  </a>
+ </li>
+</ul>
+
 </nav>
               </div>
               
@@ -899,6 +919,8 @@
                 
   <span class="target" id="module-darts.metrics"></span><section id="metrics">
 <h1>Metrics<a class="headerlink" href="#metrics" title="Permalink to this heading">¶</a></h1>
+<section id="regression-metrics">
+<h2>Regression Metrics<a class="headerlink" href="#regression-metrics" title="Permalink to this heading">¶</a></h2>
 <p>For deterministic forecasts (point predictions with <cite>num_samples == 1</cite>), probabilistic forecasts (<cite>num_samples &gt; 1</cite>),
 and quantile forecasts. For probabilistic and quantile forecasts, use parameter <cite>q</cite> to define the quantile(s) to
 compute the deterministic metrics on:</p>
@@ -993,6 +1015,28 @@ compute the deterministic metrics on:</p>
 </dl>
 </li>
 </ul>
+</section>
+<section id="classification-metrics">
+<h2>Classification Metrics<a class="headerlink" href="#classification-metrics" title="Permalink to this heading">¶</a></h2>
+<p>For deterministic forecasts (point predictions with <cite>num_samples == 1</cite>), probabilistic forecasts (<cite>num_samples &gt; 1</cite>),
+and class label probability forecasts. Most metrics allow to extract the scores for specific labels with parameter
+<cite>labels</cite>.</p>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Aggregated over time:</dt><dd><ul>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.accuracy" title="darts.metrics.metrics.accuracy"><code class="xref py py-func docutils literal notranslate"><span class="pre">Accuracy</span></code></a>: Accuracy Score</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.precision" title="darts.metrics.metrics.precision"><code class="xref py py-func docutils literal notranslate"><span class="pre">Precision</span></code></a>: Precision Score</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.recall" title="darts.metrics.metrics.recall"><code class="xref py py-func docutils literal notranslate"><span class="pre">Recall</span></code></a>: Recall Score</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.f1" title="darts.metrics.metrics.f1"><code class="xref py py-func docutils literal notranslate"><span class="pre">F1</span></code></a>: F1 Score</p></li>
+<li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.confusion_matrix" title="darts.metrics.metrics.confusion_matrix"><code class="xref py py-func docutils literal notranslate"><span class="pre">CM</span></code></a>: Confusion Matrix</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="dynamic-time-warping-metrics">
+<h2>Dynamic Time Warping Metrics<a class="headerlink" href="#dynamic-time-warping-metrics" title="Permalink to this heading">¶</a></h2>
 <p>For Dynamic Time Warping (DTW) (aggregated over time):</p>
 <ul class="simple">
 <li><p><a class="reference internal" href="darts.metrics.metrics.html#darts.metrics.metrics.dtw_metric" title="darts.metrics.metrics.dtw_metric"><code class="xref py py-func docutils literal notranslate"><span class="pre">DTW</span></code></a>: Dynamic Time Warping Metric</p></li>
@@ -1002,6 +1046,7 @@ compute the deterministic metrics on:</p>
 <li class="toctree-l1"><a class="reference internal" href="darts.metrics.metrics.html">Metrics</a></li>
 </ul>
 </div>
+</section>
 </section>
 
 

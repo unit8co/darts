@@ -195,9 +195,9 @@
     <span class="n">SKLearnModel</span><span class="p">,</span>
     <span class="n">_QuantileModelContainer</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LikelihoodType</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">QuantileRegression</span><span class="p">,</span>
-    <span class="n">_check_likelihood</span><span class="p">,</span>
     <span class="n">_get_likelihood</span><span class="p">,</span>
 <span class="p">)</span>
 
@@ -348,24 +348,21 @@
 <span class="sd">               [1005.81830675]])</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="kc">None</span>
-
-        <span class="c1"># parse likelihood</span>
-        <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="s2">&quot;poisson&quot;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;poisson&quot;</span><span class="p">:</span>
-                <span class="n">model</span> <span class="o">=</span> <span class="n">PoissonRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
-                <span class="n">model</span> <span class="o">=</span> <span class="n">QuantileRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="n">_QuantileModelContainer</span><span class="p">()</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">_get_likelihood</span><span class="p">(</span>
             <span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span>
             <span class="n">n_outputs</span><span class="o">=</span><span class="n">output_chunk_length</span> <span class="k">if</span> <span class="n">multi_models</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
             <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
+            <span class="n">available_likelihoods</span><span class="o">=</span><span class="p">[</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="p">,</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Poisson</span><span class="p">],</span>
         <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Poisson</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">PoissonRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">QuantileRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="n">_QuantileModelContainer</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># likelihood is None</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
@@ -424,7 +421,7 @@
                     <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
-
+                <span class="c1"># store the trained model in the container as it might have been wrapped by MultiOutputRegressor</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="p">[</span><span class="n">quantile</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
 
             <span class="c1"># replace the last trained QuantileRegressor with the dictionary of Regressors.</span>

@@ -202,7 +202,8 @@
     <span class="n">Laplace</span> <span class="o">=</span> <span class="s2">&quot;laplace&quot;</span>
     <span class="n">LogNormal</span> <span class="o">=</span> <span class="s2">&quot;lognormal&quot;</span>
     <span class="n">Weibull</span> <span class="o">=</span> <span class="s2">&quot;weibull&quot;</span>
-    <span class="n">Quantile</span> <span class="o">=</span> <span class="s2">&quot;quantile&quot;</span></div>
+    <span class="n">Quantile</span> <span class="o">=</span> <span class="s2">&quot;quantile&quot;</span>
+    <span class="n">ClassProbability</span> <span class="o">=</span> <span class="s2">&quot;classprobability&quot;</span></div>
 
 
 <div class="viewcode-block" id="Likelihood"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Likelihood</span><span class="p">:</span>
@@ -234,6 +235,10 @@
             <span class="s2">&quot;ignore_attrs_equality&quot;</span><span class="p">,</span>
         <span class="p">]</span>
 
+<div class="viewcode-block" id="Likelihood.fit"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Fits the likelihood to the model.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
 <div class="viewcode-block" id="Likelihood.component_names"><a class="viewcode-back" href="../../../../generated_api/darts.utils.likelihood_models.base.html#darts.utils.likelihood_models.base.Likelihood.component_names">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">component_names</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -247,6 +252,8 @@
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">components</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">components</span>
+
+        <span class="c1"># format: &lt;component_name&gt;_&lt;parameter_name&gt;</span>
         <span class="k">return</span> <span class="n">likelihood_component_names</span><span class="p">(</span>
             <span class="n">components</span><span class="o">=</span><span class="n">components</span><span class="p">,</span> <span class="n">parameter_names</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parameter_names</span>
         <span class="p">)</span></div>

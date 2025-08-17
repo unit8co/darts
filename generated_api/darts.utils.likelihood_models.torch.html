@@ -973,10 +973,13 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.BernoulliLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.BernoulliLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.fit" title="darts.utils.likelihood_models.torch.BernoulliLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.BernoulliLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.sample" title="darts.utils.likelihood_models.torch.BernoulliLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.sample" title="darts.utils.likelihood_models.torch.BernoulliLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -997,6 +1000,12 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.BernoulliLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.BernoulliLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1107,10 +1116,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BetaLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.BetaLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BetaLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.BetaLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BetaLikelihood.fit" title="darts.utils.likelihood_models.torch.BetaLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BetaLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.BetaLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BetaLikelihood.sample" title="darts.utils.likelihood_models.torch.BetaLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.BetaLikelihood.sample" title="darts.utils.likelihood_models.torch.BetaLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1131,6 +1143,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.BetaLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.BetaLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.BetaLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1244,10 +1262,13 @@ requires a large value for <cite>num_samples</cite> for sampling predictions.</p
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.CauchyLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.CauchyLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.fit" title="darts.utils.likelihood_models.torch.CauchyLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.CauchyLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.sample" title="darts.utils.likelihood_models.torch.CauchyLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.sample" title="darts.utils.likelihood_models.torch.CauchyLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1268,6 +1289,12 @@ requires a large value for <cite>num_samples</cite> for sampling predictions.</p
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.CauchyLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.CauchyLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1377,10 +1404,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.fit" title="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.sample" title="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.sample" title="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1401,6 +1431,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.ContinuousBernoulliLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1511,10 +1547,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.DirichletLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.DirichletLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.fit" title="darts.utils.likelihood_models.torch.DirichletLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.DirichletLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.sample" title="darts.utils.likelihood_models.torch.DirichletLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.sample" title="darts.utils.likelihood_models.torch.DirichletLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1535,6 +1574,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.DirichletLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.DirichletLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1644,10 +1689,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.ExponentialLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.ExponentialLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.fit" title="darts.utils.likelihood_models.torch.ExponentialLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.ExponentialLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.sample" title="darts.utils.likelihood_models.torch.ExponentialLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.sample" title="darts.utils.likelihood_models.torch.ExponentialLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1668,6 +1716,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.ExponentialLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.ExponentialLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1778,10 +1832,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GammaLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.GammaLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GammaLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.GammaLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GammaLikelihood.fit" title="darts.utils.likelihood_models.torch.GammaLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GammaLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.GammaLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GammaLikelihood.sample" title="darts.utils.likelihood_models.torch.GammaLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GammaLikelihood.sample" title="darts.utils.likelihood_models.torch.GammaLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1802,6 +1859,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GammaLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.GammaLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GammaLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -1927,10 +1990,13 @@ Default: 0. (equivalent to NLL)</p></li>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.GaussianLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.GaussianLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.fit" title="darts.utils.likelihood_models.torch.GaussianLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.GaussianLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.sample" title="darts.utils.likelihood_models.torch.GaussianLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.sample" title="darts.utils.likelihood_models.torch.GaussianLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -1951,6 +2017,12 @@ Default: 0. (equivalent to NLL)</p></li>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.GaussianLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GaussianLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2060,10 +2132,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.GeometricLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.GeometricLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.fit" title="darts.utils.likelihood_models.torch.GeometricLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.GeometricLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.sample" title="darts.utils.likelihood_models.torch.GeometricLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.sample" title="darts.utils.likelihood_models.torch.GeometricLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -2084,6 +2159,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.GeometricLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GeometricLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2194,10 +2275,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.GumbelLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.GumbelLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.fit" title="darts.utils.likelihood_models.torch.GumbelLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.GumbelLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.sample" title="darts.utils.likelihood_models.torch.GumbelLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.sample" title="darts.utils.likelihood_models.torch.GumbelLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -2218,6 +2302,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.GumbelLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.GumbelLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2327,10 +2417,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.HalfNormalLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.HalfNormalLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.fit" title="darts.utils.likelihood_models.torch.HalfNormalLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.HalfNormalLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.sample" title="darts.utils.likelihood_models.torch.HalfNormalLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.sample" title="darts.utils.likelihood_models.torch.HalfNormalLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -2351,6 +2444,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.HalfNormalLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.HalfNormalLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2461,10 +2560,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.LaplaceLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.LaplaceLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.fit" title="darts.utils.likelihood_models.torch.LaplaceLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.LaplaceLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.sample" title="darts.utils.likelihood_models.torch.LaplaceLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.sample" title="darts.utils.likelihood_models.torch.LaplaceLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -2485,6 +2587,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.LaplaceLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.LaplaceLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2595,10 +2703,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.LogNormalLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.LogNormalLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.fit" title="darts.utils.likelihood_models.torch.LogNormalLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.LogNormalLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.sample" title="darts.utils.likelihood_models.torch.LogNormalLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.sample" title="darts.utils.likelihood_models.torch.LogNormalLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -2619,6 +2730,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.LogNormalLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.LogNormalLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2723,10 +2840,13 @@ network are in terms of the mean <span class="math notranslate nohighlight">\(\m
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.fit" title="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Overwrite the parent since the parameters are extracted in two steps.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.sample" title="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.sample" title="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -2747,6 +2867,12 @@ network are in terms of the mean <span class="math notranslate nohighlight">\(\m
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.NegativeBinomialLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2857,10 +2983,13 @@ happen independently of the time since the last event.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.PoissonLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.PoissonLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.fit" title="darts.utils.likelihood_models.torch.PoissonLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.PoissonLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.sample" title="darts.utils.likelihood_models.torch.PoissonLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.sample" title="darts.utils.likelihood_models.torch.PoissonLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -2881,6 +3010,12 @@ happen independently of the time since the last event.</p>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.PoissonLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.PoissonLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -2984,10 +3119,13 @@ representing the likelihood of a well defined distribution.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.QuantileRegression.compute_loss" title="darts.utils.likelihood_models.torch.QuantileRegression.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.QuantileRegression.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.QuantileRegression.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.QuantileRegression.fit" title="darts.utils.likelihood_models.torch.QuantileRegression.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.QuantileRegression.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.QuantileRegression.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Overwrite parent method since QuantileRegression is not a Likelihood per-se and parameters must be extracted differently.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.QuantileRegression.sample" title="darts.utils.likelihood_models.torch.QuantileRegression.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.QuantileRegression.sample" title="darts.utils.likelihood_models.torch.QuantileRegression.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted quantiles closest to the sampled value.</p></td>
 </tr>
 </tbody>
@@ -3016,6 +3154,12 @@ representing the likelihood of a well defined distribution.</p>
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.QuantileRegression.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.QuantileRegression.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -3123,10 +3267,13 @@ quantiles closest to the sampled value.</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.TorchLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.TorchLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.TorchLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.TorchLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.TorchLikelihood.fit" title="darts.utils.likelihood_models.torch.TorchLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.TorchLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.TorchLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.TorchLikelihood.sample" title="darts.utils.likelihood_models.torch.TorchLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.TorchLikelihood.sample" title="darts.utils.likelihood_models.torch.TorchLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -3147,6 +3294,12 @@ quantiles closest to the sampled value.</p>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models/torch.html#TorchLikelihood.compute_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.torch.TorchLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.TorchLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.TorchLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">
@@ -3254,10 +3407,13 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.compute_loss" title="darts.utils.likelihood_models.torch.WeibullLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target, sample_weight)</p></td>
 <td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.WeibullLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.fit" title="darts.utils.likelihood_models.torch.WeibullLikelihood.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(model)</p></td>
+<td><p>Fits the likelihood to the model.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.predict_likelihood_parameters" title="darts.utils.likelihood_models.torch.WeibullLikelihood.predict_likelihood_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_likelihood_parameters</span></code></a>(model_output)</p></td>
 <td><p>Returns the distribution parameters as a single Tensor, extracted from the raw model outputs.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.sample" title="darts.utils.likelihood_models.torch.WeibullLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.sample" title="darts.utils.likelihood_models.torch.WeibullLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
 <td><p>Samples a prediction from the likelihood distribution and the predicted parameters.</p></td>
 </tr>
 </tbody>
@@ -3278,6 +3434,12 @@ distribution for every ground truth value in <cite>target</cite>, and the <cite>
 <span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_weight</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.likelihood_models.torch.WeibullLikelihood.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.torch.WeibullLikelihood.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits the likelihood to the model.</p>
 </dd></dl>
 
 <dl class="py property">

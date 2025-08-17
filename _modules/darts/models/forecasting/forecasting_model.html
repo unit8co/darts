@@ -202,6 +202,8 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">sample</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">CLASSIFICATION_METRICS</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_PARAM_LABEL_REDUCTION</span><span class="p">,</span> <span class="n">_PARAM_LABELS</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Likelihood</span><span class="p">,</span>
     <span class="n">likelihood_component_names</span><span class="p">,</span>
@@ -222,7 +224,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.pipeline</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pipeline</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseDataTransformer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">METRIC_TYPE</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">METRIC_TYPE</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_parallel_apply</span><span class="p">,</span> <span class="n">_with_sanity_checks</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.historical_forecasts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_adjust_historical_forecasts_time_index</span><span class="p">,</span>
@@ -1284,7 +1286,7 @@
             <span class="p">)</span>
 
             <span class="c1"># adjust the start of the series depending on whether we train (at some point), or predict only</span>
-            <span class="c1"># must be performed after the operation on historical_foreacsts_time_index</span>
+            <span class="c1"># must be performed after the operation on historical_forecasts_time_index</span>
             <span class="k">if</span> <span class="n">min_timestamp_series</span> <span class="o">&gt;</span> <span class="n">series_</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
                 <span class="n">series_</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">drop_before</span><span class="p">(</span><span class="n">min_timestamp_series</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">*</span> <span class="n">series_</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
 
@@ -1489,7 +1491,7 @@
         <span class="n">overlap_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">METRIC_TYPE</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">METRIC_TYPE</span><span class="p">]]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mape</span><span class="p">,</span>
-        <span class="n">reduction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+        <span class="n">reduction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nanmean</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -1766,6 +1768,27 @@
             <span class="c1"># add user supplied metric kwargs</span>
             <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">metric_f_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
             <span class="n">metric_params</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">metric_f</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span>
+
+            <span class="k">if</span> <span class="n">metric_f</span> <span class="ow">in</span> <span class="n">CLASSIFICATION_METRICS</span><span class="p">:</span>
+                <span class="n">has_labels_p</span> <span class="o">=</span> <span class="n">_PARAM_LABELS</span> <span class="ow">in</span> <span class="n">metric_params</span>
+                <span class="n">has_label_reduction_p</span> <span class="o">=</span> <span class="n">_PARAM_LABEL_REDUCTION</span> <span class="ow">in</span> <span class="n">metric_params</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">has_labels_p</span>
+                    <span class="ow">and</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_PARAM_LABELS</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+                    <span class="ow">and</span> <span class="p">(</span>
+                        <span class="p">(</span>
+                            <span class="n">has_label_reduction_p</span>
+                            <span class="ow">and</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_PARAM_LABEL_REDUCTION</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span>
+                        <span class="p">)</span>
+                        <span class="ow">or</span> <span class="n">metric_f</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;confusion_matrix&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Parameter `</span><span class="si">{</span><span class="n">_PARAM_LABELS</span><span class="si">}</span><span class="s2">` is not set for classification metric &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">metric_f</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">()` that does not reduce the label-specific scores &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;(either `</span><span class="si">{</span><span class="n">_PARAM_LABEL_REDUCTION</span><span class="si">}</span><span class="s2">=None` or using the &quot;</span>
+                        <span class="sa">f</span><span class="s2">&quot;`confusion_matrix` metric). This may result in inconsistent or failing backtest.&quot;</span>
+                    <span class="p">)</span>
 
             <span class="c1"># scaled metrics require `insample` series</span>
             <span class="k">if</span> <span class="s2">&quot;insample&quot;</span> <span class="ow">in</span> <span class="n">metric_params</span><span class="p">:</span>

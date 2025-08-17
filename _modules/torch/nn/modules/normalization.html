@@ -518,7 +518,7 @@
 
 <span class="sd">            If a single integer is used, it is treated as a singleton list, and this module will</span>
 <span class="sd">            normalize over the last dimension which is expected to be of that specific size.</span>
-<span class="sd">        eps: a value added to the denominator for numerical stability. Default: :func:`torch.finfo(x.dtype).eps`</span>
+<span class="sd">        eps: a value added to the denominator for numerical stability. Default: ``torch.finfo(x.dtype).eps``</span>
 <span class="sd">        elementwise_affine: a boolean value that when set to ``True``, this module</span>
 <span class="sd">            has learnable per-element affine parameters initialized to ones (for weights). Default: ``True``.</span>
 
@@ -533,6 +533,7 @@
 <span class="sd">        &gt;&gt;&gt; rms_norm(input)</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">__constants__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;normalized_shape&quot;</span><span class="p">,</span> <span class="s2">&quot;eps&quot;</span><span class="p">,</span> <span class="s2">&quot;elementwise_affine&quot;</span><span class="p">]</span>
     <span class="n">normalized_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
     <span class="n">eps</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>

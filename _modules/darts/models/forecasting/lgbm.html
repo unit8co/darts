@@ -195,19 +195,17 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.sklearn_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">FUTURE_LAGS_TYPE</span><span class="p">,</span>
     <span class="n">LAGS_TYPE</span><span class="p">,</span>
-    <span class="n">SKLearnModelWithCategoricalCovariates</span><span class="p">,</span>
+    <span class="n">SKLearnModelWithCategoricalFeatures</span><span class="p">,</span>
+    <span class="n">_ClassifierMixin</span><span class="p">,</span>
     <span class="n">_QuantileModelContainer</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">QuantileRegression</span><span class="p">,</span>
-    <span class="n">_check_likelihood</span><span class="p">,</span>
-    <span class="n">_get_likelihood</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LikelihoodType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.sklearn</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span><span class="p">,</span> <span class="n">_get_likelihood</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="LightGBMModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LightGBMModel</span><span class="p">(</span><span class="n">SKLearnModelWithCategoricalCovariates</span><span class="p">):</span>
+<div class="viewcode-block" id="LightGBMModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LightGBMModel</span><span class="p">(</span><span class="n">SKLearnModelWithCategoricalFeatures</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">LAGS_TYPE</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -365,18 +363,11 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">random_state</span>  <span class="c1"># seed for tree learner</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="kc">None</span>
 
-        <span class="c1"># parse likelihood</span>
-        <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="s2">&quot;poisson&quot;</span><span class="p">])</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood</span>
-            <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="n">_QuantileModelContainer</span><span class="p">()</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">_get_likelihood</span><span class="p">(</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_likelihood</span><span class="p">(</span>
             <span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span>
-            <span class="n">n_outputs</span><span class="o">=</span><span class="n">output_chunk_length</span> <span class="k">if</span> <span class="n">multi_models</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
             <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
         <span class="p">)</span>
 
@@ -388,13 +379,38 @@
             <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
             <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
             <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
-            <span class="n">model</span><span class="o">=</span><span class="n">lgb</span><span class="o">.</span><span class="n">LGBMRegressor</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_create_model</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">),</span>
             <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
             <span class="n">categorical_past_covariates</span><span class="o">=</span><span class="n">categorical_past_covariates</span><span class="p">,</span>
             <span class="n">categorical_future_covariates</span><span class="o">=</span><span class="n">categorical_future_covariates</span><span class="p">,</span>
             <span class="n">categorical_static_covariates</span><span class="o">=</span><span class="n">categorical_static_covariates</span><span class="p">,</span>
             <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
         <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">lgb</span><span class="o">.</span><span class="n">LGBMRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_likelihood</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">multi_models</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">_get_likelihood</span><span class="p">(</span>
+            <span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span>
+            <span class="n">n_outputs</span><span class="o">=</span><span class="n">output_chunk_length</span> <span class="k">if</span> <span class="n">multi_models</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
+            <span class="n">available_likelihoods</span><span class="o">=</span><span class="p">[</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="p">,</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Poisson</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;objective&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">likelihood</span>
+        <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">Quantile</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="n">_QuantileModelContainer</span><span class="p">()</span>
 
 <div class="viewcode-block" id="LightGBMModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel.fit">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -460,7 +476,7 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="n">likelihood</span><span class="o">.</span><span class="n">quantiles</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;alpha&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantile</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">lgb</span><span class="o">.</span><span class="n">LGBMRegressor</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_model</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
                 <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
                     <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -474,6 +490,7 @@
                     <span class="n">val_sample_weight</span><span class="o">=</span><span class="n">val_sample_weight</span><span class="p">,</span>
                     <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
                 <span class="p">)</span>
+                <span class="c1"># store the trained model in the container as it might have been wrapped by MultiOutputRegressor</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="p">[</span><span class="n">quantile</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
             <span class="k">return</span> <span class="bp">self</span>
 
@@ -519,6 +536,209 @@
 <span class="sd">        Returns the name of the categorical features parameter from model&#39;s `fit` method .</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="s2">&quot;categorical_feature&quot;</span></div>
+
+
+<div class="viewcode-block" id="LightGBMClassifierModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMClassifierModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">LightGBMClassifierModel</span><span class="p">(</span><span class="n">_ClassifierMixin</span><span class="p">,</span> <span class="n">LightGBMModel</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">output_chunk_shift</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">LikelihoodType</span><span class="o">.</span><span class="n">ClassProbability</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">multi_models</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">categorical_past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">categorical_future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">categorical_static_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;LGBM Model for classification forecasting</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        lags</span>
+<span class="sd">            Lagged target `series` values used to predict the next time step/s.</span>
+<span class="sd">            If an integer, must be &gt; 0. Uses the last `n=lags` past lags; e.g. `(-1, -2, ..., -lags)`, where `0`</span>
+<span class="sd">            corresponds the first predicted time step of each sample. If `output_chunk_shift &gt; 0`, then</span>
+<span class="sd">            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.</span>
+<span class="sd">            If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.</span>
+<span class="sd">            If a dictionary, the keys correspond to the `series` component names (of the first series when</span>
+<span class="sd">            using multiple series) and the values correspond to the component lags (integer or list of integers). The</span>
+<span class="sd">            key &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
+<span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
+<span class="sd">            This model treats the target `series` as categorical features when lags are provided.</span>
+<span class="sd">        lags_past_covariates</span>
+<span class="sd">            Lagged `past_covariates` values used to predict the next time step/s.</span>
+<span class="sd">            If an integer, must be &gt; 0. Uses the last `n=lags_past_covariates` past lags; e.g. `(-1, -2, ..., -lags)`,</span>
+<span class="sd">            where `0` corresponds to the first predicted time step of each sample. If `output_chunk_shift &gt; 0`, then</span>
+<span class="sd">            lag `-1` translates to `-1 - output_chunk_shift` steps before the first prediction step.</span>
+<span class="sd">            If a list of integers, each value must be &lt; 0. Uses only the specified values as lags.</span>
+<span class="sd">            If a dictionary, the keys correspond to the `past_covariates` component names (of the first series when</span>
+<span class="sd">            using multiple series) and the values correspond to the component lags (integer or list of integers). The</span>
+<span class="sd">            key &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
+<span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
+<span class="sd">        lags_future_covariates</span>
+<span class="sd">            Lagged `future_covariates` values used to predict the next time step/s. The lags are always relative to the</span>
+<span class="sd">            first step in the output chunk, even when `output_chunk_shift &gt; 0`.</span>
+<span class="sd">            If a tuple of `(past, future)`, both values must be &gt; 0. Uses the last `n=past` past lags and `n=future`</span>
+<span class="sd">            future lags; e.g. `(-past, -(past - 1), ..., -1, 0, 1, .... future - 1)`, where `0` corresponds the first</span>
+<span class="sd">            predicted time step of each sample. If `output_chunk_shift &gt; 0`, the position of negative lags differ from</span>
+<span class="sd">            those of `lags` and `lags_past_covariates`. In this case a future lag `-5` would point at the same</span>
+<span class="sd">            step as a target lag of `-5 + output_chunk_shift`.</span>
+<span class="sd">            If a list of integers, uses only the specified values as lags.</span>
+<span class="sd">            If a dictionary, the keys correspond to the `future_covariates` component names (of the first series when</span>
+<span class="sd">            using multiple series) and the values correspond to the component lags (tuple or list of integers). The key</span>
+<span class="sd">            &#39;default_lags&#39; can be used to provide default lags for un-specified components. Raises and error if some</span>
+<span class="sd">            components are missing and the &#39;default_lags&#39; key is not provided.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            Number of time steps predicted at once (per chunk) by the internal model. It is not the same as forecast</span>
+<span class="sd">            horizon `n` used in `predict()`, which is the desired number of prediction points generated using a</span>
+<span class="sd">            one-shot- or autoregressive forecast. Setting `n &lt;= output_chunk_length` prevents auto-regression. This is</span>
+<span class="sd">            useful when the covariates don&#39;t extend far enough into the future, or to prohibit the model from using</span>
+<span class="sd">            future values of past and / or future covariates for prediction (depending on the model&#39;s covariate</span>
+<span class="sd">            support).</span>
+<span class="sd">        output_chunk_shift</span>
+<span class="sd">            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the</span>
+<span class="sd">            input chunk end). This will create a gap between the input (history of target and past covariates) and</span>
+<span class="sd">            output. If the model supports `future_covariates`, the `lags_future_covariates` are relative to the first</span>
+<span class="sd">            step in the shifted output chunk. Predictions will start `output_chunk_shift` steps after the end of the</span>
+<span class="sd">            target `series`. If `output_chunk_shift` is set, the model cannot generate autoregressive predictions</span>
+<span class="sd">            (`n &gt; output_chunk_length`).</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.dataprocessing.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                def encode_year(idx):</span>
+<span class="sd">                    return (idx.year - 1950) / 50</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;relative&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [encode_year]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler(),</span>
+<span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
+<span class="sd">        likelihood</span>
+<span class="sd">            &#39;classprobability&#39; or ``None``. If set to &#39;classprobability&#39;, setting `predict_likelihood_parameters`</span>
+<span class="sd">            in `predict()` will forecast class probabilities.</span>
+<span class="sd">            Default: &#39;classprobability&#39;</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Controls the randomness for reproducible forecasting.</span>
+<span class="sd">        multi_models</span>
+<span class="sd">            If True, a separate model will be trained for each future lag to predict. If False, a single model</span>
+<span class="sd">            is trained to predict all the steps in &#39;output_chunk_length&#39; (features lags are shifted back by</span>
+<span class="sd">            `output_chunk_length - n` for each step `n`). Default: True.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
+<span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
+<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
+<span class="sd">        categorical_past_covariates</span>
+<span class="sd">            Optionally, component name or list of component names specifying the past covariates that should be treated</span>
+<span class="sd">            as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as</span>
+<span class="sd">            categorical must be integer-encoded. For more information on how LightGBM handles categorical</span>
+<span class="sd">            features, visit: `Categorical feature support documentation</span>
+<span class="sd">            &lt;https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features&gt;`_.</span>
+<span class="sd">        categorical_future_covariates</span>
+<span class="sd">            Optionally, component name or list of component names specifying the future covariates that should be</span>
+<span class="sd">            treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that</span>
+<span class="sd">            are specified as categorical must be integer-encoded.</span>
+<span class="sd">        categorical_static_covariates</span>
+<span class="sd">            Optionally, string or list of strings specifying the static covariates that should be treated as categorical</span>
+<span class="sd">            by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as categorical</span>
+<span class="sd">            must be integer-encoded.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Additional keyword arguments passed to `lightgbm.LGBClassifier`.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">        &gt;&gt;&gt; from darts.datasets import WeatherDataset</span>
+<span class="sd">        &gt;&gt;&gt; from darts.models import LightGBMClassifierModel</span>
+<span class="sd">        &gt;&gt;&gt; series = WeatherDataset().load().resample(&quot;1D&quot;, method=&quot;mean&quot;)</span>
+<span class="sd">        &gt;&gt;&gt; # predicting if it will rain or not</span>
+<span class="sd">        &gt;&gt;&gt; target =  series[&#39;rain (mm)&#39;][:105].map(lambda x: np.where(x &gt; 0, 1, 0))</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use past observed rainfall (pretending to be unknown beyond index 105)</span>
+<span class="sd">        &gt;&gt;&gt; past_cov = series[&#39;T (degC)&#39;][:105]</span>
+<span class="sd">        &gt;&gt;&gt; # optionally, use future pressure (pretending this component is a forecast)</span>
+<span class="sd">        &gt;&gt;&gt; future_cov = series[&#39;p (mbar)&#39;][:111]</span>
+<span class="sd">        &gt;&gt;&gt; # predict 6 &quot;will rain&quot; values using the 12 past values of pressure and temperature,</span>
+<span class="sd">        &gt;&gt;&gt; # as well as the 6 pressure values corresponding to the forecasted period</span>
+<span class="sd">        &gt;&gt;&gt; model = LightGBMClassifierModel(</span>
+<span class="sd">        &gt;&gt;&gt;     lags=12,</span>
+<span class="sd">        &gt;&gt;&gt;     lags_past_covariates=12,</span>
+<span class="sd">        &gt;&gt;&gt;     lags_future_covariates=[0,1,2,3,4,5],</span>
+<span class="sd">        &gt;&gt;&gt;     output_chunk_length=6,</span>
+<span class="sd">        &gt;&gt;&gt;     verbose=-1</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov, future_covariates=future_cov)</span>
+<span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
+<span class="sd">        &gt;&gt;&gt; pred.values()</span>
+<span class="sd">        array([[0.],</span>
+<span class="sd">               [0.],</span>
+<span class="sd">               [0.],</span>
+<span class="sd">               [1.],</span>
+<span class="sd">               [1.],</span>
+<span class="sd">               [0.]])</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># likelihood always set to ClassProbability as it&#39;s the only supported classifiaction likelihood</span>
+        <span class="c1"># this allow users to predict class probabilities,</span>
+        <span class="c1"># by setting `predict_likelihood_parameters`to `True` in `predict()`</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
+            <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
+            <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
+            <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_shift</span><span class="o">=</span><span class="n">output_chunk_shift</span><span class="p">,</span>
+            <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">,</span>
+            <span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">multi_models</span><span class="o">=</span><span class="n">multi_models</span><span class="p">,</span>
+            <span class="n">use_static_covariates</span><span class="o">=</span><span class="n">use_static_covariates</span><span class="p">,</span>
+            <span class="n">categorical_past_covariates</span><span class="o">=</span><span class="n">categorical_past_covariates</span><span class="p">,</span>
+            <span class="n">categorical_future_covariates</span><span class="o">=</span><span class="n">categorical_future_covariates</span><span class="p">,</span>
+            <span class="n">categorical_static_covariates</span><span class="o">=</span><span class="n">categorical_static_covariates</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">lgb</span><span class="o">.</span><span class="n">LGBMClassifier</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_likelihood</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">multi_models</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">quantiles</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check and set the likelihood.</span>
+<span class="sd">        Only ClassProbability is supported for LightGBMClassifierModel.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_likelihood</span> <span class="o">=</span> <span class="n">_get_likelihood</span><span class="p">(</span>
+            <span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span>
+            <span class="n">n_outputs</span><span class="o">=</span><span class="n">output_chunk_length</span> <span class="k">if</span> <span class="n">multi_models</span> <span class="k">else</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">available_likelihoods</span><span class="o">=</span><span class="p">[</span><span class="n">LikelihoodType</span><span class="o">.</span><span class="n">ClassProbability</span><span class="p">],</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_native_multioutput</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="c1"># LightGBM does not support multiclass natively currently (4.6.0)</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
 </pre></div>
 
               </div>
