@@ -1,6 +1,6 @@
 """
 Conformal Models
----------------
+----------------
 
 A collection of conformal prediction models for pre-trained global forecasting models.
 """

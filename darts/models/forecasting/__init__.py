@@ -1,6 +1,9 @@
 """
 Forecasting Models
-------------------
+==================
+
+Regression Models
+-----------------
 
 Baseline Models (`LocalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms>`_)
     - :class:`~darts.models.forecasting.baselines.NaiveMean`
@@ -29,13 +32,13 @@ Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/user
     - :class:`~darts.models.forecasting.fft.FFT`
     - :class:`~darts.models.forecasting.kalman_forecaster.KalmanForecaster`
     - :class:`~darts.models.forecasting.sf_croston.Croston`
-Regression Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
+SKLearn-Like Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
     - :class:`~darts.models.forecasting.sklearn_model.SKLearnModel`
     - :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel`
     - :class:`~darts.models.forecasting.random_forest.RandomForestModel`
+    - :class:`~darts.models.forecasting.catboost_model.CatBoostModel`
     - :class:`~darts.models.forecasting.lgbm.LightGBMModel`
     - :class:`~darts.models.forecasting.xgboost.XGBModel`
-    - :class:`~darts.models.forecasting.catboost_model.CatBoostModel`
 PyTorch (Lightning)-based Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
     - :class:`~darts.models.forecasting.rnn_model.RNNModel`
     - :class:`~darts.models.forecasting.block_rnn_model.BlockRNNModel`
@@ -54,4 +57,13 @@ Ensemble Models (`GlobalForecastingModel <https://unit8co.github.io/darts/usergu
 Conformal Models  (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
     - :class:`~darts.models.forecasting.conformal_models.ConformalNaiveModel`
     - :class:`~darts.models.forecasting.conformal_models.ConformalQRModel`
+
+Classification Models
+---------------------
+
+SKLearn-Like Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
+    - :class:`~darts.models.forecasting.sklearn_model.SKLearnClassifierModel`
+    - :class:`~darts.models.forecasting.catboost_model.CatBoostClassifierModel`
+    - :class:`~darts.models.forecasting.lgbm.LightGBMClassifierModel`
+    - :class:`~darts.models.forecasting.xgboost.XGBClassifierModel`
 """

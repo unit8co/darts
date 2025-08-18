@@ -1,10 +1,24 @@
 """
-CatBoost model
---------------
+CatBoost Models
+---------------
 
-CatBoost based regression model.
+This module offers wrappers around CatBoost's Gradient Boosted Trees algorithms.
 
-This implementation comes with the ability to produce probabilistic forecasts.
+* :class:`~darts.models.forecasting.catboost_model.CatBoostModel` - Wrapper around CatBoost's `CatBoostRegressor`
+* :class:`~darts.models.forecasting.catboost_model.CatBoostClassifierModel` - Wrapper around CatBoost's
+  `CatBoostClassifier`
+
+The wrappers come with all capabilities of Darts' `SKLearn*Model`.
+
+For detailed examples and tutorials, see:
+
+* `SKLearn-Like Regression Model Examples
+  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
+* `SKLearn-Like Classification Model Examples
+  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
+
+To enable CatBoost support in Darts, follow the detailed install instructions for CatBoost in the INSTALL:
+https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
 from collections.abc import Sequence

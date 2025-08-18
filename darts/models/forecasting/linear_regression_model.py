@@ -1,5 +1,5 @@
 """
-Linear Regression model
+Linear Regression Model
 -----------------------
 
 A forecasting model using a linear regression of some of the target series' lags, as well as optionally some
