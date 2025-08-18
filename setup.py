@@ -39,7 +39,7 @@ setup(
     maintainer="Unit8 SA",
     maintainer_email="darts@unit8.co",
     license="Apache License 2.0",
-    packages=find_packages(exclude=["examples*", "darts.tests*"]),
+    packages=find_packages(exclude=["examples*"]),
     install_requires=reqs,
     package_data={
         "darts": ["py.typed"],
