@@ -11,7 +11,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Improved the documentation regarding the new classification models from version 0.37.0. [#2875](https://github.com/unit8co/darts/pull/2875) by [Dennis Bader](https://github.com/dennisbader).
+
 **Fixed**
+
+- Added back the unit tests into the source code for our conda package. [#2875](https://github.com/unit8co/darts/pull/2875) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 

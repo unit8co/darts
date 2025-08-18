@@ -1,6 +1,6 @@
 """
 Temporal Fusion Transformer (TFT)
--------
+---------------------------------
 """
 
 from collections.abc import Sequence

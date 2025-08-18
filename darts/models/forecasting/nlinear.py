@@ -1,6 +1,6 @@
 """
 N-Linear
-------
+--------
 """
 
 import torch

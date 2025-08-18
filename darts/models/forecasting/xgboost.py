@@ -1,10 +1,21 @@
 """
-XGBoost Model
--------------
+XGBoost Models
+--------------
 
-Regression model based on XGBoost.
+This module offers wrappers around XGBoost's Gradient Boosted Trees algorithms.
 
-This implementation comes with the ability to produce probabilistic forecasts.
+* :class:`~darts.models.forecasting.xgboost.XGBModel` - Wrapper around XGBoost's `XGBRegressor`
+* :class:`~darts.models.forecasting.xgboost.XGBClassifierModel` - Wrapper around XGBoost's
+  `XGBClassifier`
+
+The wrappers come with all capabilities of Darts' `SKLearn*Model`.
+
+For detailed examples and tutorials, see:
+
+* `SKLearn-Like Regression Model Examples
+  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
+* `SKLearn-Like Classification Model Examples
+  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
 """
 
 from collections.abc import Sequence
