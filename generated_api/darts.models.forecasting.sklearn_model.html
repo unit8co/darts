@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>SKLearn Model &#8212; darts  documentation</title>
+    <title>SKLearn-Like Models &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -568,7 +568,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
-       CatBoost model
+       CatBoost Models
       </a>
      </li>
      <li class="toctree-l3">
@@ -603,12 +603,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.lgbm.html">
-       LightGBM Model
+       LightGBM Models
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
-       Linear Regression model
+       Linear Regression Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -638,7 +638,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
-       Regression ensemble model
+       Regression Ensemble Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -678,7 +678,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
-       Croston method
+       Croston Method
       </a>
      </li>
      <li class="toctree-l3">
@@ -693,7 +693,7 @@
      </li>
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
-       SKLearn Model
+       SKLearn-Like Models
       </a>
      </li>
      <li class="toctree-l3">
@@ -733,7 +733,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.xgboost.html">
-       XGBoost Model
+       XGBoost Models
       </a>
      </li>
     </ul>
@@ -897,33 +897,57 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.forecasting.sklearn_model"></span><section id="sklearn-model">
-<h1>SKLearn Model<a class="headerlink" href="#sklearn-model" title="Permalink to this heading">¶</a></h1>
-<p>A <cite>SKLearnModel</cite> forecasts future values of a target series based on</p>
+  <span class="target" id="module-darts.models.forecasting.sklearn_model"></span><section id="sklearn-like-models">
+<h1>SKLearn-Like Models<a class="headerlink" href="#sklearn-like-models" title="Permalink to this heading">¶</a></h1>
+<p>Darts provides a comprehensive set of forecasting models that wrap around scikit-learn-like machine learning algorithms.
+These models can forecast future values of a target series based on lagged features of the following inputs:</p>
 <ul class="simple">
-<li><p>The target series (past lags only)</p></li>
-<li><p>An optional past_covariates series (past lags only)</p></li>
-<li><p>An optional future_covariates series (possibly past and future lags)</p></li>
-<li><p>Available static covariates</p></li>
+<li><p><strong>Target series</strong> (past lags only) - the main time series to be forecasted</p></li>
+<li><p><strong>Past covariates</strong> (past lags only) - external variables known only up to the prediction time</p></li>
+<li><p><strong>Future covariates</strong> (past and future lags) - external variables known or forecasted into the future</p></li>
+<li><p><strong>Static covariates</strong> - time-invariant features associated with each target series</p></li>
 </ul>
-<p>The regression models are learned in a supervised way, and they can wrap around any “scikit-learn like” regression model
-acting on tabular data having <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods.</p>
-<p>Darts also provides the following models:</p>
+<p>The models learn in a supervised way by tabularizing time series data into (lagged) feature-target pairs, making them
+compatible with any scikit-learn-like model that has <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods.</p>
+<p>Lags can be specified in multiple ways:</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel" title="darts.models.forecasting.linear_regression_model.LinearRegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></a> : wrapping around scikit-learn’s
+<li><p>As an integer for the target and past covariates series: represents the number of past lags to consider</p></li>
+<li><p>As a tuple (integer, integer) for the future covariates series: represents the number of (past, future) lags to
+consider</p></li>
+<li><p>As a list: explicitly enumerate specific lags (negative values for past, non-negative for future)</p></li>
+<li><p>As a dictionary: specify different lags for different series components (columns)</p></li>
+</ul>
+<p>We offer both regression and classification models, each tailored for specific forecasting tasks.</p>
+<p><strong>Regression Models:</strong> These models predict continuous numerical values, making them ideal for forecasting future
+trends and patterns in time series data. Utilize these models to gain insights into potential future outcomes based on
+historical data.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#darts.models.forecasting.sklearn_model.SKLearnModel" title="darts.models.forecasting.sklearn_model.SKLearnModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnModel</span></code></a> - Generic wrapper around any scikit-learn regression
+model (default: <cite>LinearRegression</cite>)</p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel" title="darts.models.forecasting.linear_regression_model.LinearRegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></a> - Wrapper around scikit-learn’s
 <cite>LinearRegression</cite></p></li>
-<li><p><a class="reference internal" href="darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel" title="darts.models.forecasting.random_forest.RandomForestModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RandomForestModel</span></code></a> : wrapping around scikit-learn’s
+<li><p><a class="reference internal" href="darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel" title="darts.models.forecasting.random_forest.RandomForestModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">RandomForestModel</span></code></a> - Wrapper around scikit-learn’s
 <cite>RandomForestRegressor</cite></p></li>
-<li><p><a class="reference internal" href="darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel" title="darts.models.forecasting.xgboost.XGBModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">XGBModel</span></code></a> : wrapping around XGBoost’s <cite>XGBRegressor</cite></p></li>
-<li><p><a class="reference internal" href="darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel" title="darts.models.forecasting.lgbm.LightGBMModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LightGBMModel</span></code></a> : wrapping around LightGBM’s <cite>LGBMRegressor</cite></p></li>
-<li><p><a class="reference internal" href="darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel" title="darts.models.forecasting.catboost_model.CatBoostModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">CatBoostModel</span></code></a> : wrapping around CatBoost’s <cite>CatBoostRegressor</cite></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel" title="darts.models.forecasting.catboost_model.CatBoostModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">CatBoostModel</span></code></a> - Wrapper around CatBoost’s <cite>CatBoostRegressor</cite></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel" title="darts.models.forecasting.lgbm.LightGBMModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LightGBMModel</span></code></a> - Wrapper around LightGBM’s <cite>LGBMRegressor</cite></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel" title="darts.models.forecasting.xgboost.XGBModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">XGBModel</span></code></a> - Wrapper around XGBoost’s <cite>XGBRegressor</cite></p></li>
 </ul>
-<p>Behind the scenes this model tabularizes the time series data to make it work with regression models.</p>
-<p>The lags can be specified either using an integer - in which case it represents the _number_ of (past or future) lags
-to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values
-denoting past lags and positive values including 0 denoting future lags).
-When static covariates are present, they are appended to the lagged features. When multiple time series are passed,
-if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.</p>
+<p><strong>Classification Models:</strong> These models predict categorical class labels, enabling effective time series labeling and
+future class prediction. These models are perfect for scenarios where identifying distinct categories or states over
+time is crucial.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#darts.models.forecasting.sklearn_model.SKLearnClassifierModel" title="darts.models.forecasting.sklearn_model.SKLearnClassifierModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">SKLearnClassifierModel</span></code></a> - Generic wrapper around any scikit-learn
+classification model (default: <cite>LogisticRegression</cite>)</p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostClassifierModel" title="darts.models.forecasting.catboost_model.CatBoostClassifierModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">CatBoostClassifierModel</span></code></a> - Wrapper around CatBoost’s
+<cite>CatBoostClassifier</cite></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMClassifierModel" title="darts.models.forecasting.lgbm.LightGBMClassifierModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LightGBMClassifierModel</span></code></a> - Wrapper around LightGBM’s <cite>LGBMClassifier</cite></p></li>
+<li><p><a class="reference internal" href="darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBClassifierModel" title="darts.models.forecasting.xgboost.XGBClassifierModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">XGBClassifierModel</span></code></a> - Wrapper around XGBoost’s <cite>XGBClassifier</cite></p></li>
+</ul>
+<p>For detailed examples and tutorials, see:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html">SKLearn-Like Regression Model Examples</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html">SKLearn-Like Classification Model Examples</a></p></li>
+</ul>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.sklearn_model.RegressionModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.sklearn_model.</span></span><span class="sig-name descname"><span class="pre">RegressionModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/sklearn_model.html#RegressionModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.sklearn_model.RegressionModel" title="Permalink to this definition">¶</a></dt>
@@ -2358,8 +2382,8 @@ values from lagged values.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>If target series <cite>lags</cite> are provided, they will be treated as numeric input features (and not categorical).
-For categorical input feature support, consider models such as:
-class:<cite>~darts.models.forecasting.lgbm.LightGBMClassifierModel</cite> or
+For categorical input feature support, consider models such as
+<a class="reference internal" href="darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMClassifierModel" title="darts.models.forecasting.lgbm.LightGBMClassifierModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LightGBMClassifierModel</span></code></a> or
 <a class="reference internal" href="darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostClassifierModel" title="darts.models.forecasting.catboost_model.CatBoostClassifierModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">CatBoostClassifierModel</span></code></a>.</p>
 </div>
 <dl class="field-list simple">

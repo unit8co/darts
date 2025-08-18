@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>XGBoost Model &#8212; darts  documentation</title>
+    <title>XGBoost Models &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -568,7 +568,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
-       CatBoost model
+       CatBoost Models
       </a>
      </li>
      <li class="toctree-l3">
@@ -603,12 +603,12 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.lgbm.html">
-       LightGBM Model
+       LightGBM Models
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
-       Linear Regression model
+       Linear Regression Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -638,7 +638,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
-       Regression ensemble model
+       Regression Ensemble Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -678,7 +678,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
-       Croston method
+       Croston Method
       </a>
      </li>
      <li class="toctree-l3">
@@ -693,7 +693,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
-       SKLearn Model
+       SKLearn-Like Models
       </a>
      </li>
      <li class="toctree-l3">
@@ -733,7 +733,7 @@
      </li>
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
-       XGBoost Model
+       XGBoost Models
       </a>
      </li>
     </ul>
@@ -897,10 +897,20 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.forecasting.xgboost"></span><section id="xgboost-model">
-<h1>XGBoost Model<a class="headerlink" href="#xgboost-model" title="Permalink to this heading">¶</a></h1>
-<p>Regression model based on XGBoost.</p>
-<p>This implementation comes with the ability to produce probabilistic forecasts.</p>
+  <span class="target" id="module-darts.models.forecasting.xgboost"></span><section id="xgboost-models">
+<h1>XGBoost Models<a class="headerlink" href="#xgboost-models" title="Permalink to this heading">¶</a></h1>
+<p>This module offers wrappers around XGBoost’s Gradient Boosted Trees algorithms.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#darts.models.forecasting.xgboost.XGBModel" title="darts.models.forecasting.xgboost.XGBModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">XGBModel</span></code></a> - Wrapper around XGBoost’s <cite>XGBRegressor</cite></p></li>
+<li><p><a class="reference internal" href="#darts.models.forecasting.xgboost.XGBClassifierModel" title="darts.models.forecasting.xgboost.XGBClassifierModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">XGBClassifierModel</span></code></a> - Wrapper around XGBoost’s
+<cite>XGBClassifier</cite></p></li>
+</ul>
+<p>The wrappers come with all capabilities of Darts’ <cite>SKLearn*Model</cite>.</p>
+<p>For detailed examples and tutorials, see:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html">SKLearn-Like Regression Model Examples</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html">SKLearn-Like Classification Model Examples</a></p></li>
+</ul>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.xgboost.XGBClassifierModel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.xgboost.</span></span><span class="sig-name descname"><span class="pre">XGBClassifierModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_shift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'classprobability'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multi_models</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_static_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/xgboost.html#XGBClassifierModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.xgboost.XGBClassifierModel" title="Permalink to this definition">¶</a></dt>

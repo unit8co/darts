@@ -210,7 +210,7 @@
     </a>
    </li>
    <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#forecasting-models">
+    <a class="reference internal nav-link" href="#id1">
      Forecasting Models
     </a>
    </li>
@@ -401,8 +401,8 @@ to make everything appear on the same figure):</p>
 <section id="features">
 <h2>Features<a class="headerlink" href="#features" title="Permalink to this heading">¶</a></h2>
 <ul class="simple">
-<li><p><strong>Forecasting Models:</strong> A large collection of forecasting models; from statistical models (such as
-ARIMA) to deep learning models (such as N-BEATS). See <a class="reference external" href="#forecasting-models">table of models below</a>.</p></li>
+<li><p><strong>Forecasting Models:</strong> A large collection of forecasting models for regression as well as classification tasks; from statistical models (such as
+ARIMA) to deep learning models (such as N-BEATS). See the <a class="reference external" href="#forecasting-models">forecasting models</a> below.</p></li>
 <li><p><strong>Anomaly Detection</strong> The <code class="docutils literal notranslate"><span class="pre">darts.ad</span></code> module contains a collection of anomaly scorers,
 detectors and aggregators, which can all be combined to detect anomalies in time series.
 It is easy to wrap any of Darts forecasting or filtering models to build
@@ -447,10 +447,10 @@ and reproducible experimentation.</p></li>
 <li><p><strong>Compatibility with Multiple Backends:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can be created from and exported to various backends such as pandas, polars, numpy, pyarrow, xarray, and more, facilitating seamless integration with different data processing libraries.</p></li>
 </ul>
 </section>
-<section id="forecasting-models">
-<h2>Forecasting Models<a class="headerlink" href="#forecasting-models" title="Permalink to this heading">¶</a></h2>
-<p>Here’s a breakdown of the forecasting models currently implemented in Darts. We are constantly working
-on bringing more models and features.</p>
+<section id="id1">
+<h2>Forecasting Models<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
+<p>Here’s a breakdown of the forecasting models currently implemented in Darts. Our suite includes both regression and classification models, each tailored for specific forecasting tasks. We are committed to expanding our offerings with new models and features to enhance your forecasting capabilities.</p>
+<p><strong>Regression Models:</strong> Our regression models are designed to predict continuous numerical values, making them ideal for forecasting future trends and patterns in time series data. Utilize these models to gain insights into potential future outcomes based on historical data.</p>
 <table class="table">
 <colgroup>
 <col style="width: 17%" />
@@ -680,21 +680,21 @@ on bringing more models and features.</p>
 <td><p>🔴 🔴</p></td>
 <td><p>✅</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel">LightGBMModel</a></p></td>
-<td></td>
-<td><p>✅ ✅</p></td>
-<td><p>✅ ✅ ✅</p></td>
-<td><p>✅ ✅</p></td>
-<td><p>✅</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel">XGBModel</a></p></td>
-<td></td>
-<td><p>✅ ✅</p></td>
-<td><p>✅ ✅ ✅</p></td>
-<td><p>✅ ✅</p></td>
-<td><p>✅</p></td>
-</tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel">CatBoostModel</a></p></td>
+<td></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅ ✅ ✅</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel">LightGBMModel</a></p></td>
+<td></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅ ✅ ✅</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel">XGBModel</a></p></td>
 <td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
@@ -822,6 +822,63 @@ on bringing more models and features.</p>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel">ConformalQRModel</a></p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/1905.03222">Conformalized Quantile Regression</a></p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅ ✅ ✅</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Classification Models:</strong> Classification models in Darts are designed to predict categorical class labels, enabling effective time series labeling and future class prediction. These models are perfect for scenarios where identifying distinct categories or states over time is crucial.</p>
+<table class="table">
+<colgroup>
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+<col style="width: 17%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Sources</p></th>
+<th class="head"><p>Target Series Support:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Univariate/<span class="raw-html-m2r"><br/></span>Multivariate</p></th>
+<th class="head"><p>Covariates Support:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Past-observed/<span class="raw-html-m2r"><br/></span>Future-known/<span class="raw-html-m2r"><br/></span>Static</p></th>
+<th class="head"><p>Probabilistic Forecasting:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Sampled/<span class="raw-html-m2r"><br/></span>Distribution Parameters</p></th>
+<th class="head"><p>Training &amp; Forecasting on Multiple Series</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Regression Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnClassifierModel">SKLearnClassifierModel</a>: wrapper around any scikit-learn-like classification model</p></td>
+<td></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅ ✅ ✅</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostClassifierModel">CatBoostClassifierModel</a></p></td>
+<td></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅ ✅ ✅</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMClassifierModel">LightGBMClassifierModel</a></p></td>
+<td></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅ ✅ ✅</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBClassifierModel">XGBClassifierModel</a></p></td>
+<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>

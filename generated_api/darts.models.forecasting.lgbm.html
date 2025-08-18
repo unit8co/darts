@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>LightGBM Model &#8212; darts  documentation</title>
+    <title>LightGBM Models &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -39,7 +39,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Linear Regression model" href="darts.models.forecasting.linear_regression_model.html" />
+    <link rel="next" title="Linear Regression Model" href="darts.models.forecasting.linear_regression_model.html" />
     <link rel="prev" title="Kalman Filter Forecaster" href="darts.models.forecasting.kalman_forecaster.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -568,7 +568,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
-       CatBoost model
+       CatBoost Models
       </a>
      </li>
      <li class="toctree-l3">
@@ -603,12 +603,12 @@
      </li>
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
-       LightGBM Model
+       LightGBM Models
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
-       Linear Regression model
+       Linear Regression Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -638,7 +638,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
-       Regression ensemble model
+       Regression Ensemble Model
       </a>
      </li>
      <li class="toctree-l3">
@@ -678,7 +678,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
-       Croston method
+       Croston Method
       </a>
      </li>
      <li class="toctree-l3">
@@ -693,7 +693,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
-       SKLearn Model
+       SKLearn-Like Models
       </a>
      </li>
      <li class="toctree-l3">
@@ -733,7 +733,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.xgboost.html">
-       XGBoost Model
+       XGBoost Models
       </a>
      </li>
     </ul>
@@ -897,10 +897,19 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.forecasting.lgbm"></span><section id="lightgbm-model">
-<h1>LightGBM Model<a class="headerlink" href="#lightgbm-model" title="Permalink to this heading">¶</a></h1>
-<p>This is a LightGBM implementation of Gradient Boosted Trees algorithm.</p>
-<p>This implementation comes with the ability to produce probabilistic forecasts.</p>
+  <span class="target" id="module-darts.models.forecasting.lgbm"></span><section id="lightgbm-models">
+<h1>LightGBM Models<a class="headerlink" href="#lightgbm-models" title="Permalink to this heading">¶</a></h1>
+<p>This module offers wrappers around LightGBM’s Gradient Boosted Trees algorithms.</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMModel" title="darts.models.forecasting.lgbm.LightGBMModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LightGBMModel</span></code></a> - Wrapper around LightGBM’s <cite>LGBMRegressor</cite></p></li>
+<li><p><a class="reference internal" href="#darts.models.forecasting.lgbm.LightGBMClassifierModel" title="darts.models.forecasting.lgbm.LightGBMClassifierModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">LightGBMClassifierModel</span></code></a> - Wrapper around LightGBM’s <cite>LGBMClassifier</cite></p></li>
+</ul>
+<p>The wrappers come with all capabilities of Darts’ <cite>SKLearn*Model</cite>.</p>
+<p>For detailed examples and tutorials, see:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html">SKLearn-Like Regression Model Examples</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html">SKLearn-Like Classification Model Examples</a></p></li>
+</ul>
 <p>To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the INSTALL:
 <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">https://github.com/unit8co/darts/blob/master/INSTALL.md</a></p>
 <dl class="py class">
@@ -3824,7 +3833,7 @@ a validation set.</p>
     <a class='right-next' id="next-link" href="darts.models.forecasting.linear_regression_model.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Linear Regression model</p>
+        <p class="prev-next-title">Linear Regression Model</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

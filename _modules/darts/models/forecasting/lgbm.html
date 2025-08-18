@@ -174,12 +174,20 @@
                 
   <h1>Source code for darts.models.forecasting.lgbm</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">LightGBM Model</span>
-<span class="sd">--------------</span>
+<span class="sd">LightGBM Models</span>
+<span class="sd">---------------</span>
 
-<span class="sd">This is a LightGBM implementation of Gradient Boosted Trees algorithm.</span>
+<span class="sd">This module offers wrappers around LightGBM&#39;s Gradient Boosted Trees algorithms.</span>
 
-<span class="sd">This implementation comes with the ability to produce probabilistic forecasts.</span>
+<span class="sd">* :class:`~darts.models.forecasting.lgbm.LightGBMModel` - Wrapper around LightGBM&#39;s `LGBMRegressor`</span>
+<span class="sd">* :class:`~darts.models.forecasting.lgbm.LightGBMClassifierModel` - Wrapper around LightGBM&#39;s `LGBMClassifier`</span>
+
+<span class="sd">The wrappers come with all capabilities of Darts&#39; `SKLearn*Model`.</span>
+
+<span class="sd">For detailed examples and tutorials, see:</span>
+
+<span class="sd">* `SKLearn-Like Regression Model Examples &lt;https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html&gt;`_</span>
+<span class="sd">* `SKLearn-Like Classification Model Examples &lt;https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html&gt;`_</span>
 
 <span class="sd">To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the INSTALL:</span>
 <span class="sd">https://github.com/unit8co/darts/blob/master/INSTALL.md</span>

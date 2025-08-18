@@ -235,15 +235,19 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - 
      - 
      - 
-   * - Regression Models (c)
+   * - SKLearn-Like Regression Models (c)
      - ✅
      - ✅
      - ✅
-   * - `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ (d)
+   * - SKLearn-Like Classification Models (d)
+     - ✅
+     - ✅
+     - ✅
+   * - `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ (e)
      - 
      - ✅
      - 
-   * - `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ (e)
+   * - `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ (f)
      - ✅
      - 
      - 
@@ -283,11 +287,11 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - ✅
      - ✅
      - ✅
-   * - Ensemble Models (f)
+   * - Ensemble Models (g)
      - ✅
      - ✅
      - ✅
-   * - Conformal Prediction Models (g)
+   * - Conformal Prediction Models (h)
      - ✅
      - ✅
      - ✅
@@ -299,15 +303,17 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
 
 (b) Global Naive Baselines including `GlobalNaiveAggregate <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate>`_\ , `GlobalNaiveDrift <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift>`_\ , and `GlobalNaiveSeasonal <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal>`_.
 
-(c) Regression Models including `SKLearnModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#sklearn-model>`_\ , `LinearRegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel>`_\ , `RandomForestModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel>`_\ , `LightGBMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel>`_\ , `XGBModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel>`_\ , and `CatBoostModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel>`_. SKLearnModel is a special kind of GFM which can use arbitrary lags on covariates (past and/or future) and past targets to do predictions.
+(c) SKLearn-Like Regression Models including `SKLearnModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel>`_\ , `LinearRegressionModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel>`_\ , `RandomForestModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel>`_\ , `LightGBMModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel>`_\ , `XGBModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel>`_\ , and `CatBoostModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel>`_. SKLearnModel is a special kind of GFM which can use arbitrary lags on covariates (past and/or future) and past targets to predict continuous numerical values.
 
-(d) `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ including ``LSTM`` and ``GRU``\ ; equivalent to DeepAR in its probabilistic version
+(d) SKLearn-Like Classification Models including `SKLearnClassifierModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnClassifierModel>`_\ , `LightGBMClassifierModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMClassifierModel>`_\ , `XGBClassifierModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBClassifierModel>`_\ , and `CatBoostClassifierModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostClassifierModel>`_. SKLearnClassifierModel is a special kind of GFM which can use arbitrary lags on covariates (past and/or future) and past targets to predict categorical class labels.
 
-(e) `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ including ``LSTM`` and ``GRU``
+(e) `RNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel>`_ including ``LSTM`` and ``GRU``\ ; equivalent to DeepAR in its probabilistic version
 
-(f) Ensemble Model including `RegressionEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel>`_\ , and `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel>`_. The covariate support is given by the covariate support of the ensembled forecasting models.
+(f) `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ including ``LSTM`` and ``GRU``
 
-(g) Conformal Prediction Model including `ConformalNaiveModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel>`_\ , and `ConformalQRModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel>`_. The covariate support is given by the covariate support of the underlying forecasting model.
+(g) Ensemble Model including `RegressionEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel>`_\ , and `NaiveEnsembleModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel>`_. The covariate support is given by the covariate support of the ensembled forecasting models.
+
+(h) Conformal Prediction Model including `ConformalNaiveModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel>`_\ , and `ConformalQRModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel>`_. The covariate support is given by the covariate support of the underlying forecasting model.
 
 ----
 

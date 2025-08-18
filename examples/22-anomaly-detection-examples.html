@@ -762,7 +762,7 @@ div.rendered_html tbody tr:hover {
 <li><p><code class="docutils literal notranslate"><span class="pre">Anomaly</span> <span class="pre">Models</span></code>: offer a convenient way to produce anomaly scores from any of Darts’ global forecasting models or filtering models by comparing the models’ predictions with actual observations. Each Anomaly Model takes one forecasting/filtering model and one or multiple scorers. The model produces some predictions, which are fed together with the actual series to the scorer(s). It will return anomaly scores for each scorer.</p></li>
 </ul>
 <p>The figure below illustrates the different input/output for each tool:</p>
-<p><img alt="8d76025926284ca68cb5403fbf25f980" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
+<p><img alt="13a05d2f7f1a4619bf21c07616dacd2e" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
 <p>The notebook is devided into two sections:</p>
 <ul class="simple">
 <li><p>How to use <code class="docutils literal notranslate"><span class="pre">ForecastingAnomalyModel</span></code> to find anomalies in the number of taxi passengers in New York.</p></li>
@@ -969,7 +969,7 @@ SKLearnModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0], ou
 <p>The <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter is an integer value indicating the window size used by the scorer to transform the series into an anomaly score. A scorer will slice the given series into subsequences of size W and returns a value indicating how anomalous these subset of W values are.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">window_agg</span></code> can be used to transform the window-wise scores into point-wise scores by aggregating all anomaly scores from each window that the point was included in.</p>
 <p>The following figure illustrates the mechanism of a Forecasting Anomaly model:</p>
-<p><img alt="7c381f10bae44b24b4817d1d38ab5d3e" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
+<p><img alt="7485045ffebf45ee94240a832d72599f" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
 <section id="Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()">
 <h3>Using the main functions: fit(), score(), eval_metric() and show_anomalies()<a class="headerlink" href="#Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()" title="Permalink to this heading">¶</a></h3>
 <div class="nbinput nblast docutils container">
@@ -1407,7 +1407,7 @@ f1: 0.45/1
 <h1>Simple case: <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code><a class="headerlink" href="#Simple-case:-KMeansScorer" title="Permalink to this heading">¶</a></h1>
 <p>Let’s have a closer look at the scorer’s <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter on the example of the <code class="docutils literal notranslate"><span class="pre">KmeansScorer</span></code>. We’ll use two toy datasets to demonstrate how the scorers perform with different window sizes. In first example we set <code class="docutils literal notranslate"><span class="pre">window=1</span></code> on a multivariate time series, and in the second we set <code class="docutils literal notranslate"><span class="pre">window=2</span></code> on a univariate time series.</p>
 <p>The figure below illustrates the Scorer’s windowing process:</p>
-<p><img alt="d35cbd8596684ac480d7353a061137e6" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
+<p><img alt="5ffc6723f09144978af9c49182567b54" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
 <section id="Multivariate-case-with-window=1">
 <h2>Multivariate case with window=1<a class="headerlink" href="#Multivariate-case-with-window=1" title="Permalink to this heading">¶</a></h2>
 <section id="Synthetic-data-creation">

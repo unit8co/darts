@@ -174,39 +174,60 @@
                 
   <h1>Source code for darts.models.forecasting.sklearn_model</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">SKLearn Model</span>
-<span class="sd">-------------</span>
-<span class="sd">A `SKLearnModel` forecasts future values of a target series based on</span>
+<span class="sd">SKLearn-Like Models</span>
+<span class="sd">-------------------</span>
 
-<span class="sd">* The target series (past lags only)</span>
+<span class="sd">Darts provides a comprehensive set of forecasting models that wrap around scikit-learn-like machine learning algorithms.</span>
+<span class="sd">These models can forecast future values of a target series based on lagged features of the following inputs:</span>
 
-<span class="sd">* An optional past_covariates series (past lags only)</span>
+<span class="sd">* **Target series** (past lags only) - the main time series to be forecasted</span>
+<span class="sd">* **Past covariates** (past lags only) - external variables known only up to the prediction time</span>
+<span class="sd">* **Future covariates** (past and future lags) - external variables known or forecasted into the future</span>
+<span class="sd">* **Static covariates** - time-invariant features associated with each target series</span>
 
-<span class="sd">* An optional future_covariates series (possibly past and future lags)</span>
+<span class="sd">The models learn in a supervised way by tabularizing time series data into (lagged) feature-target pairs, making them</span>
+<span class="sd">compatible with any scikit-learn-like model that has ``fit()`` and ``predict()`` methods.</span>
 
-<span class="sd">* Available static covariates</span>
+<span class="sd">Lags can be specified in multiple ways:</span>
 
+<span class="sd">* As an integer for the target and past covariates series: represents the number of past lags to consider</span>
+<span class="sd">* As a tuple (integer, integer) for the future covariates series: represents the number of (past, future) lags to</span>
+<span class="sd">  consider</span>
+<span class="sd">* As a list: explicitly enumerate specific lags (negative values for past, non-negative for future)</span>
+<span class="sd">* As a dictionary: specify different lags for different series components (columns)</span>
 
-<span class="sd">The regression models are learned in a supervised way, and they can wrap around any &quot;scikit-learn like&quot; regression model</span>
-<span class="sd">acting on tabular data having ``fit()`` and ``predict()`` methods.</span>
+<span class="sd">We offer both regression and classification models, each tailored for specific forecasting tasks.</span>
 
-<span class="sd">Darts also provides the following models:</span>
+<span class="sd">**Regression Models:** These models predict continuous numerical values, making them ideal for forecasting future</span>
+<span class="sd">trends and patterns in time series data. Utilize these models to gain insights into potential future outcomes based on</span>
+<span class="sd">historical data.</span>
 
-<span class="sd">- :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` : wrapping around scikit-learn&#39;s</span>
+<span class="sd">* :class:`~darts.models.forecasting.sklearn_model.SKLearnModel` - Generic wrapper around any scikit-learn regression</span>
+<span class="sd">  model (default: `LinearRegression`)</span>
+<span class="sd">* :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` - Wrapper around scikit-learn&#39;s</span>
 <span class="sd">  `LinearRegression`</span>
-<span class="sd">- :class:`~darts.models.forecasting.random_forest.RandomForestModel` : wrapping around scikit-learn&#39;s</span>
+<span class="sd">* :class:`~darts.models.forecasting.random_forest.RandomForestModel` - Wrapper around scikit-learn&#39;s</span>
 <span class="sd">  `RandomForestRegressor`</span>
-<span class="sd">- :class:`~darts.models.forecasting.xgboost.XGBModel` : wrapping around XGBoost&#39;s `XGBRegressor`</span>
-<span class="sd">- :class:`~darts.models.forecasting.lgbm.LightGBMModel` : wrapping around LightGBM&#39;s `LGBMRegressor`</span>
-<span class="sd">- :class:`~darts.models.forecasting.catboost_model.CatBoostModel` : wrapping around CatBoost&#39;s `CatBoostRegressor`</span>
+<span class="sd">* :class:`~darts.models.forecasting.catboost_model.CatBoostModel` - Wrapper around CatBoost&#39;s `CatBoostRegressor`</span>
+<span class="sd">* :class:`~darts.models.forecasting.lgbm.LightGBMModel` - Wrapper around LightGBM&#39;s `LGBMRegressor`</span>
+<span class="sd">* :class:`~darts.models.forecasting.xgboost.XGBModel` - Wrapper around XGBoost&#39;s `XGBRegressor`</span>
 
-<span class="sd">Behind the scenes this model tabularizes the time series data to make it work with regression models.</span>
+<span class="sd">**Classification Models:** These models predict categorical class labels, enabling effective time series labeling and</span>
+<span class="sd">future class prediction. These models are perfect for scenarios where identifying distinct categories or states over</span>
+<span class="sd">time is crucial.</span>
 
-<span class="sd">The lags can be specified either using an integer - in which case it represents the _number_ of (past or future) lags</span>
-<span class="sd">to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values</span>
-<span class="sd">denoting past lags and positive values including 0 denoting future lags).</span>
-<span class="sd">When static covariates are present, they are appended to the lagged features. When multiple time series are passed,</span>
-<span class="sd">if their static covariates do not have the same size, the shorter ones are padded with 0 valued features.</span>
+<span class="sd">* :class:`~darts.models.forecasting.sklearn_model.SKLearnClassifierModel` - Generic wrapper around any scikit-learn</span>
+<span class="sd">  classification model (default: `LogisticRegression`)</span>
+<span class="sd">* :class:`~darts.models.forecasting.catboost_model.CatBoostClassifierModel` - Wrapper around CatBoost&#39;s</span>
+<span class="sd">  `CatBoostClassifier`</span>
+<span class="sd">* :class:`~darts.models.forecasting.lgbm.LightGBMClassifierModel` - Wrapper around LightGBM&#39;s `LGBMClassifier`</span>
+<span class="sd">* :class:`~darts.models.forecasting.xgboost.XGBClassifierModel` - Wrapper around XGBoost&#39;s `XGBClassifier`</span>
+
+<span class="sd">For detailed examples and tutorials, see:</span>
+
+<span class="sd">* `SKLearn-Like Regression Model Examples &lt;https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html&gt;`_</span>
+<span class="sd">* `SKLearn-Like Classification Model Examples</span>
+<span class="sd">  &lt;https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html&gt;`_</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
@@ -2339,8 +2360,8 @@
 
 <span class="sd">        .. note::</span>
 <span class="sd">            If target series `lags` are provided, they will be treated as numeric input features (and not categorical).</span>
-<span class="sd">            For categorical input feature support, consider models such as:</span>
-<span class="sd">            class:`~darts.models.forecasting.lgbm.LightGBMClassifierModel` or</span>
+<span class="sd">            For categorical input feature support, consider models such as</span>
+<span class="sd">            :class:`~darts.models.forecasting.lgbm.LightGBMClassifierModel` or</span>
 <span class="sd">            :class:`~darts.models.forecasting.catboost_model.CatBoostClassifierModel`.</span>
 
 <span class="sd">        Parameters</span>
