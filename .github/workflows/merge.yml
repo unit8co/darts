@@ -64,7 +64,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Run tests"
         run: |
@@ -125,7 +125,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Run example ${{matrix.example-name}}"
         working-directory: ./examples
@@ -177,7 +177,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Build docs"
         run: |
