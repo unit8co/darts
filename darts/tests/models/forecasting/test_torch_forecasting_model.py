@@ -1,3 +1,13 @@
+import pytest
+
+from darts.tests.conftest import TORCH_AVAILABLE
+
+if not TORCH_AVAILABLE:
+    pytest.skip(
+        f"Torch not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
+
 import copy
 import itertools
 import math
@@ -8,25 +18,6 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-
-import darts.utils.timeseries_generation as tg
-from darts import TimeSeries
-from darts.dataprocessing.encoders import SequentialEncoder
-from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.metrics import mape
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs, tfm_kwargs_dev
-from darts.utils.data.torch_datasets.inference_dataset import (
-    SequentialTorchInferenceDataset,
-)
-from darts.utils.data.torch_datasets.training_dataset import (
-    SequentialTorchTrainingDataset,
-)
-
-if not TORCH_AVAILABLE:
-    pytest.skip(
-        f"Torch not available. {__name__} tests will be skipped.",
-        allow_module_level=True,
-    )
 import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers.logger import DummyLogger
@@ -40,6 +31,11 @@ from torchmetrics import (
     R2Score,
 )
 
+import darts.utils.timeseries_generation as tg
+from darts import TimeSeries
+from darts.dataprocessing.encoders import SequentialEncoder
+from darts.dataprocessing.transformers import BoxCox, Scaler
+from darts.metrics import mape
 from darts.models import (
     BlockRNNModel,
     DLinearModel,
@@ -58,6 +54,13 @@ from darts.models import (
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
+from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
+from darts.utils.data.torch_datasets.inference_dataset import (
+    SequentialTorchInferenceDataset,
+)
+from darts.utils.data.torch_datasets.training_dataset import (
+    SequentialTorchTrainingDataset,
+)
 from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     GaussianLikelihood,
