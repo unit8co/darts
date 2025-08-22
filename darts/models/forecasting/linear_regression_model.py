@@ -1,5 +1,5 @@
 """
-Linear Regression model
+Linear Regression Model
 -----------------------
 
 A forecasting model using a linear regression of some of the target series' lags, as well as optionally some
@@ -20,9 +20,9 @@ from darts.models.forecasting.sklearn_model import (
     SKLearnModel,
     _QuantileModelContainer,
 )
+from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
-    _check_likelihood,
     _get_likelihood,
 )
 
@@ -174,21 +174,20 @@ class LinearRegressionModel(SKLearnModel):
         """
         self.kwargs = kwargs
 
-        # parse likelihood
-        if likelihood is not None:
-            _check_likelihood(likelihood, ["quantile", "poisson"])
-            if likelihood == "poisson":
-                model = PoissonRegressor(**kwargs)
-            if likelihood == "quantile":
-                model = QuantileRegressor(**kwargs)
-        else:
-            model = LinearRegression(**kwargs)
-
-        likelihood = _get_likelihood(
+        self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
             quantiles=quantiles,
+            available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
         )
+
+        if likelihood == LikelihoodType.Poisson.value:
+            model = PoissonRegressor(**kwargs)
+        elif likelihood == LikelihoodType.Quantile.value:
+            model = QuantileRegressor(**kwargs)
+            self._model_container = _QuantileModelContainer()
+        else:  # likelihood is None
+            model = LinearRegression(**kwargs)
 
         super().__init__(
             lags=lags,
@@ -202,10 +201,6 @@ class LinearRegressionModel(SKLearnModel):
             use_static_covariates=use_static_covariates,
             random_state=random_state,
         )
-
-        self._likelihood = likelihood
-        if isinstance(likelihood, QuantileRegression):
-            self._model_container = _QuantileModelContainer()
 
     def fit(
         self,

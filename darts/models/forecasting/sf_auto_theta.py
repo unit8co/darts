@@ -1,6 +1,6 @@
 """
 AutoTheta
------------
+---------
 """
 
 from typing import Optional

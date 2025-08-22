@@ -229,8 +229,8 @@ class TestTimeSeries:
         with pytest.raises(ValueError) as exc:
             _ = series_int[[2, 3, 6]]
         assert str(exc.value).startswith(
-            "Could not convert integer index to a `pandas.RangeIndex`. "
-            "Found non-unique step sizes/frequencies: `{1, 3}`. "
+            "Cannot index a `TimeSeries` with a list of integers with non-constant step sizes. "
+            "Observed step sizes: `{1, 3}`"
         )
 
         # check integer indexing features when series index does not start at 0
@@ -901,16 +901,6 @@ class TestTimeSeries:
         assert series.freq == 3 * self.series1.freq
         assert series == self.series1[: 3 * 3 : 3]
 
-        series = self.series1[[0, 3, 6]]
-        assert series.freq == 3 * self.series1.freq
-        assert series == self.series1[: 3 * 3 : 3]
-
-        with pytest.raises(ValueError) as exc:
-            _ = self.series1[[0, 2, 6]]
-        assert str(exc.value).startswith(
-            "The time index is missing the `freq` attribute, and the frequency could not be directly inferred"
-        )
-
         # not all dates in index
         with pytest.raises(KeyError):
             self.series1[pd.date_range("19990101", "19990201")]
@@ -920,6 +910,8 @@ class TestTimeSeries:
         # cannot reverse series
         with pytest.raises(ValueError):
             self.series1[::-1]
+
+        # list of integers is tested below
 
     def test_getitem_integer_index(self):
         freq = 3
@@ -971,6 +963,92 @@ class TestTimeSeries:
         # RangeIndex end is out of bounds
         with pytest.raises(KeyError):
             _ = series[pd.RangeIndex(start, stop=end + 2 * freq, step=freq)]
+
+        # list of integers is tested below
+
+    @pytest.mark.parametrize("is_dti", [True, False])
+    def test_getitem_list_of_integers(self, is_dti):
+        if is_dti:
+            # datetime-indexed series
+            series = self.series1
+        else:
+            # range-indexed series
+            idx_int = generate_index(start=1, length=len(self.series1), freq=3)
+            series = TimeSeries(times=idx_int, values=self.series1.values())
+
+        # list of integers (relative to the start) with constant step size
+        # length 3; multiple steps of size 1 starting at 0
+        series_new = series[[0, 1, 2]]
+        assert series_new.freq == series.freq
+        assert series_new == series[:3]
+
+        # length 3; multiple steps of size 1 starting after 0
+        series_new = series[[1, 2, 3]]
+        assert series_new.freq == series.freq
+        assert series_new == series[1:4]
+
+        # length 3; multiple steps starting at 0
+        series_new = series[[0, 3, 6]]
+        assert series_new.freq == 3 * series.freq
+        assert series_new == series[: 3 * 3 : 3]
+
+        # length 3; multiple steps starting after 0
+        series_new = series[[2, 4, 6]]
+        assert series_new.freq == 2 * series.freq
+        assert series_new == series[2:8:2]
+
+        # length 2; 1 step
+        series_new = series[[0, 3]]
+        assert series_new.freq == 3 * series.freq
+        assert series_new == series[: 2 * 3 : 3]
+
+        # length 1; no steps
+        series_new = series[[0]]
+        assert series_new.freq == series.freq
+        assert series_new == series[:1]
+
+        series_new = series[0]
+        assert series_new.freq == series.freq
+        assert series_new == series[:1]
+
+        # list of integers (relative to the end) with constant step size
+        n_steps = len(series)
+        # length 3; multiple steps
+        series_new = series[[-n_steps, -n_steps + 3, -n_steps + 6]]
+        assert series_new.freq == 3 * series.freq
+        assert series_new == series[: 3 * 3 : 3]
+
+        # length 2; 1 step
+        series_new = series[[-n_steps, -n_steps + 3]]
+        assert series_new.freq == 3 * series.freq
+        assert series_new == series[: 2 * 3 : 3]
+
+        # length 1; no steps
+        series_new = series[[-n_steps]]
+        assert series_new.freq == series.freq
+        assert series_new == series[:1]
+
+        # different step sizes
+        with pytest.raises(ValueError) as exc:
+            _ = series[[0, 2, 6]]
+        assert str(exc.value).startswith(
+            "Cannot index a `TimeSeries` with a list of integers with non-constant step sizes. "
+            "Observed step sizes: `{2, 4}`."
+        )
+
+        # decreasing step sizes
+        with pytest.raises(ValueError) as exc:
+            _ = series[[3, 2, 1]]
+        assert str(exc.value).startswith(
+            "Indexing a `TimeSeries` with a list of integers with `step<=0` is not possible"
+        )
+
+        # constant step sizes
+        with pytest.raises(ValueError) as exc:
+            _ = series[[3, 3]]
+        assert str(exc.value).startswith(
+            "Indexing a `TimeSeries` with a list of integers with `step<=0` is not possible"
+        )
 
     def test_getitem_frequency_inferrence(self):
         ts = self.series1

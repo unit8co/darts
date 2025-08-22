@@ -737,8 +737,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         _, past_cov, historic_future_cov, future_cov, static_cov, _ = self.train_sample
 
         self._uses_past_covariates = past_cov is not None
+        self._expect_past_covariates = (
+            self.uses_past_covariates and self.past_covariate_series is None
+        )
         self._uses_future_covariates = future_cov is not None
+        self._expect_future_covariates = (
+            self.uses_future_covariates and self.future_covariate_series is None
+        )
         self._uses_static_covariates = static_cov is not None
+        self._expect_static_covariates = (
+            self.uses_static_covariates and self.static_covariates is None
+        )
 
     def to_onnx(self, path: Optional[str] = None, **kwargs):
         """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
@@ -1204,6 +1213,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f" provided input/output dimensions = {sample_shapes}",
             )
 
+        # update the covariates usage based on the training sample (required if model training was called
+        # with `fit_from_dataset()`)
+        self._update_covariates_use()
+
         # loss must not reduce the output when using sample weight
         train_sample_weight = train_sample[-2]
         val_sample_weight = val_dataset[0][-2] if val_dataset is not None else None
@@ -1581,8 +1594,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if self.training_series is None:
                 raise_log(
                     ValueError(
-                        "Input `series` must be provided. This is the result either from fitting on multiple series, "
-                        "from not having fit the model yet, or from loading a model saved with `clean=True`."
+                        "Input `series` must be provided. This is the result either from "
+                        "fitting on multiple series, from fitting with `fit_from_dataset()`, "
+                        "from not having fit the model yet, or from loading a model saved with "
+                        "`clean=True`."
                     ),
                     logger,
                 )

@@ -5,15 +5,13 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.36.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.37.1...master)
 
 ### For users of the library:
 
 **Improved**
 
 **Fixed**
-
-- Fixed a bug in `SKLearnModel.get_estimator()` for univariate quantile models that use `multi_models=False` , where using `quantile` did not return the correct fitted quantile model / estimator. [#2838](https://github.com/unit8co/darts/pull/2838) by [Dennis Bader](https://github.com/dennisbader).
 - Added parameter `verbose` to `ForecastingModel.fit()` that allows to control the verbosity for model fitting. Ignored if the underlying model does not support it. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
 - Fixed a bug in `historical_forecast` where the `verbose` parameter was not propagated to the the model's `fit()` method. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
 2805) by [Timon Erhart](https://github.com/turbotimon).
@@ -21,6 +19,64 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 ### For developers of the library:
+
+## [0.37.1](https://github.com/unit8co/darts/tree/0.37.1) (2025-08-18)
+
+### For users of the library:
+
+**Improved**
+
+- Improved the documentation regarding the new classification models from version 0.37.0. [#2875](https://github.com/unit8co/darts/pull/2875) by [Dennis Bader](https://github.com/dennisbader).
+
+**Fixed**
+
+- Added back the unit tests into the source code for our conda package. [#2875](https://github.com/unit8co/darts/pull/2875) by [Dennis Bader](https://github.com/dennisbader).
+
+## [0.37.0](https://github.com/unit8co/darts/tree/0.37.0) (2025-08-17)
+
+### For users of the library:
+
+**Improved**
+
+- 🚀🚀 Added the first **classification forecasting models** for time series labeling or forecasting future class labels. Check out [this new notebook](https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html) that demonstrates all added capabilities on the example of time series labeling. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
+  - All models come with the following support:
+    - Uni- and multivariate classification.
+    - Deterministic and probabilistic (predicted class probabilities and / or sampled class labels) forecasting.
+    - Past, future, and static covariates.
+  - `SklearnClassifierModel`: A wrapper around any scikit-learn-like classifier (default: Logistic Regression)
+  - `CatBoostClassifierModel`: Wrapper around CatBoost's CatBoostClassifier with native categorical feature support
+  - `LightGBMClassifierModel`: Wrapper around LightGBM's LGBMClassifier with native categorical feature support.
+  - `XGBClassifierModel`: Wrapper around XGBoost's XGBClassifier
+- Added the first **classification metrics**: Use these metrics to evaluate the performance of the new classification forecasting models. Check out the metrics' documentation for more information on how to extract label-specific metrics, customize aggregation methods, and more. [#2767](https://github.com/unit8co/darts/pull/2767) by [Jonas Blanc](https://github.com/jonasblanc) and [Dennis Bader](https://github.com/dennisbader).
+  - `accuracy()`: Accuracy
+  - `precision()`: Precision
+  - `recall()`: Recall
+  - `f1()`: F1 score
+  - `confusion_matrix()`: Confusion Matrix
+- Added [an example notebook](https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html) that demonstrates how to use and evaluate the new classification models. [#2871](https://github.com/unit8co/darts/pull/2871) by [Dennis Bader](https://github.com/dennisbader).
+
+**Fixed**
+
+- Fixed a bug in `SKLearnModel.get_estimator()` for univariate quantile models that use `multi_models=False` , where using `quantile` did not return the correct fitted quantile model / estimator. [#2838](https://github.com/unit8co/darts/pull/2838) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `LightGBMModel` and `CatBoostModel` when using component-specific lags and categorical features, where certain lag scenarios could result in incorrect categorical feature declaration. [#2852](https://github.com/unit8co/darts/pull/2852) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `darts.utils.timeseries_generation.sine_timeseries()`, where the returned series ignored the specified `dtype`. [#2856](https://github.com/unit8co/darts/pull/2856) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `TimeSeries.__getitem__()`, where indexing with a list of integers of `length <= 2` resulted in an error. [#2857](https://github.com/unit8co/darts/pull/2857) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `TorchForecastingModel` which raised an error when calling any predict method after training the model with `fit_from_dataset()` on a dataset that uses static covariates. [#2860](https://github.com/unit8co/darts/pull/2860) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `ForecastingModel.historical_forecasts`, where calling the method with `retrain=True`, `start=None`, and a model that uses `output_chunk_shift > 0` raised an error due to the start point not being properly inferred. [#2869](https://github.com/unit8co/darts/pull/2869) by [Dennis Bader](https://github.com/dennisbader).
+- Removed `darts/tests` and `examples` from the Darts package distribution. These are only required for internal testing. [#2854](https://github.com/unit8co/darts/pull/2854) by [Dennis Bader](https://github.com/dennisbader).
+
+**Dependencies**
+
+- Removed the upper version cap on `scipy<1.16.0` since `statsmodels` added support in version `0.14.5`. [#2853](https://github.com/unit8co/darts/pull/2853) by [Dennis Bader](https://github.com/dennisbader).
+- We set an upper version cap on `pytorch-lightning<2.5.3` until an issue with `lr_find()` is resolved. [#2872](https://github.com/unit8co/darts/pull/2872) by [Dennis Bader](https://github.com/dennisbader).
+
+### For developers of the library:
+
+- Added `ClassProbabilityLikelihood` and set it as the default likelihood for classifiers to predict class probabilities with `predict_likelihood_parameters=True` when calling `predict()`. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+- Renamed `RegressionModelWithCategoricalCovariates` to `RegressionModelWithCategoricalFeatures` which now also supports categorical target features. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+- Added `MultiOutputClassifier` for handling multi-output classification tasks. [#2765](https://github.com/unit8co/darts/pull/2765) by [Jonas Blanc](https://github.com/jonasblanc)
+- Cleaned up `Dockerfile` to only include the necessary files for building the Darts package. [#2854](https://github.com/unit8co/darts/pull/2854) by [Dennis Bader](https://github.com/dennisbader).
+- Added `ElectricityConsumptionZurichDataset` to the repository instead of downloading it from source to fix failing tests due to continuously updating source data. [#2862](https://github.com/unit8co/darts/pull/2862) and [#2863](https://github.com/unit8co/darts/pull/2863) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.36.0](https://github.com/unit8co/darts/tree/0.36.0) (2025-06-29)
 

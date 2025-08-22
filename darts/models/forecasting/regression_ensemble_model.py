@@ -1,5 +1,5 @@
 """
-Regression ensemble model
+Regression Ensemble Model
 -------------------------
 
 An ensemble model which uses a regression model to compute the ensemble forecast.

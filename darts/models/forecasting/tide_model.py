@@ -1,6 +1,6 @@
 """
 Time-series Dense Encoder (TiDE)
-------
+--------------------------------
 """
 
 from typing import Optional

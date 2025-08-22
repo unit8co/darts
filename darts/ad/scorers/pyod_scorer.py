@@ -12,7 +12,7 @@ from pyod.models.base import BaseDetector
 from darts import metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
 from darts.logging import get_logger, raise_if_not
-from darts.metrics.metrics import METRIC_TYPE
+from darts.metrics.utils import METRIC_TYPE
 
 logger = get_logger(__name__)
 

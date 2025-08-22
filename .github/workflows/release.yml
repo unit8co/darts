@@ -147,7 +147,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Build docs"
         run: |
