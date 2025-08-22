@@ -489,17 +489,7 @@ class BlockRNNModel(MixedCovariatesTorchModel):
         (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
             train_sample
         )
-        input_dim = past_target.shape[1] + sum(
-            # add past covariates dim and historic future covariates dim, if present
-            cov.shape[1] if cov is not None else 0
-            for cov in (past_covariates, future_covariates)
-        )
-        if static_covariates is not None:
-            input_dim += static_covariates.shape[0] * static_covariates.shape[1]
-        output_dim = past_target.shape[1]
-        nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
-
-        hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
+        past_cov_dim = past_covariates.shape[1] if past_covariates is not None else 0
         future_cov_dim = (
             future_covariates.shape[1] if future_covariates is not None else 0
         )
@@ -508,6 +498,13 @@ class BlockRNNModel(MixedCovariatesTorchModel):
             if static_covariates is not None
             else 0
         )
+        input_dim = (
+            past_target.shape[1] + past_cov_dim + future_cov_dim + static_cov_dim
+        )
+        output_dim = past_target.shape[1]
+        nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
+
+        hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
         kwargs = {}
         if isinstance(self.rnn_type_or_module, str):
             model_cls = _BlockRNNModule

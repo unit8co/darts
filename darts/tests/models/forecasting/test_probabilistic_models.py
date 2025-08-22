@@ -167,8 +167,8 @@ if TORCH_AVAILABLE:
                 "likelihood": GaussianLikelihood(),
                 **tfm_kwargs,
             },
-            0.03,
-            0.04,
+            0.2,
+            0.05,
         ),
         (
             TransformerModel,

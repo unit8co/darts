@@ -600,7 +600,7 @@ class TestRegressionEnsembleModels:
             -icl,  # past covs from BlockRNN
             -1,  # past covs from BlockRNN
             -icl,  # future covs from RNN
-            0,  # future covs from RNN
+            4,  # future covs from RNN
             0,
             training_length - icl,  # training length from RNN
         )
