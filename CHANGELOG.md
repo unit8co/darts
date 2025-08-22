@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🔴 Added future and static covariates support to `BlockRNNModel`. This improvement required changes to the underlying model architecture which means that saved model instances from older Darts versions cannot be loaded any longer. [#2845](https://github.com/unit8co/darts/pull/2845) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+
 **Fixed**
 
 **Dependencies**
