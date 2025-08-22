@@ -50,7 +50,6 @@ class TestBlockRNNModel:
         output_chunk_length=1,
         output_chunk_shift=0,
         future_cov_dim=0,
-        static_cov_dim=0,
         hidden_dim=25,
         target_size=1,
         nr_params=1,
@@ -223,9 +222,10 @@ class TestBlockRNNModel:
 
         model.fit(target_multi, verbose=False)
 
-        assert model.model.static_cov_dim == np.prod(
-            target_multi.static_covariates.values.shape
-        )
+        assert model.model.future_cov_dim == 2  # hour sine and cosine
+        assert (
+            model.model.input_size == 2 + 2 + 8
+        )  # 2 targets + 2 future covs + 8 static covs (4 per target column)
 
         # raise an error when trained with static covariates of wrong dimensionality
         target_multi = target_multi.with_static_covariates(

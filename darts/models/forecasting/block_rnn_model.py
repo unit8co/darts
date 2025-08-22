@@ -29,7 +29,6 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         input_size: int,
         hidden_dim: int,
         future_cov_dim: int,
-        static_cov_dim: int,
         num_layers: int,
         target_size: int,
         nr_params: int,
@@ -60,8 +59,6 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
             The number of features in the hidden state `h` of the RNN module.
         future_cov_dim
             Number of future covariates.
-        static_cov_dim
-            Number of static covariates.
         num_layers
             The number of recurrent layers.
         target_size
@@ -85,7 +82,6 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         self.input_size = input_size
         self.hidden_dim = hidden_dim
         self.future_cov_dim = future_cov_dim
-        self.static_cov_dim = static_cov_dim
         self.num_layers = num_layers
         self.target_size = target_size
         self.nr_params = nr_params
@@ -549,7 +545,6 @@ class BlockRNNModel(MixedCovariatesTorchModel):
             nr_params=nr_params,
             hidden_dim=self.hidden_dim,
             future_cov_dim=future_cov_dim,
-            static_cov_dim=static_cov_dim,
             num_layers=self.n_rnn_layers,
             num_layers_out_fc=hidden_fc_sizes,
             dropout=self.dropout,
