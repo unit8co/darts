@@ -3,7 +3,6 @@ Utils for time series generation
 --------------------------------
 """
 
-import math
 from collections.abc import Sequence
 from typing import Any, Callable, Optional, Union
 
@@ -210,12 +209,10 @@ def sine_timeseries(
         start=start, end=end, freq=freq, length=length, name=TIMES_NAME
     )
     values = np.array(range(len(index)), dtype=dtype)
-    f = np.vectorize(
-        lambda x: value_amplitude
-        * math.sin(2 * math.pi * value_frequency * x + value_phase)
+    values = (
+        value_amplitude * np.sin(2 * np.pi * value_frequency * values + value_phase)
         + value_y_offset
     )
-    values = f(values)
     return TimeSeries(
         times=index,
         values=values,
@@ -371,6 +368,7 @@ def autoregressive_timeseries(
     length: Optional[int] = None,
     freq: Union[str, int] = None,
     column_name: Optional[str] = "autoregressive",
+    dtype: np.dtype = np.float64,
 ) -> TimeSeries:
     """
     Creates a univariate, autoregressive TimeSeries whose values are calculated using specified coefficients `coef` and
@@ -402,6 +400,8 @@ def autoregressive_timeseries(
         The freq is optional for generating an integer index (if not specified, 1 is used).
     column_name
         Optionally, the name of the value column for the returned TimeSeries
+    dtype
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
 
     Returns
     -------
@@ -411,7 +411,7 @@ def autoregressive_timeseries(
 
     # if no start values specified default to a list of 1s
     if start_values is None:
-        start_values = np.ones(len(coef))
+        start_values = np.ones(len(coef), dtype=dtype)
     else:
         raise_if_not(
             len(start_values) == len(coef),
@@ -422,7 +422,7 @@ def autoregressive_timeseries(
         start=start, end=end, freq=freq, length=length, name=TIMES_NAME
     )
 
-    values = np.empty(len(coef) + len(index))
+    values = np.empty(len(coef) + len(index), dtype=dtype)
     values[: len(coef)] = start_values
 
     for i in range(len(coef), len(coef) + len(index)):

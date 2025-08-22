@@ -15,6 +15,12 @@ from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.metrics import mape
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs, tfm_kwargs_dev
+from darts.utils.data.torch_datasets.inference_dataset import (
+    SequentialTorchInferenceDataset,
+)
+from darts.utils.data.torch_datasets.training_dataset import (
+    SequentialTorchTrainingDataset,
+)
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -232,7 +238,8 @@ class TestTorchForecastingModel:
             no_train_model.predict(n=4)
         assert str(err.value) == (
             "Input `series` must be provided. This is the result either from fitting on multiple series, "
-            "from not having fit the model yet, or from loading a model saved with `clean=True`."
+            "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
+            "model saved with `clean=True`."
         )
 
         model_manual_save.fit(self.series, epochs=1)
@@ -284,7 +291,8 @@ class TestTorchForecastingModel:
                 model_manual_save.predict(n=4)
             assert str(err.value) == (
                 "Input `series` must be provided. This is the result either from fitting on multiple series, "
-                "from not having fit the model yet, or from loading a model saved with `clean=True`."
+                "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
+                "model saved with `clean=True`."
             )
             # Predicting while giving the training series in args should yield same prediction
             assert model_manual_save.predict(
@@ -2373,6 +2381,173 @@ class TestTorchForecastingModel:
             val_set = input_args[1]
             assert len(train_set) == len(val_set) == math.ceil(3 / stride)
             assert train_set.stride == val_set.stride == stride
+
+    def test_predict_after_fit_from_dataset(self):
+        """Test that the model can predict after being trained with `fit_from_dataset` using all covariates."""
+        icl, ocl = kwargs["input_chunk_length"], kwargs["output_chunk_length"]
+        n = 1
+        series = [
+            self.series[: icl + ocl].with_static_covariates(pd.DataFrame({"sc": [0.0]}))
+        ]
+        pc = [self.series[: icl + ocl]]
+        fc = [self.series[: icl + ocl + n]]
+
+        model = TiDEModel(**kwargs)
+
+        train_dataset = SequentialTorchTrainingDataset(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            use_static_covariates=True,
+        )
+
+        # check training works and covariates are used
+        model.fit_from_dataset(train_dataset=train_dataset)
+        assert model.uses_past_covariates
+        assert model.uses_future_covariates
+        assert model.uses_static_covariates
+        assert model._expect_past_covariates
+        assert model._expect_future_covariates
+        assert model._expect_static_covariates
+
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=n)
+        assert str(exc.value).startswith("Input `series` must be provided.")
+
+        hfc_kwargs = {"forecast_horizon": n, "retrain": False, "overlap_end": True}
+        self.helper_predict_raise_on_missing_input(
+            model, "predict", series, pc, fc, n=n
+        )
+        self.helper_predict_raise_on_missing_input(
+            model, "historical_forecasts", series, pc, fc, **hfc_kwargs
+        )
+        self.helper_predict_from_ds_raise_on_missing_input(
+            model,
+            series,
+            pc,
+            fc,
+            n=n,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+        )
+
+        # check predict methods
+        inference_dataset = SequentialTorchInferenceDataset(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            n=n,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            use_static_covariates=True,
+        )
+        pred1 = model.predict(
+            n=n, series=series, past_covariates=pc, future_covariates=fc
+        )[0]
+        pred2 = model.predict_from_dataset(n=n, dataset=inference_dataset)[0]
+        pred3 = model.historical_forecasts(
+            forecast_horizon=n,
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            retrain=False,
+            overlap_end=True,
+        )[0]
+        # extract only the last hist fc which should be the same as the regular predictions
+        pred3 = pred3[-1]
+        assert pred1 == pred2
+        np.testing.assert_array_almost_equal(pred3.all_values(), pred1.all_values())
+        assert pred3.time_index.equals(pred1.time_index)
+        assert pred3.static_covariates.equals(series[0].static_covariates)
+
+    def helper_predict_raise_on_missing_input(
+        self, model, fn: str, series, pc, fc, **kwargs
+    ):
+        """Helper function to test that the model raises an error when calling `predict()` or `historical_forecasts()`
+        after `fit_from_dataset()` with missing inputs."""
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(series=series, **kwargs)
+        assert str(exc.value).startswith("The model was trained with past covariates.")
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(series=series, past_covariates=pc, **kwargs)
+        assert str(exc.value).startswith(
+            "The model was trained with future covariates."
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(series=series, future_covariates=fc, **kwargs)
+        assert str(exc.value).startswith("The model was trained with past covariates.")
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(
+                series=[series[0].with_static_covariates(None)],
+                past_covariates=pc,
+                future_covariates=fc,
+                **kwargs,
+            )
+        assert str(exc.value).startswith(
+            "The model was trained with static covariates."
+        )
+
+    def helper_predict_from_ds_raise_on_missing_input(
+        self,
+        model,
+        series,
+        pc,
+        fc,
+        n,
+        **kwargs,
+    ):
+        """Helper function to test that the model raises an error when calling `predict_from_dataset()` after
+        `fit_from_dataset()` with missing inputs."""
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `past_covariates`"
+        )
+
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            past_covariates=pc,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `historic_future_covariates`"
+        )
+
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            future_covariates=fc,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `past_covariates`"
+        )
+
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            use_static_covariates=False,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `static_covariates`"
+        )
 
     def helper_equality_encoders(
         self, first_encoders: dict[str, Any], second_encoders: dict[str, Any]
