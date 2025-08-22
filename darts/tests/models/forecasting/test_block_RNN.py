@@ -282,3 +282,4 @@ class TestBlockRNNModel:
             **tfm_kwargs,
         )
         model.fit(ts_time_index, verbose=False, epochs=1)
+        _ = model.predict(n=1)

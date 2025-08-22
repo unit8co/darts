@@ -34,7 +34,6 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         target_size: int,
         nr_params: int,
         num_layers_out_fc: Optional[list] = None,
-        decoder_hidden_size: int = 128,
         dropout: float = 0.0,
         activation: str = "ReLU",
         **kwargs,
@@ -86,15 +85,13 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         self.input_size = input_size
         self.hidden_dim = hidden_dim
         self.future_cov_dim = future_cov_dim
-        self.static_cov_dim = (static_cov_dim,)
+        self.static_cov_dim = static_cov_dim
         self.num_layers = num_layers
         self.target_size = target_size
         self.nr_params = nr_params
         self.num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
-        self.decoder_hidden_size = decoder_hidden_size
         self.dropout = dropout
         self.activation = activation
-        self.out_len = self.output_chunk_length
 
     @io_processor
     @abstractmethod
@@ -174,7 +171,13 @@ class _BlockRNNModule(CustomBlockRNNModule):
 
         # Fully connected layer to map the output for each timestep in the input sequence (out) to the output chunk
         # length
-        self.upsampling_out = nn.Linear(self.input_chunk_length, self.out_len)
+        if self.output_chunk_length > self.input_chunk_length:
+            self.up_sampler = nn.Linear(
+                self.input_chunk_length, self.output_chunk_length
+            )
+        else:
+            self.up_sampler = None
+
         if self.future_cov_dim > 0:
             last = self.hidden_dim + self.future_cov_dim
         else:
@@ -197,32 +200,61 @@ class _BlockRNNModule(CustomBlockRNNModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
+        # B: batch size
+        # L: input chunk length
+        # T: output chunk length
+        # C: target components
+        # P: past cov features
+        # F: future cov features
+        # S: static cov features
+        # H = C + P + F: historic features
+        # H_D: hidden dim
+        # N_P: likelihood parameters
+
+        # `x_past`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1 = C1, S)
         x_past, x_future, x_static = x_in
-        # data is of size (batch_size, input_chunk_length, input_size)
-        batch_size = x_past.size(0)
+
+        batch_size = x_past.shape[0]
+
+        # concatenate static covariates if given
         if x_static is not None:
-            x_static = x_static.reshape(x_static.shape[0], -1)
-            x_static = x_static.unsqueeze(1).repeat(1, x_past.shape[1], 1)
+            # -> (B, 1, C1 * S)
+            x_static = x_static.reshape(batch_size, -1).unsqueeze(dim=1)
+            # -> (B, L, C1 * S)
+            x_static = x_static.repeat(1, self.input_chunk_length, 1)
+            # -> (B, L, H + C1 * S)
             x_past = torch.concat([x_past, x_static], dim=-1)
 
-        # out is of size (batch_size, input_chunk_length, hidden_dim)
-        # hidden is of size (num_layers, batch_size, hidden_dim)
-        out, hidden = self.rnn(x_past)
+        # -> (B, L, H_D)
+        out, _ = self.rnn(x_past)
 
-        """ Here, we apply the FC network only on the last output point (at the last time step)
-        """
-        out = out.permute(0, 2, 1)
-        out = self.upsampling_out(out)
-        predictions = out.permute(0, 2, 1)
+        # use the RNN output of length `T` as input for the FC
+        # -> (B, T, H_D)
+        if self.output_chunk_length > self.input_chunk_length:
+            # up-sample to `T` if history is too short
+            # -> (B, H_D, L)
+            out = out.permute(0, 2, 1)
+            # -> (B, H_D, T)
+            out = self.up_sampler(out)
+            # -> (B, T, H_D)
+            out = out.permute(0, 2, 1)
+        else:
+            # otherwise, take `T` last predictions
+            # -> (B, T, H_D)
+            out = out[:, -self.output_chunk_length :, :]
+
+        # concatenate future covariates if given
         if x_future is not None:
-            predictions = torch.cat([predictions, x_future], dim=-1)
-        predictions = self.fc(predictions)
+            # -> (B, T, H_D + F)
+            out = torch.cat([out, x_future], dim=-1)
 
+        # predict using the FC
+        # -> (B, T, C * N_P)
+        predictions = self.fc(out)
+        # -> (B, T, C, N_P)
         predictions = predictions.view(
-            batch_size, self.out_len, self.target_size, self.nr_params
+            batch_size, self.output_chunk_length, self.target_size, self.nr_params
         )
-
-        # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
 
 
