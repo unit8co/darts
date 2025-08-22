@@ -1111,7 +1111,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
             # adjust the start of the series depending on whether we train (at some point), or predict only
-            # must be performed after the operation on historical_foreacsts_time_index
+            # must be performed after the operation on historical_forecasts_time_index
             if min_timestamp_series > series_.time_index[0]:
                 series_ = series_.drop_before(min_timestamp_series - 1 * series_.freq)
 

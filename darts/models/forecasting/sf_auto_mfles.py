@@ -1,6 +1,6 @@
 """
 AutoMFLES
------------
+---------
 """
 
 from typing import Optional

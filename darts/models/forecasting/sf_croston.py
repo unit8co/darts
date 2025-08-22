@@ -1,5 +1,5 @@
 """
-Croston method
+Croston Method
 --------------
 """
 

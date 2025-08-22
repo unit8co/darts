@@ -681,10 +681,7 @@ def _get_historical_forecastable_time_index(
 
     # longest possible time index for target
     if is_training:
-        start = (
-            series.start_time()
-            + (output_lag - output_chunk_shift - min_target_lag + 1) * series.freq
-        )
+        start = series.start_time() + (output_lag - min_target_lag + 1) * series.freq
     else:
         start = series.start_time() - min_target_lag * series.freq
     end = series.end_time() + 1 * series.freq
@@ -696,8 +693,7 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_pc = (
                 past_covariates.start_time()
-                + (output_lag - output_chunk_shift - min_past_cov_lag + 1)
-                * past_covariates.freq
+                + (output_lag - min_past_cov_lag + 1) * past_covariates.freq
             )
         else:
             start_pc = (
@@ -720,8 +716,7 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_fc = (
                 future_covariates.start_time()
-                + (output_lag - output_chunk_shift - min_future_cov_lag + 1)
-                * future_covariates.freq
+                + (output_lag - min_future_cov_lag + 1) * future_covariates.freq
             )
         else:
             start_fc = (

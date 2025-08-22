@@ -1,10 +1,18 @@
 """
-LightGBM Model
---------------
+LightGBM Models
+---------------
 
-This is a LightGBM implementation of Gradient Boosted Trees algorithm.
+This module offers wrappers around LightGBM's Gradient Boosted Trees algorithms.
 
-This implementation comes with the ability to produce probabilistic forecasts.
+* :class:`~darts.models.forecasting.lgbm.LightGBMModel` - Wrapper around LightGBM's `LGBMRegressor`
+* :class:`~darts.models.forecasting.lgbm.LightGBMClassifierModel` - Wrapper around LightGBM's `LGBMClassifier`
+
+The wrappers come with all capabilities of Darts' `SKLearn*Model`.
+
+For detailed examples and tutorials, see:
+
+* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
+* `SKLearn-Like Classification Model Examples <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
 
 To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the INSTALL:
 https://github.com/unit8co/darts/blob/master/INSTALL.md
