@@ -30,15 +30,12 @@ from torch import nn
 from darts.logging import get_logger, raise_log
 from darts.models.components import layer_norm_variants
 from darts.models.forecasting.pl_forecasting_module import (
-    PLMixedCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
-
-MixedCovariatesTrainTensorType = tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
-]
 
 logger = get_logger(__name__)
 
@@ -312,7 +309,7 @@ class _ConditionalMixerLayer(nn.Module):
         return x
 
 
-class _TSMixerModule(PLMixedCovariatesModule):
+class _TSMixerModule(PLForecastingModule):
     def __init__(
         self,
         input_dim: int,
@@ -458,10 +455,7 @@ class _TSMixerModule(PLMixedCovariatesModule):
         return mixer_layers
 
     @io_processor
-    def forward(
-        self,
-        x_in: tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]],
-    ) -> torch.Tensor:
+    def forward(self, x_in: PLModuleInput) -> torch.Tensor:
         # x_hist contains the historical time series data and the historical
         """TSMixer model forward pass.
 
@@ -677,9 +671,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weight's initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
@@ -777,7 +769,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         self.hidden_size = hidden_size
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> nn.Module:
         """
         Parameters
         ----------
@@ -830,17 +822,5 @@ class TSMixerModel(MixedCovariatesTorchModel):
         )
 
     @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    @property
     def supports_static_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_future_covariates(self) -> bool:
-        return True
-
-    @property
-    def supports_past_covariates(self) -> bool:
         return True

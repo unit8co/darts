@@ -1,5 +1,16 @@
+import pytest
+
+from darts.tests.conftest import TORCH_AVAILABLE
+
+if not TORCH_AVAILABLE:
+    pytest.skip(
+        f"Torch not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
+
 import copy
 import itertools
+import math
 import os
 from typing import Any, Optional
 from unittest.mock import patch
@@ -7,19 +18,6 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-
-import darts.utils.timeseries_generation as tg
-from darts import TimeSeries
-from darts.dataprocessing.encoders import SequentialEncoder
-from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.metrics import mape
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs, tfm_kwargs_dev
-
-if not TORCH_AVAILABLE:
-    pytest.skip(
-        f"Torch not available. {__name__} tests will be skipped.",
-        allow_module_level=True,
-    )
 import torch
 from pytorch_lightning.callbacks import Callback
 from pytorch_lightning.loggers.logger import DummyLogger
@@ -33,6 +31,11 @@ from torchmetrics import (
     R2Score,
 )
 
+import darts.utils.timeseries_generation as tg
+from darts import TimeSeries
+from darts.dataprocessing.encoders import SequentialEncoder
+from darts.dataprocessing.transformers import BoxCox, Scaler
+from darts.metrics import mape
 from darts.models import (
     BlockRNNModel,
     DLinearModel,
@@ -51,6 +54,13 @@ from darts.models import (
 )
 from darts.models.components.layer_norm_variants import RINorm
 from darts.models.forecasting.global_baseline_models import _GlobalNaiveModel
+from darts.tests.conftest import tfm_kwargs, tfm_kwargs_dev
+from darts.utils.data.torch_datasets.inference_dataset import (
+    SequentialTorchInferenceDataset,
+)
+from darts.utils.data.torch_datasets.training_dataset import (
+    SequentialTorchTrainingDataset,
+)
 from darts.utils.likelihood_models.torch import (
     CauchyLikelihood,
     GaussianLikelihood,
@@ -231,7 +241,8 @@ class TestTorchForecastingModel:
             no_train_model.predict(n=4)
         assert str(err.value) == (
             "Input `series` must be provided. This is the result either from fitting on multiple series, "
-            "from not having fit the model yet, or from loading a model saved with `clean=True`."
+            "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
+            "model saved with `clean=True`."
         )
 
         model_manual_save.fit(self.series, epochs=1)
@@ -283,7 +294,8 @@ class TestTorchForecastingModel:
                 model_manual_save.predict(n=4)
             assert str(err.value) == (
                 "Input `series` must be provided. This is the result either from fitting on multiple series, "
-                "from not having fit the model yet, or from loading a model saved with `clean=True`."
+                "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
+                "model saved with `clean=True`."
             )
             # Predicting while giving the training series in args should yield same prediction
             assert model_manual_save.predict(
@@ -2057,7 +2069,9 @@ class TestTorchForecastingModel:
                     cov_name + "_covariates": covs[cov_name + "_covariates"][:-1]
                 }
                 _ = model_fc_shift.predict(n=ocl, **add_covs)
-            assert f"provided {cov_name} covariates at dataset index" in str(err.value)
+            assert f"provided `{cov_name}_covariates` at series sequence index" in str(
+                err.value
+            )
 
     @pytest.mark.parametrize("config", itertools.product(models, [2, 3, 4]))
     def test_multi_ts_prediction(self, config):
@@ -2095,6 +2109,10 @@ class TestTorchForecastingModel:
         model_kwargs["pl_trainer_kwargs"]["fast_dev_run"] = False
         # create more than one batch sample as otherwise linear sample weight would always be `1.`
         ts = tg.linear_timeseries(
+            length=model_kwargs["input_chunk_length"]
+            + model_kwargs["output_chunk_length"]
+            + 1
+        ) + tg.sine_timeseries(
             length=model_kwargs["input_chunk_length"]
             + model_kwargs["output_chunk_length"]
             + 1
@@ -2177,7 +2195,7 @@ class TestTorchForecastingModel:
             model.fit(ts, sample_weight=ts[:-1])
         assert (
             str(err.value)
-            == "Missing sample weights; could not find sample weights in index value range: "
+            == "Invalid `sample_weight`; could not find values in index range: "
             "2000-01-11 00:00:00 - 2000-01-11 00:00:00."
         )
 
@@ -2198,7 +2216,7 @@ class TestTorchForecastingModel:
         assert (
             str(err.value)
             == "The number of components in `sample_weight` must either be `1` or match the "
-            "number of target series components `1`. (0-th series)"
+            "number of target series components `1` (at series sequence idx `0`)."
         )
         # with correct number it works
         model = model_cls(**model_kwargs)
@@ -2253,6 +2271,286 @@ class TestTorchForecastingModel:
             np.testing.assert_array_almost_equal(
                 pred.all_values(), pred_no_weight.all_values()
             )
+
+    def test_validate_predict_samples(self, tmpdir_fn):
+        model = self.helper_create_DLinearModel(work_dir=tmpdir_fn)
+
+        # train model with all features types
+        series = self.series.with_static_covariates(pd.DataFrame({"st1": [1.0]}))
+        # dummy past cov with more features
+        pc = series.stack(series)
+        # dummy future cov with even more features
+        fc = series.stack(pc)
+        model.fit(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+        )
+
+        # train sample has (past_target, past_covariates, historic_future_covariates, future_covariates,
+        # static covariates, future_target)
+        train_sample = model.train_sample
+        # predict sample has (past_target, past_covariates, future_past_covariates, historic_future_covariates,
+        # future_covariates, static_covariates, target series, prediction start time)
+        valid_sample = (
+            train_sample[:2]
+            + (None,)
+            + train_sample[2:-1]
+            + (series, series.end_time() + series.freq)
+        )
+
+        # valid sample works
+        model._validate_predict_sample(model.train_sample, valid_sample)
+
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(model.train_sample, valid_sample[:-1])
+        assert str(exc.value).startswith(
+            "Mismatch between number of training features `5` and prediction features `4`."
+        )
+
+        target_wrong_comp = np.empty((train_sample[0].shape[0], 2))
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(
+                model.train_sample, (target_wrong_comp,) + valid_sample[1:]
+            )
+        assert str(exc.value) == (
+            "The provided `series` must have equal number of components as the `series` used to train the model. "
+            "Received number of components: `2`, expected: `1`."
+        )
+
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(
+                model.train_sample, (None,) + valid_sample[1:]
+            )
+        assert str(exc.value).startswith(
+            "This model has been trained with `series`; some `series` "
+            "of matching dimensionality are needed for prediction."
+        )
+
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(
+                (None,) + model.train_sample[1:], valid_sample
+            )
+        assert str(exc.value).startswith(
+            "This model has been trained without `series`; No `series` "
+            "should be provided for prediction."
+        )
+
+        # incorrect number of pred features
+        pred_sample = [1.0, 1.0]
+        with pytest.raises(ValueError) as exc:
+            model._validate_predict_sample(model.train_sample, pred_sample)
+        assert str(exc.value).startswith(
+            "Mismatch between number of training features `5` "
+            "and prediction features `2`."
+        )
+
+    def test_to_dtype(self, tmpdir_fn):
+        model = self.helper_create_DLinearModel(work_dir=tmpdir_fn)
+        model.fit(self.series[:24])
+
+        assert model.model.dtype is torch.float64
+        model.model.to_dtype(torch.float64)
+        assert model.model.dtype is torch.float64
+        model.model.to_dtype(torch.float32)
+        assert model.model.dtype is torch.float32
+        model.model.to_dtype(torch.float16)
+        assert model.model.dtype is torch.float16
+
+        with pytest.raises(ValueError) as exc:
+            model.model.to_dtype(np.float64)
+        assert str(exc.value).startswith(
+            "Trying to load dtype `<class 'numpy.float64'>`."
+        )
+
+    @pytest.mark.parametrize("stride", [1, 2])
+    def test_fit_with_stride(self, stride):
+        # mocking `fit_from_dataset` to check that `stride` was passed properly
+        icl, ocl = 5, 1
+        with patch(
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.fit_from_dataset"
+        ) as fit_patch:
+            model = DLinearModel(
+                input_chunk_length=5, output_chunk_length=1, n_epochs=1, **tfm_kwargs
+            )
+            # this should extract 3 samples with stride == 1
+            model.fit(
+                series=self.series[: icl + ocl + 2],
+                val_series=self.series[: icl + ocl + 2],
+                stride=stride,
+            )
+            input_args = fit_patch.call_args.args
+            train_set = input_args[0]
+            val_set = input_args[1]
+            assert len(train_set) == len(val_set) == math.ceil(3 / stride)
+            assert train_set.stride == val_set.stride == stride
+
+    def test_predict_after_fit_from_dataset(self):
+        """Test that the model can predict after being trained with `fit_from_dataset` using all covariates."""
+        icl, ocl = kwargs["input_chunk_length"], kwargs["output_chunk_length"]
+        n = 1
+        series = [
+            self.series[: icl + ocl].with_static_covariates(pd.DataFrame({"sc": [0.0]}))
+        ]
+        pc = [self.series[: icl + ocl]]
+        fc = [self.series[: icl + ocl + n]]
+
+        model = TiDEModel(**kwargs)
+
+        train_dataset = SequentialTorchTrainingDataset(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            use_static_covariates=True,
+        )
+
+        # check training works and covariates are used
+        model.fit_from_dataset(train_dataset=train_dataset)
+        assert model.uses_past_covariates
+        assert model.uses_future_covariates
+        assert model.uses_static_covariates
+        assert model._expect_past_covariates
+        assert model._expect_future_covariates
+        assert model._expect_static_covariates
+
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=n)
+        assert str(exc.value).startswith("Input `series` must be provided.")
+
+        hfc_kwargs = {"forecast_horizon": n, "retrain": False, "overlap_end": True}
+        self.helper_predict_raise_on_missing_input(
+            model, "predict", series, pc, fc, n=n
+        )
+        self.helper_predict_raise_on_missing_input(
+            model, "historical_forecasts", series, pc, fc, **hfc_kwargs
+        )
+        self.helper_predict_from_ds_raise_on_missing_input(
+            model,
+            series,
+            pc,
+            fc,
+            n=n,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+        )
+
+        # check predict methods
+        inference_dataset = SequentialTorchInferenceDataset(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            n=n,
+            input_chunk_length=icl,
+            output_chunk_length=ocl,
+            use_static_covariates=True,
+        )
+        pred1 = model.predict(
+            n=n, series=series, past_covariates=pc, future_covariates=fc
+        )[0]
+        pred2 = model.predict_from_dataset(n=n, dataset=inference_dataset)[0]
+        pred3 = model.historical_forecasts(
+            forecast_horizon=n,
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            retrain=False,
+            overlap_end=True,
+        )[0]
+        # extract only the last hist fc which should be the same as the regular predictions
+        pred3 = pred3[-1]
+        assert pred1 == pred2
+        np.testing.assert_array_almost_equal(pred3.all_values(), pred1.all_values())
+        assert pred3.time_index.equals(pred1.time_index)
+        assert pred3.static_covariates.equals(series[0].static_covariates)
+
+    def helper_predict_raise_on_missing_input(
+        self, model, fn: str, series, pc, fc, **kwargs
+    ):
+        """Helper function to test that the model raises an error when calling `predict()` or `historical_forecasts()`
+        after `fit_from_dataset()` with missing inputs."""
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(series=series, **kwargs)
+        assert str(exc.value).startswith("The model was trained with past covariates.")
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(series=series, past_covariates=pc, **kwargs)
+        assert str(exc.value).startswith(
+            "The model was trained with future covariates."
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(series=series, future_covariates=fc, **kwargs)
+        assert str(exc.value).startswith("The model was trained with past covariates.")
+        with pytest.raises(ValueError) as exc:
+            _ = getattr(model, fn)(
+                series=[series[0].with_static_covariates(None)],
+                past_covariates=pc,
+                future_covariates=fc,
+                **kwargs,
+            )
+        assert str(exc.value).startswith(
+            "The model was trained with static covariates."
+        )
+
+    def helper_predict_from_ds_raise_on_missing_input(
+        self,
+        model,
+        series,
+        pc,
+        fc,
+        n,
+        **kwargs,
+    ):
+        """Helper function to test that the model raises an error when calling `predict_from_dataset()` after
+        `fit_from_dataset()` with missing inputs."""
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `past_covariates`"
+        )
+
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            past_covariates=pc,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `historic_future_covariates`"
+        )
+
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            future_covariates=fc,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `past_covariates`"
+        )
+
+        inf_dataset = SequentialTorchInferenceDataset(
+            n=n,
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            use_static_covariates=False,
+            **kwargs,
+        )
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict_from_dataset(n=n, dataset=inf_dataset)
+        assert str(exc.value).startswith(
+            "This model has been trained with `static_covariates`"
+        )
 
     def helper_equality_encoders(
         self, first_encoders: dict[str, Any], second_encoders: dict[str, Any]

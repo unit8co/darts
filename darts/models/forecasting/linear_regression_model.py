@@ -1,5 +1,5 @@
 """
-Linear Regression model
+Linear Regression Model
 -----------------------
 
 A forecasting model using a linear regression of some of the target series' lags, as well as optionally some
@@ -12,6 +12,7 @@ from typing import Optional, Union
 from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
 
+from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models.forecasting.sklearn_model import (
     FUTURE_LAGS_TYPE,
@@ -19,10 +20,9 @@ from darts.models.forecasting.sklearn_model import (
     SKLearnModel,
     _QuantileModelContainer,
 )
-from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
-    _check_likelihood,
     _get_likelihood,
 )
 
@@ -127,11 +127,7 @@ class LinearRegressionModel(SKLearnModel):
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
-            Control the randomness of the sampling. Used as seed for
-            `numpy.random.Generator
-            <https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator>`_. Ignored when
-            no `likelihood` is set.
-            Default: ``None``.
+            Controls the randomness for reproducible forecasting.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model
             is trained to predict all the steps in 'output_chunk_length' (features lags are shifted back by
@@ -177,25 +173,21 @@ class LinearRegressionModel(SKLearnModel):
                [1005.81830675]])
         """
         self.kwargs = kwargs
-        self._model_container = None
-
-        # parse likelihood
-        if likelihood is not None:
-            _check_likelihood(likelihood, ["quantile", "poisson"])
-            if likelihood == "poisson":
-                model = PoissonRegressor(**kwargs)
-            if likelihood == "quantile":
-                model = QuantileRegressor(**kwargs)
-                self._model_container = _QuantileModelContainer()
-        else:
-            model = LinearRegression(**kwargs)
 
         self._likelihood = _get_likelihood(
             likelihood=likelihood,
             n_outputs=output_chunk_length if multi_models else 1,
-            random_state=random_state,
             quantiles=quantiles,
+            available_likelihoods=[LikelihoodType.Quantile, LikelihoodType.Poisson],
         )
+
+        if likelihood == LikelihoodType.Poisson.value:
+            model = PoissonRegressor(**kwargs)
+        elif likelihood == LikelihoodType.Quantile.value:
+            model = QuantileRegressor(**kwargs)
+            self._model_container = _QuantileModelContainer()
+        else:  # likelihood is None
+            model = LinearRegression(**kwargs)
 
         super().__init__(
             lags=lags,
@@ -207,6 +199,7 @@ class LinearRegressionModel(SKLearnModel):
             model=model,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            random_state=random_state,
         )
 
     def fit(
@@ -253,7 +246,7 @@ class LinearRegressionModel(SKLearnModel):
                     sample_weight=sample_weight,
                     **kwargs,
                 )
-
+                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
                 self._model_container[quantile] = self.model
 
             # replace the last trained QuantileRegressor with the dictionary of Regressors.

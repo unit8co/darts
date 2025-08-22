@@ -8,7 +8,7 @@ import pytest
 import sklearn.metrics
 
 from darts import TimeSeries, concatenate
-from darts.metrics import metrics
+from darts.metrics import metrics, utils
 from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
@@ -135,6 +135,26 @@ def metric_incs_qr(y_true, y_pred, q_interval=None, **kwargs):
     return res.reshape(len(y_pred), -1)
 
 
+def metric_macc(y_true, y_pred):
+    return sklearn.metrics.accuracy_score(y_true.flatten(), y_pred.flatten())
+
+
+def metric_recall(y_true, y_pred):
+    return sklearn.metrics.recall_score(
+        y_true.flatten(), y_pred.flatten(), average="macro"
+    )
+
+
+def metric_precision(y_true, y_pred):
+    return sklearn.metrics.precision_score(
+        y_true.flatten(), y_pred.flatten(), average="macro"
+    )
+
+
+def metric_f1(y_true, y_pred):
+    return sklearn.metrics.f1_score(y_true.flatten(), y_pred.flatten(), average="macro")
+
+
 class TestMetrics:
     np.random.seed(42)
     pd_train = pd.Series(
@@ -239,6 +259,10 @@ class TestMetrics:
             (metrics.qr, True, {}),
             (metrics.mql, True, {}),
             (metrics.dtw_metric, False, {}),
+            (metrics.accuracy, False, {}),
+            (metrics.precision, False, {}),
+            (metrics.recall, False, {}),
+            (metrics.f1, False, {}),
         ],
     )
     def test_output_type_time_aggregated(self, config):
@@ -832,6 +856,10 @@ class TestMetrics:
                 (metrics.qr, True),
                 (metrics.mql, True),
                 (metrics.dtw_metric, False),
+                (metrics.accuracy, False),
+                (metrics.precision, False),
+                (metrics.recall, False),
+                (metrics.f1, False),
             ],
             ["time", "component", "series"],
         ),
@@ -935,6 +963,10 @@ class TestMetrics:
             (metrics.qr, 0, True, {}),
             (metrics.mql, 0, True, {}),
             (metrics.dtw_metric, 0, False, {}),
+            (metrics.accuracy, 1, False, {}),
+            (metrics.precision, 1, False, {}),
+            (metrics.recall, 1, False, {}),
+            (metrics.f1, 1, False, {}),
         ],
     )
     def test_same(self, config):
@@ -1380,6 +1412,10 @@ class TestMetrics:
             (metrics.marre, "max", {}),
             (metrics.r2_score, "min", {}),
             (metrics.coefficient_of_variation, "max", {}),
+            (metrics.accuracy, "max", {}),
+            (metrics.precision, "max", {}),
+            (metrics.recall, "max", {}),
+            (metrics.f1, "max", {}),
         ],
     )
     def test_multiple_ts(self, config):
@@ -1469,6 +1505,10 @@ class TestMetrics:
             (metrics.marre, metric_marre, {}, {}),
             (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
             (metrics.coefficient_of_variation, metric_cov, {}, {}),
+            (metrics.accuracy, metric_macc, {}, {}),
+            (metrics.precision, metric_precision, {}, {}),
+            (metrics.recall, metric_recall, {}, {}),
+            (metrics.f1, metric_f1, {}, {}),
         ],
     )
     def test_metrics_deterministic(self, config):
@@ -1616,7 +1656,7 @@ class TestMetrics:
             # univariate
             non_nan_metric = metric(s1[:9] + 1, s2[:9], **kwargs)
             nan_s1 = s1.copy()
-            nan_s1._xa.values[-1, :, :] = np.nan
+            nan_s1._values[-1, :, :] = np.nan
             nan_metric = metric(nan_s1 + 1, s2, **kwargs)
             assert non_nan_metric == nan_metric
 
@@ -1628,7 +1668,7 @@ class TestMetrics:
             )
             nan_s11 = s11.copy()
             for s in nan_s11:
-                s._xa.values[-1, :, :] = np.nan
+                s._values[-1, :, :] = np.nan
             nan_metric = metric([s + 1 for s in nan_s11], s22, **kwargs)
             np.testing.assert_array_equal(non_nan_metric, nan_metric)
 
@@ -1645,41 +1685,39 @@ class TestMetrics:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [
-                    # time dependent but with time reduction
-                    metrics.err,
-                    metrics.ae,
-                    metrics.se,
-                    metrics.sle,
-                    metrics.ase,
-                    metrics.sse,
-                    metrics.ape,
-                    metrics.sape,
-                    metrics.arre,
-                    metrics.ql,
-                    # time aggregates
-                    metrics.merr,
-                    metrics.mae,
-                    metrics.mse,
-                    metrics.rmse,
-                    metrics.rmsle,
-                    metrics.mase,
-                    metrics.msse,
-                    metrics.rmsse,
-                    metrics.mape,
-                    metrics.wmape,
-                    metrics.smape,
-                    metrics.ope,
-                    metrics.marre,
-                    metrics.r2_score,
-                    metrics.coefficient_of_variation,
-                    metrics.mql,
-                ],
-                [True, False],  # univariate series
-                [True, False],  # single series
-            )
+        itertools.product(
+            [
+                # time dependent but with time reduction
+                metrics.err,
+                metrics.ae,
+                metrics.se,
+                metrics.sle,
+                metrics.ase,
+                metrics.sse,
+                metrics.ape,
+                metrics.sape,
+                metrics.arre,
+                metrics.ql,
+                # time aggregates
+                metrics.merr,
+                metrics.mae,
+                metrics.mse,
+                metrics.rmse,
+                metrics.rmsle,
+                metrics.mase,
+                metrics.msse,
+                metrics.rmsse,
+                metrics.mape,
+                metrics.wmape,
+                metrics.smape,
+                metrics.ope,
+                metrics.marre,
+                metrics.r2_score,
+                metrics.coefficient_of_variation,
+                metrics.mql,
+            ],
+            [True, False],  # univariate series
+            [True, False],  # single series
         ),
     )
     def test_metric_quantiles(self, config):
@@ -1895,7 +1933,7 @@ class TestMetrics:
             with pytest.raises(ValueError) as exc:
                 custom_metric(self.series1, self.series2, out_ndim=ndim)
             assert str(exc.value).startswith(
-                "Metric output must have 2 dimensions (n components, n quantiles) for aggregated metrics"
+                "Metric output must have 2 dimensions (n components, n quantiles or n labels) for aggregated metrics"
             )
         for ndim in [2, 3]:
             _ = custom_metric(self.series1, self.series2, out_ndim=ndim)
@@ -2198,3 +2236,18 @@ class TestMetrics:
         assert str(exc.value).startswith(
             "all intervals in `q_interval` must be tuples of (lower q, upper q)"
         )
+
+    def test_regression_handler_invalid_q(self):
+        y = TimeSeries.from_values(np.array([1.0]))
+        with pytest.raises(ValueError) as exc:
+            utils._regression_handling(
+                y, y, params={}, kwargs={"q": (np.array([0.5]), None, None)}
+            )
+        assert str(exc.value).startswith(
+            "`q` must be of tuple of `(np.ndarray, Optional[pd.Index])`"
+        )
+
+    def test_wrapped_metrics(self):
+        with pytest.raises(NotImplementedError) as exc:
+            utils._get_wrapped_metric(None, n_wrappers=4)
+        assert str(exc.value) == "Only 2-3 wrappers are currently supported"

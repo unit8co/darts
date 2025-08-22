@@ -30,7 +30,7 @@ PROJECT_URLS = {
 
 setup(
     name="darts",
-    version="0.35.0",
+    version="0.37.1",
     description="A python library for easy manipulation and forecasting of time series.",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
@@ -39,7 +39,7 @@ setup(
     maintainer="Unit8 SA",
     maintainer_email="darts@unit8.co",
     license="Apache License 2.0",
-    packages=find_packages(),
+    packages=find_packages(exclude=["examples*"]),
     install_requires=reqs,
     package_data={
         "darts": ["py.typed"],

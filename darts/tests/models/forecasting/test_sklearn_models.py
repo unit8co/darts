@@ -14,8 +14,6 @@ from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegresso
 from sklearn.linear_model import LinearRegression
 from sklearn.neighbors import KNeighborsRegressor
 
-import darts
-import darts.utils.utils
 from darts import TimeSeries
 from darts.dataprocessing.encoders import (
     FutureCyclicEncoder,
@@ -354,6 +352,8 @@ class TestSKLearnModels:
     sine_multiseries1 = [sine_univariate1, sine_univariate2, sine_univariate3]
     sine_multiseries2 = [sine_univariate4, sine_univariate5, sine_univariate6]
 
+    sine_multivariate_multiseries = [sine_multivariate1, sine_multivariate2]
+
     lags_1 = {"target": [-3, -2, -1], "past": [-4, -2], "future": [-5, 2]}
 
     @staticmethod
@@ -458,10 +458,6 @@ class TestSKLearnModels:
             self.sine_univariate1.drop_after(50), self.sine_univariate2
         )
         new_model.fit(self.sine_univariate1.drop_after(50), self.sine_univariate2)
-
-        print(new_model.predict(5))
-        print(deprecated_model.predict(5))
-
         assert new_model.predict(5) == deprecated_model.predict(5)
 
     @pytest.mark.parametrize("config", product(models, [True, False]))
@@ -544,9 +540,10 @@ class TestSKLearnModels:
         with pytest.raises(ValueError):
             model(lags=None, lags_future_covariates={}, multi_models=mode)
 
-    @pytest.mark.parametrize("mode", [True, False])
-    def test_training_data_creation(self, mode):
+    @pytest.mark.parametrize("config", product([True, False], [1, 2]))
+    def test_training_data_creation(self, config):
         """testing _get_training_data function"""
+        mode, stride = config
         # lags defined using lists of integers
         model_instance = SKLearnModel(
             lags=self.lags_1["target"],
@@ -555,20 +552,28 @@ class TestSKLearnModels:
             multi_models=mode,
         )
 
-        max_samples_per_ts = 17
+        if stride == 2:
+            # stride == 2 with max samples == 9 should end up at the same last
+            # sample as stride ==1 and max samples == 17
+            max_samples_per_ts = 9
+        else:
+            max_samples_per_ts = 17
 
         training_samples, training_labels, _ = model_instance._create_lagged_data(
             series=self.target_series,
             past_covariates=self.past_covariates,
             future_covariates=self.future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            stride=stride,
         )
 
         # checking number of dimensions
         assert len(training_samples.shape) == 2  # samples, features
         assert len(training_labels.shape) == 2  # samples, components (multivariate)
         assert training_samples.shape[0] == training_labels.shape[0]
-        assert training_samples.shape[0] == len(self.target_series) * max_samples_per_ts
+        assert training_samples.shape[0] == (
+            len(self.target_series) * max_samples_per_ts
+        )
         assert (
             training_samples.shape[1]
             == len(self.lags_1["target"]) * self.target_series[0].width
@@ -1027,6 +1032,8 @@ class TestSKLearnModels:
     def test_models_runnability(self, config):
         model, mode = config
         train_y, test_y = self.sine_univariate1.split_before(0.7)
+        series_copy = train_y.copy()
+
         # testing past covariates
         model_instance = model(lags=4, lags_past_covariates=None, multi_models=mode)
         with pytest.raises(ValueError):
@@ -1056,10 +1063,13 @@ class TestSKLearnModels:
             model_instance.fit(series=self.sine_univariate1)
 
         # testing input_dim
+        past_cov = self.sine_univariate1.stack(self.sine_univariate1)
+        past_cov_copy = past_cov.copy()
+
         model_instance = model(lags=4, lags_past_covariates=2, multi_models=mode)
         model_instance.fit(
             series=train_y,
-            past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
+            past_covariates=past_cov,
         )
 
         assert model_instance.input_dim == {
@@ -1074,6 +1084,10 @@ class TestSKLearnModels:
         # while it should work with n = 1
         prediction = model_instance.predict(n=1)
         assert len(prediction) == 1
+
+        # check that fit predict did not mutate input series
+        assert train_y == series_copy
+        assert past_cov == past_cov_copy
 
     @pytest.mark.parametrize(
         "config",
@@ -1364,22 +1378,43 @@ class TestSKLearnModels:
     )
     def test_multioutput_wrapper(self, config):
         """Check that with input_chunk_length=1, wrapping in MultiOutputRegressor occurs only when necessary"""
+
+        def check_only_non_native_are_wrapped(model, supports_multioutput_natively):
+            if supports_multioutput_natively:
+                assert not isinstance(model.model, MultiOutputRegressor)
+                # single estimator is responsible for both components
+                assert (
+                    model.model
+                    == model.get_estimator(horizon=0, target_dim=0)
+                    == model.get_estimator(horizon=0, target_dim=1)
+                )
+            else:
+                assert isinstance(model.model, MultiOutputRegressor)
+                # one estimator (sub-model) per component
+                assert model.get_estimator(
+                    horizon=0, target_dim=0
+                ) != model.get_estimator(horizon=0, target_dim=1)
+
         model, supports_multioutput_natively = config
+
+        # univariate should not be wrapped in MultiOutputRegressor
+        model.fit(series=self.sine_univariate1)
+        assert not isinstance(model.model, MultiOutputRegressor)
+
+        model = model.untrained_model()
+        # univariate should be wrapped in MultiOutputRegressor only if not natively supported
         model.fit(series=self.sine_multivariate1)
-        if supports_multioutput_natively:
-            assert not isinstance(model.model, MultiOutputRegressor)
-            # single estimator is responsible for both components
-            assert (
-                model.model
-                == model.get_estimator(horizon=0, target_dim=0)
-                == model.get_estimator(horizon=0, target_dim=1)
-            )
-        else:
-            assert isinstance(model.model, MultiOutputRegressor)
-            # one estimator (sub-model) per component
-            assert model.get_estimator(horizon=0, target_dim=0) != model.get_estimator(
-                horizon=0, target_dim=1
-            )
+        check_only_non_native_are_wrapped(model, supports_multioutput_natively)
+
+        model = model.untrained_model()
+        # mutli-series with same component should not be wrapped in MultiOutputRegressor
+        model.fit(series=self.sine_multiseries1)
+        assert not isinstance(model.model, MultiOutputRegressor)
+
+        model = model.untrained_model()
+        # mutli-series with mutli variate should be wrapped in MultiOutputRegressor only if not natively supported
+        model.fit(series=self.sine_multivariate_multiseries)
+        check_only_non_native_are_wrapped(model, supports_multioutput_natively)
 
     model_configs_multioutput = [
         (
@@ -1426,6 +1461,27 @@ class TestSKLearnModels:
         else:
             assert not isinstance(model.model, MultiOutputRegressor)
 
+    def test_model_representation(self):
+        """Check that model representation works with and without MultiOutputRegressor"""
+        model_1 = LinearRegressionModel(lags=4, output_chunk_length=1)
+        model_1.fit(series=self.sine_univariate1)
+        assert not isinstance(model_1.model, MultiOutputRegressor)
+
+        model_2 = XGBModel(
+            lags=4,
+            output_chunk_length=2,
+            multi_models=True,
+            likelihood="quantile",
+            quantiles=[0.1, 0.5, 0.9],
+            **xgb_test_params,
+        )
+        model_2.fit(series=self.sine_univariate1)
+        assert isinstance(model_2.model, MultiOutputRegressor)
+
+        for model in [model_1, model_2]:
+            assert model.__repr__().startswith(model.__class__.__name__)
+            assert model.__str__().startswith(model.model.__class__.__name__)
+
     def test_get_estimator_multi_models(self):
         """Craft training data so that estimator_[i].predict(X) == i + 1"""
 
@@ -1438,6 +1494,7 @@ class TestSKLearnModels:
                 multi_models=True,
                 likelihood="quantile",
                 quantiles=[0.5],
+                **xgb_test_params,
             )
             m.fit(ts)
 
@@ -1485,70 +1542,125 @@ class TestSKLearnModels:
         # estimators_[3] labels : [3]
         helper_check_overfitted_estimators(ts, ocl)
 
-    def test_get_estimator_single_model(self):
-        """Check estimator getter when multi_models=False"""
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [
+                    (LinearRegressionModel, {}),
+                    (XGBModel, xgb_test_params),
+                ]
+                + [(LightGBMModel, lgbm_test_params)]
+                if lgbm_available
+                else [] + [(CatBoostModel, cb_test_params)]
+                if cb_available
+                else []
+            ),
+            [True, False],  # multi_models
+            [True, False],  # multi components
+        ),
+    )
+    def test_get_estimator(self, config):
+        """Check estimator getter for different model configurations."""
+        (model_cls, kwargs), multi_models, multi_components = config
         # multivariate, one sub-model per component
-        ocl = 2
-        ts = TimeSeries.from_values(
-            np.array([
-                [0, 0, 0, 0, 1],
-                [0, 0, 0, 0, 2],
-            ]).T
-        )
-        # estimators_[0] labels : [1]
-        # estimators_[1] labels : [2]
+        ocl = 3
+        lags = 3
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
 
-        # since xgboost==2.1.0, the regular deterministic models have native multi output regression
-        # -> we use a quantile likelihood to activate Darts' MultiOutputRegressor
-        m = XGBModel(
-            lags=3,
+        m = model_cls(
+            lags=lags,
             output_chunk_length=ocl,
-            multi_models=False,
-            likelihood="quantile",
-            quantiles=[0.5],
+            multi_models=multi_models,
+            **kwargs,
         )
         m.fit(ts)
 
-        # one estimator is reused for all the horizon of a given component
-        assert len(m.model.estimators_) == ts.width
+        # check that retrieve sub-models prediction match the "wrapper" model predictions
+        pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
+        pred = m.predict(n=ocl, series=pred_input)
 
-        dummy_feats = np.array([[0, 0, 0] * ts.width])
-        for i in range(ocl):
-            for j in range(ts.width):
+        is_mor = isinstance(m.model, MultiOutputRegressor)
+
+        for j in range(ts.width):
+            for i in range(ocl):
+                if multi_models:
+                    dummy_feats = pred_input.values()[:lags]
+                else:
+                    dummy_feats = pred_input.values()[i : +i + lags]
+                dummy_feats = np.expand_dims(dummy_feats.flatten(), 0)
                 sub_model = m.get_estimator(horizon=i, target_dim=j)
-                pred = sub_model.predict(dummy_feats)[0]
-                # sub-model forecast only depend on the target_dim
-                assert np.abs(j + 1 - pred) < 1e-2
+                pred_sub_model = sub_model.predict(dummy_feats)[0]
 
-    @pytest.mark.parametrize("multi_models", [True, False])
-    def test_get_estimator_quantile(self, multi_models):
+                if is_mor:
+                    # MultiOutputRegressor has a dedicated model per component and horizon
+                    assert pred_sub_model == pred[ts.components[j]].values()[i][0]
+                elif multi_models:
+                    # native multi output support with multi_models gives all components and horizon together
+                    assert (
+                        pred_sub_model.reshape((ocl, ts.width)) == pred.values()
+                    ).all()
+                else:
+                    # native multi output support without multi_models gives all components per horizon
+                    assert (pred_sub_model == pred.values()[i]).all()
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [
+                    (LinearRegressionModel, {}),
+                    (XGBModel, xgb_test_params),
+                ]
+                + [(LightGBMModel, lgbm_test_params)]
+                if lgbm_available
+                else [] + [(CatBoostModel, cb_test_params)]
+                if cb_available
+                else []
+            ),
+            [True, False],  # multi_models
+            [True, False],  # multi components
+        ),
+    )
+    def test_get_estimator_quantile(self, config):
         """Check estimator getter when using quantile value"""
+        (model_cls, kwargs), multi_models, multi_components = config
         ocl = 3
         lags = 3
         quantiles = [0.01, 0.5, 0.99]
-        ts = tg.sine_timeseries(length=100, column_name="sine").stack(
-            tg.linear_timeseries(length=100, column_name="linear"),
-        )
+        ts = tg.sine_timeseries(length=100, column_name="sine")
+        if multi_components:
+            ts = ts.stack(
+                tg.linear_timeseries(length=100, column_name="linear"),
+            )
 
-        m = XGBModel(
+        m = model_cls(
             lags=lags,
             output_chunk_length=ocl,
             multi_models=multi_models,
             likelihood="quantile",
             quantiles=quantiles,
-            random_state=1,
+            **kwargs,
         )
         m.fit(ts)
 
         assert len(m._model_container) == len(quantiles)
         assert sorted(list(m._model_container.keys())) == sorted(quantiles)
         for quantile_container in m._model_container.values():
-            # one sub-model per quantile, per component, per horizon
             if multi_models:
+                # one sub-model per quantile, per component, per horizon
                 assert len(quantile_container.estimators_) == ocl * ts.width
-            # one sub-model per quantile, per component
-            else:
+            elif multi_components:
+                # one sub-model per quantile, per component
                 assert len(quantile_container.estimators_) == ts.width
+            else:
+                # only one sub-model per quantile (one component, one predicted horizon)
+                assert not isinstance(quantile_container, MultiOutputRegressor)
+                assert not hasattr(quantile_container, "estimators_")
 
         # check that retrieve sub-models prediction match the "wrapper" model predictions
         pred_input = ts[-lags:] if multi_models else ts[-lags - ocl + 1 :]
@@ -2113,11 +2225,12 @@ class TestSKLearnModels:
                 else []
             ),
             [False, True],
+            [1, 3],
         ),
     )
     def test_val_set(self, config):
         """Test whether the evaluation set parameters are passed to the wrapped regression model."""
-        (model_cls, model_kwargs, model_loc, model_import), use_weights = config
+        (model_cls, model_kwargs, model_loc, model_import), use_weights, stride = config
         module_name, model_name = model_import.split(".")
         # mocking `fit` loses function signature. MultiOutputRegressor checks the function signature
         # internally, so we have to overwrite the mocked function signature with the original one.
@@ -2127,10 +2240,16 @@ class TestSKLearnModels:
         with patch(f"darts.models.forecasting.{model_loc}.fit") as fit_patch:
             fit_patch.__signature__ = fit_sig
             self.helper_check_val_set(
-                model_cls, model_kwargs, fit_patch, use_weights=use_weights
+                model_cls,
+                model_kwargs,
+                fit_patch,
+                use_weights=use_weights,
+                stride=stride,
             )
 
-    def helper_check_val_set(self, model_cls, model_kwargs, fit_patch, use_weights):
+    def helper_check_val_set(
+        self, model_cls, model_kwargs, fit_patch, use_weights, stride
+    ):
         series1 = tg.sine_timeseries(length=10, column_name="tg_1")
         series2 = tg.sine_timeseries(length=10, column_name="tg_2") / 2 + 10
         series = series1.stack(series2)
@@ -2174,6 +2293,7 @@ class TestSKLearnModels:
                 val_past_covariates=pc,
                 val_future_covariates=fc["fc1"],
                 early_stopping_rounds=2,
+                stride=stride,
                 **weights_kwargs,
             )
         msg_expected = (
@@ -2191,6 +2311,7 @@ class TestSKLearnModels:
                 val_series=[series, series["tg_1"]],
                 val_past_covariates=[pc, pc],
                 val_future_covariates=[fc, fc["fc1"]],
+                stride=stride,
                 early_stopping_rounds=2,
                 **weights_kwargs,
             )
@@ -2208,18 +2329,21 @@ class TestSKLearnModels:
             val_past_covariates=pc,
             val_future_covariates=fc,
             early_stopping_rounds=2,
+            stride=stride,
             **weights_kwargs,
         )
         # fit called 6 times (3 quantiles * 2 target features)
         assert fit_patch.call_count == 6
 
         X_train, y_train = fit_patch.call_args[0]
+        assert len(X_train) == len(y_train) == 6 // stride
 
         # check weights in training set
         weight_train = None
         if use_weights:
             assert "sample_weight" in fit_patch.call_args[1]
             weight_train = fit_patch.call_args[1]["sample_weight"]
+            assert len(weight_train) == 6 // stride
 
         # check eval set
         eval_set_name, eval_weight_name = model.val_set_params
@@ -2236,17 +2360,21 @@ class TestSKLearnModels:
 
             assert isinstance(eval_set, Pool)
             X, y = eval_set.get_features(), eval_set.get_label()
+            assert len(X) == len(y) == 6 // stride
             if use_weights:
                 weight = np.array(eval_set.get_weight())
+                assert len(weight) == 6 // stride
 
         else:
             assert isinstance(eval_set, tuple) and len(eval_set) == 2
             X, y = eval_set
+            assert len(X) == len(y) == 6 // stride
             if use_weights:
                 assert eval_weight_name in fit_patch.call_args[1]
                 weight = fit_patch.call_args[1][eval_weight_name]
                 assert isinstance(weight, list)
                 weight = weight[0]
+                assert len(weight) == 6 // stride
 
         # check same number of features for each dataset
         assert X.shape[1:] == X_train.shape[1:]
@@ -2977,6 +3105,12 @@ class TestSKLearnModels:
             "future": {"future_covariates": fc},
             "mixed": {"past_covariates": pc, "future_covariates": fc},
         }
+        covariates_examples_copy = {
+            "past": {"past_covariates": pc.copy()},
+            "future": {"future_covariates": fc.copy()},
+            "mixed": {"past_covariates": pc.copy(), "future_covariates": fc.copy()},
+        }
+
         encoder_examples = {
             "past": {"datetime_attribute": {"past": ["hour"]}},
             "future": {"cyclic": {"future": ["hour"]}},
@@ -3100,6 +3234,9 @@ class TestSKLearnModels:
             _ = model.predict(n=1, series=ts, **covariates)
             _ = model.predict(n=3, series=ts, **covariates)
             _ = model.predict(n=8, series=ts, **covariates)
+
+        # check that fit predict did not mutate input series
+        assert covariates_examples == covariates_examples_copy
 
     @pytest.mark.parametrize("config", product([True, False], [True, False]))
     def test_encoders_from_covariates_input(self, config):
@@ -3541,27 +3678,74 @@ class TestSKLearnModels:
         not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
     )
     @pytest.mark.parametrize(
-        "model_cls",
-        ([CatBoostModel] if cb_available else [])
-        + ([LightGBMModel] if lgbm_available else []),
+        "config",
+        product(
+            ([(CatBoostModel, cb_test_params)] if cb_available else [])
+            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            [
+                (
+                    1,
+                    [1],
+                    [2, 3, 5],
+                    [
+                        "past_cov_past_cov_cat_dummy_lag-1",
+                        "fut_cov_fut_cov_promo_mechanism_lag1",
+                        "static_cov_product_id_lag0",
+                    ],
+                ),
+                (
+                    {"default_lags": [-3, -2, -1], "past_cov_cat_dummy": [-3, -1]},
+                    [1],
+                    [2, 5, 6, 8],
+                    [
+                        "past_cov_past_cov_cat_dummy_lag-3",
+                        "past_cov_past_cov_cat_dummy_lag-1",
+                        "fut_cov_fut_cov_promo_mechanism_lag1",
+                        "static_cov_product_id_lag0",
+                    ],
+                ),
+                (
+                    1,
+                    {"default_lags": [0, 1, 2], "fut_cov_promo_mechanism": [0, 2]},
+                    [2, 3, 6, 8],
+                    [
+                        "past_cov_past_cov_cat_dummy_lag-1",
+                        "fut_cov_fut_cov_promo_mechanism_lag0",
+                        "fut_cov_fut_cov_promo_mechanism_lag2",
+                        "static_cov_product_id_lag0",
+                    ],
+                ),
+            ],
+        ),
     )
-    def test_get_categorical_features_helper(self, model_cls):
+    def test_get_categorical_features_helper(self, config):
         """Test helper function responsible for retrieving indices of categorical features"""
-
+        (
+            (model_cls, model_kwargs),
+            (lags_pc, lags_fc, indices_expected, f_names_expected),
+        ) = config
         model = model_cls(
             lags=1,
-            lags_past_covariates=1,
-            lags_future_covariates=[1],
+            lags_past_covariates=lags_pc,
+            lags_future_covariates=lags_fc,
             output_chunk_length=1,
             categorical_future_covariates=["fut_cov_promo_mechanism"],
             categorical_past_covariates=["past_cov_cat_dummy"],
             categorical_static_covariates=["product_id"],
+            **model_kwargs,
         )
         (
             series,
             past_covariates,
             future_covariates,
         ) = self.inputs_for_tests_categorical_covariates()
+        # fit the model first for component-specific lags
+        model.fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
+
         (
             indices,
             column_names,
@@ -3570,45 +3754,21 @@ class TestSKLearnModels:
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-        assert indices == [2, 3, 5]
-        assert column_names == [
-            "past_cov_past_cov_cat_dummy_lag-1",
-            "fut_cov_fut_cov_promo_mechanism_lag1",
-            "static_cov_product_id_lag0",
-        ]
+        assert indices == indices_expected
+        assert column_names == f_names_expected
 
     @pytest.mark.skipif(
         not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
     )
     @pytest.mark.parametrize(
         "model_cls_and_module",
-        (
-            [
-                (
-                    LightGBMModel,
-                    lgbm_test_params,
-                    darts.models.forecasting.lgbm.lgb.LGBMRegressor,
-                )
-            ]
-            if lgbm_available
-            else []
-        )
-        + (
-            [
-                (
-                    CatBoostModel,
-                    cb_test_params,
-                    darts.models.forecasting.catboost_model.CatBoostRegressor,
-                )
-            ]
-            if cb_available
-            else []
-        ),
+        ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
+        + ([(CatBoostModel, cb_test_params)] if cb_available else []),
     )
     def test_categorical_features_passed_to_fit_correctly(self, model_cls_and_module):
         """Test whether the categorical features are passed to fit correctly"""
 
-        model_cls, model_kwargs, module = model_cls_and_module
+        model_cls, model_kwargs = model_cls_and_module
 
         model = model_cls(
             lags=1,
@@ -3640,7 +3800,7 @@ class TestSKLearnModels:
             return original_fit(*args, **kwargs)
 
         with patch.object(
-            module,
+            model.model.__class__,
             "fit",
             side_effect=intercept_fit_args,
         ):
@@ -3655,12 +3815,14 @@ class TestSKLearnModels:
 
             expected_cat_indices = [2, 3, 5]
             cat_param_name = model._categorical_fit_param
+            kwargs_cat_indices = intercepted_args["kwargs"][cat_param_name]
             eval_set_param_name, _ = model.val_set_params
+
+            assert kwargs_cat_indices == expected_cat_indices
+
             if model_cls == CatBoostModel:
                 model_cat_indices = model.model.get_cat_feature_indices()
-                kwargs_cat_indices = intercepted_args["kwargs"][cat_param_name]
-
-                assert model_cat_indices == kwargs_cat_indices == expected_cat_indices
+                assert model_cat_indices == expected_cat_indices
 
                 # all evals set have correct cat feature indices
                 eval_set_indices = [
@@ -3675,14 +3837,9 @@ class TestSKLearnModels:
                 X, y = intercepted_args["args"]
                 assert isinstance(X, pd.DataFrame)
                 # all categorical features should be encoded as integers
-                for col in X[model_cat_indices].columns:
-                    assert X[col].dtype == int
-
+                for i, col in enumerate(X.columns):
+                    assert X[col].dtype == (int if i in expected_cat_indices else float)
             elif model_cls == LightGBMModel:
-                assert (
-                    intercepted_args["kwargs"][cat_param_name] == expected_cat_indices
-                )
-
                 # lightgbm accepts np.ndarray with floats without decimals (int-like)
                 X, y = intercepted_args["args"]
                 assert isinstance(X, np.ndarray)
@@ -3948,12 +4105,16 @@ class TestProbabilisticSKLearnModels:
             _ = _get_likelihood(
                 likelihood="does_not_exist",
                 n_outputs=1,
-                random_state=None,
                 quantiles=None,
+                available_likelihoods=[
+                    LikelihoodType.Gaussian,
+                    LikelihoodType.Poisson,
+                    LikelihoodType.Quantile,
+                ],
             )
         assert (
             str(exc.value)
-            == "Invalid `likelihood='does_not_exist'`. Must be one of ('gaussian', 'poisson', 'quantile')"
+            == "Invalid `likelihood='does_not_exist'`. Must be one of ['gaussian', 'poisson', 'quantile']"
         )
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
@@ -3982,6 +4143,29 @@ class TestProbabilisticSKLearnModels:
         # test whether the next prediction of the same model is different
         pred3 = model.predict(n=10, num_samples=2).values()
         assert (pred2 != pred3).any()
+
+        # test whether two consecutive predictions with a random_state specified are the same
+        pred4 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred5 = model.predict(n=10, num_samples=2, random_state=38).values()
+        assert (pred4 == pred5).all()
+
+        # additional tests :
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_multivar_ts)
+        pred6 = model.predict(n=10, num_samples=2).values()
+        pred7 = model.predict(n=10, num_samples=2).values()
+
+        model = model_cls(**model_kwargs)
+        model.fit(self.constant_noisy_multivar_ts)
+        pred8 = model.predict(n=10, num_samples=2).values()
+        pred9 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred10 = model.predict(n=10, num_samples=2, random_state=38).values()
+        pred11 = model.predict(n=10, num_samples=2).values()
+
+        assert (pred6 != pred7).any()
+        assert (pred8 == pred6).all()
+        assert (pred9 == pred10).all()
+        assert (pred11 == pred7).all()
 
     @pytest.mark.parametrize("config", product(models_cls_kwargs_errs, [True, False]))
     def test_probabilistic_forecast_accuracy_univariate(self, config):
@@ -4020,7 +4204,7 @@ class TestProbabilisticSKLearnModels:
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
@@ -4028,7 +4212,7 @@ class TestProbabilisticSKLearnModels:
         tested_quantiles = [0.3, 0.2, 0.1, 0.01]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
-            new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+            new_mae = mae(ts[100:], pred.quantile(q=quantile))
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 

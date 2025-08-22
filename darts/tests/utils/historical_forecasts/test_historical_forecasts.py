@@ -265,6 +265,18 @@ if TORCH_AVAILABLE:
             "MixedCovariates",
         ),
         (
+            NLinearModel,
+            {
+                "input_chunk_length": IN_LEN,
+                "output_chunk_length": OUT_LEN,
+                "output_chunk_shift": 1,
+                "n_epochs": NB_EPOCH,
+                **tfm_kwargs,
+            },
+            (IN_LEN, OUT_LEN),
+            "MixedCovariates",
+        ),
+        (
             TiDEModel,
             {
                 "input_chunk_length": IN_LEN,
@@ -441,6 +453,7 @@ class TestHistoricalforecast:
                 return None
             return NLinearModel(
                 input_chunk_length=3,
+                normalize=False,
                 likelihood=(
                     QuantileRegression([0.05, 0.4, 0.5, 0.6, 0.95]) if use_ll else None
                 ),
@@ -677,6 +690,7 @@ class TestHistoricalforecast:
         forecast_horizon = 8
         # if no fit and retrain=false, should fit at first iteration
         model_cls, kwargs, model_kwarg, bounds = config
+        ocs = kwargs.get("output_chunk_shift", 0)
         model = model_cls(**kwargs, **model_kwarg)
         # set train length to be the minimum required training length
         # +1 as sklearn models require min 2 train samples
@@ -719,19 +733,20 @@ class TestHistoricalforecast:
         )
 
         assert len(forecasts_no_train_length) == len(forecasts)
-        theorical_forecast_length = (
+        theoretical_forecast_length = (
             self.ts_val_length
             - train_length  # because we train
             - forecast_horizon  # because we have overlap_end = False
+            - ocs  # because we have output_chunk_shift
             + 1  # because we include the first element
         )
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"Expected {theoretical_forecast_length}, got {len(forecasts)}"
         )
         assert forecasts.time_index.equals(
-            self.ts_pass_val.time_index[-theorical_forecast_length:]
+            self.ts_pass_val.time_index[-theoretical_forecast_length:]
         )
 
         # range index
@@ -744,13 +759,13 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True, overlap_end=False, and a time index of type RangeIndex."
-            f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"Expected {theoretical_forecast_length}, got {len(forecasts)}"
         )
         assert forecasts.time_index.equals(
-            self.ts_pass_val_range.time_index[-theorical_forecast_length:]
+            self.ts_pass_val_range.time_index[-theoretical_forecast_length:]
         )
         start_idx = self.ts_pass_val_range.get_index_at_point(forecasts.start_time())
 
@@ -764,26 +779,20 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
-        theorical_forecast_length = int(
+        theoretical_forecast_length_s2 = int(
             np.floor(
                 (
-                    (
-                        self.ts_val_length
-                        - train_length  # because we train
-                        - forecast_horizon  # because we have overlap_end = False
-                        + 1  # because we include the first element
-                    )
-                    - 1
-                )
-                / 2
-                + 1  # because of stride
+                    theoretical_forecast_length - 1
+                )  # the first is always included, so we calculate a modulo on the rest
+                / 2  # because of stride
+                + 1  # and we add back the first
             )  # if odd number of elements, we keep the floor
         )
 
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length_s2, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False and stride=2. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"Expected {theoretical_forecast_length_s2}, got {len(forecasts)}"
         )
         assert forecasts.time_index.equals(
             self.ts_pass_val_range.time_index[start_idx::2]
@@ -799,25 +808,19 @@ class TestHistoricalforecast:
             overlap_end=False,
         )
 
-        theorical_forecast_length = np.floor(
+        theoretical_forecast_length_s3 = np.floor(
             (
-                (
-                    self.ts_val_length
-                    - train_length  # because we train
-                    - forecast_horizon  # because we have overlap_end = False
-                    + 1  # because we include the first element
-                )
-                - 1
+                theoretical_forecast_length - 1
             )  # the first is always included, so we calculate a modulo on the rest
             / 3  # because of stride
-            + 1  # and we readd the first
+            + 1  # and we add back the first
         )  # if odd number of elements, we keep the floor
 
         # Here to adapt if forecast_horizon or train_length change
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length_s3, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False and stride=3. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"Expected {theoretical_forecast_length_s3}, got {len(forecasts)}"
         )
         assert forecasts.time_index.equals(
             self.ts_pass_val_range.time_index[start_idx::3]
@@ -834,17 +837,10 @@ class TestHistoricalforecast:
             last_points_only=False,
         )
 
-        theorical_forecast_length = (
-            self.ts_val_length
-            - train_length  # because we train
-            - forecast_horizon  # because we have overlap_end = False
-            + 1  # because we include the first element
-        )
-
-        assert len(forecasts) == theorical_forecast_length, (
+        assert len(forecasts) == theoretical_forecast_length, (
             f"Model {model_cls} does not return the right number of historical forecasts in the case of "
             f"retrain=True and overlap_end=False, and last_points_only=False. "
-            f"expected {theorical_forecast_length}, got {len(forecasts)}"
+            f"expected {theoretical_forecast_length}, got {len(forecasts)}"
         )
 
         assert len(forecasts[0]) == forecast_horizon, (
@@ -854,7 +850,7 @@ class TestHistoricalforecast:
         last_points_times = np.array([fc.end_time() for fc in forecasts])
         np.testing.assert_equal(
             last_points_times,
-            self.ts_pass_val_range.time_index[-theorical_forecast_length:].values,
+            self.ts_pass_val_range.time_index[-theoretical_forecast_length:].values,
         )
 
         if not model.supports_past_covariates:
@@ -1199,6 +1195,7 @@ class TestHistoricalforecast:
         # minimum required train length (+1 since sklearn models require 2 samples)
         forecast_horizon = 10
         model_cls, kwargs, model_kwargs, bounds = config
+        ocs = kwargs.get("output_chunk_shift", 0)
         train_length = bounds[0] + bounds[1] + 1
         model = model_cls(
             **kwargs,
@@ -1235,21 +1232,22 @@ class TestHistoricalforecast:
             f"Model {model_cls} did not return a list of historical forecasts"
         )
 
-        theorical_forecast_length = (
+        theoretical_forecast_length = (
             self.ts_val_length
             - train_length
             - forecast_horizon  # because we have overlap_end = False
+            - ocs  # because of output_chunk_shift
             + 1  # because we include the first element
         )
 
-        assert len(forecasts[0]) == len(forecasts[1]) == theorical_forecast_length, (
+        assert len(forecasts[0]) == len(forecasts[1]) == theoretical_forecast_length, (
             f"Model {model_cls.__name__} does not return the right number of historical forecasts in the case "
             f"of retrain=True and overlap_end=False, and a time index of type DateTimeIndex. "
-            f"Expected {theorical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}"
+            f"Expected {theoretical_forecast_length}, got {len(forecasts[0])} and {len(forecasts[1])}"
         )
         assert forecasts[0].time_index.equals(forecasts[1].time_index) and forecasts[
             0
-        ].time_index.equals(self.ts_pass_val.time_index[-theorical_forecast_length:])
+        ].time_index.equals(self.ts_pass_val.time_index[-theoretical_forecast_length:])
 
     @pytest.mark.slow
     @pytest.mark.parametrize(
@@ -1266,6 +1264,10 @@ class TestHistoricalforecast:
         ts, model_config, multi_models, overlap_end, forecast_horizon = config
         # slightly longer to not affect the last predictable timestamp
         ts_covs = self.ts_covs
+
+        ts_copy = ts.copy()
+        ts_covs_copy = ts_covs.copy()
+
         start = 14
 
         model_cls = LinearRegressionModel
@@ -1333,6 +1335,10 @@ class TestHistoricalforecast:
                     )
 
                     self.helper_compare_hf(hist_fct, opti_hist_fct)
+
+        # check that historical forecasts did not mutate input series
+        assert ts == ts_copy
+        assert ts_covs == ts_covs_copy
 
     @pytest.mark.parametrize(
         "config",
@@ -1606,6 +1612,11 @@ class TestHistoricalforecast:
             pc = [pc, pc.shift(1)] if pc is not None else None
             fc = [fc, fc.shift(1)] if fc is not None else None
 
+        # check that historical forecasts did not mutate input series
+        series_val_copy = series_val.copy()
+        pc_copy = pc.copy() if pc is not None else None
+        fc_copy = fc.copy() if fc is not None else None
+
         hist_fct = model.historical_forecasts(
             series=series_val,
             past_covariates=pc,
@@ -1627,6 +1638,10 @@ class TestHistoricalforecast:
             stride=stride,
             forecast_horizon=horizon,
         )
+
+        assert series_val == series_val_copy
+        assert pc == pc_copy
+        assert fc == fc_copy
 
         if not isinstance(series_val, list):
             series_val = [series_val]
@@ -1914,6 +1929,7 @@ class TestHistoricalforecast:
         n_fcs = 3
         forecast_hrz = 10
         model_cls, kwargs, bounds, _ = model_config
+        ocs = kwargs.get("output_chunk_shift", 0)
         model = model_cls(
             random_state=0,
             **kwargs,
@@ -1922,7 +1938,9 @@ class TestHistoricalforecast:
         # we expect first predicted point after `min_train_series_length`
         # model is expected to generate `n_fcs` historical forecasts with `n=forecast_hrz` and
         # `series` of length `length_series_history`
-        length_series_history = model.min_train_series_length + forecast_hrz + n_fcs - 1
+        length_series_history = (
+            model.min_train_series_length + forecast_hrz + n_fcs + ocs - 1
+        )
         series = self.ts_pass_train[:length_series_history]
         if not retrain:
             model.fit(series)
@@ -1966,14 +1984,19 @@ class TestHistoricalforecast:
         assert len(forecasts) == 2, (
             f"Model {model_cls} did not return a list of historical forecasts"
         )
-        # with overlap_end=True, we can generate additional `forecast_hrz`
+        # with overlap_end=True, we can generate additional `forecast_hrz`,
+        # with output_chunk_shift, we can generate additional `ocs` forecasts,
         # with retrain=False, we can start `add_fcs` steps earlier
         # forecasts after the end of `series`
-        assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + forecast_hrz + add_fcs
+        assert (
+            len(forecasts[0])
+            == len(forecasts[1])
+            == n_fcs + ocs + forecast_hrz + add_fcs
+        )
         assert (
             forecasts[0].end_time()
             == forecasts[1].end_time()
-            == series.end_time() + forecast_hrz * series.freq
+            == series.end_time() + (forecast_hrz + ocs) * series.freq
         )
 
     @pytest.mark.slow
@@ -1987,6 +2010,7 @@ class TestHistoricalforecast:
         forecast_hrz = 10
         # past covariates only
         model_cls, kwargs, bounds, cov_type = model_config
+        ocs = kwargs.get("output_chunk_shift", 0)
 
         model = model_cls(
             random_state=0,
@@ -2006,12 +2030,14 @@ class TestHistoricalforecast:
         # we expect first predicted point after `min_train_series_length`
         # model is expected to generate `n_fcs` historical forecasts with `n=forecast_hrz`,
         # `series` of length `length_series_history`, and covariates that cover the required time range
-        length_series_history = model.min_train_series_length + forecast_hrz + n_fcs - 1
+        length_series_history = (
+            model.min_train_series_length + forecast_hrz + n_fcs + ocs - 1
+        )
         series = self.ts_pass_train[:length_series_history]
 
         # for historical forecasts, minimum required past covariates should end
-        # `forecast_hrz` before the end of `series`
-        pc = series[:-forecast_hrz]
+        # `forecast_hrz + ocs` before the end of `series`
+        pc = series[: -(forecast_hrz + ocs)]
 
         if not retrain:
             model.fit(series, past_covariates=pc)
@@ -2063,14 +2089,19 @@ class TestHistoricalforecast:
         assert len(forecasts) == 2, (
             f"Model {model_cls} did not return a list of historical forecasts"
         )
-        # with overlap_end=True, we can generate additional `forecast_hrz`
+        # with overlap_end=True, we can generate additional `forecast_hrz`,
+        # with output_chunk_shift, we can generate additional `ocs` forecasts,
         # with retrain=False, we can start `add_fcs` steps earlier
         # forecasts after the end of `series`
-        assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + forecast_hrz + add_fcs
+        assert (
+            len(forecasts[0])
+            == len(forecasts[1])
+            == n_fcs + forecast_hrz + ocs + add_fcs
+        )
         assert (
             forecasts[0].end_time()
             == forecasts[1].end_time()
-            == series.end_time() + forecast_hrz * series.freq
+            == series.end_time() + (forecast_hrz + ocs) * series.freq
         )
 
         # `pc_longer` has more than required length
@@ -2108,13 +2139,14 @@ class TestHistoricalforecast:
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     @pytest.mark.parametrize(
         "model_config,retrain",
-        list(itertools.product(models_torch_cls_kwargs, [True, False]))[2:],
+        itertools.product(models_torch_cls_kwargs, [True, False]),
     )
     def test_torch_auto_start_with_future_cov(self, model_config, retrain):
         n_fcs = 3
         forecast_hrz = 10
         # future covariates only
         model_cls, kwargs, bounds, cov_type = model_config
+        ocs = kwargs.get("output_chunk_shift", 0)
 
         model = model_cls(
             random_state=0,
@@ -2133,12 +2165,14 @@ class TestHistoricalforecast:
         # we expect first predicted point after `min_train_series_length`
         # model is expected to generate `n_fcs` historical forecasts with `n=forecast_hrz`,
         # `series` of length `length_series_history`, and covariates that cover the required time range
-        length_series_history = model.min_train_series_length + forecast_hrz + n_fcs - 1
+        length_series_history = (
+            model.min_train_series_length + forecast_hrz + n_fcs + ocs - 1
+        )
         series = self.ts_pass_train[:length_series_history]
 
-        # to generate `n_fcs` historical forecasts, and since `forecast_horizon > output_chunk_length`,
+        # to generate `n_fcs` historical forecasts, and since `forecast_horizon < output_chunk_length`,
         # we need additional `output_chunk_length - horizon` future covariates steps
-        add_n = max(model.extreme_lags[1] + 1 - forecast_hrz, 0)
+        add_n = max(model.extreme_lags[1] - ocs + 1 - forecast_hrz, 0)
         fc = series.append_values([0.0] * add_n) if add_n else series
 
         if not retrain:
@@ -2203,11 +2237,15 @@ class TestHistoricalforecast:
         # with overlap_end=True, we can generate additional `forecast_hrz`
         # with retrain=False, we can start `add_fcs` steps earlier
         # forecasts after the end of `series`
-        assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + forecast_hrz + add_fcs
+        assert (
+            len(forecasts[0])
+            == len(forecasts[1])
+            == n_fcs + forecast_hrz + ocs + add_fcs
+        )
         assert (
             forecasts[0].end_time()
             == forecasts[1].end_time()
-            == series.end_time() + forecast_hrz * series.freq
+            == series.end_time() + (forecast_hrz + ocs) * series.freq
         )
 
         # `fc_longer` has more than required length
@@ -2252,6 +2290,7 @@ class TestHistoricalforecast:
         forecast_hrz = 10
         # past and future covariates
         model_cls, kwargs, bounds, cov_type = model_config
+        ocs = kwargs.get("output_chunk_shift", 0)
 
         model = model_cls(
             random_state=0,
@@ -2277,16 +2316,18 @@ class TestHistoricalforecast:
         # we expect first predicted point after `min_train_series_length`
         # model is expected to generate `n_fcs` historical forecasts with `n=forecast_hrz`,
         # `series` of length `length_series_history`, and covariates that cover the required time range
-        length_series_history = model.min_train_series_length + forecast_hrz + n_fcs - 1
+        length_series_history = (
+            model.min_train_series_length + forecast_hrz + n_fcs + ocs - 1
+        )
         series = self.ts_pass_train[:length_series_history]
 
         # for historical forecasts, minimum required past covariates should end
         # `forecast_hrz` before the end of `series`
-        pc = series[:-forecast_hrz]
+        pc = series[: -(forecast_hrz + ocs)]
 
         # to generate `n_fcs` historical forecasts, and since `forecast_horizon > output_chunk_length`,
         # we need additional `output_chunk_length - horizon` future covariates steps
-        add_n = max(model.extreme_lags[1] + 1 - forecast_hrz, 0)
+        add_n = max(model.extreme_lags[1] - ocs + 1 - forecast_hrz, 0)
         fc = series.append_values([0.0] * add_n) if add_n else series
 
         if not retrain:
@@ -2354,11 +2395,15 @@ class TestHistoricalforecast:
         # with overlap_end=True, we can generate additional `forecast_hrz`
         # with retrain=False, we can start `add_fcs` steps earlier
         # forecasts after the end of `series`
-        assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + forecast_hrz + add_fcs
+        assert (
+            len(forecasts[0])
+            == len(forecasts[1])
+            == n_fcs + forecast_hrz + ocs + add_fcs
+        )
         assert (
             forecasts[0].end_time()
             == forecasts[1].end_time()
-            == series.end_time() + forecast_hrz * series.freq
+            == series.end_time() + (forecast_hrz + ocs) * series.freq
         )
 
         # `pc_longer` has more than required length

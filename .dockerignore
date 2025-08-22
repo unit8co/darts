@@ -1,6 +1,7 @@
-.github
-static
-scripts
-docs
-conda_recipe
-LICENSE
+**/.DS_Store
+**/.ipynb_checkpoints
+**/__pycache__
+
+# Test files
+darts/examples/static
+**/darts_logs

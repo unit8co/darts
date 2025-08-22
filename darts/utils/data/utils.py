@@ -16,12 +16,28 @@ DIVISIBLE_FREQS = {"D", "h", "H", "T", "min", "s", "S", "L", "ms", "U", "us", "N
 SUPPORTED_SAMPLE_WEIGHT = {"linear", "exponential"}
 
 
-class CovariateType(Enum):
-    PAST = "past"
-    FUTURE_PAST = "future_past"
-    HISTORIC_FUTURE = "historic_future"
-    FUTURE = "future"
-    NONE = None
+class FeatureType(Enum):
+    PAST_TARGET = "past_target"
+    FUTURE_TARGET = "future_target"
+    PAST_COVARIATES = "past_covariates"
+    FUTURE_PAST_COVARIATES = "future_past_covariates"
+    HISTORIC_FUTURE_COVARIATES = "historic_future_covariates"
+    FUTURE_COVARIATES = "future_covariates"
+    STATIC_COVARIATES = "static_covariates"
+    SAMPLE_WEIGHT = "sample_weight"
+
+
+# for extracting feature index boundaries
+
+_SERIES_TYPES = [
+    FeatureType.PAST_TARGET,
+    FeatureType.FUTURE_TARGET,
+    FeatureType.PAST_COVARIATES,
+    FeatureType.FUTURE_PAST_COVARIATES,
+    FeatureType.HISTORIC_FUTURE_COVARIATES,
+    FeatureType.FUTURE_COVARIATES,
+    FeatureType.SAMPLE_WEIGHT,
+]
 
 
 def _get_matching_index(ts_target: TimeSeries, ts_covariate: TimeSeries, idx: int):
@@ -101,9 +117,10 @@ def _process_sample_weight(sample_weight, target_series):
 
         # create sequence of series for tabularization
         sample_weight = [
-            TimeSeries.from_times_and_values(
+            TimeSeries(
                 times=target_i.time_index,
                 values=weights[-len(target_i) :],
+                copy=False,
             )
             for target_i in target_series
         ]

@@ -17,10 +17,11 @@ from darts.models.components.transformer import (
     CustomFeedForwardEncoderLayer,
 )
 from darts.models.forecasting.pl_forecasting_module import (
-    PLPastCovariatesModule,
+    PLForecastingModule,
     io_processor,
 )
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -117,7 +118,7 @@ class _PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class _TransformerModule(PLPastCovariatesModule):
+class _TransformerModule(PLForecastingModule):
     def __init__(
         self,
         input_size: int,
@@ -296,8 +297,8 @@ class _TransformerModule(PLPastCovariatesModule):
         return src, tgt
 
     @io_processor
-    def forward(self, x_in: tuple):
-        data, _ = x_in
+    def forward(self, x_in: PLModuleInput):
+        data, _, _ = x_in
         # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
         # side of the Transformer architecture
         src, tgt = self._create_transformer_inputs(data)
@@ -480,9 +481,7 @@ class TransformerModel(PastCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
-            Default: ``None``.
+            Controls the randomness of the weights initialization and reproducible forecasting.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
@@ -598,16 +597,13 @@ class TransformerModel(PastCovariatesTorchModel):
         self.custom_encoder = custom_encoder
         self.custom_decoder = custom_decoder
 
-    @property
-    def supports_multivariate(self) -> bool:
-        return True
-
-    def _create_model(self, train_sample: tuple[torch.Tensor]) -> torch.nn.Module:
-        # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
+    def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
+        # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
+        (past_target, past_covariates, _, _, _, _) = train_sample
+        input_dim = past_target.shape[1] + (
+            past_covariates.shape[1] if past_covariates is not None else 0
         )
-        output_dim = train_sample[-1].shape[1]
+        output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         return _TransformerModule(

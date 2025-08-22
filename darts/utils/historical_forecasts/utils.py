@@ -7,13 +7,13 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
+from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 from darts.utils.utils import generate_index, n_steps_between
 
@@ -681,10 +681,7 @@ def _get_historical_forecastable_time_index(
 
     # longest possible time index for target
     if is_training:
-        start = (
-            series.start_time()
-            + (output_lag - output_chunk_shift - min_target_lag + 1) * series.freq
-        )
+        start = series.start_time() + (output_lag - min_target_lag + 1) * series.freq
     else:
         start = series.start_time() - min_target_lag * series.freq
     end = series.end_time() + 1 * series.freq
@@ -696,8 +693,7 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_pc = (
                 past_covariates.start_time()
-                + (output_lag - output_chunk_shift - min_past_cov_lag + 1)
-                * past_covariates.freq
+                + (output_lag - min_past_cov_lag + 1) * past_covariates.freq
             )
         else:
             start_pc = (
@@ -720,8 +716,7 @@ def _get_historical_forecastable_time_index(
         if is_training:
             start_fc = (
                 future_covariates.start_time()
-                + (output_lag - output_chunk_shift - min_future_cov_lag + 1)
-                * future_covariates.freq
+                + (output_lag - min_future_cov_lag + 1) * future_covariates.freq
             )
         else:
             start_fc = (
