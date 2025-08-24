@@ -902,7 +902,7 @@ class TimeSeries:
     @classmethod
     def from_group_dataframe(
         cls,
-        df: pd.DataFrame,
+        df: IntoDataFrame,
         group_cols: Union[list[str], str],
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
@@ -928,7 +928,10 @@ class TimeSeries:
         Parameters
         ----------
         df
-            The DataFrame
+            The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
+            polars.DataFrame, ...). See the `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            information.
         group_cols
             A string or list of strings representing the columns from the DataFrame by which to extract the
             individual TimeSeries groups.
@@ -1012,11 +1015,24 @@ class TimeSeries:
         >>> len(series_multi), series_multi[0].shape, series_multi[1].shape
         (2, (3, 1, 1), (6, 1, 1))
         """
-        if time_col is None and df.index.is_monotonic_increasing:
+        df = nw.from_native(df, eager_only=True, pass_through=False)
+        if time_col is None:
+            if not df.implementation.is_pandas():
+                raise_log(
+                    ValueError(
+                        "`time_col` is required when `df` is not a `pandas.DataFrame`."
+                    ),
+                    logger=logger,
+                )
+            is_sorted = nw.maybe_get_index(df).is_sorted()
+        else:
+            is_sorted = df.get_column(time_col).is_sorted()
+
+        if is_sorted:
             logger.warning(
-                "UserWarning: `time_col` was not set and `df` has a monotonically increasing (time) index. This "
-                "results in time series groups with non-overlapping (time) index. You can ignore this warning if the "
-                "index represents the actual index of each individual time series group."
+                "UserWarning: The (time) index from `df` is monotonically increasing. This may "
+                "result in time series groups with non-overlapping (time) index. You can ignore this "
+                "warning if the index represents the actual index of each individual time series group."
             )
 
         # group cols: used to extract time series groups from `df`, will also be added as static covariates
@@ -1074,9 +1090,12 @@ class TimeSeries:
         extract_time_col = [] if time_col is None else [time_col]
 
         if value_cols is None:
-            value_cols = df.columns.drop(
-                static_cov_cols + extract_metadata_cols + extract_time_col
-            ).tolist()
+            value_cols = [
+                col
+                for col in df.columns
+                if col
+                not in set(static_cov_cols + extract_metadata_cols + extract_time_col)
+            ]
         extract_value_cols = [value_cols] if isinstance(value_cols, str) else value_cols
 
         df = df[
@@ -1086,44 +1105,29 @@ class TimeSeries:
             + extract_metadata_cols
         ]
 
-        if time_col:
-            if np.issubdtype(df[time_col].dtype, object) or np.issubdtype(
-                df[time_col].dtype, np.datetime64
-            ):
-                df.index = pd.DatetimeIndex(df[time_col])
-                df = df.drop(columns=time_col)
-            else:
-                df = df.set_index(time_col)
+        groups = df.group_by(group_cols[0] if len(group_cols) == 1 else group_cols)
 
-        if df.index.is_monotonic_increasing:
-            logger.warning(
-                "UserWarning: The (time) index from `df` is monotonically increasing. This "
-                "results in time series groups with non-overlapping (time) index. You can ignore this warning if the "
-                "index represents the actual index of each individual time series group."
-            )
-
-        # sort on entire `df` to avoid having to sort individually later on
-        else:
-            df = df.sort_index()
-
-        groups = df.groupby(group_cols[0] if len(group_cols) == 1 else group_cols)
+        # not all backends maintain the order when grouping; need to sort the groups in the end for reproducibility
+        unique_groups = df[group_cols].unique().sort(by=group_cols).to_numpy()
+        sorted_group_idx = {
+            tuple(group_): idx for idx, group_ in enumerate(unique_groups)
+        }
 
         # build progress bar for iterator
         iterator = _build_tqdm_iterator(
             groups,
             verbose=verbose,
-            total=len(groups),
+            total=len(unique_groups),
             desc="Creating TimeSeries",
         )
 
         def from_group(static_cov_vals, group):
-            split = group[extract_value_cols]
-
             static_cov_vals = (
                 (static_cov_vals,)
                 if not isinstance(static_cov_vals, tuple)
                 else static_cov_vals
             )
+            group_idx = static_cov_vals
             # optionally, exclude group columns from static covariates
             if drop_group_col_idx:
                 if len(drop_group_col_idx) == len(group_cols):
@@ -1137,37 +1141,48 @@ class TimeSeries:
 
             if static_cols:
                 # use first value as static covariate (assume only one unique per group)
-                static_cov_vals += tuple(group[static_cols].values[0])
+                static_cov_vals += group[static_cols].row(0)
 
             metadata = None
             if metadata_cols:
                 # use first value as metadata (assume only one unique per group)
                 metadata = {
                     col: val
-                    for col, val in zip(metadata_cols, group[metadata_cols].values[0])
+                    for col, val in zip(metadata_cols, group[metadata_cols].row(0))
                 }
 
-            return cls.from_dataframe(
-                df=split,
-                fill_missing_dates=fill_missing_dates,
-                freq=freq,
-                fillna_value=fillna_value,
-                static_covariates=(
-                    pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
-                    if extract_static_cov_cols
-                    else None
+            return (
+                group_idx,
+                cls.from_dataframe(
+                    df=group,
+                    time_col=time_col,
+                    value_cols=extract_value_cols,
+                    fill_missing_dates=fill_missing_dates,
+                    freq=freq,
+                    fillna_value=fillna_value,
+                    static_covariates=(
+                        pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+                        if extract_static_cov_cols
+                        else None
+                    ),
+                    metadata=metadata,
+                    copy=copy,
                 ),
-                metadata=metadata,
-                copy=copy,
             )
 
-        return _parallel_apply(
+        series_groups = _parallel_apply(
             iterator,
             from_group,
             n_jobs,
             fn_args=dict(),
             fn_kwargs=dict(),
         )
+
+        # re-order series to get reproducible results
+        series = [None] * len(sorted_group_idx)
+        for group_i, series_group in series_groups:
+            series[sorted_group_idx[group_i]] = series_group
+        return series
 
     @classmethod
     def from_series(
