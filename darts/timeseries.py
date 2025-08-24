@@ -1127,7 +1127,7 @@ class TimeSeries:
                 if not isinstance(static_cov_vals, tuple)
                 else static_cov_vals
             )
-            group_i = static_cov_vals
+            group_idx = static_cov_vals
             # optionally, exclude group columns from static covariates
             if drop_group_col_idx:
                 if len(drop_group_col_idx) == len(group_cols):
@@ -1152,7 +1152,7 @@ class TimeSeries:
                 }
 
             return (
-                group_i,
+                group_idx,
                 cls.from_dataframe(
                     df=group,
                     time_col=time_col,
