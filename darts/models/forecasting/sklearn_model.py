@@ -55,6 +55,7 @@ For detailed examples and tutorials, see:
   <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
 """
 
+import inspect
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Sequence
@@ -847,6 +848,7 @@ class SKLearnModel(GlobalForecastingModel):
         val_past_covariates: Optional[Sequence[TimeSeries]] = None,
         val_future_covariates: Optional[Sequence[TimeSeries]] = None,
         val_sample_weight: Optional[Union[Sequence[TimeSeries], str]] = None,
+        verbose: bool = False,
         **kwargs,
     ):
         """
@@ -884,8 +886,16 @@ class SKLearnModel(GlobalForecastingModel):
                     "`sample_weight` was ignored since underlying regression model's "
                     "`fit()` method does not support it."
                 )
+
+        # only pass "verbose" to the underlying model if it supports it
+        if "verbose" in inspect.signature(self.model.fit).parameters:
+            kwargs["verbose"] = verbose
+
         self.model.fit(
-            training_samples, training_labels, **sample_weight_kwargs, **kwargs
+            training_samples,
+            training_labels,
+            **sample_weight_kwargs,
+            **kwargs,
         )
 
         # generate and store the lagged components names (for feature importance analysis)
@@ -912,6 +922,7 @@ class SKLearnModel(GlobalForecastingModel):
         n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         stride: int = 1,
+        verbose: bool = False,
         **kwargs,
     ):
         """
@@ -949,6 +960,8 @@ class SKLearnModel(GlobalForecastingModel):
             The number of time steps between consecutive samples, applied starting from the end of the series. The same
             stride will be applied to both the training and evaluation set (if supplied and supported). This should be
             used with caution as it might introduce bias in the forecasts.
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
@@ -1116,6 +1129,7 @@ class SKLearnModel(GlobalForecastingModel):
             val_sample_weight=val_sample_weight,
             max_samples_per_ts=max_samples_per_ts,
             stride=stride,
+            verbose=verbose,
             **kwargs,
         )
 
@@ -1864,6 +1878,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         future_covariates,
         max_samples_per_ts,
         sample_weight,
+        verbose: bool = False,
         **kwargs,
     ):
         """
@@ -1893,6 +1908,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             sample_weight=sample_weight,
+            verbose=verbose,
             **kwargs,
         )
 

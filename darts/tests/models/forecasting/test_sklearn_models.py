@@ -1070,6 +1070,7 @@ class TestSKLearnModels:
         model_instance.fit(
             series=train_y,
             past_covariates=past_cov,
+            verbose=False,
         )
 
         assert model_instance.input_dim == {

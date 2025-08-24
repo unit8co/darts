@@ -14,6 +14,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🔴 Added future and static covariates support to `BlockRNNModel`. This improvement required changes to the underlying model architecture which means that saved model instances from older Darts versions cannot be loaded any longer. [#2845](https://github.com/unit8co/darts/pull/2845) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
 
 **Fixed**
+- Added parameter `verbose` to `ForecastingModel.fit()` that allows to control the verbosity for model fitting. Ignored if the underlying model does not support it. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
+- Fixed a bug in `historical_forecast` where the `verbose` parameter was not propagated to the the model's `fit()` method. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
+2805) by [Timon Erhart](https://github.com/turbotimon).
 
 **Dependencies**
 
