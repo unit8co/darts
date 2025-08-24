@@ -1106,13 +1106,18 @@ class TimeSeries:
         ]
 
         groups = df.group_by(group_cols[0] if len(group_cols) == 1 else group_cols)
-        n_groups = len(df[group_cols].unique()) if verbose else None
+
+        # not all backends maintain the order when grouping; need to sort the groups in the end for reproducibility
+        unique_groups = df[group_cols].unique().sort(by=group_cols).to_numpy()
+        sorted_group_idx = {
+            tuple(group_): idx for idx, group_ in enumerate(unique_groups)
+        }
 
         # build progress bar for iterator
         iterator = _build_tqdm_iterator(
             groups,
             verbose=verbose,
-            total=n_groups,
+            total=len(unique_groups),
             desc="Creating TimeSeries",
         )
 
@@ -1122,6 +1127,7 @@ class TimeSeries:
                 if not isinstance(static_cov_vals, tuple)
                 else static_cov_vals
             )
+            group_i = static_cov_vals
             # optionally, exclude group columns from static covariates
             if drop_group_col_idx:
                 if len(drop_group_col_idx) == len(group_cols):
@@ -1145,29 +1151,38 @@ class TimeSeries:
                     for col, val in zip(metadata_cols, group[metadata_cols].row(0))
                 }
 
-            return cls.from_dataframe(
-                df=group,
-                time_col=time_col,
-                value_cols=extract_value_cols,
-                fill_missing_dates=fill_missing_dates,
-                freq=freq,
-                fillna_value=fillna_value,
-                static_covariates=(
-                    pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
-                    if extract_static_cov_cols
-                    else None
+            return (
+                group_i,
+                cls.from_dataframe(
+                    df=group,
+                    time_col=time_col,
+                    value_cols=extract_value_cols,
+                    fill_missing_dates=fill_missing_dates,
+                    freq=freq,
+                    fillna_value=fillna_value,
+                    static_covariates=(
+                        pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+                        if extract_static_cov_cols
+                        else None
+                    ),
+                    metadata=metadata,
+                    copy=copy,
                 ),
-                metadata=metadata,
-                copy=copy,
             )
 
-        return _parallel_apply(
+        series_groups = _parallel_apply(
             iterator,
             from_group,
             n_jobs,
             fn_args=dict(),
             fn_kwargs=dict(),
         )
+
+        # re-order series to get reproducible results
+        series = [None] * len(sorted_group_idx)
+        for group_i, series_group in series_groups:
+            series[sorted_group_idx[group_i]] = series_group
+        return series
 
     @classmethod
     def from_series(
