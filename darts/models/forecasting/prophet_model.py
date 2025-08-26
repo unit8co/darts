@@ -6,7 +6,7 @@ Facebook Prophet
 import logging
 import re
 from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -27,6 +27,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     @random_method
     def __init__(
         self,
+        add_regressor_configs: Optional[dict[str, dict[str, Any]]] = None,
         add_seasonalities: Optional[Union[dict, list[dict]]] = None,
         country_holidays: Optional[str] = None,
         suppress_stdout_stderror: bool = True,
@@ -54,6 +55,22 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         Parameters
         ----------
+        add_regressor_configs
+            Optionally, a dictionary of configuration dictionaries for custom regressors.
+            Each key is a regressor name, and the value is a dictionary of parameters for Prophet's
+            `add_regressor()` method. Supported parameters are `prior_scale`, `standardize`, and `mode`.
+            For example:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_regressor_configs={
+                    'temperature': {'prior_scale': 5.0, 'standardize': True, 'mode': 'additive'},
+                    'humidity': {'prior_scale': 2.0, 'standardize': 'auto', 'mode': 'multiplicative'},
+                    'pressure': {'prior_scale': 15.0}  # uses defaults for other params
+                }
+            ..
+
         add_seasonalities
             Optionally, a dict or list of dicts with custom seasonality/ies to add to the model.
             Each dict takes the following mandatory and optional data:
@@ -170,6 +187,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         super().__init__(add_encoders=add_encoders)
 
+        self.add_regressor_configs = add_regressor_configs or {}
+
         self._auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
 
         self._add_seasonalities = dict()
@@ -247,7 +266,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             )
             for covariate in future_covariates.columns:
                 if covariate not in conditional_seasonality_covariates:
-                    self.model.add_regressor(covariate)
+                    # Get the config dict for the current regressor, or an empty dict if not found
+                    config = self.add_regressor_configs.get(covariate, {})
+                    # Unpack the config dictionary into keyword arguments
+                    self.model.add_regressor(covariate, **config)
 
         # add built-in country holidays
         if self.country_holidays is not None:

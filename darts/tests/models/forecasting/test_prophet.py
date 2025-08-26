@@ -298,3 +298,44 @@ class TestProphet:
                 ts,
                 future_covariates=invalid_future_covariates.drop_columns("is_sunday"),
             )
+
+    def test_add_regressor_configs(self):
+        """Tests the add_regressor_configs parameter."""
+        # Create a simple timeseries
+        times = pd.date_range(start="2020-01-01", periods=30, freq="MS")
+        series = TimeSeries.from_times_and_values(times, range(30))
+
+        # Create two future covariates to test partial and full configs
+        covariate1 = TimeSeries.from_times_and_values(
+            times, range(10, 40), columns=["cov1"]
+        )
+        covariate2 = TimeSeries.from_times_and_values(
+            times, range(40, 70), columns=["cov2"]
+        )
+        future_covariates = covariate1.stack(covariate2)
+
+        train_series = series[:24]
+        train_covariates = future_covariates[:24]
+
+        # Test Scenario 1: Both covariates have specific configurations
+        full_configs = {
+            "cov1": {"prior_scale": 10.0, "mode": "additive"},
+            "cov2": {"standardize": True, "mode": "multiplicative"},
+        }
+        model_full = Prophet(add_regressor_configs=full_configs)
+        model_full.fit(train_series, future_covariates=train_covariates)
+        pred_full = model_full.predict(6, future_covariates=future_covariates)
+        assert len(pred_full) == 6
+
+        # Test Scenario 2: Only 'cov1' is configured; 'cov2' should use Prophet's defaults.
+        partial_configs = {"cov1": {"prior_scale": 5.0}}
+        model_partial = Prophet(add_regressor_configs=partial_configs)
+        model_partial.fit(train_series, future_covariates=train_covariates)
+        pred_partial = model_partial.predict(6, future_covariates=future_covariates)
+        assert len(pred_partial) == 6
+
+        # Test Scenario 3: no configuration
+        model_default = Prophet()
+        model_default.fit(train_series, future_covariates=train_covariates)
+        pred_default = model_default.predict(6, future_covariates=future_covariates)
+        assert len(pred_default) == 6

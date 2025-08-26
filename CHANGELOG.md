@@ -4,7 +4,8 @@ We do our best to avoid the introduction of breaking changes,
 but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "🔴". Changes that deprecate functionalities are marked with a "🟠".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-
+- Added `add_regressor_configs` parameter to the `Prophet` model, enabling per-regressor control over `prior_scale`, `mode`, and `standardize`. [#2878](https://github.com/unit8co/darts/issues/2878)
+  by [Ramsay Davis](https://github.com/RamsayDavisWL).
 [Full Changelog](https://github.com/unit8co/darts/compare/0.37.1...master)
 
 ### For users of the library:
