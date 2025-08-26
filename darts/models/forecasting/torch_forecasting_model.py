@@ -20,7 +20,6 @@ import copy
 import datetime
 import inspect
 import os
-import re
 import shutil
 import sys
 from abc import ABC, abstractmethod
@@ -82,13 +81,7 @@ from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
 tokens = pl.__version__.split(".")
 pl_200_or_above = int(tokens[0]) >= 2
 
-if pl_200_or_above:
-    from pytorch_lightning.callbacks import ProgressBar
-    from pytorch_lightning.tuner import Tuner
-else:
-    from pytorch_lightning.callbacks import ProgressBarBase as ProgressBar
-    from pytorch_lightning.tuner.tuning import Tuner
-
+from pytorch_lightning.tuner.tuning import Tuner
 
 DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
@@ -446,53 +439,42 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = self._create_model(self.train_sample)
         self._module_name = model.__class__.__name__
 
+        # we should determine the precision based on time series data type
+        # however if user has defined a precision, we should follow that
         precision = None
-        dtype = self.train_sample[0].dtype
-        if np.issubdtype(dtype, np.float32):
-            logger.info("Time series values are 32-bits; casting model to float32.")
-            precision = "32" if not pl_200_or_above else "32-true"
-        elif np.issubdtype(dtype, np.float64):
-            logger.info("Time series values are 64-bits; casting model to float64.")
-            precision = "64" if not pl_200_or_above else "64-true"
-        else:
-            raise_log(
-                ValueError(
-                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
-                    f"or `np.float64`, e.g. with `TimeSeries.astype(np.float32)`."
-                ),
-                logger,
-            )
-        precision_int = int(re.findall(r"\d+", str(precision))[0])
-
         precision_user = (
             self.trainer_params.get("precision", None)
             if trainer is None
             else trainer.precision
         )
+        dtype = self.train_sample[0].dtype
         if precision_user is not None:
-            # currently, we only support float 64 and 32
-            valid_precisions = (
-                ["64", "32"] if not pl_200_or_above else ["64-true", "32-true"]
-            )
-            if str(precision_user) not in valid_precisions:
-                raise_log(
-                    ValueError(
-                        f"Invalid user-defined trainer_kwarg `precision={precision_user}`. "
-                        f"Use one of ({valid_precisions})"
-                    ),
-                    logger,
+            logger.info(f"Using user-defined precision: {precision_user}")
+            precision = precision_user
+        elif np.issubdtype(dtype, np.float32):
+            logger.info("Time series values are 32-bits; casting model to float32.")
+            precision = "32" if not pl_200_or_above else "32-true"
+        elif np.issubdtype(dtype, np.float64):
+            logger.info("Time series values are 64-bits; casting model to float64.")
+            precision = "64" if not pl_200_or_above else "64-true"
+        elif np.issubdtype(dtype, np.float16):
+            if pl_200_or_above:
+                logger.info("Time series values are 16-bits; casting model to float16.")
+                precision = "16-true"
+            else:
+                logger.info(
+                    "Time series values are 16-bits; casting model to float32 "
+                    "but trained in mixed precision."
                 )
-            precision_user_int = int(re.findall(r"\d+", str(precision_user))[0])
+                precision = 16
         else:
-            precision_user_int = None
-
-        raise_if(
-            precision_user is not None and precision_user_int != precision_int,
-            f"User-defined trainer_kwarg `precision='{precision_user}'` does not match dtype: `{dtype}` of the "
-            f"underlying TimeSeries. Set `precision` to `{precision}` or cast your data to `{precision_user}"
-            f"` with `TimeSeries.astype(np.float{precision_user_int})`.",
-            logger,
-        )
+            raise_log(
+                ValueError(
+                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
+                    f"or `np.float64` or `np.float16`, e.g. with `TimeSeries.astype(np.float32)`."
+                ),
+                logger,
+            )
         self.trainer_params["precision"] = precision
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
@@ -516,9 +498,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             return trainer
 
         trainer_params = {key: val for key, val in self.trainer_params.items()}
-        has_progress_bar = any([
-            isinstance(cb, ProgressBar) for cb in trainer_params.get("callbacks", [])
-        ])
+        is_progress_bar = lambda cb: cb.__class__.__name__ in [
+            "ProgressBar",
+            "ProgressBarBase",
+        ]
+        has_progress_bar = any(
+            map(is_progress_bar, trainer_params.get("callbacks", []))
+        )
         # we ignore `verbose` if `trainer` has a progress bar, to avoid errors from lightning
         if verbose is not None and not has_progress_bar:
             trainer_params["enable_model_summary"] = (

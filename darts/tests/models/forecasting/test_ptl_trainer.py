@@ -23,8 +23,10 @@ class TestPTLTrainer:
     series = linear_timeseries(length=100).astype(np.float32)
     pl_200_or_above = int(pl.__version__.split(".")[0]) >= 2
     precisions = {
+        16: None if not pl_200_or_above else "16-true",
         32: "32" if not pl_200_or_above else "32-true",
         64: "64" if not pl_200_or_above else "64-true",
+        "mixed": "16" if not pl_200_or_above else "16-mixed",
     }
 
     def test_prediction_loaded_custom_trainer(self, tmpdir_module):
@@ -84,19 +86,53 @@ class TestPTLTrainer:
     def test_custom_trainer_setup(self):
         model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
 
-        # trainer with wrong precision should raise ValueError
+        # no error with correct precision
+        trainer = pl.Trainer(
+            **self.trainer_params,
+            precision=self.precisions[32],
+            **tfm_kwargs["pl_trainer_kwargs"],
+        )
+        model.fit(self.series, trainer=trainer)
+
+        # check if number of epochs trained is same as trainer.max_epochs
+        assert trainer.max_epochs == model.epochs_trained
+
+    def test_higher_precision_custom_trainer(self):
+        model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
+
+        # trainer with higher precision than data should not raise ValueError
+        # since Trainer would automatically cast data to correct precision
         trainer = pl.Trainer(
             **self.trainer_params,
             precision=self.precisions[64],
             **tfm_kwargs["pl_trainer_kwargs"],
         )
-        with pytest.raises(ValueError):
-            model.fit(self.series, trainer=trainer)
+        model.fit(self.series, trainer=trainer)
 
-        # no error with correct precision
+        # check if number of epochs trained is same as trainer.max_epochs
+        assert trainer.max_epochs == model.epochs_trained
+
+    def test_lower_precision_custom_trainer(self):
+        model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
+
+        # trainer with lower precision than data should raise ValueError
+        # because precision here is defined by the user and handled by Lightning
+        # the error should come from trainer instead of darts
         trainer = pl.Trainer(
             **self.trainer_params,
             precision=self.precisions[32],
+            **tfm_kwargs["pl_trainer_kwargs"],
+        )
+        with pytest.raises(ValueError):
+            model.fit(self.series.astype(np.float64), trainer=trainer)
+
+    def test_mixed_precision_custom_trainer(self):
+        model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
+
+        # trainer with mixed precision should not raise ValueError
+        trainer = pl.Trainer(
+            **self.trainer_params,
+            precision=self.precisions["mixed"],
             **tfm_kwargs["pl_trainer_kwargs"],
         )
         model.fit(self.series, trainer=trainer)
@@ -121,10 +157,10 @@ class TestPTLTrainer:
             )
             model.fit(self.series, epochs=1)
 
-        # float 16 not supported
+        # precision value is lower than series precision
         with pytest.raises(ValueError):
             invalid_trainer_kwarg = {
-                "precision": "16-mixed",
+                "precision": self.precisions[32],
                 **tfm_kwargs["pl_trainer_kwargs"],
             }
             model = RNNModel(
@@ -135,25 +171,13 @@ class TestPTLTrainer:
                 random_state=42,
                 pl_trainer_kwargs=invalid_trainer_kwarg,
             )
-            model.fit(self.series.astype(np.float16), epochs=1)
+            model.fit(self.series.astype(np.float64), epochs=1)
 
-        # precision value doesn't match `series` dtype
-        with pytest.raises(ValueError):
-            invalid_trainer_kwarg = {
-                "precision": self.precisions[64],
-                **tfm_kwargs["pl_trainer_kwargs"],
-            }
-            model = RNNModel(
-                12,
-                "RNN",
-                10,
-                10,
-                random_state=42,
-                pl_trainer_kwargs=invalid_trainer_kwarg,
-            )
-            model.fit(self.series.astype(np.float32), epochs=1)
-
-        for precision in [64, 32]:
+        for precision in [64, 32, 16]:
+            # skip the precision if not supported by lightning, i.e.,
+            # float16 for Lightning<2.0
+            if self.precisions[precision] is None:
+                continue
             valid_trainer_kwargs = {
                 "precision": self.precisions[precision],
                 **tfm_kwargs["pl_trainer_kwargs"],
