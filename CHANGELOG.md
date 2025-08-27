@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Updated ["Use a TPU" User Guide](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html#use-a-tpu) to recommend newer `pytorch-lightning>=2.5.3` compatible with `torch_xla>=2.7.0` on Google Colab. []() by [Zhihao Dai](https://github.com/daidahao).
 - 🔴 Added future and static covariates support to `BlockRNNModel`. This improvement required changes to the underlying model architecture which means that saved model instances from older Darts versions cannot be loaded any longer. [#2845](https://github.com/unit8co/darts/pull/2845) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
 
 **Fixed**
