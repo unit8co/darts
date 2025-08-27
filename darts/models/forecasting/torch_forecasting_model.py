@@ -1803,6 +1803,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # flatten output for parallelization
         for pred, ss, ps in out:
+            # model output is <BFloat16> when "bf16-mixed" is used, say, mixed precision on CPU,
+            # numpy does not support conversion from BFloat16, so we need to convert it to float32 first
+            if pred.dtype == torch.bfloat16:
+                pred = pred.float()
             predictions.append(pred.numpy())
             series_schemas += ss
             pred_starts += ps
