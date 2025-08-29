@@ -6,7 +6,7 @@ Facebook Prophet
 import logging
 import re
 from collections.abc import Sequence
-from typing import Callable, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -28,9 +28,8 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     def __init__(
         self,
         add_seasonalities: Optional[Union[dict, list[dict]]] = None,
+        add_regressor_configs: Optional[dict[str, dict[str, Any]]] = None,
         country_holidays: Optional[str] = None,
-        suppress_stdout_stderror: bool = True,
-        add_encoders: Optional[dict] = None,
         cap: Optional[
             Union[
                 float,
@@ -43,7 +42,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 Callable[[Union[pd.DatetimeIndex, pd.RangeIndex]], Sequence[float]],
             ]
         ] = None,
+        add_encoders: Optional[dict] = None,
         random_state: Optional[int] = None,
+        suppress_stdout_stderror: bool = True,
         **prophet_kwargs,
     ):
         """Facebook Prophet
@@ -79,6 +80,21 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             `add_seasonality()` method.
             Alternatively, you can add seasonalities after model creation and before fitting with
             :meth:`add_seasonality() <Prophet.add_seasonality()>`.
+        add_regressor_configs
+            Optionally, a dictionary of configuration dictionaries for custom regressors / components of
+            `future_covariates`. Each key is a regressor name, and the value is a dictionary of parameters for
+            Prophet's `add_regressor()` method. Supported parameters are `prior_scale`, `standardize`, and `mode`.
+            For example:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_regressor_configs={
+                    'temperature': {'prior_scale': 5.0, 'standardize': True, 'mode': 'additive'},
+                    'humidity': {'prior_scale': 2.0, 'standardize': 'auto', 'mode': 'multiplicative'},
+                    'pressure': {'prior_scale': 15.0}  # uses defaults for other params
+                }
+            ..
         country_holidays
             An optional country code, for which holidays can be taken into account by Prophet.
 
@@ -88,8 +104,26 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
             Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
             Egypt (EG), China (CN), and Russia (RU).
-        suppress_stdout_stderror
-            Optionally suppress the log output produced by Prophet during training.
+        cap
+            Parameter specifying the maximum carrying capacity when predicting with logistic growth.
+            Mandatory when `growth = 'logistic'`, otherwise ignored.
+            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
+            on logistic forecasts.
+            Can be either
+
+            - a number, for constant carrying capacities
+            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
+            where each number indicates the carrying capacity at this index.
+        floor
+            Parameter specifying the minimum carrying capacity when predicting logistic growth.
+            Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
+            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
+            on logistic forecasts.
+            Can be either
+
+            - a number, for constant carrying capacities
+            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
+            where each number indicates the carrying capacity at this index.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -114,28 +148,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                     'tz': 'CET'
                 }
             ..
-        cap
-            Parameter specifying the maximum carrying capacity when predicting with logistic growth.
-            Mandatory when `growth = 'logistic'`, otherwise ignored.
-            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
-            on logistic forecasts.
-            Can be either
-
-            - a number, for constant carrying capacities
-            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-            where each number indicates the carrying capacity at this index.
-        floor
-            Parameter specifying the minimum carrying capacity when predicting logistic growth.
-            Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
-            See <https://facebook.github.io/prophet/docs/saturating_forecasts.html> for more information
-            on logistic forecasts.
-            Can be either
-
-            - a number, for constant carrying capacities
-            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-            where each number indicates the carrying capacity at this index.
         random_state
             Controls the randomness for reproducible forecasting.
+        suppress_stdout_stderror
+            Optionally suppress the log output produced by Prophet during training.
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
@@ -171,6 +187,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         super().__init__(add_encoders=add_encoders)
 
         self._auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
+        self._add_regressor_configs = add_regressor_configs or {}
 
         self._add_seasonalities = dict()
         add_seasonality_calls = (
@@ -239,6 +256,20 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         # add covariates as additional regressors
         if future_covariates is not None:
+            if self._add_regressor_configs:
+                # check that all configured regressors are actually present in the future_covariates
+                comps_config = set(self._add_regressor_configs)
+                comps_actual = set(future_covariates.components)
+                comps_invalid = comps_config - comps_actual
+                if comps_invalid:
+                    raise_log(
+                        ValueError(
+                            f"The following components have been configured in `add_regressor_configs` "
+                            f"but are not present in the `future_covariates`: `{comps_invalid}`."
+                        ),
+                        logger=logger,
+                    )
+
             fit_df = fit_df.merge(
                 future_covariates.to_dataframe(),
                 left_on="ds",
@@ -247,7 +278,10 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             )
             for covariate in future_covariates.columns:
                 if covariate not in conditional_seasonality_covariates:
-                    self.model.add_regressor(covariate)
+                    # Get the config dict for the current regressor, or an empty dict if not found
+                    config = self._add_regressor_configs.get(covariate, {})
+                    # Unpack the config dictionary into keyword arguments
+                    self.model.add_regressor(covariate, **config)
 
         # add built-in country holidays
         if self.country_holidays is not None:

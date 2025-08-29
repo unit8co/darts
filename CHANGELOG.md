@@ -13,6 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - Added mixed precision and 16-bit precision support to `TorchForecastingModel`. The latter is for `pytorch-lightning>=2.0.0` only. Simply specify `{"precision": "16-mixd" }` (`"16"` if using `pytorch-lightning<2.0.0`) for `pl_trainer_kwargs` to enable mixed precision training. Alternatively, declare a custom `pytorch_lightning.Trainer` with a `"precision"` parameter and pass the trainer to `fit()`. Note that mixed precision is not implemented on CPU and `"bf16-mixed"` would be used instead. Other precision options such as `"64-true"` and `"bf16-mixed"` supported by `pytorch_lightning` are also allowed. [#2883](https://github.com/unit8co/darts/pull/2883) by [Zhihao Dai](https://github.com/daidahao).
 - 🔴 Added future and static covariates support to `BlockRNNModel`. This improvement required changes to the underlying model architecture which means that saved model instances from older Darts versions cannot be loaded any longer. [#2845](https://github.com/unit8co/darts/pull/2845) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+- Added `add_regressor_configs` parameter to the `Prophet` model, enabling component-specific control over `prior_scale`, `mode`, and `standardize` for the future covariates. [#2882](https://github.com/unit8co/darts/issues/2882) by [Ramsay Davis](https://github.com/RamsayDavisWL).
 
 **Fixed**
 
