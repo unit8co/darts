@@ -1423,7 +1423,7 @@ class TestBacktesting:
                     "time_reduction": np.mean,
                 },
             )
-        assert "unexpected keyword argument 'time_reduction'" in str(err.value)
+        assert str(err.value).endswith("unexpected keyword argument 'time_reduction'")
 
         bts = model.backtest(
             series=y,
