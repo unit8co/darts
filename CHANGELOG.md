@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Updated ["Use a TPU" User Guide](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html#use-a-tpu) to recommend newer `pytorch-lightning>=2.5.3` compatible with `torch_xla>=2.7.0` on Google Colab. []() by [Zhihao Dai](https://github.com/daidahao).
 - 🔴 Added future and static covariates support to `BlockRNNModel`. This improvement required changes to the underlying model architecture which means that saved model instances from older Darts versions cannot be loaded any longer. [#2845](https://github.com/unit8co/darts/pull/2845) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
 - Added `add_regressor_configs` parameter to the `Prophet` model, enabling component-specific control over `prior_scale`, `mode`, and `standardize` for the future covariates. [#2882](https://github.com/unit8co/darts/issues/2882) by [Ramsay Davis](https://github.com/RamsayDavisWL).
 - 🔴 Increased the decimal places for quantile component names from 2 to 3 for more precise quantiles. (e.g. `component_name_q0.500` for quantile 0.5). This affects quantile forecasts as well as quantiles computed with `TimeSeries.quantile()`. [#2887](https://github.com/unit8co/darts/pull/2786) by [He Weilin](https://github.com/cnhwl).
