@@ -1127,6 +1127,39 @@ class TestTorchForecastingModel:
         model1.fit(self.series, epochs=15)
         assert 15 == model1.epochs_trained
 
+    def test_auto_precision_casting(self):
+        for dtype in [np.float16, np.float32, np.float64]:
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=20,
+                **tfm_kwargs,
+            )
+            model.fit(self.series.astype(dtype), epochs=1)
+            assert 1 == model.epochs_trained
+
+            preds = model.predict(n=10)
+            assert preds.dtype == dtype
+
+    def test_mixed_precision_training(self):
+        kwargs = copy.deepcopy(tfm_kwargs)
+        kwargs["pl_trainer_kwargs"]["precision"] = "16"
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            n_epochs=20,
+            **kwargs,
+        )
+        model.fit(self.series.astype(np.float32), epochs=1)
+        assert 1 == model.epochs_trained
+
+        preds = model.predict(n=10)
+        assert preds.dtype == np.float32
+
     def test_load_weights_from_checkpoint(self, tmpdir_fn):
         ts_training, ts_test = self.series.split_before(90)
         original_model_name = "original"

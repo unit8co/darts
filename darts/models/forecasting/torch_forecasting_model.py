@@ -20,7 +20,6 @@ import copy
 import datetime
 import inspect
 import os
-import re
 import shutil
 import sys
 from abc import ABC, abstractmethod
@@ -436,51 +435,35 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = self._create_model(self.train_sample)
         self._module_name = model.__class__.__name__
 
+        # we should determine the precision based on time series data type
+        # however if user has defined a precision, we should follow that
         precision = None
-        dtype = self.train_sample[0].dtype
-        if np.issubdtype(dtype, np.float32):
-            logger.info("Time series values are 32-bits; casting model to float32.")
-            precision = "32-true"
-        elif np.issubdtype(dtype, np.float64):
-            logger.info("Time series values are 64-bits; casting model to float64.")
-            precision = "64-true"
-        else:
-            raise_log(
-                ValueError(
-                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
-                    f"or `np.float64`, e.g. with `TimeSeries.astype(np.float32)`."
-                ),
-                logger,
-            )
-        precision_int = int(re.findall(r"\d+", str(precision))[0])
-
         precision_user = (
             self.trainer_params.get("precision", None)
             if trainer is None
             else trainer.precision
         )
+        dtype = self.train_sample[0].dtype
         if precision_user is not None:
-            # currently, we only support float 64 and 32
-            valid_precisions = ["64-true", "32-true"]
-            if str(precision_user) not in valid_precisions:
-                raise_log(
-                    ValueError(
-                        f"Invalid user-defined trainer_kwarg `precision={precision_user}`. "
-                        f"Use one of ({valid_precisions})"
-                    ),
-                    logger,
-                )
-            precision_user_int = int(re.findall(r"\d+", str(precision_user))[0])
+            logger.info(f"Using user-defined precision: {precision_user}")
+            precision = precision_user
+        elif np.issubdtype(dtype, np.float32):
+            logger.info("Time series values are 32-bits; casting model to float32.")
+            precision = "32-true"
+        elif np.issubdtype(dtype, np.float64):
+            logger.info("Time series values are 64-bits; casting model to float64.")
+            precision = "64-true"
+        elif np.issubdtype(dtype, np.float16):
+            logger.info("Time series values are 16-bits; casting model to float16.")
+            precision = "16-true"
         else:
-            precision_user_int = None
-
-        raise_if(
-            precision_user is not None and precision_user_int != precision_int,
-            f"User-defined trainer_kwarg `precision='{precision_user}'` does not match dtype: `{dtype}` of the "
-            f"underlying TimeSeries. Set `precision` to `{precision}` or cast your data to `{precision_user}"
-            f"` with `TimeSeries.astype(np.float{precision_user_int})`.",
-            logger,
-        )
+            raise_log(
+                ValueError(
+                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
+                    f"or `np.float64` or `np.float16`, e.g. with `TimeSeries.astype(np.float32)`."
+                ),
+                logger,
+            )
         self.trainer_params["precision"] = precision
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
@@ -1805,6 +1788,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # flatten output for parallelization
         for pred, ss, ps in out:
+            # model output is <BFloat16> when "bf16-mixed" is used, say, mixed precision on CPU,
+            # numpy does not support conversion from BFloat16, so we need to convert it to float32 first
+            if pred.dtype == torch.bfloat16:
+                pred = pred.float()
             predictions.append(pred.numpy())
             series_schemas += ss
             pred_starts += ps
