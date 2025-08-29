@@ -17,6 +17,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- We raised the minimum pytorch-lightning version to `pytorch-lightning>=2.0.0`. [#2888](https://github.com/unit8co/darts/pull/2888) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 
 ## [0.37.1](https://github.com/unit8co/darts/tree/0.37.1) (2025-08-18)
