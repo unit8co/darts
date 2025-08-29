@@ -38,6 +38,8 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
+from pytorch_lightning.callbacks import ProgressBar
+from pytorch_lightning.tuner import Tuner
 from torch.utils.data import DataLoader
 
 from darts import TimeSeries
@@ -77,18 +79,6 @@ from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
-
-# Check whether we are running pytorch-lightning >= 2.0.0 or not:
-tokens = pl.__version__.split(".")
-pl_200_or_above = int(tokens[0]) >= 2
-
-if pl_200_or_above:
-    from pytorch_lightning.callbacks import ProgressBar
-    from pytorch_lightning.tuner import Tuner
-else:
-    from pytorch_lightning.callbacks import ProgressBarBase as ProgressBar
-    from pytorch_lightning.tuner.tuning import Tuner
-
 
 DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
@@ -450,10 +440,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dtype = self.train_sample[0].dtype
         if np.issubdtype(dtype, np.float32):
             logger.info("Time series values are 32-bits; casting model to float32.")
-            precision = "32" if not pl_200_or_above else "32-true"
+            precision = "32-true"
         elif np.issubdtype(dtype, np.float64):
             logger.info("Time series values are 64-bits; casting model to float64.")
-            precision = "64" if not pl_200_or_above else "64-true"
+            precision = "64-true"
         else:
             raise_log(
                 ValueError(
@@ -471,9 +461,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
         if precision_user is not None:
             # currently, we only support float 64 and 32
-            valid_precisions = (
-                ["64", "32"] if not pl_200_or_above else ["64-true", "32-true"]
-            )
+            valid_precisions = ["64-true", "32-true"]
             if str(precision_user) not in valid_precisions:
                 raise_log(
                     ValueError(
