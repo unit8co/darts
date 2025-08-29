@@ -4,8 +4,7 @@ We do our best to avoid the introduction of breaking changes,
 but cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "🔴". Changes that deprecate functionalities are marked with a "🟠".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-- Added `add_regressor_configs` parameter to the `Prophet` model, enabling per-regressor control over `prior_scale`, `mode`, and `standardize`. [#2878](https://github.com/unit8co/darts/issues/2878)
-  by [Ramsay Davis](https://github.com/RamsayDavisWL).
+
 [Full Changelog](https://github.com/unit8co/darts/compare/0.37.1...master)
 
 ### For users of the library:
@@ -13,6 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 - 🔴 Added future and static covariates support to `BlockRNNModel`. This improvement required changes to the underlying model architecture which means that saved model instances from older Darts versions cannot be loaded any longer. [#2845](https://github.com/unit8co/darts/pull/2845) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+- Added `add_regressor_configs` parameter to the `Prophet` model, enabling component-specific control over `prior_scale`, `mode`, and `standardize` for the future covariates. [#2882](https://github.com/unit8co/darts/issues/2882) by [Ramsay Davis](https://github.com/RamsayDavisWL).
 
 **Fixed**
 

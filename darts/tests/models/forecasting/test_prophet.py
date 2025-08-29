@@ -299,8 +299,50 @@ class TestProphet:
                 future_covariates=invalid_future_covariates.drop_columns("is_sunday"),
             )
 
-    def test_add_regressor_configs(self):
+    @pytest.mark.parametrize(
+        "config",
+        [
+            # Test Scenario 1: Both covariates have specific configurations
+            {
+                "cov1": {"prior_scale": 10.0, "mode": "additive"},
+                "cov2": {"standardize": True, "mode": "multiplicative"},
+            },
+            # Test Scenario 2: Only 'cov1' is configured; 'cov2' should use Prophet's defaults.
+            {"cov1": {"prior_scale": 5.0}},
+        ],
+    )
+    def test_add_regressor_configs_valid(self, config):
         """Tests the add_regressor_configs parameter."""
+        series, future_covariates = self.helper_generate_input_series()
+
+        model = Prophet(add_regressor_configs=config)
+        model.fit(series[:-6], future_covariates=future_covariates)
+
+        # check that prophet model has the correct regressor configs
+        assert model._add_regressor_configs == config
+        prophet_config = model.model.extra_regressors
+        for cov, kwargs_expected in config.items():
+            assert cov in prophet_config
+            kwargs_model = prophet_config[cov]
+            for kw, val in kwargs_expected.items():
+                assert kwargs_model.get(kw) == val
+
+        pred_full = model.predict(6)
+        assert len(pred_full) == 6
+
+    def test_add_regressor_configs_invalid(self):
+        """Add regressor contains invalid component names."""
+        series, future_covariates = self.helper_generate_input_series()
+
+        invalid_config = {"invalid_comp": {"prior_scale": 5.0}}
+        model = Prophet(add_regressor_configs=invalid_config)
+        with pytest.raises(ValueError) as exc:
+            model.fit(series[:-6], future_covariates=future_covariates)
+        assert str(exc.value).endswith(
+            f"are not present in the `future_covariates`: `{set(invalid_config)}`."
+        )
+
+    def helper_generate_input_series(self):
         # Create a simple timeseries
         times = pd.date_range(start="2020-01-01", periods=30, freq="MS")
         series = TimeSeries.from_times_and_values(times, range(30))
@@ -313,29 +355,4 @@ class TestProphet:
             times, range(40, 70), columns=["cov2"]
         )
         future_covariates = covariate1.stack(covariate2)
-
-        train_series = series[:24]
-        train_covariates = future_covariates[:24]
-
-        # Test Scenario 1: Both covariates have specific configurations
-        full_configs = {
-            "cov1": {"prior_scale": 10.0, "mode": "additive"},
-            "cov2": {"standardize": True, "mode": "multiplicative"},
-        }
-        model_full = Prophet(add_regressor_configs=full_configs)
-        model_full.fit(train_series, future_covariates=train_covariates)
-        pred_full = model_full.predict(6, future_covariates=future_covariates)
-        assert len(pred_full) == 6
-
-        # Test Scenario 2: Only 'cov1' is configured; 'cov2' should use Prophet's defaults.
-        partial_configs = {"cov1": {"prior_scale": 5.0}}
-        model_partial = Prophet(add_regressor_configs=partial_configs)
-        model_partial.fit(train_series, future_covariates=train_covariates)
-        pred_partial = model_partial.predict(6, future_covariates=future_covariates)
-        assert len(pred_partial) == 6
-
-        # Test Scenario 3: no configuration
-        model_default = Prophet()
-        model_default.fit(train_series, future_covariates=train_covariates)
-        pred_default = model_default.predict(6, future_covariates=future_covariates)
-        assert len(pred_default) == 6
+        return series, future_covariates
