@@ -4783,7 +4783,7 @@ class TimeSeries:
             )
 
         # component names
-        cnames = [f"{comp}_q{q_i:.2f}" for comp in self.components for q_i in q]
+        cnames = [f"{comp}_q{q_i:.3f}" for comp in self.components for q_i in q]
 
         # get quantiles of shape (n quantiles, n times, n components)
         new_data = np.quantile(self._values, q=q, axis=2, **kwargs)
