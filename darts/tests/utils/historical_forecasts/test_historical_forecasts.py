@@ -2593,7 +2593,7 @@ class TestHistoricalforecast:
 
         n = 3
         target_name = self.ts_pass_train.components[0]
-        qs_expected = ["q0.05", "q0.40", "q0.50", "q0.60", "q0.95"]
+        qs_expected = ["q0.050", "q0.400", "q0.500", "q0.600", "q0.950"]
         qs_expected = pd.Index([target_name + "_" + q for q in qs_expected])
         # check that it works with retrain
         model = self.create_model(1, model_type=model_type)

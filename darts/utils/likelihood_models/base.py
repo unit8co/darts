@@ -157,9 +157,9 @@ def quantile_names(q: Union[float, list[float]], component: Optional[str] = None
     # predicted quantile text format
     comp = f"{component}_" if component is not None else ""
     if isinstance(q, float):
-        return f"{comp}q{q:.2f}"
+        return f"{comp}q{q:.3f}"
     else:
-        return [f"{comp}q{q_i:.2f}" for q_i in q]
+        return [f"{comp}q{q_i:.3f}" for q_i in q]
 
 
 def quantile_interval_names(
@@ -178,6 +178,6 @@ def quantile_interval_names(
     # predicted quantile text format
     comp = f"{component}_" if component is not None else ""
     if isinstance(q_interval, tuple):
-        return f"{comp}q{q_interval[0]:.2f}_q{q_interval[1]:.2f}"
+        return f"{comp}q{q_interval[0]:.3f}_q{q_interval[1]:.3f}"
     else:
-        return [f"{comp}q{q_lo:.2f}_q{q_hi:.2f}" for q_lo, q_hi in q_interval]
+        return [f"{comp}q{q_lo:.3f}_q{q_hi:.3f}" for q_lo, q_hi in q_interval]
