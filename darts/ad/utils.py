@@ -657,8 +657,9 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
     label_name
         Name that will appear in the legend.
     """
-    for i, c in enumerate(series._xa.component[:10]):
-        comp = series._xa.sel(component=c)
+    data_array = series.data_array(copy=False)
+    for i, c in enumerate(data_array.component[:10]):
+        comp = data_array.sel(component=c)
 
         if comp.sample.size > 1:
             central_series = comp.mean(dim="sample")

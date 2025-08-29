@@ -1,6 +1,7 @@
 from typing import Optional
 
 from sklearn.base import is_classifier
+from sklearn.multioutput import MultiOutputClassifier as sk_MultiOutputClassifier
 from sklearn.multioutput import MultiOutputRegressor as sk_MultiOutputRegressor
 from sklearn.multioutput import _fit_estimator
 from sklearn.utils.multiclass import check_classification_targets
@@ -12,29 +13,31 @@ from sklearn.utils.validation import (
 )
 
 from darts.logging import get_logger, raise_log
+from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
 
 
-class MultiOutputRegressor(sk_MultiOutputRegressor):
+class MultiOutputMixin:
     """
-    :class:`sklearn.utils.multioutput.MultiOutputRegressor` with a modified ``fit()`` method that also slices
+    Mixin for :class:`sklearn.utils.multioutput._MultiOutputEstimator` with a modified ``fit()`` method that also slices
     validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
     """
 
     def __init__(
         self,
-        *args,
+        estimator,
         eval_set_name: Optional[str] = None,
         eval_weight_name: Optional[str] = None,
+        output_chunk_length: Optional[int] = None,
         **kwargs,
     ):
-        super().__init__(*args, **kwargs)
-        self.eval_set_name_ = eval_set_name
-        self.eval_weight_name_ = eval_weight_name
-        self.estimators_ = None
-        self.n_features_in_ = None
-        self.feature_names_in_ = None
+        super().__init__(estimator=estimator, **kwargs)
+        # according to sklearn, set only attributes in `__init__` that are known before fitting;
+        # all other params at fitting time must have the suffix `"_"`
+        self.eval_set_name = eval_set_name
+        self.eval_weight_name = eval_weight_name
+        self.output_chunk_length = output_chunk_length
 
     def fit(self, X, y, sample_weight=None, **fit_params):
         """Fit the model to data, separately for each output variable.
@@ -77,7 +80,7 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
         if y.ndim == 1:
             raise_log(
                 ValueError(
-                    "`y` must have at least two dimensions for multi-output regression but has only one."
+                    "`y` must have at least two dimensions for multi-output but has only one."
                 ),
                 logger=logger,
             )
@@ -96,8 +99,8 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
             )
 
         fit_params_validated = _check_method_params(X, fit_params)
-        eval_set = fit_params_validated.pop(self.eval_set_name_, None)
-        eval_weight = fit_params_validated.pop(self.eval_weight_name_, None)
+        eval_set = fit_params_validated.pop(self.eval_set_name, None)
+        eval_weight = fit_params_validated.pop(self.eval_weight_name, None)
 
         self.estimators_ = Parallel(n_jobs=self.n_jobs)(
             delayed(_fit_estimator)(
@@ -107,11 +110,9 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
                 sample_weight=sample_weight[:, i]
                 if sample_weight is not None
                 else None,
+                **({self.eval_set_name: [eval_set[i]]} if eval_set is not None else {}),
                 **(
-                    {self.eval_set_name_: [eval_set[i]]} if eval_set is not None else {}
-                ),
-                **(
-                    {self.eval_weight_name_: [eval_weight[i]]}
+                    {self.eval_weight_name: [eval_weight[i]]}
                     if eval_weight is not None
                     else {}
                 ),
@@ -133,3 +134,36 @@ class MultiOutputRegressor(sk_MultiOutputRegressor):
         Whether model supports sample weight for training.
         """
         return has_fit_parameter(self.estimator, "sample_weight")
+
+
+class MultiOutputRegressor(MultiOutputMixin, sk_MultiOutputRegressor):
+    """
+    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices
+    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
+    """
+
+
+class MultiOutputClassifier(MultiOutputMixin, sk_MultiOutputClassifier):
+    """
+    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices
+    validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
+    """
+
+    def fit(self, X, y, sample_weight=None, **fit_params):
+        super().fit(X=X, y=y, sample_weight=sample_weight, **fit_params)
+        self.classes_ = [estimator.classes_ for estimator in self.estimators_]
+        return self
+
+
+def get_multioutput_estimator_cls(model_type: ModelType) -> type[MultiOutputMixin]:
+    if model_type == ModelType.FORECASTING_REGRESSOR:
+        return MultiOutputRegressor
+    elif model_type == ModelType.FORECASTING_CLASSIFIER:
+        return MultiOutputClassifier
+    else:
+        raise_log(
+            ValueError(
+                "Model type must be one of `[ModelType.FORECASTING_REGRESSOR, ModelType.FORECASTING_CLASSIFIER]`. "
+                f"Received: `{model_type}`."
+            )
+        )

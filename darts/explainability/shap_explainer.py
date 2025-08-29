@@ -340,15 +340,17 @@ class ShapExplainer(_ForecastingModelExplainer):
                 feature_values_dict_single_h = {}
                 shap_explanation_object_dict_single_h = {}
                 for t in target_names:
-                    shap_values_dict_single_h[t] = TimeSeries.from_times_and_values(
-                        shap_[h][t].time_index,
-                        shap_[h][t].values,
-                        columns=shap_[h][t].feature_names,
+                    shap_values_dict_single_h[t] = TimeSeries(
+                        times=shap_[h][t].time_index,
+                        values=shap_[h][t].values,
+                        components=shap_[h][t].feature_names,
+                        copy=False,
                     )
-                    feature_values_dict_single_h[t] = TimeSeries.from_times_and_values(
-                        shap_[h][t].time_index,
-                        shap_[h][t].data,
-                        columns=shap_[h][t].feature_names,
+                    feature_values_dict_single_h[t] = TimeSeries(
+                        times=shap_[h][t].time_index,
+                        values=shap_[h][t].data,
+                        components=shap_[h][t].feature_names,
+                        copy=False,
                     )
                     shap_explanation_object_dict_single_h[t] = shap_[h][t]
                 shap_values_dict[h] = shap_values_dict_single_h
@@ -526,15 +528,15 @@ class _RegressionShapExplainers:
         "CatBoostRegressor": _ShapMethod.TREE,
         "XGBRegressor": _ShapMethod.TREE,
         "GradientBoostingRegressor": _ShapMethod.TREE,
+        "HistGradientBoostingRegressor": _ShapMethod.TREE,
         # Tree models
         "DecisionTreeRegressor": _ShapMethod.TREE,
         "ExtraTreeRegressor": _ShapMethod.TREE,
+        "ExtraTreesRegressor": _ShapMethod.TREE,
+        "RandomForestRegressor": _ShapMethod.TREE,
         # Ensemble model
         "AdaBoostRegressor": _ShapMethod.PERMUTATION,
         "BaggingRegressor": _ShapMethod.PERMUTATION,
-        "ExtraTreesRegressor": _ShapMethod.PERMUTATION,
-        "HistGradientBoostingRegressor": _ShapMethod.PERMUTATION,
-        "RandomForestRegressor": _ShapMethod.PERMUTATION,
         "RidgeCV": _ShapMethod.PERMUTATION,
         "Ridge": _ShapMethod.PERMUTATION,
         # Linear models

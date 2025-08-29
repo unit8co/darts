@@ -86,6 +86,16 @@ Regression models example notebook:
 
    examples/20-SKLearnModel-examples.ipynb
 
+Classification Models
+=====================
+
+Classification models example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/24-SKLearnClassifierModel-examples.ipynb
+
 Conformal Prediction
 =================
 

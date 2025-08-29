@@ -41,7 +41,8 @@ class TestStaticCovariatesTransformer:
         static_covariates=static_covs2,
     )
 
-    def test_scaling_single_series(self):
+    @pytest.mark.parametrize("component_mask", [None, np.array([True, True, True])])
+    def test_scaling_single_series(self, component_mask):
         # 3 categories for each categorical static covariate column (column idx 1 and 3)
         test_values = np.array([
             [0.0, 0.0, 0.0, 0.0],
@@ -211,6 +212,7 @@ class TestStaticCovariatesTransformer:
         pd.testing.assert_frame_equal(ts2_inv.static_covariates, ts2.static_covariates)
 
     def helper_test_scaling(self, series, scaler, test_values):
+        series_copy = series.copy()
         series_tr = scaler.fit_transform(series)
         assert all([
             a == b
@@ -219,6 +221,9 @@ class TestStaticCovariatesTransformer:
                 test_values.flatten(),
             )
         ])
+        assert series == series_copy
 
+        series_tr_copy = series_tr.copy()
         series_recovered = scaler.inverse_transform(series_tr)
         assert series.static_covariates.equals(series_recovered.static_covariates)
+        assert series_tr == series_tr_copy

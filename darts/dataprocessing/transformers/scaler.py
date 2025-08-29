@@ -10,6 +10,7 @@ from typing import Any, Union
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers.fittable_data_transformer import (
     FittableDataTransformer,
 )
@@ -17,7 +18,6 @@ from darts.dataprocessing.transformers.invertible_data_transformer import (
     InvertibleDataTransformer,
 )
 from darts.logging import get_logger, raise_log
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -124,7 +124,13 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
 
         transformed_vals = Scaler.unstack_samples(tr_out, series=series)
 
-        return series.with_values(transformed_vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=transformed_vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @staticmethod
     def ts_inverse_transform(
@@ -135,7 +141,13 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         tr_out = transformer.inverse_transform(Scaler.stack_samples(series))
         inv_transformed_vals = Scaler.unstack_samples(tr_out, series=series)
 
-        return series.with_values(inv_transformed_vals)
+        return TimeSeries(
+            times=series.time_index,
+            values=inv_transformed_vals,
+            components=series.components,
+            copy=False,
+            **series._attrs,
+        )
 
     @staticmethod
     def ts_fit(

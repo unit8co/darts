@@ -10,13 +10,13 @@ from typing import Optional, Union
 
 import numpy as np
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     LocalForecastingModel,
 )
-from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -63,6 +63,7 @@ class NaiveMean(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
         forecast = np.tile(self.mean_val, (n, 1))
@@ -128,6 +129,7 @@ class NaiveSeasonal(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
         forecast = np.array([self.last_k_vals[i % self.K, :] for i in range(n)])
@@ -178,6 +180,7 @@ class NaiveDrift(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
         first, last = (
@@ -249,6 +252,7 @@ class NaiveMovingAverage(LocalForecastingModel):
         num_samples: int = 1,
         verbose: bool = False,
         show_warnings: bool = True,
+        random_state: Optional[int] = None,
     ):
         super().predict(n, num_samples)
 
@@ -356,6 +360,7 @@ class NaiveEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
+        random_state: Optional[int] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Average the `forecasting_models` predictions, component-wise"""
         raise_if(
@@ -402,14 +407,12 @@ class NaiveEnsembleModel(EnsembleModel):
                 ),
             ].mean(axis=1)
 
-        return TimeSeries.from_times_and_values(
+        return TimeSeries(
             times=prediction.time_index,
             values=target_values,
-            freq=series.freq,
-            columns=series.components,
-            static_covariates=series.static_covariates,
-            hierarchy=series.hierarchy,
-            metadata=prediction.metadata,
+            components=series.components,
+            copy=False,
+            **series._attrs,
         )
 
     def _params_average(self, prediction: TimeSeries, series: TimeSeries) -> TimeSeries:
@@ -434,12 +437,12 @@ class NaiveEnsembleModel(EnsembleModel):
                 ),
             ].mean(axis=1)
 
-        return TimeSeries.from_times_and_values(
+        return TimeSeries(
             times=prediction.time_index,
             values=params_values,
-            freq=series.freq,
-            columns=prediction.components[: likelihood_n_params * n_components],
+            components=prediction.components[: likelihood_n_params * n_components],
             static_covariates=None,
             hierarchy=None,
             metadata=prediction.metadata,
+            copy=False,
         )

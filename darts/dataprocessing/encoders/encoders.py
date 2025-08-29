@@ -568,14 +568,16 @@ class IntegerIndexEncoder(SingleEncoder):
             )
         else:
             idx_diff = 0
-        return TimeSeries.from_times_and_values(
+        return TimeSeries(
             times=index,
             values=np.arange(
                 start=idx_diff - idx_larger_end,
                 stop=idx_diff - idx_larger_end + len(index),
+                dtype=np.dtype(dtype),
             ),
-            columns=[self.base_component_name + self.attribute],
-        ).astype(np.dtype(dtype))
+            components=[self.base_component_name + self.attribute],
+            copy=False,
+        )
 
     @property
     def accept_transformer(self) -> list[bool]:
@@ -721,11 +723,12 @@ class CallableIndexEncoder(SingleEncoder):
         """Apply the user-defined callable to encode the index"""
         super()._encode(index, target_end, dtype)
 
-        return TimeSeries.from_times_and_values(
+        return TimeSeries(
             times=index,
-            values=self.attribute(index),
-            columns=[self.base_component_name + "custom"],
-        ).astype(np.dtype(dtype))
+            values=self.attribute(index).astype(np.dtype(dtype)),
+            components=[self.base_component_name + "custom"],
+            copy=False,
+        )
 
     @property
     def accept_transformer(self) -> list[bool]:

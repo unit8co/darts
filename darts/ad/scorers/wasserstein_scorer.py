@@ -16,11 +16,10 @@ from collections.abc import Sequence
 import numpy as np
 from scipy.stats import wasserstein_distance
 
-from darts import metrics
+from darts import TimeSeries, metrics
 from darts.ad.scorers.scorers import WindowedAnomalyScorer
 from darts.logging import get_logger
-from darts.metrics.metrics import METRIC_TYPE
-from darts.timeseries import TimeSeries
+from darts.metrics.utils import METRIC_TYPE
 
 logger = get_logger(__name__)
 

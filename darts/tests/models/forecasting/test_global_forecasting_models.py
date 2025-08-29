@@ -358,10 +358,18 @@ class TestGlobalForecastingModels:
         # The serie to predict need to be provided at prediction time
         with pytest.raises(ValueError) as err:
             loaded_model_clean_str.predict(self.forecasting_horizon)
-        assert str(err.value) == (
-            "Input `series` must be provided. This is the result either from fitting on multiple series, "
-            "from not having fit the model yet, or from loading a model saved with `clean=True`."
-        )
+        if isinstance(model, TorchForecastingModel):
+            assert str(err.value) == (
+                "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                "from fitting with `fit_from_dataset()`, from not having fit the model yet, or from loading a "
+                "model saved with `clean=True`."
+            )
+        else:
+            assert str(err.value) == (
+                "Input `series` must be provided. This is the result either from fitting on multiple series, "
+                "from not having fit the model yet, or from loading a "
+                "model saved with `clean=True`."
+            )
 
         # When the serie to predict is provided, the prediction is the same
         assert model_prediction == loaded_model_clean_str.predict(
@@ -377,6 +385,7 @@ class TestGlobalForecastingModels:
             random_state=0,
             **kwargs,
         )
+        series_copy = self.ts_pass_train.copy()
         model.fit(self.ts_pass_train)
         pred = model.predict(n=36)
         mape_err = mape(self.ts_pass_val, pred)
@@ -385,6 +394,9 @@ class TestGlobalForecastingModels:
             f"series). Error = {mape_err}"
         )
         assert pred.static_covariates.equals(self.ts_passengers.static_covariates)
+
+        # check that fit predict did not mutate input series
+        assert self.ts_pass_train == series_copy
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_multi_ts(self, config):
@@ -395,6 +407,7 @@ class TestGlobalForecastingModels:
             random_state=0,
             **kwargs,
         )
+        series_copy = [self.ts_pass_train.copy(), self.ts_pass_train_1.copy()]
         model.fit([self.ts_pass_train, self.ts_pass_train_1])
         with pytest.raises(ValueError):
             # when model is fit from >1 series, one must provide a series in argument
@@ -419,6 +432,9 @@ class TestGlobalForecastingModels:
                 f"Model {model_cls} produces errors too high (several time series 2). "
                 f"Error = {mape_err}"
             )
+
+        # check that fit predict did not mutate input series
+        assert [self.ts_pass_train, self.ts_pass_train_1] == series_copy
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_covariates(self, config):
@@ -451,7 +467,13 @@ class TestGlobalForecastingModels:
             cov_kwargs_train = {}
             cov_kwargs_notrain = {}
 
+        cov_kwargs_copy = cov_kwargs.copy()
+        cov_kwargs_notrain_copy = cov_kwargs_notrain.copy()
+
         model.fit(series=[self.ts_pass_train, self.ts_pass_train_1], **cov_kwargs)
+
+        # check that fit does not mutate covariates
+        assert cov_kwargs == cov_kwargs_copy
 
         if cov_name is None:
             with pytest.raises(ValueError):
@@ -500,6 +522,9 @@ class TestGlobalForecastingModels:
 
         # ... unless future covariates are provided
         _ = model.predict(n=13, series=self.ts_pass_train, **cov_kwargs_notrain)
+
+        # check that predict does not mutate covariates
+        assert cov_kwargs_notrain == cov_kwargs_notrain_copy
 
         pred = model.predict(n=12, series=self.ts_pass_train, **cov_kwargs_notrain)
         mape_err = mape(self.ts_pass_val, pred)
@@ -676,7 +701,7 @@ class TestGlobalForecastingModels:
         model.fit([self.ts_pass_train, self.ts_pass_train_1])
 
         with pytest.raises(ValueError):
-            model.predict_from_dataset(n=1, input_series_dataset=unsupported_type)
+            model.predict_from_dataset(n=1, dataset=unsupported_type)
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)
     def test_prediction_with_different_n(self, config):

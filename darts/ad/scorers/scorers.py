@@ -32,7 +32,7 @@ from darts.ad.utils import (
     show_anomalies_from_scores,
 )
 from darts.logging import get_logger, raise_log
-from darts.metrics.metrics import METRIC_TYPE
+from darts.metrics.utils import METRIC_TYPE
 from darts.utils.data.tabularization import create_lagged_data
 from darts.utils.ts_utils import series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
@@ -103,9 +103,10 @@ class AnomalyScorer(ABC):
                 vals=actual.slice_intersect_values(pred),
                 pred_vals=pred.slice_intersect_values(actual),
             )
-            scores = TimeSeries.from_times_and_values(
+            scores = TimeSeries(
                 values=scores,
                 times=index,
+                copy=False,
             )
 
             if self.window > 1:
@@ -328,7 +329,7 @@ class AnomalyScorer(ABC):
             f"timeseries (number of samples must be equal to 1, found: {series.n_samples}). The series "
             f"will be converted to a deterministic series by taking the median of the samples.",
         )
-        return series.quantile_timeseries(quantile=0.5)
+        return series.quantile(q=0.5)
 
     def _extract_deterministic_values(self, series: np.ndarray, name_series: str):
         """Extract deterministic values from `series` (quantile=0.5 if `series` is probabilistic)."""
@@ -692,7 +693,15 @@ class FittableAnomalyScorer(AnomalyScorer):
         out = []
         for s1, s2, res in zip(series, pred_series, residuals):
             time_index = s2.slice_intersect_times(s1, copy=False)
-            out.append(s2.with_times_and_values(times=time_index, values=res))
+            out.append(
+                TimeSeries(
+                    times=time_index,
+                    values=res,
+                    components=s2.components,
+                    copy=False,
+                    **s2._attrs,
+                )
+            )
         return out
 
     def _fun_window_agg(
@@ -721,7 +730,13 @@ class FittableAnomalyScorer(AnomalyScorer):
                 mean_score[idx_point] = score_vals[idx_point : idx_point + window].mean(
                     axis=0
                 )
-            score_point_wise = score.with_times_and_values(score.time_index, mean_score)
+            score_point_wise = TimeSeries(
+                times=score.time_index,
+                values=mean_score,
+                components=score.components,
+                copy=False,
+                **score._attrs,
+            )
             scores_point_wise.append(score_point_wise)
         return scores_point_wise
 
@@ -885,10 +900,10 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
         if not self.is_univariate or self.is_univariate and series[0].width == 1:
             # number of input components matches output components, we can generate a new series
             # with the same attrs, and component names
-            create_fn = "with_times_and_values"
+            keep_components = True
         else:
             # otherwise, create a clean new series
-            create_fn = "from_times_and_values"
+            keep_components = False
 
         # (components, n series * (time - (window - 1))) -> (n series * (time - (window - 1)), components)
         score_vals = score_vals.T
@@ -896,10 +911,12 @@ class WindowedAnomalyScorer(FittableAnomalyScorer):
         idx = 0
         # (n series * (time - (window - 1)), components) -> n series * (time - (window - 1), components)
         for s in series:
+            kwargs = {"components": s.components, **s._attrs} if keep_components else {}
             result.append(
-                getattr(s, create_fn)(
+                TimeSeries(
                     times=s._time_index[self.window - 1 :],
                     values=score_vals[idx : idx + len(s) - self.window + 1, :],
+                    **kwargs,
                 )
             )
             idx += len(s) - self.window + 1
