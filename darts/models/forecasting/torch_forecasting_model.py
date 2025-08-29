@@ -37,6 +37,8 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
+from pytorch_lightning.callbacks import ProgressBar
+from pytorch_lightning.tuner import Tuner
 from torch.utils.data import DataLoader
 
 from darts import TimeSeries
@@ -76,12 +78,6 @@ from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
-
-# Check whether we are running pytorch-lightning >= 2.0.0 or not:
-tokens = pl.__version__.split(".")
-pl_200_or_above = int(tokens[0]) >= 2
-
-from pytorch_lightning.tuner.tuning import Tuner
 
 DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
@@ -453,20 +449,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             precision = precision_user
         elif np.issubdtype(dtype, np.float32):
             logger.info("Time series values are 32-bits; casting model to float32.")
-            precision = "32" if not pl_200_or_above else "32-true"
+            precision = "32-true"
         elif np.issubdtype(dtype, np.float64):
             logger.info("Time series values are 64-bits; casting model to float64.")
-            precision = "64" if not pl_200_or_above else "64-true"
+            precision = "64-true"
         elif np.issubdtype(dtype, np.float16):
-            if pl_200_or_above:
-                logger.info("Time series values are 16-bits; casting model to float16.")
-                precision = "16-true"
-            else:
-                logger.info(
-                    "Time series values are 16-bits; casting model to float32 "
-                    "but trained in mixed precision."
-                )
-                precision = 16
+            logger.info("Time series values are 16-bits; casting model to float16.")
+            precision = "16-true"
         else:
             raise_log(
                 ValueError(
@@ -498,13 +487,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             return trainer
 
         trainer_params = {key: val for key, val in self.trainer_params.items()}
-        is_progress_bar = lambda cb: cb.__class__.__name__ in [
-            "ProgressBar",
-            "ProgressBarBase",
-        ]
-        has_progress_bar = any(
-            map(is_progress_bar, trainer_params.get("callbacks", []))
-        )
+        has_progress_bar = any([
+            isinstance(cb, ProgressBar) for cb in trainer_params.get("callbacks", [])
+        ])
         # we ignore `verbose` if `trainer` has a progress bar, to avoid errors from lightning
         if verbose is not None and not has_progress_bar:
             trainer_params["enable_model_summary"] = (

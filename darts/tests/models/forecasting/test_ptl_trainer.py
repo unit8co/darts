@@ -21,12 +21,11 @@ class TestPTLTrainer:
         "enable_checkpointing": False,
     }
     series = linear_timeseries(length=100).astype(np.float32)
-    pl_200_or_above = int(pl.__version__.split(".")[0]) >= 2
     precisions = {
-        16: None if not pl_200_or_above else "16-true",
-        32: "32" if not pl_200_or_above else "32-true",
-        64: "64" if not pl_200_or_above else "64-true",
-        "mixed": "16" if not pl_200_or_above else "16-mixed",
+        16: "16-true",
+        32: "32-true",
+        64: "64-true",
+        "mixed": "16-mixed",
     }
 
     def test_prediction_loaded_custom_trainer(self, tmpdir_module):
@@ -174,10 +173,6 @@ class TestPTLTrainer:
             model.fit(self.series.astype(np.float64), epochs=1)
 
         for precision in [64, 32, 16]:
-            # skip the precision if not supported by lightning, i.e.,
-            # float16 for Lightning<2.0
-            if self.precisions[precision] is None:
-                continue
             valid_trainer_kwargs = {
                 "precision": self.precisions[precision],
                 **tfm_kwargs["pl_trainer_kwargs"],
