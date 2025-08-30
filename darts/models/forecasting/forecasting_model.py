@@ -44,7 +44,7 @@ else:
 import numpy as np
 import pandas as pd
 
-from darts import TimeSeries, metrics
+from darts import TimeSeries, metrics, slice_intersect
 from darts.dataprocessing.encoders import SequentialEncoder
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import BaseDataTransformer
@@ -674,6 +674,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
+        train_globally: bool = False,
         overlap_end: bool = False,
         last_points_only: bool = True,
         verbose: bool = False,
@@ -794,6 +795,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Note: some models require being retrained every time and do not support anything other than
             `retrain=True`.
             Note: also controls the retraining of the `data_transformers`.
+        train_globally
+            Whether to train the model globally on all series, or independently on each series. Only really effective
+            for global forecasting models, but can also be used with local models to generate forecasts on the same
+            time frame. If `True`, considers only the time intersection of all series for historical forecasting.
+            If `False`, considers the entire extent of each individual series for historical forecasting.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
@@ -980,6 +986,44 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             retrain=retrain is not False and retrain != 0,
             show_warnings=show_warnings,
         )
+
+        if train_globally and not ((retrain is False) or (retrain == 0)):
+            series = slice_intersect(series)
+            past_covariates = (
+                slice_intersect(past_covariates)
+                if past_covariates is not None
+                else None
+            )
+            future_covariates = (
+                slice_intersect(future_covariates)
+                if future_covariates is not None
+                else None
+            )
+
+            if isinstance(self, GlobalForecastingModel):
+                self._global_historical_forecasts(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    forecast_horizon=forecast_horizon,
+                    num_samples=num_samples,
+                    train_length=train_length,
+                    start=start,
+                    start_format=start_format,
+                    stride=stride,
+                    retrain=retrain,
+                    retrain_func=retrain_func,
+                    overlap_end=overlap_end,
+                    last_points_only=last_points_only,
+                    verbose=verbose,
+                    show_warnings=show_warnings,
+                    predict_likelihood_parameters=predict_likelihood_parameters,
+                    data_transformers=data_transformers,
+                    fit_kwargs=fit_kwargs,
+                    predict_kwargs=predict_kwargs,
+                    sample_weight=sample_weight,
+                    random_state=random_state,
+                )
 
         if (
             enable_optimization
@@ -3184,6 +3228,277 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 "future values of your `past_covariates` (relative to the first predicted time step). "
                 "To hide this warning, set `show_warnings=False`."
             )
+
+    def _global_historical_forecasts(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+        forecast_horizon: int,
+        num_samples: int,
+        train_length: Optional[int],
+        start: Optional[Union[pd.Timestamp, float, int]],
+        start_format: Literal["position", "value"],
+        stride: int,
+        retrain: Union[bool, int, Callable[..., bool]],
+        retrain_func: Callable[..., bool],
+        overlap_end: bool,
+        last_points_only: bool,
+        verbose: bool,
+        show_warnings: bool,
+        predict_likelihood_parameters: bool,
+        data_transformers: Optional[dict[str, Union[BaseDataTransformer, Pipeline]]],
+        fit_kwargs: Optional[dict[str, Any]],
+        predict_kwargs: Optional[dict[str, Any]],
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]],
+        random_state: Optional[int],
+    ) -> Union[TimeSeries, list[TimeSeries], list[list[TimeSeries]]]:
+        model = self
+
+        sequence_type_in = get_series_seq_type(series)
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
+        sample_weight = (
+            sample_weight
+            if isinstance(sample_weight, str)
+            else series2seq(sample_weight)
+        )
+
+        # deactivate the warning after displaying it once if show_warnings is True
+        show_predict_warnings = show_warnings
+
+        series_ = get_single_series(series)
+        past_covariates_ = get_single_series(past_covariates)
+        future_covariates_ = get_single_series(future_covariates)
+
+        # predictable time indexes (assuming model is already trained)
+        historical_forecasts_time_index_predict = (
+            _get_historical_forecast_predict_index(
+                model=model,
+                series=series_,
+                series_idx=0,
+                past_covariates=past_covariates_,
+                future_covariates=future_covariates_,
+                forecast_horizon=forecast_horizon,
+                overlap_end=overlap_end,
+            )
+        )
+
+        # trainable time indexes (considering lags and available covariates)
+        historical_forecasts_time_index_train = _get_historical_forecast_train_index(
+            model=model,
+            series=series_,
+            series_idx=0,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            forecast_horizon=forecast_horizon,
+            overlap_end=overlap_end,
+        )
+
+        # We need the first value timestamp to be used in order to properly shift the series
+        # Look at both past and future, since the target lags must be taken in consideration
+        min_timestamp_series = (
+            historical_forecasts_time_index_train[0]
+            - model._training_sample_time_index_length * series_.freq
+        )
+
+        # based on `retrain`, historical_forecasts_time_index is based either on train or predict
+        (
+            historical_forecasts_time_index,
+            train_length_,
+        ) = _reconciliate_historical_time_indices(
+            model=model,
+            historical_forecasts_time_index_predict=historical_forecasts_time_index_predict,
+            historical_forecasts_time_index_train=historical_forecasts_time_index_train,
+            series=series_,
+            series_idx=0,
+            retrain=retrain,
+            train_length=train_length,
+            show_warnings=show_warnings,
+        )
+
+        # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
+        historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
+            series=series_,
+            series_idx=0,
+            historical_forecasts_time_index=historical_forecasts_time_index,
+            start=start,
+            start_format=start_format,
+            stride=stride,
+            show_warnings=show_warnings,
+        )
+
+        # adjust the start of the series depending on whether we train (at some point), or predict only
+        # must be performed after the operation on historical_forecasts_time_index
+        if min_timestamp_series > series_.time_index[0]:
+            series = [
+                s.drop_before(min_timestamp_series - 1 * series_.freq) for s in series
+            ]
+            series_ = get_single_series(series)
+
+        # generate time index for the iteration
+        historical_forecasts_time_index = generate_index(
+            start=historical_forecasts_time_index[0],
+            end=historical_forecasts_time_index[-1],
+            freq=series_.freq,
+        )
+
+        iterator = _build_tqdm_iterator(
+            historical_forecasts_time_index[::stride],
+            verbose,
+            total=(len(historical_forecasts_time_index) - 1) // stride + 1,
+            desc="historical forecasts",
+        )
+
+        forecasts_list = []
+        _counter_train = 0
+        # iterate and forecast
+        for _counter, pred_time in enumerate(iterator):
+            # drop everything after `pred_time` to train on / predict with shifting input
+            if pred_time <= series_.end_time():
+                train_series = [s.drop_after(pred_time) for s in series]
+            else:
+                train_series = series_
+            train_series_ = get_single_series(train_series)
+
+            # optionally, apply moving window (instead of expanding window)
+            if train_length_ and len(train_series_) > train_length_:
+                train_series = [s[-train_length_:] for s in train_series]
+
+            # when `retrain=True`, data transformers are also retrained between iterations to avoid data-leakage
+            # using a single series
+            if data_transformers and retrain:
+                train_series, past_covariates, future_covariates = (
+                    _apply_data_transformers(
+                        series=train_series,
+                        past_covariates=past_covariates,
+                        future_covariates=future_covariates_,
+                        data_transformers=data_transformers,
+                        max_future_cov_lag=model.extreme_lags[5],
+                        fit_transformers=True,
+                    )
+                )
+
+            # testing `retrain` to exclude `False` and `0`
+            if (
+                retrain
+                and historical_forecasts_time_index_train is not None
+                and historical_forecasts_time_index_train[0]
+                <= pred_time
+                <= historical_forecasts_time_index_train[-1]
+            ):
+                # retrain_func processes the series that would be used for training
+                if retrain_func(
+                    counter=_counter_train,
+                    pred_time=pred_time,
+                    train_series=train_series_,
+                    past_covariates=past_covariates_,
+                    future_covariates=future_covariates_,
+                ):
+                    # avoid fitting the same model multiple times
+                    model = model.untrained_model()
+                    model._fit_wrapper(
+                        series=train_series,
+                        past_covariates=past_covariates,
+                        future_covariates=future_covariates,
+                        sample_weight=sample_weight,
+                        **fit_kwargs,
+                    )
+                else:
+                    # untrained model was not trained on the first trainable timestamp
+                    if not _counter_train and not model._fit_called:
+                        raise_log(
+                            ValueError(
+                                f"`retrain` is `False` in the first train iteration at prediction point (in time) "
+                                f"`{pred_time}` and the model has not been fit before. Either call `fit()` before "
+                                f"`historical_forecasts()`, use a different `retrain` value or modify the function "
+                                f"to return `True` at or before this timestamp."
+                            ),
+                            logger,
+                        )
+                _counter_train += 1
+            elif not _counter and not model._fit_called:
+                # model must be fit before the first prediction
+                # `historical_forecasts_time_index_train` is known to be not None
+                raise_log(
+                    ValueError(
+                        f"Model has not been fit before the first predict iteration at prediction point "
+                        f"(in time) `{pred_time}`. Either call `fit()` before `historical_forecasts()`, "
+                        f"set `retrain=True`, modify the function to return `True` at least once before "
+                        f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
+                        f"timestamp with re-training inside `historical_forecasts` is: "
+                        f"{historical_forecasts_time_index_train[0]} (potential `start` value)."
+                    ),
+                    logger,
+                )
+
+            # for regression models with lags=None, lags_past_covariates=None and min(lags_future_covariates)>=0,
+            # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
+            # to support `predict()`
+            if len(train_series) == 0:
+                train_series = TimeSeries(
+                    times=generate_index(
+                        start=pred_time - 1 * series_.freq,
+                        length=1,
+                        freq=series_.freq,
+                        name=series_._time_index.name,
+                    ),
+                    values=np.array([np.nan]),
+                    copy=False,
+                )
+                # repeat for all series
+                train_series = [train_series] * len(series)
+
+            forecast = model._predict_wrapper(
+                n=forecast_horizon,
+                series=train_series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                verbose=verbose,
+                predict_likelihood_parameters=predict_likelihood_parameters,
+                show_warnings=show_predict_warnings,
+                random_state=random_state,
+                **predict_kwargs,
+            )
+
+            forecast = _apply_inverse_data_transformers(
+                series=train_series,
+                forecasts=forecast,
+                data_transformers=data_transformers,
+                series_idx=None,
+            )
+
+            show_predict_warnings = False
+
+            forecasts_list.append(forecast)
+
+        forecasts_list_ = [[] for _ in range(len(series))]
+        for fc in forecasts_list:
+            for series_idx, forecast in enumerate(fc):
+                forecasts_list_[series_idx].append(forecast)
+
+        forecasts_list = []
+        if last_points_only:
+            time_index = generate_index(
+                start=forecasts_list_[0][0].end_time(),
+                length=len(forecasts_list_[0]),
+                freq=series_.freq * stride,
+                name=series_._time_index.name,
+            )
+            for fc_series in forecasts_list_:
+                values = np.concatenate(
+                    [fc.all_values(copy=False)[-1:] for fc in fc_series], axis=0
+                )
+                forecasts_list.append(
+                    get_single_series(fc_series).with_times_and_values(
+                        times=time_index, values=values
+                    )
+                )
+        else:
+            forecasts_list = forecasts_list_
+        return series2seq(forecasts_list, seq_type_out=sequence_type_in)
 
     def _clean(self) -> Self:
         """Returns a cleaned instance of the model by removing the training series and covariates."""
