@@ -16,6 +16,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🔴 Increased the decimal places for quantile component names from 2 to 3 for more precise quantiles. (e.g. `component_name_q0.500` for quantile 0.5). This affects quantile forecasts as well as quantiles computed with `TimeSeries.quantile()`. [#2887](https://github.com/unit8co/darts/pull/2786) by [He Weilin](https://github.com/cnhwl).
 
 **Fixed**
+- Added parameter `verbose` to `ForecastingModel.fit()` that allows to control the verbosity for model fitting. Ignored if the underlying model does not support it. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
+- Fixed a bug in `historical_forecast` where the `verbose` parameter was not propagated to the the model's `fit()` method. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon).
+2805) by [Timon Erhart](https://github.com/turbotimon).
 
 **Dependencies**
 
