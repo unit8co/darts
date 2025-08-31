@@ -14,7 +14,12 @@ from darts.dataprocessing.transformers import (
     FittableDataTransformer,
 )
 from darts.logging import get_logger, raise_log
-from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
+from darts.utils.ts_utils import (
+    SeriesType,
+    get_series_seq_type,
+    get_single_series,
+    series2seq,
+)
 from darts.utils.utils import generate_index, n_steps_between
 
 logger = get_logger(__name__)
@@ -46,16 +51,23 @@ def _historical_forecasts_general_checks(
     n = SimpleNamespace(**kwargs)
 
     # check forecast horizon
-    if not n.forecast_horizon > 0:
+    if n.forecast_horizon <= 0:
         raise_log(
-            ValueError("The provided forecasting horizon must be a positive integer."),
+            ValueError("`forecast_horizon` must be a positive integer."),
+            logger,
+        )
+
+    # check val length
+    if n.val_length < 0:
+        raise_log(
+            ValueError("`val_length` must be a non-negative integer."),
             logger,
         )
 
     # check stride
-    if not n.stride > 0:
+    if n.stride <= 0:
         raise_log(
-            ValueError("The provided stride parameter must be a positive integer."),
+            ValueError("`stride` must be a positive integer."),
             logger,
         )
 
@@ -65,7 +77,7 @@ def _historical_forecasts_general_checks(
     ):
         raise_log(
             ValueError(
-                f"The provided `stride` parameter must be a round-multiple of `cal_stride={model.cal_stride}` "
+                f"`stride` must be a round-multiple of `cal_stride={model.cal_stride}` "
                 f"and `>=cal_stride`. Received `stride={n.stride}`"
             ),
             logger,
@@ -346,6 +358,103 @@ def _historical_forecasts_general_checks(
                     ),
                     logger=logger,
                 )
+
+    # model must have been fitted if not retraining
+    if not model._fit_called and n.retrain is False:
+        raise_log(
+            ValueError(
+                "The model has not been fitted yet, and `retrain` is ``False``. "
+                "Either call `fit()` before `historical_forecasts()`, or set `retrain` "
+                "to something different than ``False``."
+            ),
+            logger,
+        )
+    # only certain trained models support non-retrainable historical forecasts
+    if (isinstance(n.retrain, Callable) or int(n.retrain) != 1) and (
+        not model._supports_non_retrainable_historical_forecasts
+    ):
+        raise_log(
+            ValueError(
+                f"{model.__class__.__base__.__name__} does not support historical forecasting "
+                f"with `retrain` set to `False`. For now, this is only supported with "
+                f"GlobalForecastingModels such as TorchForecastingModels. For more information, "
+                f"read the documentation for `retrain` in `historical_forecasts()`"
+            ),
+            logger,
+        )
+
+    # check training length
+    if n.train_length is not None and n.train_length <= 0:
+        raise_log(
+            TypeError("`train_length` must be `None` or a positive integer."),
+            logger,
+        )
+    elif n.train_length is not None:
+        if n.train_length < model._training_sample_time_index_length + (
+            model.min_train_samples - 1
+        ):
+            raise_log(
+                ValueError(
+                    "`train_length` is too small for the training requirements of this model. "
+                    f"Must be `>={model._training_sample_time_index_length + (model.min_train_samples - 1)}`."
+                ),
+                logger,
+            )
+        elif n.retrain is False:
+            raise_log(
+                ValueError("Cannot use `train_length` with `retrain=False`."),
+                logger,
+            )
+
+    # check retrain value
+    if not (
+        isinstance(n.retrain, bool)
+        or (isinstance(n.retrain, int) and n.retrain >= 0)
+        or (isinstance(n.retrain, Callable))
+    ):
+        raise_log(
+            ValueError(
+                "`retrain` must be either `bool`, positive `int` or a "
+                "`Callable` returning a `bool`."
+            ),
+            logger,
+        )
+    elif isinstance(n.retrain, Callable):
+        retrain_func = n.retrain
+
+        # check that the signature matches the documentation
+        expected_arguments = [
+            "counter",
+            "pred_time",
+            "train_series",
+            "past_covariates",
+            "future_covariates",
+        ]
+        passed_arguments = list(inspect.signature(retrain_func).parameters.keys())
+        if expected_arguments != passed_arguments:
+            raise_log(
+                ValueError(
+                    f"the Callable `retrain` must have a signature/arguments matching "
+                    f"the following positional arguments: `{expected_arguments}`."
+                ),
+                logger,
+            )
+
+        # passing dummy values to check the type of the output
+        result = retrain_func(
+            counter=0,
+            pred_time=get_single_series(series).time_index[-1],
+            train_series=get_single_series(series),
+            past_covariates=get_single_series(n.past_covariates),
+            future_covariates=get_single_series(n.future_covariates),
+        )
+        if not isinstance(result, bool):
+            raise_log(
+                ValueError(
+                    f"Return value of `retrain` must be bool, received {type(result)}"
+                ),
+                logger,
+            )
 
 
 def _historical_forecasts_sanitize_kwargs(

@@ -670,6 +670,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
+        val_length: int = 0,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
@@ -743,6 +744,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             mode). Only effective when `retrain` is not ``False``. The default is ``None``, where it uses all time
             steps up until the prediction time (expanding window mode). If larger than the number of available time
             steps, uses the expanding mode. Needs to be at least `min_train_series_length`.
+        val_length
+            Use a fixed length / number of time steps after every constructed training set as validation set. This set
+            will be passed as `val_series` to `fit()` if the underlying model supports it. Otherwise, the time frame
+            will not be used. Only effective when `retrain` is not ``False``. The default is ``0``, which does
+            not construct a validation set. Needs to be at least `min_train_series_length`.
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
             ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
@@ -857,55 +863,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             is over the series provided in the input sequence, and the inner lists contain the historical forecasts for
             each series.
         """
+        # note: decorator already sanity-checked the parameters
         model: ForecastingModel = self
-        # only GlobalForecastingModels support historical forecasting without retraining the model
-        base_class_name = model.__class__.__base__.__name__
-
-        # we can directly abort if retrain is False and fit hasn't been called before
-        raise_if(
-            not model._fit_called and retrain is False,
-            "The model has not been fitted yet, and `retrain` is ``False``. "
-            "Either call `fit()` before `historical_forecasts()`, or set `retrain` "
-            "to something different than ``False``.",
-            logger,
-        )
-
-        raise_if(
-            (isinstance(retrain, Callable) or int(retrain) != 1)
-            and (not model._supports_non_retrainable_historical_forecasts),
-            f"{base_class_name} does not support historical forecasting with `retrain` set to `False`. "
-            f"For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. "
-            f"For more information, read the documentation for `retrain` in `historical_forecasts()`",
-            logger,
-        )
-
-        if train_length and not isinstance(train_length, int):
-            raise_log(
-                TypeError("If not None, train_length needs to be an integer."),
-                logger,
-            )
-        elif (train_length is not None) and train_length < 1:
-            raise_log(
-                ValueError("If not None, train_length needs to be positive."),
-                logger,
-            )
-        elif (
-            train_length is not None
-        ) and train_length < model._training_sample_time_index_length + (
-            model.min_train_samples - 1
-        ):
-            raise_log(
-                ValueError(
-                    "train_length is too small for the training requirements of this model. "
-                    f"Must be `>={model._training_sample_time_index_length + (model.min_train_samples - 1)}`."
-                ),
-                logger,
-            )
-        if train_length is not None and retrain is False:
-            raise_log(
-                ValueError("cannot use `train_length` when `retrain=False`."),
-                logger,
-            )
 
         if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
 
@@ -914,46 +873,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             ):
                 return counter % int(retrain) == 0 if retrain else False
 
-        elif isinstance(retrain, Callable):
-            retrain_func = retrain
-
-            # check that the signature matches the documentation
-            expected_arguments = [
-                "counter",
-                "pred_time",
-                "train_series",
-                "past_covariates",
-                "future_covariates",
-            ]
-            passed_arguments = list(inspect.signature(retrain_func).parameters.keys())
-            raise_if(
-                expected_arguments != passed_arguments,
-                f"the Callable `retrain` must have a signature/arguments matching the following positional arguments: "
-                f"{expected_arguments}.",
-                logger,
-            )
-
-            # passing dummy values to check the type of the output
-            result = retrain_func(
-                counter=0,
-                pred_time=get_single_series(series).time_index[-1],
-                train_series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-            )
-            raise_if_not(
-                isinstance(result, bool),
-                f"Return value of `retrain` must be bool, received {type(result)}",
-                logger,
-            )
         else:
-            retrain_func = None
-            raise_log(
-                ValueError(
-                    "`retrain` argument must be either `bool`, positive `int` or `Callable` (returning `bool`)"
-                ),
-                logger,
-            )
+            retrain_func = retrain
 
         data_transformers = _convert_data_transformers(
             data_transformers=data_transformers, copy=True

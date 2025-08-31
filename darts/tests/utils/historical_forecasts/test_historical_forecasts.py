@@ -3390,10 +3390,7 @@ class TestHistoricalforecast:
                 series=self.ts_pass_train,
                 stride=0,
             )
-        assert (
-            str(err.value)
-            == "The provided stride parameter must be a positive integer."
-        )
+        assert str(err.value) == "`stride` must be a positive integer."
 
         # start_format="position" but `start` is not `int`
         with pytest.raises(ValueError) as err:
