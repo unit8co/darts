@@ -331,9 +331,9 @@ class TestEnsembleModels:
         assert pred_ens.time_index == pred_mix_ens.time_index
         assert all(pred_ens.components == pred_mix_ens.components)
         assert (
-            pred_ens["sine_q0.05"].values()
-            < pred_ens["sine_q0.50"].values()
-            < pred_ens["sine_q0.95"].values()
+            pred_ens["sine_q0.050"].values()
+            < pred_ens["sine_q0.500"].values()
+            < pred_ens["sine_q0.950"].values()
         )
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
@@ -372,24 +372,24 @@ class TestEnsembleModels:
         assert all(
             pred_ens.components
             == [
-                "sine_q0.05",
-                "sine_q0.50",
-                "sine_q0.95",
-                "linear_q0.05",
-                "linear_q0.50",
-                "linear_q0.95",
+                "sine_q0.050",
+                "sine_q0.500",
+                "sine_q0.950",
+                "linear_q0.050",
+                "linear_q0.500",
+                "linear_q0.950",
             ]
         )
         assert all(pred_ens.components == pred_mix_ens.components)
         assert (
-            pred_ens["sine_q0.05"].values()
-            < pred_ens["sine_q0.50"].values()
-            < pred_ens["sine_q0.95"].values()
+            pred_ens["sine_q0.050"].values()
+            < pred_ens["sine_q0.500"].values()
+            < pred_ens["sine_q0.950"].values()
         )
         assert (
-            pred_ens["linear_q0.05"].values()
-            < pred_ens["linear_q0.50"].values()
-            < pred_ens["linear_q0.95"].values()
+            pred_ens["linear_q0.050"].values()
+            < pred_ens["linear_q0.500"].values()
+            < pred_ens["linear_q0.950"].values()
         )
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")

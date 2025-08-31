@@ -862,10 +862,10 @@ class TestRegressionEnsembleModels:
         ensemble.fit(self.sine_series)
         pred_ens = ensemble.predict(n=4, predict_likelihood_parameters=True)
 
-        assert all(pred_ens.components == ["sine_q0.05", "sine_q0.50", "sine_q0.95"])
+        assert all(pred_ens.components == ["sine_q0.050", "sine_q0.500", "sine_q0.950"])
         assert all(
-            pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values()
-        ) and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
+            pred_ens["sine_q0.050"].values() < pred_ens["sine_q0.500"].values()
+        ) and all(pred_ens["sine_q0.500"].values() < pred_ens["sine_q0.950"].values())
 
     def test_predict_likelihood_parameters_multivariate_regression_ensemble(self):
         quantiles = [0.05, 0.5, 0.95]
@@ -894,20 +894,22 @@ class TestRegressionEnsembleModels:
         assert all(
             pred_ens.components
             == [
-                "sine_q0.05",
-                "sine_q0.50",
-                "sine_q0.95",
-                "linear_q0.05",
-                "linear_q0.50",
-                "linear_q0.95",
+                "sine_q0.050",
+                "sine_q0.500",
+                "sine_q0.950",
+                "linear_q0.050",
+                "linear_q0.500",
+                "linear_q0.950",
             ]
         )
         assert all(
-            pred_ens["sine_q0.05"].values() < pred_ens["sine_q0.50"].values()
-        ) and all(pred_ens["sine_q0.50"].values() < pred_ens["sine_q0.95"].values())
+            pred_ens["sine_q0.050"].values() < pred_ens["sine_q0.500"].values()
+        ) and all(pred_ens["sine_q0.500"].values() < pred_ens["sine_q0.950"].values())
         assert all(
-            pred_ens["linear_q0.05"].values() < pred_ens["linear_q0.50"].values()
-        ) and all(pred_ens["linear_q0.50"].values() < pred_ens["linear_q0.95"].values())
+            pred_ens["linear_q0.050"].values() < pred_ens["linear_q0.500"].values()
+        ) and all(
+            pred_ens["linear_q0.500"].values() < pred_ens["linear_q0.950"].values()
+        )
 
     def test_wrong_model_creation_params(self):
         """Since `multi_models=False` requires to shift the regression model lags in the past (outside of the
