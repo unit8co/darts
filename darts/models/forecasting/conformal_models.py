@@ -1486,15 +1486,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
         int,
         Optional[int],
     ]:
-        raise NotImplementedError(f"not supported by `{self.__class__.__name__}`.")
+        return self.model.extreme_lags
 
     @property
     def min_train_series_length(self) -> int:
-        raise NotImplementedError(f"not supported by `{self.__class__.__name__}`.")
+        return self.model.min_train_series_length
 
     @property
     def min_train_samples(self) -> int:
-        raise NotImplementedError(f"not supported by `{self.__class__.__name__}`.")
+        return self.cal_length
 
     @property
     def supports_multivariate(self) -> bool:

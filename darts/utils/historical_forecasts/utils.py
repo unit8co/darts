@@ -57,13 +57,6 @@ def _historical_forecasts_general_checks(
             logger,
         )
 
-    # check val length
-    if n.val_length < 0:
-        raise_log(
-            ValueError("`val_length` must be a non-negative integer."),
-            logger,
-        )
-
     # check stride
     if n.stride <= 0:
         raise_log(
@@ -384,19 +377,18 @@ def _historical_forecasts_general_checks(
         )
 
     # check training length
+    min_target_length_training = model._min_target_length_training
     if n.train_length is not None and n.train_length <= 0:
         raise_log(
             TypeError("`train_length` must be `None` or a positive integer."),
             logger,
         )
     elif n.train_length is not None:
-        if n.train_length < model._training_sample_time_index_length + (
-            model.min_train_samples - 1
-        ):
+        if n.train_length < min_target_length_training + (model.min_train_samples - 1):
             raise_log(
                 ValueError(
                     "`train_length` is too small for the training requirements of this model. "
-                    f"Must be `>={model._training_sample_time_index_length + (model.min_train_samples - 1)}`."
+                    f"Must be `>={min_target_length_training + (model.min_train_samples - 1)}`."
                 ),
                 logger,
             )
@@ -404,6 +396,22 @@ def _historical_forecasts_general_checks(
             raise_log(
                 ValueError("Cannot use `train_length` with `retrain=False`."),
                 logger,
+            )
+
+    # check val length
+    if n.val_length < 0:
+        raise_log(
+            ValueError("`val_length` must be a non-negative integer."),
+            logger,
+        )
+    elif n.val_length >= 1:
+        # val length must cover at least one full prediction example (e.g. input + output window)
+        if n.val_length < min_target_length_training:
+            raise_log(
+                ValueError(
+                    f"`val_length` is too small for the validation requirements of this model. "
+                    f"Must be `>={min_target_length_training}`."
+                )
             )
 
     # check retrain value
@@ -456,12 +464,23 @@ def _historical_forecasts_general_checks(
                 logger,
             )
 
+    # check fit and predict kwargs
+    _ = _historical_forecasts_sanitize_kwargs(
+        model=model,
+        fit_kwargs=n.fit_kwargs,
+        predict_kwargs=n.predict_kwargs,
+        retrain=n.retrain is not False and n.retrain != 0,
+        val_length=n.val_length,
+        show_warnings=n.show_warnings,
+    )
+
 
 def _historical_forecasts_sanitize_kwargs(
     model,
     fit_kwargs: Optional[dict[str, Any]],
     predict_kwargs: Optional[dict[str, Any]],
     retrain: bool,
+    val_length: int,
     show_warnings: bool,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Convert kwargs to dictionary, check that their content is compatible with called methods."""
@@ -478,6 +497,13 @@ def _historical_forecasts_sanitize_kwargs(
             name_kwargs="fit_kwargs",
             dict_kwargs=fit_kwargs,
         )
+        if val_length > 0 and fit_kwargs.get("val_series") is not None:
+            raise_log(
+                ValueError(
+                    "`val_length` must be `0` when `val_series` is provided in `fit_kwargs`."
+                ),
+                logger,
+            )
     elif show_warnings:
         logger.warning(
             "`fit_kwargs` was provided with `retrain=False`, the argument will be ignored."
@@ -1009,6 +1035,7 @@ def _reconciliate_historical_time_indices(
     series_idx: int,
     retrain: Union[bool, int, Callable[..., bool]],
     train_length: Optional[int],
+    val_length: int,
     show_warnings: bool,
 ) -> tuple[TimeIndex, Optional[int]]:
     """Depending on the value of retrain, select which time indices will be used during the historical forecasts."""
@@ -1053,11 +1080,29 @@ def _reconciliate_historical_time_indices(
 
             train_length_ = None
             if model.min_train_samples > 1:
+                # TODO:
+                #  - adjust train_length to actually look at samples rather than full time spans
+                #  - same for val_length
+                #  - write new / adjust min_training_length to be (min_train_samples - 1) + time span for input + output
+                #    (don't forget RNN training length in the last model.extreme_lags element)
+                #  - write new / min_valiation_length to be time span for input + output
+                #  - check the sanity checks and here these start adjustments
                 historical_forecasts_time_index = (
                     historical_forecasts_time_index[0]
                     + (model.min_train_samples - 1) * series.freq,
                     historical_forecasts_time_index[1],
                 )
+
+        if val_length > 0:
+            icl, ocl = model.extreme_lags[:2]
+            icl = abs(icl) or 0
+            ocl = ocl + 1 if ocl is not None else 1
+
+            # we need to leave space for the validation set after the end of the training set
+            historical_forecasts_time_index = (
+                historical_forecasts_time_index[0] + val_length * series.freq,
+                historical_forecasts_time_index[1],
+            )
 
     return historical_forecasts_time_index, train_length_
 

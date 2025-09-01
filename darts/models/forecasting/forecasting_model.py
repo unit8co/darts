@@ -60,7 +60,6 @@ from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_predict_index,
     _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
-    _historical_forecasts_sanitize_kwargs,
     _process_historical_forecast_for_backtest,
     _reconciliate_historical_time_indices,
 )
@@ -535,7 +534,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     @property
     def _training_sample_time_index_length(self) -> int:
         """
-        Required time_index length for one training sample, for any model.
+        Required time_index length for one training sample respecting all covariates.
         """
         (
             min_target_lag,
@@ -558,6 +557,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_past_cov_lag if min_past_cov_lag else 0,
             min_future_cov_lag if min_future_cov_lag else 0,
         )
+
+    @property
+    def _min_target_length_training(self) -> int:
+        """
+        Minimum required target length for one training sample, for any model.
+        """
+        icl, ocl = self.extreme_lags[:2]
+        icl = abs(icl) if icl is not None else 0
+        ocl = ocl + 1
+        return icl + ocl
 
     def _generate_new_dates(
         self, n: int, input_series: Optional[TimeSeries] = None
@@ -866,6 +875,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # note: decorator already sanity-checked the parameters
         model: ForecastingModel = self
 
+        fit_kwargs = fit_kwargs or {}
+        predict_kwargs = predict_kwargs or {}
+
+        # convert retrain to a function (if not already)
         if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
 
             def retrain_func(
@@ -892,15 +905,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 max_future_cov_lag=model.extreme_lags[5],
                 fit_transformers=False,
             )
-
-        # remove unsupported arguments, raise exception if interference with historical forecasts logic
-        fit_kwargs, predict_kwargs = _historical_forecasts_sanitize_kwargs(
-            model=model,
-            fit_kwargs=fit_kwargs,
-            predict_kwargs=predict_kwargs,
-            retrain=retrain is not False and retrain != 0,
-            show_warnings=show_warnings,
-        )
 
         if (
             enable_optimization
@@ -1010,6 +1014,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series_idx=idx,
                     retrain=retrain,
                     train_length=train_length,
+                    val_length=val_length,
                     show_warnings=show_warnings,
                 )
             else:
