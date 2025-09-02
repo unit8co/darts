@@ -170,9 +170,10 @@ There are three main ways to get access to a TPU:
 
 If you are using a TPU in the Google Colab kind of notebook, then you should first install these:
 ```
-!pip install cloud-tpu-client==0.10 https://storage.googleapis.com/tpu-pytorch/wheels/torch_xla-1.9-cp37-cp37m-linux_x86_64.whl
-!pip install torch==1.9.0+cu111 torchvision==0.10.0+cu111 torchtext==0.10.0 -f https://download.pytorch.org/whl/cu111/torch_stable.html
-!pip install pyyaml==5.4.1
+! pip install "pytorch-lightning>=2.5.3"
+! pip install --pre torch torchvision --index-url https://download.pytorch.org/whl/nightly/cpu
+! pip install 'torch_xla[tpu] @ https://storage.googleapis.com/pytorch-xla-releases/wheels/tpuvm/torch_xla-2.9.0.dev-cp312-cp312-linux_x86_64.whl' \
+  -f https://storage.googleapis.com/libtpu-wheels/index.html
 ```
 
 and then instruct our model to use a TPU or more. In our example we are using four TPUs, like this:
