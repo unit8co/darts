@@ -1,7 +1,9 @@
 import copy
 import itertools
+import logging
 import os
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 import pytest
@@ -364,6 +366,58 @@ class TestTimeSeriesStaticCovariate:
         for s_, val in zip(series, first_values):
             assert s_.static_covariates_values()[0, 0] == val
             assert s_.metadata == {"st2": val}
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_from_group_dataframe_non_pandas_requires_time_col(self, backend):
+        value_cols = ["a", "b", "c"]
+        df = copy.deepcopy(self.pd_to_backend(self.df_long_multi, backend))
+        if backend == "pandas":
+            df = df.set_index("times")
+            ts_groups = TimeSeries.from_group_dataframe(
+                df=df,
+                group_cols="st1",
+                static_cols=None,
+                time_col=None,
+                value_cols=value_cols,
+                metadata_cols=["st1", "constant"],
+            )
+            assert len(ts_groups) == self.n_groups
+            for i, ts in enumerate(ts_groups):
+                assert ts.static_covariates.index.equals(
+                    pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
+                )
+                assert ts.static_covariates.shape == (1, 1)
+                assert ts.static_covariates.columns.equals(pd.Index(["st1"]))
+                assert (ts.static_covariates_values(copy=False) == [[i]]).all()
+                assert ts.metadata == {"st1": i, "constant": 1}
+        else:
+            with pytest.raises(ValueError) as exc:
+                _ = TimeSeries.from_group_dataframe(
+                    df=df,
+                    group_cols="st1",
+                    time_col=None,
+                )
+            assert (
+                str(exc.value)
+                == "`time_col` is required when `df` is not a `pandas.DataFrame`."
+            )
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_from_group_dataframe_warn_on_sorted_index(self, backend, caplog):
+        df = copy.deepcopy(self.pd_to_backend(self.df_long_multi, backend))
+        df = nw.from_native(df)
+        df = df.sort(by="times")
+        with caplog.at_level(logging.WARNING):
+            _ = TimeSeries.from_group_dataframe(
+                df=df,
+                group_cols="st1",
+                time_col="times",
+            )
+            assert (
+                "UserWarning: The (time) index from `df` is monotonically increasing."
+                in caplog.text
+            )
+        caplog.clear()
 
     def test_with_static_covariates_univariate(self):
         ts = linear_timeseries(length=10)

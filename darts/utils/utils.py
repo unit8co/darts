@@ -737,7 +737,6 @@ class ModelType(Enum):
 def dataframe_col_to_time_index(
     df: DataFrame,
     time_col: str,
-    skip_uniqueness_check: bool = False,
 ) -> Union[pd.Index, pd.DatetimeIndex]:
     """Convert a dataframe column to a pandas Index or DatetimeIndex.
 
@@ -761,12 +760,6 @@ def dataframe_col_to_time_index(
             time_col_vals = time_col_vals.cast(nw.Int64)
 
     if time_col_vals.dtype.is_integer():
-        if not skip_uniqueness_check and time_col_vals.is_duplicated().any():
-            raise_log(
-                ValueError(
-                    "The provided integer time index column contains duplicate values."
-                )
-            )
         # Temporarily use an integer `pd.Index` to sort the values; later replaced with
         # a `pd.RangeIndex` in `__init__()`
         time_index = pd.Index(time_col_vals)

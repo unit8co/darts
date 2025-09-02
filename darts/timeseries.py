@@ -801,14 +801,6 @@ class TimeSeries:
         """
         df = nw.from_native(df, eager_only=True, pass_through=False)
 
-        # get values
-        if value_cols is None:
-            series_df = df.drop(time_col) if time_col else df
-        else:
-            if isinstance(value_cols, (str, int)):
-                value_cols = [value_cols]
-            series_df = df[value_cols]
-
         # get time index
         if time_col:
             time_index = dataframe_col_to_time_index(df, time_col)
@@ -833,6 +825,14 @@ class TimeSeries:
                     ),
                     logger,
                 )
+
+        # get values
+        if value_cols is None:
+            series_df = df.drop(time_col) if time_col else df
+        else:
+            if isinstance(value_cols, (str, int)):
+                value_cols = [value_cols]
+            series_df = df[value_cols]
 
         return cls(
             times=time_index,
@@ -972,15 +972,13 @@ class TimeSeries:
                     ),
                     logger=logger,
                 )
-            is_sorted = nw.maybe_get_index(df).is_sorted()
+            is_sorted = nw.maybe_get_index(df).is_monotonic_increasing
         else:
             is_sorted = df.get_column(time_col).is_sorted()
 
             if df.implementation.is_pandas():
                 # with pandas we can get a performance boost by converting the time_col to index
-                time_index = dataframe_col_to_time_index(
-                    df, time_col, skip_uniqueness_check=True
-                )
+                time_index = dataframe_col_to_time_index(df, time_col)
                 df: pd.DataFrame = df.drop(time_col).to_native().set_index(time_index)
                 df = nw.from_native(df)
                 time_col = None
