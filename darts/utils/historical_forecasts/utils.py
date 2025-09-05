@@ -1038,10 +1038,14 @@ def _reconciliate_historical_time_indices(
     val_length: int,
     show_warnings: bool,
 ) -> tuple[TimeIndex, Optional[int]]:
-    """Depending on the value of retrain, select which time indices will be used during the historical forecasts."""
-    train_length_ = None
+    """
+    Reconcile historical forecast time indices based on retrain parameter and train_length.
+
+    Returns the appropriate time index and effective train_length for historical forecasts.
+    """
+    # select the base time index based on retrain parameter
     if isinstance(retrain, Callable):
-        # retain the longer time index, anything can happen
+        # for callable retrain, use the longer time index (earlier start)
         if (
             historical_forecasts_time_index_train is not None
             and historical_forecasts_time_index_train[0]
@@ -1055,51 +1059,46 @@ def _reconciliate_historical_time_indices(
     else:
         historical_forecasts_time_index = historical_forecasts_time_index_predict
 
-    # compute the maximum forecasts time index assuming that `start=None`
-    train_length_ = None
-    warn_train_length = False
-
+    # if not retraining and model is already fitted, ignore train_length
     if not (retrain or (not model._fit_called)):
-        # if not retraining, we ignore train_length
-        return historical_forecasts_time_index, train_length_
+        return historical_forecasts_time_index, None
 
-    hfc_start = historical_forecasts_time_index[0]
+    effective_train_length = None
+    should_warn = False
+    start_time = historical_forecasts_time_index[0]
 
-    # adjust the start based on train_length
+    # adjust start time based on train_length
     if train_length is None:
-        # start training right away; some models require more than 1 training samples
+        # No train_length specified - adjust for minimum training samples if needed
         if model._min_train_samples > 1:
-            hfc_start += (model._min_train_samples - 1) * series.freq
-    elif train_length <= len(series):
-        # start might be after the first forecastable point
-        train_length_start = series._time_index[train_length - 1] + series.freq
-
-        if train_length_start > historical_forecasts_time_index[-1]:
-            # train_length is after the last possible index; ignore it and start right away
-            warn_train_length = True
-        else:
-            # train_length is valid; use it
-            train_length_ = train_length
-            if train_length_start > historical_forecasts_time_index[0]:
-                # start after the first forecastable point
-                hfc_start = train_length_start
+            start_time += (model._min_train_samples - 1) * series.freq
     else:
-        # `train_length` is larger than the length of series; ignore it and start right away
-        warn_train_length = True
+        # train_length is specified
+        if train_length <= len(series):
+            train_length_start = series._time_index[train_length - 1] + series.freq
 
-    historical_forecasts_time_index = (hfc_start, historical_forecasts_time_index[1])
+            if train_length_start > historical_forecasts_time_index[-1]:
+                # train_length extends beyond available data
+                should_warn = True
+            else:
+                # train_length is valid
+                effective_train_length = train_length
+                if train_length_start > historical_forecasts_time_index[0]:
+                    start_time = train_length_start
+        else:
+            # train_length exceeds series length
+            should_warn = True
 
-    if not show_warnings:
-        warn_train_length = False
+    historical_forecasts_time_index = (start_time, historical_forecasts_time_index[1])
 
-    if warn_train_length:
+    if should_warn and show_warnings:
         logger.warning(
             f"`train_length` is too large for the historical forecasts for series at index: {series_idx}. "
             f"Ignoring `train_length` and using default behavior where all available time steps up "
             f"until the end of the expanding training set. To hide these warnings, set `show_warnings=False`."
         )
 
-    return historical_forecasts_time_index, train_length_
+    return historical_forecasts_time_index, effective_train_length
 
 
 def _get_historical_forecast_boundaries(
