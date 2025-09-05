@@ -377,24 +377,24 @@ def _historical_forecasts_general_checks(
         )
 
     # check training length
-    min_target_length_training = model._min_target_length_training
+    min_target_length_training = model.min_train_series_length
     if n.train_length is not None and n.train_length <= 0:
         raise_log(
-            TypeError("`train_length` must be `None` or a positive integer."),
+            ValueError("`train_length` must be `None` or a positive integer."),
             logger,
         )
     elif n.train_length is not None:
-        if n.train_length < min_target_length_training + (model.min_train_samples - 1):
+        if n.retrain is False:
+            raise_log(
+                ValueError("Cannot use `train_length` with `retrain=False`."),
+                logger,
+            )
+        elif n.train_length < model.min_train_series_length:
             raise_log(
                 ValueError(
                     "`train_length` is too small for the training requirements of this model. "
-                    f"Must be `>={min_target_length_training + (model.min_train_samples - 1)}`."
+                    f"Must be `>={model.min_train_series_length}`."
                 ),
-                logger,
-            )
-        elif n.retrain is False:
-            raise_log(
-                ValueError("Cannot use `train_length` with `retrain=False`."),
                 logger,
             )
 
@@ -406,7 +406,7 @@ def _historical_forecasts_general_checks(
         )
     elif n.val_length >= 1:
         # val length must cover at least one full prediction example (e.g. input + output window)
-        if n.val_length < min_target_length_training:
+        if n.val_length < model._train_target_sample_length:
             raise_log(
                 ValueError(
                     f"`val_length` is too small for the validation requirements of this model. "
@@ -1079,7 +1079,7 @@ def _reconciliate_historical_time_indices(
                 )
 
             train_length_ = None
-            if model.min_train_samples > 1:
+            if model._min_train_samples > 1:
                 # TODO:
                 #  - adjust train_length to actually look at samples rather than full time spans
                 #  - same for val_length
@@ -1087,22 +1087,23 @@ def _reconciliate_historical_time_indices(
                 #    (don't forget RNN training length in the last model.extreme_lags element)
                 #  - write new / min_valiation_length to be time span for input + output
                 #  - check the sanity checks and here these start adjustments
+                #  - check SKLearnModel min_train_series length, it's not correct
                 historical_forecasts_time_index = (
                     historical_forecasts_time_index[0]
-                    + (model.min_train_samples - 1) * series.freq,
+                    + (model._min_train_samples - 1) * series.freq,
                     historical_forecasts_time_index[1],
                 )
 
-        if val_length > 0:
-            icl, ocl = model.extreme_lags[:2]
-            icl = abs(icl) or 0
-            ocl = ocl + 1 if ocl is not None else 1
-
-            # we need to leave space for the validation set after the end of the training set
-            historical_forecasts_time_index = (
-                historical_forecasts_time_index[0] + val_length * series.freq,
-                historical_forecasts_time_index[1],
-            )
+        # if val_length > 0:
+        #     icl, ocl = model.extreme_lags[:2]
+        #     icl = abs(icl) or 0
+        #     ocl = ocl + 1 if ocl is not None else 1
+        #
+        #     # we need to leave space for the validation set after the end of the training set
+        #     historical_forecasts_time_index = (
+        #         historical_forecasts_time_index[0] + val_length * series.freq,
+        #         historical_forecasts_time_index[1],
+        #     )
 
     return historical_forecasts_time_index, train_length_
 

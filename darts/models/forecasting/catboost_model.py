@@ -424,19 +424,6 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         return "eval_set", "eval_sample_weight"
 
     @property
-    def min_train_series_length(self) -> int:
-        # Catboost requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than
-        # for other regression models
-        return max(
-            3,
-            (
-                -self.lags["target"][0] + self.output_chunk_length + 1
-                if "target" in self.lags
-                else self.output_chunk_length
-            ),
-        )
-
-    @property
     def _supports_native_multioutput(self) -> bool:
         # CatBoostRegressor supports multi-output natively, but only with selected loss functions
         # ("MultiRMSE", "MultiRMSEWithMissingValues", ...)

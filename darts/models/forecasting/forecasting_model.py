@@ -458,14 +458,28 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         The minimum required length for the training series.
         """
-        return 3
+        return self._train_target_sample_length + (self._min_train_samples - 1)
 
     @property
-    def min_train_samples(self) -> int:
+    @abstractmethod
+    def _min_train_samples(self) -> int:
         """
         The minimum number of samples for training the model.
         """
-        return 1
+
+    @property
+    @abstractmethod
+    def _train_target_sample_length(self) -> int:
+        """
+        The minimum required length for the training target series to create one training sample.
+        """
+
+    @property
+    @abstractmethod
+    def _val_target_sample_length(self) -> int:
+        """
+        The minimum required length for the validation target series to create one evaluation example.
+        """
 
     @property
     @abstractmethod
@@ -557,16 +571,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             min_past_cov_lag if min_past_cov_lag else 0,
             min_future_cov_lag if min_future_cov_lag else 0,
         )
-
-    @property
-    def _min_target_length_training(self) -> int:
-        """
-        Minimum required target length for one training sample, for any model.
-        """
-        icl, ocl = self.extreme_lags[:2]
-        icl = abs(icl) if icl is not None else 0
-        ocl = ocl + 1
-        return icl + ocl
 
     def _generate_new_dates(
         self, n: int, input_series: Optional[TimeSeries] = None
@@ -2906,6 +2910,21 @@ class LocalForecastingModel(ForecastingModel, ABC):
         """
         return False
 
+    @property
+    def _min_train_samples(self) -> int:
+        # local models do not work with samples, so only one training sample is needed
+        return 1
+
+    @property
+    def _train_target_sample_length(self) -> int:
+        # local models do not work with samples, so the length of the training sample is not tied to lags
+        return 3
+
+    @property
+    def _val_target_sample_length(self) -> int:
+        # local forecasting models do not support validation series, so this is not relevant
+        return 0
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """The base class for "global" forecasting models, handling several time series and optional covariates.
@@ -3147,6 +3166,11 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         Whether model supports sample weight for training.
         """
         return True
+
+    @property
+    def _val_target_sample_length(self) -> int:
+        # the length of the validation sample is the same as the training sample length
+        return self._train_target_sample_length
 
 
 class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):

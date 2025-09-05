@@ -614,19 +614,13 @@ class SKLearnModel(GlobalForecastingModel):
         return True
 
     @property
-    def min_train_series_length(self) -> int:
-        return max(
-            3,
-            (
-                -self.lags["target"][0] + self.output_chunk_length
-                if "target" in self.lags
-                else self.output_chunk_length
-            )
-            + self.output_chunk_shift,
-        )
+    def _train_target_sample_length(self) -> int:
+        input_chunk_length = -self.lags["target"][0] if "target" in self.lags else 0
+        return input_chunk_length + self.output_chunk_length + self.output_chunk_shift
 
     @property
-    def min_train_samples(self) -> int:
+    def _min_train_samples(self) -> int:
+        # some models require more than 1 sample to train (e.g. CatBoost); for consistency, we set the minimum to 2
         return 2
 
     @property

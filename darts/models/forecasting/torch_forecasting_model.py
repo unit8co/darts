@@ -1049,12 +1049,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             len(train_dataset)
         except ValueError:
             length_ok = False
-        raise_if(
-            not length_ok or len(train_dataset) == 0,  # mind the order
-            "The train dataset does not contain even one training sample. "
-            + "This is likely due to the provided training series being too short. "
-            + f"This model expect series of length at least {self.min_train_series_length}.",
-        )
+        if not length_ok or len(train_dataset) < self._min_train_samples:
+            raise_log(
+                ValueError(
+                    f"The train dataset is either empty or contains less than "
+                    f"`{self._min_train_samples}` training sample (minimum requirement). "
+                    f"This is likely due to the provided training series being too short. "
+                    f"This model expect series of length at least "
+                    f"{self.min_train_series_length}."
+                ),
+                logger,
+            )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
         series_input = (series, past_covariates, future_covariates)
@@ -1849,11 +1854,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return 0
 
     @property
-    def min_train_series_length(self) -> int:
-        """
-        Class property defining the minimum required length for the training series;
-        overriding the default value of 3 of ForecastingModel
-        """
+    def _train_target_sample_length(self) -> int:
         return (
             self.input_chunk_length + self.output_chunk_length + self.output_chunk_shift
         )
@@ -2409,6 +2410,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             if self.model_created
             else True  # all torch models can be probabilistic (via Dropout)
         )
+
+    @property
+    def _min_train_samples(self) -> int:
+        # dataset requires at least one sample
+        return 1
 
     @property
     def _requires_training(self) -> bool:

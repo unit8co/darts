@@ -602,7 +602,7 @@ class RNNModel(DualCovariatesTorchModel):
         )
 
     @property
-    def min_train_series_length(self) -> int:
+    def _train_target_sample_length(self) -> int:
         return self.training_length + 1
 
     @property
