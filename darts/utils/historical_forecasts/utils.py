@@ -377,7 +377,6 @@ def _historical_forecasts_general_checks(
         )
 
     # check training length
-    min_target_length_training = model.min_train_series_length
     if n.train_length is not None and n.train_length <= 0:
         raise_log(
             ValueError("`train_length` must be `None` or a positive integer."),
@@ -405,12 +404,14 @@ def _historical_forecasts_general_checks(
             logger,
         )
     elif n.val_length >= 1:
-        # val length must cover at least one full prediction example (e.g. input + output window)
-        if n.val_length < model._train_target_sample_length:
+        # val length must cover at least one full prediction output (e.g. output window)
+        # the first input window is taken from the end of training series to use all available data
+        min_val_length = (model.output_chunk_length or 0) + model.output_chunk_shift
+        if n.val_length < min_val_length:
             raise_log(
                 ValueError(
                     f"`val_length` is too small for the validation requirements of this model. "
-                    f"Must be `>={min_target_length_training}`."
+                    f"Must be `>={min_val_length}`."
                 )
             )
 
@@ -1027,7 +1028,7 @@ def _get_historical_forecast_train_index(
     return historical_forecasts_time_index
 
 
-def _reconciliate_historical_time_indices(
+def _reconcile_historical_time_indices(
     model,
     historical_forecasts_time_index_predict: TimeIndex,
     historical_forecasts_time_index_train: TimeIndex,
@@ -1037,11 +1038,11 @@ def _reconciliate_historical_time_indices(
     train_length: Optional[int],
     val_length: int,
     show_warnings: bool,
-) -> tuple[TimeIndex, Optional[int]]:
+) -> tuple[TimeIndex, Optional[int], int]:
     """
-    Reconcile historical forecast time indices based on retrain parameter and train_length.
+    Reconcile historical forecast time indices based on retrain parameter, train_length, and val_length.
 
-    Returns the appropriate time index and effective train_length for historical forecasts.
+    Returns the appropriate time index and effective train_length and val_length for historical forecasts.
     """
     # select the base time index based on retrain parameter
     if isinstance(retrain, Callable):
@@ -1059,15 +1060,14 @@ def _reconciliate_historical_time_indices(
     else:
         historical_forecasts_time_index = historical_forecasts_time_index_predict
 
-    # if not retraining and model is already fitted, ignore train_length
+    # if not retraining and model is already fitted, ignore train_length and val_length
     if not (retrain or (not model._fit_called)):
-        return historical_forecasts_time_index, None
-
-    effective_train_length = None
-    should_warn = False
-    start_time = historical_forecasts_time_index[0]
+        return historical_forecasts_time_index, None, None
 
     # adjust start time based on train_length
+    effective_train_length = None
+    warn_train_length = False
+    start_time = historical_forecasts_time_index[0]
     if train_length is None:
         # No train_length specified - adjust for minimum training samples if needed
         if model._min_train_samples > 1:
@@ -1079,7 +1079,7 @@ def _reconciliate_historical_time_indices(
 
             if train_length_start > historical_forecasts_time_index[-1]:
                 # train_length extends beyond available data
-                should_warn = True
+                warn_train_length = True
             else:
                 # train_length is valid
                 effective_train_length = train_length
@@ -1087,18 +1087,41 @@ def _reconciliate_historical_time_indices(
                     start_time = train_length_start
         else:
             # train_length exceeds series length
-            should_warn = True
+            warn_train_length = True
 
     historical_forecasts_time_index = (start_time, historical_forecasts_time_index[1])
 
-    if should_warn and show_warnings:
+    # adjust start time based on val_length
+    effective_val_length = 0
+    warn_val_length = False
+    start_time = historical_forecasts_time_index[0]
+    if val_length:
+        # adjust for val_length
+        val_length_start = historical_forecasts_time_index[0] + val_length * series.freq
+        if val_length_start > historical_forecasts_time_index[-1]:
+            # val_length extends beyond available data
+            warn_val_length = True
+        else:
+            # val_length is valid
+            effective_val_length = val_length
+            start_time = val_length_start
+
+    historical_forecasts_time_index = (start_time, historical_forecasts_time_index[1])
+
+    if warn_train_length and show_warnings:
         logger.warning(
-            f"`train_length` is too large for the historical forecasts for series at index: {series_idx}. "
+            f"`train_length` is too large for the historical forecasts of the series at index: {series_idx}. "
             f"Ignoring `train_length` and using default behavior where all available time steps up "
             f"until the end of the expanding training set. To hide these warnings, set `show_warnings=False`."
         )
+    if warn_val_length and show_warnings:
+        logger.warning(
+            f"`val_length` is too large for the historical forecasts of the series at index: {series_idx}. "
+            f"Ignoring `val_length` and will not pass an evaluation set to fit the model. To hide these "
+            f"warnings, set `show_warnings=False`."
+        )
 
-    return historical_forecasts_time_index, effective_train_length
+    return historical_forecasts_time_index, effective_train_length, effective_val_length
 
 
 def _get_historical_forecast_boundaries(
@@ -1346,15 +1369,17 @@ def _convert_data_transformers(
 
 def _apply_data_transformers(
     series: Union[TimeSeries, list[TimeSeries]],
+    val_series: Optional[Union[TimeSeries, list[TimeSeries]]],
     past_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
     future_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
     data_transformers: dict[str, Pipeline],
     max_future_cov_lag: int,
     fit_transformers: bool,
 ) -> tuple[
-    Union[TimeSeries, list[TimeSeries]],
-    Union[TimeSeries, list[TimeSeries]],
-    Union[TimeSeries, list[TimeSeries]],
+    Optional[Union[TimeSeries, list[TimeSeries]]],
+    Optional[Union[TimeSeries, list[TimeSeries]]],
+    Optional[Union[TimeSeries, list[TimeSeries]]],
+    Optional[Union[TimeSeries, list[TimeSeries]]],
 ]:
     """Transform each series using the corresponding Pipeline.
 
@@ -1374,9 +1399,15 @@ def _apply_data_transformers(
             )
         )
     transformed_ts = []
-    for ts_type, ts in zip(
-        ["series", "past_covariates", "future_covariates"],
-        [series, past_covariates, future_covariates],
+    for ts_type, apply_fit, ts in zip(
+        ["series", "series", "past_covariates", "future_covariates"],
+        [True, False, True, True],
+        [
+            series,
+            val_series,
+            past_covariates,
+            future_covariates,
+        ],  # mind the order, `val_series` after `series`
     ):
         if ts is None or data_transformers.get(ts_type) is None:
             transformed_ts.append(ts)
@@ -1391,10 +1422,12 @@ def _apply_data_transformers(
                     tmp_ts = ts.drop_after(
                         series.end_time() + max(0, max_future_cov_lag + 1) * series.freq
                     )
-                else:
+                else:  # "series" and "val_series"
                     # nothing to do, the target series is already sliced appropriately
                     tmp_ts = ts
-                data_transformers[ts_type].fit(tmp_ts)
+
+                if apply_fit:
+                    data_transformers[ts_type].fit(tmp_ts)
             # transforming the series
             transformed_ts.append(data_transformers[ts_type].transform(ts))
     return tuple(transformed_ts)

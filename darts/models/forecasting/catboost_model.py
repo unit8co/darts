@@ -416,7 +416,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         return kwargs
 
     @property
-    def supports_val_set(self) -> bool:
+    def _supports_val_series(self) -> bool:
         return True
 
     @property

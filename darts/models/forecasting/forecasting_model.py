@@ -61,7 +61,7 @@ from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_train_index,
     _historical_forecasts_general_checks,
     _process_historical_forecast_for_backtest,
-    _reconciliate_historical_time_indices,
+    _reconcile_historical_time_indices,
 )
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
@@ -237,6 +237,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return False
 
     @property
+    def _supports_val_series(self) -> bool:
+        """
+        Whether the model supports evaluation series passed to `fit()`.
+        """
+        return False
+
+    @property
     @abstractmethod
     def supports_multivariate(self) -> bool:
         """
@@ -400,9 +407,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         **kwargs,
     ):
         add_kwargs = {}
+
+        # optionally, add validation series if supported by the model
+        if val_series is not None and self._supports_val_series:
+            add_kwargs["val_series"] = val_series
+
         # handle past and future covariates based on model support
         for series_, series_name in zip(
             [past_covariates, future_covariates, sample_weight],
@@ -410,11 +423,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         ):
             if getattr(self, f"supports_{series_name}"):
                 add_kwargs[series_name] = series_
+                if val_series is not None and self._supports_val_series:
+                    add_kwargs[f"val_{series_name}"] = series_
             elif series_ is not None:
                 raise_log(
                     ValueError(f"Model cannot be fit/trained with `{series_name}`."),
                     logger,
                 )
+
         self.fit(series=series, **add_kwargs, **kwargs)
 
     def _predict_wrapper(
@@ -901,13 +917,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # data transformer already fitted and can be directly applied to all the series
         if data_transformers and not retrain:
             using_prefitted_transformers = True
-            series, past_covariates, future_covariates = _apply_data_transformers(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                data_transformers=data_transformers,
-                max_future_cov_lag=model.extreme_lags[5],
-                fit_transformers=False,
+            series, val_series, past_covariates, future_covariates = (
+                _apply_data_transformers(
+                    series=series,
+                    val_series=None,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    data_transformers=data_transformers,
+                    max_future_cov_lag=model.extreme_lags[5],
+                    fit_transformers=False,
+                )
             )
 
         if (
@@ -1010,7 +1029,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 (
                     historical_forecasts_time_index,
                     train_length_,
-                ) = _reconciliate_historical_time_indices(
+                    val_length_,
+                ) = _reconcile_historical_time_indices(
                     model=model,
                     historical_forecasts_time_index_predict=historical_forecasts_time_index_predict,
                     historical_forecasts_time_index_train=historical_forecasts_time_index_train,
@@ -1024,10 +1044,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 # we are only predicting: start of the series does not have to change
                 min_timestamp_series = series_.time_index[0]
+                historical_forecasts_time_index_train = None
                 historical_forecasts_time_index = (
                     historical_forecasts_time_index_predict
                 )
                 train_length_ = None
+                val_length_ = 0
 
             # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
             historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
@@ -1049,19 +1071,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             historical_forecasts_time_index = generate_index(
                 start=historical_forecasts_time_index[0],
                 end=historical_forecasts_time_index[-1],
-                freq=series_.freq,
+                freq=stride * series_.freq,
             )
 
             if len(series) == 1:
                 # Only use tqdm if there's no outer loop
                 iterator = _build_tqdm_iterator(
-                    historical_forecasts_time_index[::stride],
+                    historical_forecasts_time_index,
                     verbose,
-                    total=(len(historical_forecasts_time_index) - 1) // stride + 1,
+                    total=len(historical_forecasts_time_index),
                     desc="historical forecasts",
                 )
             else:
-                iterator = historical_forecasts_time_index[::stride]
+                iterator = historical_forecasts_time_index
 
             # Either store the whole forecasts or only the last points of each forecast, depending on last_points_only
             forecasts = []
@@ -1077,16 +1099,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else:
                     train_series = series_
 
+                # optionally, extract the evaluation series
+                val_series_ = train_series[-val_length_:] if val_length_ else None
                 # optionally, apply moving window (instead of expanding window)
                 if train_length_ and len(train_series) > train_length_:
-                    train_series = train_series[-train_length_:]
+                    train_series_ = train_series[
+                        -(train_length_ + val_length_) : (-val_length or None)
+                    ]
+                else:
+                    train_series_ = train_series
 
                 # when `retrain=True`, data transformers are also retrained between iterations to avoid data-leakage
                 # using a single series
                 if data_transformers and retrain:
-                    train_series, past_covariates_, future_covariates_ = (
+                    train_series_, val_series_, past_covariates_, future_covariates_ = (
                         _apply_data_transformers(
-                            series=train_series,
+                            series=train_series_,
+                            val_series=val_series_,
                             past_covariates=past_covariates_,
                             future_covariates=future_covariates_,
                             data_transformers=data_transformers,
@@ -1107,17 +1136,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     if retrain_func(
                         counter=_counter_train,
                         pred_time=pred_time,
-                        train_series=train_series,
+                        train_series=train_series_,
                         past_covariates=past_covariates_,
                         future_covariates=future_covariates_,
                     ):
                         # avoid fitting the same model multiple times
                         model = model.untrained_model()
                         model._fit_wrapper(
-                            series=train_series,
+                            series=train_series_,
                             past_covariates=past_covariates_,
                             future_covariates=future_covariates_,
                             sample_weight=sample_weight_,
+                            val_series=val_series_,
                             **fit_kwargs,
                         )
                     else:

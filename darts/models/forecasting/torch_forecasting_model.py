@@ -2412,6 +2412,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
+    def _supports_val_series(self) -> bool:
+        return True
+
+    @property
     def _min_train_samples(self) -> int:
         # dataset requires at least one sample
         return 1

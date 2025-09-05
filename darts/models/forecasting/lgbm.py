@@ -343,7 +343,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         return self
 
     @property
-    def supports_val_set(self) -> bool:
+    def _supports_val_series(self) -> bool:
         return True
 
     @property

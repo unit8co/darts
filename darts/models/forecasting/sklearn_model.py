@@ -857,7 +857,7 @@ class SKLearnModel(GlobalForecastingModel):
             stride=stride,
         )
 
-        if self.supports_val_set and val_series is not None:
+        if self._supports_val_series and val_series is not None:
             kwargs = self._add_val_set_to_kwargs(
                 kwargs=kwargs,
                 val_series=val_series,
@@ -993,7 +993,7 @@ class SKLearnModel(GlobalForecastingModel):
                 "constructor.",
             )
 
-        if self.supports_val_set:
+        if self._supports_val_series:
             val_series, val_past_covariates, val_future_covariates = (
                 self._process_validation_set(
                     series=series,
@@ -1467,11 +1467,6 @@ class SKLearnModel(GlobalForecastingModel):
     @property
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
-
-    @property
-    def supports_val_set(self) -> bool:
-        """Whether the model supports a validation set during training."""
-        return False
 
     @property
     def supports_sample_weight(self) -> bool:
