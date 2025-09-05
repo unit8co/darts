@@ -1141,24 +1141,31 @@ class TestTorchForecastingModel:
             assert 1 == model.epochs_trained
 
             preds = model.predict(n=10)
-            assert preds.dtype == dtype
+            if dtype != np.float16:
+                # predictions should have same dtype as input except for float16
+                assert preds.dtype == dtype
+            else:
+                # predictions are float32 when input is float16
+                assert preds.dtype == np.float32
 
     def test_mixed_precision_training(self):
-        kwargs = copy.deepcopy(tfm_kwargs)
-        kwargs["pl_trainer_kwargs"]["precision"] = "16"
-        model = RNNModel(
-            12,
-            "RNN",
-            10,
-            10,
-            n_epochs=20,
-            **kwargs,
-        )
-        model.fit(self.series.astype(np.float32), epochs=1)
-        assert 1 == model.epochs_trained
+        # test model training with mixed precision (16-mixed and bf16-mixed)
+        for precision in ["16-mixed", "bf16-mixed"]:
+            kwargs = copy.deepcopy(tfm_kwargs)
+            kwargs["pl_trainer_kwargs"]["precision"] = precision
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=20,
+                **kwargs,
+            )
+            model.fit(self.series.astype(np.float32), epochs=1)
+            assert 1 == model.epochs_trained
 
-        preds = model.predict(n=10)
-        assert preds.dtype == np.float32
+            preds = model.predict(n=10)
+            assert preds.dtype == np.float32
 
     def test_load_weights_from_checkpoint(self, tmpdir_fn):
         ts_training, ts_test = self.series.split_before(90)

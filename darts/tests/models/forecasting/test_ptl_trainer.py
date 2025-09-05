@@ -22,7 +22,7 @@ class TestPTLTrainer:
     }
     series = linear_timeseries(length=100).astype(np.float32)
     precisions = {
-        16: "16-true",
+        16: "bf16-true",
         32: "32-true",
         64: "64-true",
         "mixed": "16-mixed",
@@ -191,7 +191,10 @@ class TestPTLTrainer:
             model.fit(self.series.astype(ts_dtype), epochs=1)
             preds = model.predict(n=3)
             assert model.trainer.precision == self.precisions[precision]
-            assert preds.dtype == ts_dtype
+            if ts_dtype != np.float16:
+                assert preds.dtype == ts_dtype
+            else:
+                assert preds.dtype == np.float32
 
     def test_custom_callback(self, tmpdir_module):
         class CounterCallback(pl.callbacks.Callback):
