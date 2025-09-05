@@ -445,7 +445,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
         dtype = self.train_sample[0].dtype
         if precision_user is not None:
-            logger.info(f"Using user-defined precision: {precision_user}")
+            logger.warning(
+                f"Using user-defined precision: {precision_user}. "
+                "For mixed precision training, recommended options are 'bf16-mixed' "
+                "and '16-mixed'. See https://github.com/unit8co/darts/pull/2883 for "
+                "a discussion on low precision options across hardware platforms and "
+                "https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.trainer.trainer.Trainer.html#lightning.pytorch.trainer.trainer.Trainer.params.precision"
+                " for a full list of options in PyTorch-Lightning."
+            )
             precision = precision_user
         elif np.issubdtype(dtype, np.float32):
             logger.info("Time series values are 32-bits; casting model to float32.")
@@ -454,8 +461,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             logger.info("Time series values are 64-bits; casting model to float64.")
             precision = "64-true"
         elif np.issubdtype(dtype, np.float16):
-            logger.info("Time series values are 16-bits; casting model to float16.")
-            precision = "16-true"
+            logger.warning(
+                "Time series values are 16-bits; casting model to bfloat16. "
+                "Training with 16-bit time series may lead to numerical instability "
+                "in some models. If you encounter issues, consider casting your data "
+                "to 32-bit, e.g. with `TimeSeries.astype(np.float32)`."
+            )
+            precision = "bf16-true"
         else:
             raise_log(
                 ValueError(
