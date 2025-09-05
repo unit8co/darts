@@ -39,7 +39,6 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 - Have a hierarchy consistent with their components, or no hierarchy
 """
 
-import contextlib
 import itertools
 import pickle
 import re
@@ -67,6 +66,7 @@ from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
+    dataframe_col_to_time_index,
     expand_arr,
     generate_index,
     n_steps_between,
@@ -801,69 +801,9 @@ class TimeSeries:
         """
         df = nw.from_native(df, eager_only=True, pass_through=False)
 
-        # get values
-        if value_cols is None:
-            series_df = df.drop(time_col) if time_col else df
-        else:
-            if isinstance(value_cols, (str, int)):
-                value_cols = [value_cols]
-            series_df = df[value_cols]
-
         # get time index
         if time_col:
-            if time_col not in df.columns:
-                raise_log(AttributeError(f"time_col='{time_col}' is not present."))
-
-            time_col_vals = df.get_column(time_col)
-
-            if time_col_vals.dtype == nw.String:
-                # Try to convert to integers if needed
-                with contextlib.suppress(Exception):
-                    time_col_vals = time_col_vals.cast(nw.Int64)
-
-            if time_col_vals.dtype.is_integer():
-                if time_col_vals.is_duplicated().any():
-                    raise_log(
-                        ValueError(
-                            "The provided integer time index column contains duplicate values."
-                        )
-                    )
-                # Temporarily use an integer `pd.Index` to sort the values; later replaced with
-                # a `pd.RangeIndex` in `__init__()`
-                time_index = pd.Index(time_col_vals)
-
-            elif isinstance(time_col_vals.dtype, nw.String):
-                # The integer conversion failed; try datetimes
-                try:
-                    time_index = pd.DatetimeIndex(time_col_vals)
-                except ValueError:
-                    raise_log(
-                        AttributeError(
-                            "'time_col' is of 'String' dtype but doesn't contain valid timestamps"
-                        )
-                    )
-            elif isinstance(time_col_vals.dtype, nw.Datetime):
-                # force time index to be timezone naive, as polars converts to UTC
-                time_zone = time_col_vals.dtype.time_zone
-                if time_zone is not None:
-                    logger.warning(
-                        "The provided DatetimeIndex was associated with a timezone (tz), which is currently not "
-                        "supported. To avoid unexpected behaviour, the tz information was removed. Consider calling "
-                        f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
-                        "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
-                        "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
-                        "original timezone."
-                    )
-                    time_col_vals = time_col_vals.dt.replace_time_zone(None)
-                time_index = pd.DatetimeIndex(time_col_vals)
-            else:
-                raise_log(
-                    AttributeError(
-                        "Invalid type of `time_col`: it needs to be of either 'String', 'Datetime' or 'Int' dtype."
-                    )
-                )
-            if not time_index.name:
-                time_index.name = time_col
+            time_index = dataframe_col_to_time_index(df, time_col)
         else:
             time_index = nw.maybe_get_index(df)
             if time_index is None:
@@ -886,6 +826,14 @@ class TimeSeries:
                     logger,
                 )
 
+        # get values
+        if value_cols is None:
+            series_df = df.drop(time_col) if time_col else df
+        else:
+            if isinstance(value_cols, (str, int)):
+                value_cols = [value_cols]
+            series_df = df[value_cols]
+
         return cls(
             times=time_index,
             values=series_df.to_numpy(),
@@ -902,7 +850,7 @@ class TimeSeries:
     @classmethod
     def from_group_dataframe(
         cls,
-        df: pd.DataFrame,
+        df: IntoDataFrame,
         group_cols: Union[list[str], str],
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
@@ -928,7 +876,10 @@ class TimeSeries:
         Parameters
         ----------
         df
-            The DataFrame
+            The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
+            polars.DataFrame, ...). See the `narwhals documentation
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            information.
         group_cols
             A string or list of strings representing the columns from the DataFrame by which to extract the
             individual TimeSeries groups.
@@ -1012,11 +963,31 @@ class TimeSeries:
         >>> len(series_multi), series_multi[0].shape, series_multi[1].shape
         (2, (3, 1, 1), (6, 1, 1))
         """
-        if time_col is None and df.index.is_monotonic_increasing:
+        df = nw.from_native(df, eager_only=True, pass_through=False)
+        if time_col is None:
+            if not df.implementation.is_pandas():
+                raise_log(
+                    ValueError(
+                        "`time_col` is required when `df` is not a `pandas.DataFrame`."
+                    ),
+                    logger=logger,
+                )
+            is_sorted = nw.maybe_get_index(df).is_monotonic_increasing
+        else:
+            is_sorted = df.get_column(time_col).is_sorted()
+
+            if df.implementation.is_pandas():
+                # with pandas we can get a performance boost by converting the time_col to index
+                time_index = dataframe_col_to_time_index(df, time_col)
+                df: pd.DataFrame = df.drop(time_col).to_native().set_index(time_index)
+                df = nw.from_native(df)
+                time_col = None
+
+        if is_sorted:
             logger.warning(
-                "UserWarning: `time_col` was not set and `df` has a monotonically increasing (time) index. This "
-                "results in time series groups with non-overlapping (time) index. You can ignore this warning if the "
-                "index represents the actual index of each individual time series group."
+                "UserWarning: The (time) index from `df` is monotonically increasing. This may "
+                "result in time series groups with non-overlapping (time) index. You can ignore this "
+                "warning if the index represents the actual index of each individual time series group."
             )
 
         # group cols: used to extract time series groups from `df`, will also be added as static covariates
@@ -1074,9 +1045,12 @@ class TimeSeries:
         extract_time_col = [] if time_col is None else [time_col]
 
         if value_cols is None:
-            value_cols = df.columns.drop(
-                static_cov_cols + extract_metadata_cols + extract_time_col
-            ).tolist()
+            value_cols = [
+                col
+                for col in df.columns
+                if col
+                not in set(static_cov_cols + extract_metadata_cols + extract_time_col)
+            ]
         extract_value_cols = [value_cols] if isinstance(value_cols, str) else value_cols
 
         df = df[
@@ -1086,44 +1060,29 @@ class TimeSeries:
             + extract_metadata_cols
         ]
 
-        if time_col:
-            if np.issubdtype(df[time_col].dtype, object) or np.issubdtype(
-                df[time_col].dtype, np.datetime64
-            ):
-                df.index = pd.DatetimeIndex(df[time_col])
-                df = df.drop(columns=time_col)
-            else:
-                df = df.set_index(time_col)
+        groups = df.group_by(group_cols[0] if len(group_cols) == 1 else group_cols)
 
-        if df.index.is_monotonic_increasing:
-            logger.warning(
-                "UserWarning: The (time) index from `df` is monotonically increasing. This "
-                "results in time series groups with non-overlapping (time) index. You can ignore this warning if the "
-                "index represents the actual index of each individual time series group."
-            )
-
-        # sort on entire `df` to avoid having to sort individually later on
-        else:
-            df = df.sort_index()
-
-        groups = df.groupby(group_cols[0] if len(group_cols) == 1 else group_cols)
+        # not all backends maintain the order when grouping; need to sort the groups in the end for reproducibility
+        unique_groups = df[group_cols].unique().sort(by=group_cols).to_numpy()
+        sorted_group_idx = {
+            tuple(group_): idx for idx, group_ in enumerate(unique_groups)
+        }
 
         # build progress bar for iterator
         iterator = _build_tqdm_iterator(
             groups,
             verbose=verbose,
-            total=len(groups),
+            total=len(unique_groups),
             desc="Creating TimeSeries",
         )
 
         def from_group(static_cov_vals, group):
-            split = group[extract_value_cols]
-
             static_cov_vals = (
                 (static_cov_vals,)
                 if not isinstance(static_cov_vals, tuple)
                 else static_cov_vals
             )
+            group_idx = static_cov_vals
             # optionally, exclude group columns from static covariates
             if drop_group_col_idx:
                 if len(drop_group_col_idx) == len(group_cols):
@@ -1137,37 +1096,48 @@ class TimeSeries:
 
             if static_cols:
                 # use first value as static covariate (assume only one unique per group)
-                static_cov_vals += tuple(group[static_cols].values[0])
+                static_cov_vals += group[static_cols].row(0)
 
             metadata = None
             if metadata_cols:
                 # use first value as metadata (assume only one unique per group)
                 metadata = {
                     col: val
-                    for col, val in zip(metadata_cols, group[metadata_cols].values[0])
+                    for col, val in zip(metadata_cols, group[metadata_cols].row(0))
                 }
 
-            return cls.from_dataframe(
-                df=split,
-                fill_missing_dates=fill_missing_dates,
-                freq=freq,
-                fillna_value=fillna_value,
-                static_covariates=(
-                    pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
-                    if extract_static_cov_cols
-                    else None
+            return (
+                group_idx,
+                cls.from_dataframe(
+                    df=group,
+                    time_col=time_col,
+                    value_cols=extract_value_cols,
+                    fill_missing_dates=fill_missing_dates,
+                    freq=freq,
+                    fillna_value=fillna_value,
+                    static_covariates=(
+                        pd.DataFrame([static_cov_vals], columns=extract_static_cov_cols)
+                        if extract_static_cov_cols
+                        else None
+                    ),
+                    metadata=metadata,
+                    copy=copy,
                 ),
-                metadata=metadata,
-                copy=copy,
             )
 
-        return _parallel_apply(
+        series_groups = _parallel_apply(
             iterator,
             from_group,
             n_jobs,
             fn_args=dict(),
             fn_kwargs=dict(),
         )
+
+        # re-order series to get reproducible results
+        series = [None] * len(sorted_group_idx)
+        for group_i, series_group in series_groups:
+            series[sorted_group_idx[group_i]] = series_group
+        return series
 
     @classmethod
     def from_series(
@@ -4783,7 +4753,7 @@ class TimeSeries:
             )
 
         # component names
-        cnames = [f"{comp}_q{q_i:.2f}" for comp in self.components for q_i in q]
+        cnames = [f"{comp}_q{q_i:.3f}" for comp in self.components for q_i in q]
 
         # get quantiles of shape (n quantiles, n times, n components)
         new_data = np.quantile(self._values, q=q, axis=2, **kwargs)
