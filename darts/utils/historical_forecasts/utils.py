@@ -1056,54 +1056,48 @@ def _reconciliate_historical_time_indices(
         historical_forecasts_time_index = historical_forecasts_time_index_predict
 
     # compute the maximum forecasts time index assuming that `start=None`
-    if retrain or (not model._fit_called):
-        if train_length and train_length <= len(series):
-            train_length_ = train_length
-            # we have to start later for larger `train_length`
-            step_ahead = max(train_length - model._training_sample_time_index_length, 0)
-            if step_ahead:
-                historical_forecasts_time_index = (
-                    historical_forecasts_time_index[0] + step_ahead * series.freq,
-                    historical_forecasts_time_index[-1],
-                )
+    train_length_ = None
+    warn_train_length = False
 
-        # if not we start training right away; some models (sklearn) require more than 1
-        # training samples, so we start after the first trainable point.
+    if not (retrain or (not model._fit_called)):
+        # if not retraining, we ignore train_length
+        return historical_forecasts_time_index, train_length_
+
+    hfc_start = historical_forecasts_time_index[0]
+
+    # adjust the start based on train_length
+    if train_length is None:
+        # start training right away; some models require more than 1 training samples
+        if model._min_train_samples > 1:
+            hfc_start += (model._min_train_samples - 1) * series.freq
+    elif train_length <= len(series):
+        # start might be after the first forecastable point
+        train_length_start = series._time_index[train_length - 1] + series.freq
+
+        if train_length_start > historical_forecasts_time_index[-1]:
+            # train_length is after the last possible index; ignore it and start right away
+            warn_train_length = True
         else:
-            if train_length and train_length > len(series) and show_warnings:
-                logger.warning(
-                    f"`train_length` is larger than the length of series at index: {series_idx}. "
-                    f"Ignoring `train_length` and using default behavior where all available time steps up "
-                    f"until the end of the expanding training set. "
-                    f"To hide these warnings, set `show_warnings=False`."
-                )
+            # train_length is valid; use it
+            train_length_ = train_length
+            if train_length_start > historical_forecasts_time_index[0]:
+                # start after the first forecastable point
+                hfc_start = train_length_start
+    else:
+        # `train_length` is larger than the length of series; ignore it and start right away
+        warn_train_length = True
 
-            train_length_ = None
-            if model._min_train_samples > 1:
-                # TODO:
-                #  - adjust train_length to actually look at samples rather than full time spans
-                #  - same for val_length
-                #  - write new / adjust min_training_length to be (min_train_samples - 1) + time span for input + output
-                #    (don't forget RNN training length in the last model.extreme_lags element)
-                #  - write new / min_valiation_length to be time span for input + output
-                #  - check the sanity checks and here these start adjustments
-                #  - check SKLearnModel min_train_series length, it's not correct
-                historical_forecasts_time_index = (
-                    historical_forecasts_time_index[0]
-                    + (model._min_train_samples - 1) * series.freq,
-                    historical_forecasts_time_index[1],
-                )
+    historical_forecasts_time_index = (hfc_start, historical_forecasts_time_index[1])
 
-        # if val_length > 0:
-        #     icl, ocl = model.extreme_lags[:2]
-        #     icl = abs(icl) or 0
-        #     ocl = ocl + 1 if ocl is not None else 1
-        #
-        #     # we need to leave space for the validation set after the end of the training set
-        #     historical_forecasts_time_index = (
-        #         historical_forecasts_time_index[0] + val_length * series.freq,
-        #         historical_forecasts_time_index[1],
-        #     )
+    if not show_warnings:
+        warn_train_length = False
+
+    if warn_train_length:
+        logger.warning(
+            f"`train_length` is too large for the historical forecasts for series at index: {series_idx}. "
+            f"Ignoring `train_length` and using default behavior where all available time steps up "
+            f"until the end of the expanding training set. To hide these warnings, set `show_warnings=False`."
+        )
 
     return historical_forecasts_time_index, train_length_
 
