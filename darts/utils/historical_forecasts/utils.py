@@ -403,17 +403,15 @@ def _historical_forecasts_general_checks(
             ValueError("`val_length` must be a non-negative integer."),
             logger,
         )
-    elif n.val_length >= 1:
+    elif 1 <= n.val_length < model._train_target_sample_lengths[1]:
         # val length must cover at least one full prediction output (e.g. output window)
         # the first input window is taken from the end of training series to use all available data
-        min_val_length = (model.output_chunk_length or 0) + model.output_chunk_shift
-        if n.val_length < min_val_length:
-            raise_log(
-                ValueError(
-                    f"`val_length` is too small for the validation requirements of this model. "
-                    f"Must be `>={min_val_length}`."
-                )
+        raise_log(
+            ValueError(
+                f"`val_length` is too small for the validation requirements of this model. "
+                f"Must be `>={model._train_target_sample_lengths[1]}`."
             )
+        )
 
     # check retrain value
     if not (

@@ -517,11 +517,14 @@ class EnsembleModel(GlobalForecastingModel):
         return max(model._min_train_samples for model in self.forecasting_models)
 
     @property
-    def _train_target_sample_length(self) -> int:
+    def _train_target_sample_lengths(self) -> tuple[int, int]:
         # for ensemble, the target sample length is the max of the sub-models' target sample lengths
-        return max(
-            model._train_target_sample_length for model in self.forecasting_models
-        )
+        lengths_max = (0, 0)
+        for model in self.forecasting_models:
+            model_lengths = model._train_target_sample_lengths
+            if sum(model_lengths) > sum(lengths_max):
+                lengths_max = model_lengths
+        return lengths_max
 
     @property
     def extreme_lags(

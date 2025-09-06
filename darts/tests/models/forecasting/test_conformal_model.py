@@ -240,10 +240,9 @@ class TestConformalModel:
         cal_length = model.cal_length or 1
         assert model.extreme_lags == model.model.extreme_lags
         assert model._min_train_samples == cal_length
-        assert (
-            model.min_train_series_length
-            == model.model._train_target_sample_length + (cal_length - 1)
-        )
+        assert model.min_train_series_length == sum(
+            model.model._train_target_sample_lengths
+        ) + (cal_length - 1)
 
         unsupported_properties = ["_model_encoder_settings"]
         for prop in unsupported_properties:

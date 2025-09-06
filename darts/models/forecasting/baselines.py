@@ -109,8 +109,8 @@ class NaiveSeasonal(LocalForecastingModel):
         return True
 
     @property
-    def _train_target_sample_length(self):
-        return max(self.K, 3)
+    def _train_target_sample_lengths(self):
+        return max(self.K, 3), 0
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -229,8 +229,8 @@ class NaiveMovingAverage(LocalForecastingModel):
         return True
 
     @property
-    def _train_target_sample_length(self):
-        return self.input_chunk_length
+    def _train_target_sample_lengths(self):
+        return self.input_chunk_length, 0
 
     def __str__(self):
         return f"NaiveMovingAverage({self.input_chunk_length})"

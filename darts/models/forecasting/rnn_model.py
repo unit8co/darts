@@ -602,8 +602,9 @@ class RNNModel(DualCovariatesTorchModel):
         )
 
     @property
-    def _train_target_sample_length(self) -> int:
-        return self.training_length + 1
+    def _train_target_sample_lengths(self) -> tuple[int, int]:
+        # RNN always has `output_chunk_length=1`, `output_chunk_shift=0`
+        return self.training_length, self.output_chunk_length + self.output_chunk_shift
 
     @property
     def extreme_lags(

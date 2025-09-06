@@ -474,7 +474,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         The minimum required length for the training series.
         """
-        return self._train_target_sample_length + (self._min_train_samples - 1)
+        return sum(self._train_target_sample_lengths) + (self._min_train_samples - 1)
 
     @property
     @abstractmethod
@@ -485,16 +485,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     @abstractmethod
-    def _train_target_sample_length(self) -> int:
+    def _train_target_sample_lengths(self) -> tuple[int, int]:
         """
-        The minimum required length for the training target series to create one training sample.
-        """
-
-    @property
-    @abstractmethod
-    def _val_target_sample_length(self) -> int:
-        """
-        The minimum required length for the validation target series to create one evaluation example.
+        The minimum input and output lengths for the training target series to create one training sample.
         """
 
     @property
@@ -1099,8 +1092,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else:
                     train_series = series_
 
-                # optionally, extract the evaluation series
-                val_series_ = train_series[-val_length_:] if val_length_ else None
                 # optionally, apply moving window (instead of expanding window)
                 if train_length_ and len(train_series) > train_length_:
                     train_series_ = train_series[
@@ -1108,6 +1099,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     ]
                 else:
                     train_series_ = train_series
+
+                # optionally, extract the evaluation series;
+                # include the input_length to allow direct evaluation after the training set
+                input_length = model._train_target_sample_lengths[0]
+                val_series_ = (
+                    train_series[-(val_length_ + input_length) :]
+                    if val_length_
+                    else None
+                )
 
                 # when `retrain=True`, data transformers are also retrained between iterations to avoid data-leakage
                 # using a single series
@@ -2946,14 +2946,9 @@ class LocalForecastingModel(ForecastingModel, ABC):
         return 1
 
     @property
-    def _train_target_sample_length(self) -> int:
+    def _train_target_sample_lengths(self) -> tuple[int, int]:
         # local models do not work with samples, so the length of the training sample is not tied to lags
-        return 3
-
-    @property
-    def _val_target_sample_length(self) -> int:
-        # local forecasting models do not support validation series, so this is not relevant
-        return 0
+        return 3, self.output_chunk_length or 0
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
@@ -3196,11 +3191,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         Whether model supports sample weight for training.
         """
         return True
-
-    @property
-    def _val_target_sample_length(self) -> int:
-        # the length of the validation sample is the same as the training sample length
-        return self._train_target_sample_length
 
 
 class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):

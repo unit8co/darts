@@ -614,9 +614,9 @@ class SKLearnModel(GlobalForecastingModel):
         return True
 
     @property
-    def _train_target_sample_length(self) -> int:
+    def _train_target_sample_lengths(self) -> tuple[int, int]:
         input_chunk_length = -self.lags["target"][0] if "target" in self.lags else 0
-        return input_chunk_length + self.output_chunk_length + self.output_chunk_shift
+        return input_chunk_length, self.output_chunk_length + self.output_chunk_shift
 
     @property
     def _min_train_samples(self) -> int:

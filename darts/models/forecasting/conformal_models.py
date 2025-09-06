@@ -1489,8 +1489,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
         return self.model.extreme_lags
 
     @property
-    def _train_target_sample_length(self) -> int:
-        return self.model._train_target_sample_length
+    def _train_target_sample_lengths(self) -> tuple[int, int]:
+        return self.model._train_target_sample_lengths
 
     @property
     def _min_train_samples(self) -> int:
