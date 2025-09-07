@@ -3,6 +3,7 @@ Utils for TimeSeries generation
 -------------------------------
 """
 
+import math
 from collections.abc import Sequence
 from typing import Any, Callable, Optional, Union
 
@@ -34,6 +35,54 @@ ONE_INDEXED_FREQS = {
     "week_of_year",
 }
 TIMES_NAME = DIMS[TIME_AX]
+MAX_DATETIME_VALUES = {
+    "month": 12,
+    "day": 31,
+    "weekday": 7,
+    "dayofweek": 7,
+    "day_of_week": 7,
+    "hour": 24,
+    "minute": 60,
+    "second": 60,
+    "microsecond": 1000000,
+    "nanosecond": 1000,
+    "quarter": 4,
+    # leap years insert an additional day on the 29th of February
+    "dayofyear": 365 + 1,
+    "day_of_year": 365 + 1,
+    # years contain an additional week if they are :
+    # - a regular year starting on a thursday
+    # - a leap year starting on a wednesday
+    "week": 52 + 1,
+    "weekofyear": 52 + 1,
+    "week_of_year": 52 + 1,
+}
+PERIOD_BY_ATTRIBTUE = {
+    "month": pd.Timedelta(days=366),
+    "day": pd.Timedelta(days=31),
+    "weekday": pd.Timedelta(days=7),
+    "dayofweek": pd.Timedelta(days=7),
+    "day_of_week": pd.Timedelta(days=7),
+    "hour": pd.Timedelta(hours=24),
+    "minute": pd.Timedelta(minutes=60),
+    "second": pd.Timedelta(seconds=60),
+    "microsecond": pd.Timedelta(microseconds=1000000),
+    "nanosecond": pd.Timedelta(nanoseconds=1000),
+    "quarter": pd.Timedelta(days=366),  # approx
+    "dayofyear": pd.Timedelta(days=366),
+    "day_of_year": pd.Timedelta(days=366),
+    "week": pd.Timedelta(weeks=53),
+    "weekofyear": pd.Timedelta(weeks=53),
+    "week_of_year": pd.Timedelta(weeks=53),
+}
+DATETIME_ATT_WITH_VARIABLE_MAX = [
+    "day",
+    "dayofyear",
+    "day_of_year",
+    "week",
+    "weekofyear",
+    "week_of_year",
+]
 
 
 def constant_timeseries(
@@ -571,11 +620,221 @@ def holidays_timeseries(
     )
 
 
+def _get_datetime_attribute_values(
+    attribute: str, time_index: pd.DatetimeIndex
+) -> pd.Index:
+    if attribute not in ["week", "weekofyear", "week_of_year"]:
+        values = getattr(time_index, attribute)
+    else:
+        values = (
+            time_index.isocalendar()
+            .set_index("week")
+            .index.astype("int64")
+            .rename("time")
+        )
+    # shift 1-indexed datetime attributes
+    if attribute in ONE_INDEXED_FREQS:
+        values -= 1
+    return values
+
+
+def _timedelta_lcm(td1: pd.Timedelta, td2: pd.Timedelta) -> pd.Timedelta:
+    """Returns the least common multiple (LCM) of two pandas Timedelta objects.
+
+    Raises a ValueError if no meaningful LCM exists (e.g., for zero or non-integer nanosecond values).
+
+    Parameters
+    ----------
+    td1
+        The first Timedelta.
+    td2
+        The second Timedelta.
+
+    Returns
+    -------
+    pd.Timedelta
+        The LCM of the two Timedelta objects.
+
+    Raises
+    ------
+    ValueError
+        If no meaningful LCM exists (e.g., for zero or non-integer nanosecond values).
+    """
+    ns1 = td1.value
+    ns2 = td2.value
+
+    # Check for zero timedelta
+    if ns1 == 0 or ns2 == 0:
+        raise ValueError("Timedelta values must be non-zero.")
+
+    # Check for integer nanosecond representation
+    if not isinstance(ns1, int) or not isinstance(ns2, int):
+        raise ValueError("Timedelta values must be integer nanoseconds.")
+
+    gcd = math.gcd(ns1, ns2)
+    if gcd == 0:
+        raise ValueError("No meaningful LCM possible (GCD is zero).")
+
+    lcm_ns = abs(ns1 * ns2) // gcd
+
+    # Check if LCM is a multiple of both inputs
+    if lcm_ns % ns1 != 0 or lcm_ns % ns2 != 0:
+        raise ValueError("No integer LCM exists for these Timedelta values.")
+
+    return pd.Timedelta(lcm_ns, unit="ns")
+
+
+def unique_datetime_value_freq_aware(
+    attribute: str, freq: pd.tseries.offsets.BaseOffset, start: pd.Timestamp
+) -> np.ndarray[int]:
+    """Returns a sorted array of unqiue values that the given datetime attribute can take, based on `freq` and `start`.
+
+    Parameters
+    ----------
+    attribute
+        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day",
+        "hour", "minute", "second". See all available attributes in
+        https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
+    freq
+        The frequency of the time index.
+    start
+        The start of the time index.
+
+    Returns
+    -------
+    np.ndarray[int]
+        Sorted array of all the unique values that the given datetime attribute can take.
+
+    See Also
+    --------
+    unique_datetime_values: When all possible values for the attribute are to be returned.
+
+    Warnings
+    --------
+    For attributes with a variable number of maximum values (day, dayofyear, day_of_year, week, weekofyear,
+    week_of_year), this function will return all possible values as fallback, since actually computing the values
+    would be inefficient.
+
+    Examples
+    --------
+    >>> from darts.utils.timeseries_generation import unique_datetime_values
+    >>> from pandas.tseries.frequencies import to_offset
+    >>> unique_datetime_values("hour", "15min", pd.Timestamp("2020-01-01"))
+    array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17,
+           18, 19, 20, 21, 22, 23])
+    >>> unique_datetime_values("minute", "15min", pd.Timestamp("2020-01-01"))
+    array([0, 15, 30, 45])
+    """
+    raise_if_not(
+        attribute in MAX_DATETIME_VALUES,
+        f"Can't determine unique  values for attribute `{attribute}`, required for cyclic and one-hot encodings. "
+        f"Supported datetime attribute: {list(MAX_DATETIME_VALUES.keys())}",
+        logger,
+    )
+    # Common frequencies, which are not convertable to pd.Timedelta
+    fixed_yearly = {
+        "month",
+        "day",
+        "hour",
+        "minute",
+        "second",
+        "microsecond",
+        "nanosecond",
+        "quarter",
+    }
+    fixed_monthly = {"day", "hour", "minute", "second", "microsecond", "nanosecond"}
+    fixed_attributes = {
+        pd.tseries.offsets.YearBegin: fixed_yearly,
+        pd.tseries.offsets.YearEnd: fixed_yearly,
+        pd.tseries.offsets.MonthBegin: fixed_monthly,
+        pd.tseries.offsets.MonthEnd: fixed_monthly,
+    }
+    if type(freq) in fixed_attributes:
+        if attribute in fixed_attributes[type(freq)]:
+            val = np.array([getattr(start, attribute)])
+            if attribute in ONE_INDEXED_FREQS:
+                val -= 1
+            return val
+        else:
+            return unique_datetime_values(attribute)
+    # Handle other frequencies
+    freq_delta = None
+    try:
+        freq_delta = pd.Timedelta(freq.freqstr)
+    except ValueError as e:
+        if e.args and "unit abbreviation w/o a number" in e.args[0]:
+            try:
+                freq_delta = pd.Timedelta(1, unit=freq.freqstr)
+            except ValueError:
+                pass
+    finally:
+        if freq_delta is None:
+            raise_log(
+                ValueError(
+                    f"Can't convert freq `{freq.freqstr}` to pd.Timedelta, required for computing unique values for "
+                    f"attribute `{attribute}`. Please provide a frequency that can be converted to pd.Timedelta, "
+                    f"e.g. '15min', '1H', '3D', '1W'. Alternatively, use a frequency unaware encoding or omit the "
+                    "attribute."
+                ),
+                logger,
+            )
+    if attribute in DATETIME_ATT_WITH_VARIABLE_MAX:
+        # For these attributes, periods must be really long to capture all possible values
+        #
+        logger.warning(
+            "Finding unique values for attribute `%s` based on frequency uses all possible values as fallback.",
+            attribute,
+        )
+        return unique_datetime_values(attribute)
+    lcm = _timedelta_lcm(freq_delta, PERIOD_BY_ATTRIBTUE[attribute])
+    num_unique = lcm // freq_delta
+    idx = pd.date_range(start=start, freq=freq_delta, periods=num_unique)
+    values: pd.Index = _get_datetime_attribute_values(attribute, idx).sort_values()
+    return values.unique().to_numpy()
+
+
+def unique_datetime_values(attribute: str) -> np.ndarray[int]:
+    """Returns a sorted array of all the unique values that the given datetime attribute can take.
+
+    Parameters
+    ----------
+    attribute
+        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day",
+        "hour", "minute", "second". See all available attributes in
+        https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
+
+    Returns
+    -------
+    np.ndarray[int]
+        Sorted array of all the unique values that the given datetime attribute can take.
+
+    See Also
+    --------
+    unique_datetime_value_freq_aware: When the unique values are to be determined based on `freq` and `start`.
+
+    Examples
+    --------
+    >>> from darts.utils.timeseries_generation import unique_datetime_values
+    >>> from pandas.tseries.frequencies import to_offset
+    >>> unique_datetime_values("month")
+    array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11])
+    """
+    raise_if_not(
+        attribute in MAX_DATETIME_VALUES,
+        f"Can't determine unique  values for attribute `{attribute}`, required for cyclic and one-hot encodings. "
+        f"Supported datetime attribute: {list(MAX_DATETIME_VALUES.keys())}",
+        logger,
+    )
+    return np.arange(MAX_DATETIME_VALUES[attribute])
+
+
 def datetime_attribute_timeseries(
     time_index: Union[pd.DatetimeIndex, TimeSeries],
     attribute: str,
     one_hot: bool = False,
+    one_hot_freq_aware: bool = False,
     cyclic: bool = False,
+    cyclic_relative: bool = False,
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
     dtype=np.float64,
@@ -600,10 +859,19 @@ def datetime_attribute_timeseries(
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
+    one_hot_freq_aware
+        Boolean value that controls the behavior of one-hot encoding. If `True`, the one-hot encoding includes only the
+        actual possible values based on the frequency and start of the time index. If `False`, the encoding includes
+        all possibl values for the attribute.
     cyclic
         Boolean value indicating whether to add the specified attribute as a cyclic encoding.
         Alternative to one_hot encoding, enable only one of the two.
         (adds 2 columns, corresponding to sin and cos transformation)
+    cyclic_relative
+        Boolean value controlling the behavior of cyclic encoding for attributes with a variable maximum value
+        (e.g., `day`, `dayofyear`, `week`). If `True`, the cyclic encoding uses the relative period based on the
+        actual number of days or weeks in the current month or year. If `False`, the encoding uses the absolute
+        maximum possible value for the attribute (e.g., 31 for days, 366 for days in a year, 53 for weeks).
     until
         Extend the time_index up until timestamp for datetime indexed series
         and int for range indexed series, should match or exceed forecasting window.
@@ -647,107 +915,76 @@ def datetime_attribute_timeseries(
 
     raise_if(one_hot and cyclic, "set only one of one_hot or cyclic to true", logger)
 
-    num_values_dict = {
-        "month": 12,
-        "day": 31,
-        "weekday": 7,
-        "dayofweek": 7,
-        "day_of_week": 7,
-        "hour": 24,
-        "minute": 60,
-        "second": 60,
-        "microsecond": 1000000,
-        "nanosecond": 1000,
-        "quarter": 4,
-        "dayofyear": 365,
-        "day_of_year": 365,
-        "week": 52,
-        "weekofyear": 52,
-        "week_of_year": 52,
-    }
-
-    if attribute not in ["week", "weekofyear", "week_of_year"]:
-        values = getattr(time_index, attribute)
-    else:
-        values = (
-            time_index.isocalendar()
-            .set_index("week")
-            .index.astype("int64")
-            .rename("time")
-        )
-
-    # shift 1-indexed datetime attributes
-    if attribute in ONE_INDEXED_FREQS:
-        values -= 1
-
-    # leap years insert an additional day on the 29th of February
-    if attribute in {"dayofyear", "day_of_year"} and any(time_index.is_leap_year):
-        num_values_dict[attribute] += 1
-
-    # years contain an additional week if they are :
-    # - a regular year starting on a thursday
-    # - a leap year starting on a wednesday
-    if attribute in {"week", "weekofyear", "week_of_year"}:
-        years = time_index.year.unique()
-        # check if year respect properties
-        additional_week_year = any(
-            ((not first_day.is_leap_year) and first_day.day_name() == "Thursday")
-            or (first_day.is_leap_year and first_day.day_name() == "Wednesday")
-            for first_day in [pd.Timestamp(f"{year}-01-01") for year in years]
-        )
-        # check if time index actually include the additional week
-        additional_week_in_index = time_index[-1] - time_index[0] + pd.Timedelta(
-            days=1
-        ) >= pd.Timedelta(days=365)
-
-        if additional_week_year and additional_week_in_index:
-            num_values_dict[attribute] += 1
-
-    if one_hot or cyclic:
-        raise_if_not(
-            attribute in num_values_dict,
-            f"Given datetime attribute `{attribute}` not supported with one-hot or cyclical encoding. "
-            f"Supported datetime attribute: {list(num_values_dict.keys())}",
-            logger,
-        )
-
-    if one_hot:
-        values_df = pd.get_dummies(values)
-        # fill missing columns (in case not all values appear in time_index)
-        attribute_range = np.arange(num_values_dict[attribute])
-        is_missing = np.isin(attribute_range, values_df.columns.values, invert=True)
-        # if there are attribute_range columns that are
-        # not in values_df.columns.values
-        if is_missing.any():
-            dict_0 = {i: False for i in attribute_range[is_missing]}
-            # Make a dataframe from the dictionary and concatenate it
-            # to the values values_df  in which the existing columns
-            values_df = pd.concat(
-                [values_df, pd.DataFrame(dict_0, index=values_df.index)], axis=1
-            ).sort_index(axis=1)
-        else:
-            values_df = values_df[attribute_range]
-
+    values = _get_datetime_attribute_values(attribute, time_index)
+    if not one_hot and not cyclic:
         if with_columns is None:
-            with_columns = [
-                attribute + "_" + str(column_name) for column_name in values_df.columns
-            ]
-
+            with_columns = attribute
         raise_if_not(
-            len(with_columns) == len(values_df.columns),
-            "For the given case with `one_hot=True`,`with_columns` must be a list of strings of length "
-            f"{values_df.columns}.",
+            isinstance(with_columns, str),
+            "`with_columns` must be a string specifying the output component name.",
             logger=logger,
         )
-
-        values_df.columns = with_columns
+        values_df = pd.DataFrame({with_columns: values})
     else:
-        if cyclic:
-            if attribute == "day":
-                periods = time_index.days_in_month.values
+        if one_hot:
+            if one_hot_freq_aware:
+                unique_values = unique_datetime_value_freq_aware(
+                    attribute, time_index.freqstr, time_index[0]
+                )
+            else:
+                unique_values = unique_datetime_values(attribute)
+            values_df = pd.get_dummies(values)
+            # fill missing columns (in case not all values appear in time_index)
+            is_missing = np.isin(unique_values, values_df.columns.values, invert=True)
+            # if there are attribute_range columns that are
+            # not in values_df.columns.values
+            if is_missing.any():
+                dict_0 = {i: False for i in unique_values[is_missing]}
+                # Make a dataframe from the dictionary and concatenate it
+                # to the values values_df  in which the existing columns
+                values_df = pd.concat(
+                    [values_df, pd.DataFrame(dict_0, index=values_df.index)], axis=1
+                ).sort_index(axis=1)
+            else:
+                values_df = values_df[unique_values]
+
+            if with_columns is None:
+                with_columns = [
+                    attribute + "_" + str(column_name)
+                    for column_name in values_df.columns
+                ]
+            else:
+                raise_if_not(
+                    len(with_columns) == len(values_df.columns),
+                    (
+                        f"For the given case with `one_hot=True` and `one_hot_freq_aware={one_hot_freq_aware}`, "
+                        f"`with_columns` must be a list of strings of length {values_df.columns}."
+                    ),
+                    logger=logger,
+                )
+
+            values_df.columns = with_columns
+        else:
+            unique_values = unique_datetime_values(attribute)
+            if attribute in DATETIME_ATT_WITH_VARIABLE_MAX and cyclic_relative:
+                if attribute == "day":
+                    periods = time_index.days_in_month.values
+                elif attribute in ("dayofyear", "day_of_year"):
+                    periods = np.where(time_index.is_leap_year, 366, 365)
+                elif attribute in ("week", "weekofyear", "week_of_year"):
+                    periods = np.where(
+                        (time_index.is_year_start & (time_index.weekday == 3))
+                        | (
+                            time_index.is_leap_year
+                            & time_index.is_year_start
+                            & (time_index.weekday == 2)
+                        ),
+                        53,
+                        52,
+                    )
                 freq = 2 * np.pi * np.reciprocal(periods.astype(dtype))
             else:
-                period = num_values_dict[attribute]
+                period = unique_values.max() + 1
                 freq = 2 * np.pi / period
 
             if with_columns is None:
@@ -763,15 +1000,7 @@ def datetime_attribute_timeseries(
                 with_columns[0]: np.sin(freq * values),
                 with_columns[1]: np.cos(freq * values),
             })
-        else:
-            if with_columns is None:
-                with_columns = attribute
-            raise_if_not(
-                isinstance(with_columns, str),
-                "`with_columns` must be a string specifying the output component name.",
-                logger=logger,
-            )
-            values_df = pd.DataFrame({with_columns: values})
+
     return TimeSeries(
         times=time_index_ts,
         values=values_df.values.astype(dtype),
