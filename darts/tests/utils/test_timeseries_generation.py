@@ -8,6 +8,7 @@ from pandas.tseries.frequencies import to_offset
 
 from darts import TimeSeries
 from darts.utils.timeseries_generation import (
+    DATETIME_ATT_WITH_VARIABLE_MAX,
     ONE_INDEXED_FREQS,
     _build_forecast_series_from_schema,
     autoregressive_timeseries,
@@ -508,8 +509,8 @@ class TestTimeSeriesGeneration:
             (freqs["h"], "hour", 24),
             ("D", "weekday", 7),
             (freqs["s"], "second", 60),
-            ("W", "weekofyear", 52),
-            ("D", "dayofyear", 365),
+            ("W", "weekofyear", 53),
+            ("D", "dayofyear", 366),
             (freqs["QE"], "quarter", 4),
         ],
     )
@@ -563,8 +564,10 @@ class TestTimeSeriesGeneration:
         # first quarter/year, month/year, week/year, day/year, day/week, hour/day, second/hour
         simple_start = pd.Timestamp("2001-01-01 00:00:00")
         idx = generate_index(start=simple_start, length=period, freq=base_freq)
-        vals = np.eye(period)
-
+        expected_dim = period
+        if attribute_freq in DATETIME_ATT_WITH_VARIABLE_MAX:
+            expected_dim += 1
+        vals = np.eye(period, expected_dim)
         # simple start
         self.helper_routine(idx, attribute_freq, vals_exp=vals, one_hot=True)
         # with time-zone
@@ -576,7 +579,7 @@ class TestTimeSeriesGeneration:
         # missing values
         cut_period = period // 3
         idx = generate_index(start=simple_start, length=cut_period, freq=base_freq)
-        vals = np.eye(period)
+        vals = np.eye(period, expected_dim)
         # removing missing rows
         vals = vals[:cut_period]
         # mask missing attribute values
@@ -603,7 +606,7 @@ class TestTimeSeriesGeneration:
             shift -= 1
 
         idx = generate_index(start=shifted_start, length=period, freq=base_freq)
-        vals = np.eye(period)
+        vals = np.eye(period, expected_dim)
         # shift values
         vals = np.roll(vals, shift=-shift, axis=0)
 
@@ -701,9 +704,11 @@ class TestTimeSeriesGeneration:
         # the 53th week is omitted from index when created with freq="W"
         index_weeks = pd.date_range(start=start_date, end=end_date, freq="W")
         assert len(index_weeks) == weeks_special_year - 1
-        # and 53th week properly excluded from the encoding
-        vals_exp = np.eye(weeks_special_year - 1)[: len(index_weeks)]
-        assert vals_exp.shape[1] == weeks_special_year - 1
+        # and 53th week should still be part of the encoding
+        vals_exp = np.eye(weeks_special_year - 1, weeks_special_year)[
+            : len(index_weeks)
+        ]
+        assert vals_exp.shape[1] == weeks_special_year
         self.helper_routine(
             index_weeks, "week_of_year", vals_exp=vals_exp, one_hot=True
         )
