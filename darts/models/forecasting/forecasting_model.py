@@ -255,14 +255,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Whether model supports past covariates
         """
-        return "past_covariates" in inspect.signature(self.fit).parameters.keys()
+        return False
 
     @property
     def supports_future_covariates(self) -> bool:
         """
         Whether model supports future covariates
         """
-        return "future_covariates" in inspect.signature(self.fit).parameters.keys()
+        return False
 
     @property
     def supports_static_covariates(self) -> bool:
@@ -3440,6 +3440,14 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
         #  that use an input to predict an output.
         return -self.min_train_series_length, -1, None, None, 0, 0, 0, None
+
+    @property
+    def supports_past_covariates(self) -> bool:
+        return False
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return True
 
 
 class TransferableFutureCovariatesLocalForecastingModel(

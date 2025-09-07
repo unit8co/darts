@@ -4,6 +4,7 @@ import math
 from copy import deepcopy
 from itertools import product
 from typing import Optional
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -335,6 +336,11 @@ else:
     models_torch_cls_kwargs = []
 
 PROPHET_AVAILABLE = not isinstance(Prophet, NotImportedModule)
+xgb_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "max_leaves": 1,
+}
 
 
 class TestHistoricalforecast:
@@ -3965,30 +3971,41 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        [
-            # doesn't support val set, and no transferable series for prediction
-            (NaiveSeasonal, {"K": 3}),
-            # doesn't support val set, supports transferable series for prediction
-            (AutoARIMA, {}),
-            # doesn't support val set, global model (multi series)
-            (LinearRegressionModel, {"lags": 3, "output_chunk_length": 2}),
-            # supports val set, global model (multi series)
-            (XGBModel, {"lags": 3, "output_chunk_length": 2, "output_chunk_shift": 1}),
-            # supports val set, global model (multi series)
-            (
-                NLinearModel,
-                {
-                    "input_chunk_length": 3,
-                    "output_chunk_length": 2,
-                    "n_epochs": 1,
-                    **tfm_kwargs,
-                },
-            ),
-        ],
+        product(
+            [
+                # doesn't support val set, and no transferable series for prediction
+                (NaiveSeasonal, {"K": 3}),
+                # doesn't support val set, supports transferable series for prediction
+                (AutoARIMA, {}),
+                # doesn't support val set, global model (multi series)
+                (LinearRegressionModel, {"lags": 3, "output_chunk_length": 2}),
+                # supports val set, global model (multi series)
+                (
+                    XGBModel,
+                    {
+                        "lags": 3,
+                        "output_chunk_length": 2,
+                        "output_chunk_shift": 1,
+                        **xgb_test_params,
+                    },
+                ),
+                # supports val set, global model (multi series)
+                (
+                    NLinearModel,
+                    {
+                        "input_chunk_length": 3,
+                        "output_chunk_length": 2,
+                        "n_epochs": 1,
+                        **tfm_kwargs,
+                    },
+                ),
+            ],
+            [False, True],  # use covariates
+        ),
     )
     def test_val_length(self, config, caplog):
         """Tests that `val_length` is correctly handled for models with different validation requirements."""
-        model_cls, kwargs = config
+        (model_cls, kwargs), use_covariates = config
         model = model_cls(**kwargs)
         ocs = model.output_chunk_shift
         ocl = model.output_chunk_length or 0
@@ -4003,11 +4020,25 @@ class TestHistoricalforecast:
         )
         series = tg.linear_timeseries(length=n_steps)
 
+        pc, fc = None, None
+        if use_covariates and model.supports_past_covariates:
+            pc = series
+        if use_covariates and model.supports_future_covariates:
+            fc = tg.linear_timeseries(length=n_steps + ocs + horizon)
+
+        if model.supports_sample_weight:
+            sample_weight = tg.constant_timeseries(length=n_steps)
+        else:
+            sample_weight = None
+
         model.fit(series)
 
         with pytest.raises(ValueError) as err:
             _ = model.historical_forecasts(
                 series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                sample_weight=sample_weight,
                 forecast_horizon=horizon,
                 val_length=-1,
                 overlap_end=False,
@@ -4019,6 +4050,9 @@ class TestHistoricalforecast:
             with pytest.raises(ValueError) as err:
                 _ = model.historical_forecasts(
                     series=series,
+                    past_covariates=pc,
+                    future_covariates=fc,
+                    sample_weight=sample_weight,
                     forecast_horizon=horizon,
                     val_length=min_val_length - 1,
                     overlap_end=False,
@@ -4033,6 +4067,9 @@ class TestHistoricalforecast:
         with caplog.at_level(logging.WARNING):
             forecast = model.historical_forecasts(
                 series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                sample_weight=sample_weight,
                 forecast_horizon=horizon,
                 val_length=val_length,
                 overlap_end=False,
@@ -4064,6 +4101,9 @@ class TestHistoricalforecast:
         # increasing val length reduces the number of forecasts
         forecast = model.historical_forecasts(
             series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            sample_weight=sample_weight,
             forecast_horizon=horizon,
             val_length=val_length + 1,
             overlap_end=False,
@@ -4075,3 +4115,39 @@ class TestHistoricalforecast:
             forecast[0].start_time()
             == series.time_index[-(theoretical_forecast_length + (horizon - 1))]
         )
+
+        intercepted_fit_args = []
+
+        def intercept_fit_args(*args, **kwargs):
+            intercepted_fit_args.append({"args": args, "kwargs": kwargs})
+            return model
+
+        # target is categorical by default for classifiers supporting it
+        with (
+            patch.object(model.__class__, "fit", side_effect=intercept_fit_args),
+            patch.object(model.__class__, "predict", side_effect=series[:horizon]),
+        ):
+            _ = model.historical_forecasts(
+                series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                sample_weight=sample_weight,
+                forecast_horizon=horizon,
+                val_length=val_length + 1,
+                overlap_end=False,
+                last_points_only=False,
+            )
+
+            expected_val_set = model._supports_val_series
+            expected_val_pc = expected_val_set and pc is not None
+            expected_val_fc = expected_val_set and fc is not None
+            expected_val_sw = expected_val_set and sample_weight is not None
+            for call in intercepted_fit_args:
+                has_val_series = call["kwargs"].get("val_series") is not None
+                has_val_pc = call["kwargs"].get("val_past_covariates") is not None
+                has_val_fc = call["kwargs"].get("val_future_covariates") is not None
+                has_val_sw = call["kwargs"].get("val_sample_weight") is not None
+                assert has_val_series is expected_val_set
+                assert has_val_pc is expected_val_pc
+                assert has_val_fc is expected_val_fc
+                assert has_val_sw is expected_val_sw
