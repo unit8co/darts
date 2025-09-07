@@ -4,6 +4,7 @@ from typing import Union
 import numpy as np
 import pandas as pd
 import pytest
+from pandas.tseries.frequencies import to_offset
 
 from darts import TimeSeries
 from darts.utils.timeseries_generation import (
@@ -18,6 +19,7 @@ from darts.utils.timeseries_generation import (
     linear_timeseries,
     random_walk_timeseries,
     sine_timeseries,
+    unique_datetime_value_freq_aware,
 )
 from darts.utils.utils import freqs
 
@@ -384,6 +386,88 @@ class TestTimeSeriesGeneration:
                 idx.tz_localize("UTC"), freqs["h"], vals_exp=np.arange(len(idx))
             )
         assert "`time_index` must be time zone naive." == str(err.value)
+
+    @pytest.mark.parametrize(
+        "attribute,freq,start,expected",
+        [
+            pytest.param(
+                "minute",
+                to_offset("1min"),
+                pd.Timestamp(year=2000, month=1, day=1),
+                np.arange(60),
+                id="minute_minutely",
+            ),
+            pytest.param(
+                "minute",
+                to_offset("1min"),
+                pd.Timestamp(year=2000, month=1, day=1, minute=1),
+                np.arange(60),
+                id="minute_minutely_one_minute_shifted",
+            ),
+            pytest.param(
+                "minute",
+                to_offset("1h"),
+                pd.Timestamp(year=2000, month=1, day=1),
+                np.arange(1),
+                id="minute_hourly",
+            ),
+            pytest.param(
+                "minute",
+                to_offset("15min"),
+                pd.Timestamp(year=2000, month=1, day=1),
+                np.array([0, 15, 30, 45]),
+                id="minute_quarter_hourly",
+            ),
+            pytest.param(
+                "day",
+                to_offset("1D"),
+                pd.Timestamp(year=2025, month=1, day=1),
+                np.arange(31),
+                id="day_daily_january",
+            ),
+            pytest.param(
+                "day",
+                to_offset("1D"),
+                pd.Timestamp(year=2025, month=2, day=1),
+                np.arange(31),
+                id="day_daily_february",
+            ),
+            pytest.param(
+                "day_of_week",
+                to_offset("YS"),
+                pd.Timestamp(year=2025, month=1, day=1),
+                np.arange(7),
+                id="dayofweek_yearly",
+            ),
+            pytest.param(
+                "day",
+                to_offset("YS"),
+                pd.Timestamp(year=2025, month=1, day=1),
+                np.arange(1),
+                id="day_yearly",
+            ),
+            pytest.param(
+                "day",
+                to_offset("B"),
+                pd.Timestamp(year=2025, month=1, day=1),
+                ValueError,
+                id="business_day_value_error",
+            ),
+        ],
+    )
+    def test_unique_datetime_value_freq_aware(
+        self,
+        attribute: str,
+        freq: pd.DateOffset,
+        start: pd.Timestamp,
+        expected: np.ndarray[int] | type[Exception],
+    ):
+        if isinstance(expected, type) and issubclass(expected, Exception):
+            with pytest.raises(expected):
+                unique_datetime_value_freq_aware(attribute, freq, start)
+        else:
+            unique_values = unique_datetime_value_freq_aware(attribute, freq, start)
+            np.testing.assert_array_equal(unique_values, expected)
 
     def test_datetime_attribute_timeseries(self):
         idx = generate_index(
