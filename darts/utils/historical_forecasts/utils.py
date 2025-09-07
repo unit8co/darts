@@ -1059,11 +1059,17 @@ def _reconcile_historical_time_indices(
         historical_forecasts_time_index = historical_forecasts_time_index_predict
 
     # if not retraining and model is already fitted, ignore train_length and val_length
+    effective_train_length = None
+    effective_val_length = 0
+
     if not (retrain or (not model._fit_called)):
-        return historical_forecasts_time_index, None, None
+        return (
+            historical_forecasts_time_index,
+            effective_train_length,
+            effective_val_length,
+        )
 
     # adjust start time based on train_length
-    effective_train_length = None
     warn_train_length = False
     start_time = historical_forecasts_time_index[0]
     if train_length is None:
@@ -1090,7 +1096,6 @@ def _reconcile_historical_time_indices(
     historical_forecasts_time_index = (start_time, historical_forecasts_time_index[1])
 
     # adjust start time based on val_length
-    effective_val_length = 0
     warn_val_length = False
     start_time = historical_forecasts_time_index[0]
     if val_length:
@@ -1367,7 +1372,7 @@ def _convert_data_transformers(
 
 def _apply_data_transformers(
     series: Union[TimeSeries, list[TimeSeries]],
-    val_series: Optional[Union[TimeSeries, list[TimeSeries]]],
+    pred_series: Optional[Union[TimeSeries, list[TimeSeries]]],
     past_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
     future_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
     data_transformers: dict[str, Pipeline],
@@ -1402,10 +1407,10 @@ def _apply_data_transformers(
         [True, False, True, True],
         [
             series,
-            val_series,
+            pred_series,
             past_covariates,
             future_covariates,
-        ],  # mind the order, `val_series` after `series`
+        ],  # mind the order, `pred_series` after `series`
     ):
         if ts is None or data_transformers.get(ts_type) is None:
             transformed_ts.append(ts)
@@ -1420,7 +1425,7 @@ def _apply_data_transformers(
                     tmp_ts = ts.drop_after(
                         series.end_time() + max(0, max_future_cov_lag + 1) * series.freq
                     )
-                else:  # "series" and "val_series"
+                else:  # "series" and "pred_series"
                     # nothing to do, the target series is already sliced appropriately
                     tmp_ts = ts
 

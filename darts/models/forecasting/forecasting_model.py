@@ -910,16 +910,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # data transformer already fitted and can be directly applied to all the series
         if data_transformers and not retrain:
             using_prefitted_transformers = True
-            series, val_series, past_covariates, future_covariates = (
-                _apply_data_transformers(
-                    series=series,
-                    val_series=None,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                    data_transformers=data_transformers,
-                    max_future_cov_lag=model.extreme_lags[5],
-                    fit_transformers=False,
-                )
+            series, _, past_covariates, future_covariates = _apply_data_transformers(
+                series=series,
+                pred_series=None,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                data_transformers=data_transformers,
+                max_future_cov_lag=model.extreme_lags[5],
+                fit_transformers=False,
             )
 
         if (
@@ -1086,45 +1084,35 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             forecast_components = None
             # iterate and forecast
             for _counter, pred_time in enumerate(iterator):
-                # drop everything after `pred_time` to train on / predict with shifting input
+                # get current prediction input; drop everything after `pred_time`
                 if pred_time <= series_.end_time():
-                    train_series = series_.drop_after(pred_time)
+                    pred_series_ = series_.drop_after(pred_time)
                 else:
-                    train_series = series_
+                    pred_series_ = series_
 
-                # optionally, apply moving window (instead of expanding window)
-                if train_length_ and len(train_series) > train_length_:
-                    train_series_ = train_series[
-                        -(train_length_ + val_length_) : (-val_length or None)
+                # get current training input (account for validation window);
+                if train_length_ and len(pred_series_) > train_length_:
+                    # moving training window with potential validation window
+                    train_series_ = pred_series_[
+                        -(train_length_ + val_length_) : -val_length or None
                     ]
+                elif val_length_:
+                    # expanding training window with validation window
+                    train_series_ = pred_series_[:-val_length]
                 else:
-                    train_series_ = train_series
+                    # expanding training window
+                    train_series_ = pred_series_
 
-                # optionally, extract the evaluation series;
-                # include the input_length to allow direct evaluation after the training set
-                input_length = model._train_target_sample_lengths[0]
-                val_series_ = (
-                    train_series[-(val_length_ + input_length) :]
-                    if val_length_
-                    else None
-                )
+                # get current validation input;
+                if val_length_:
+                    # include one model input window to allow direct evaluation after the training set
+                    input_length = model._train_target_sample_lengths[0]
+                    val_series_ = pred_series_[-(val_length_ + input_length) :]
+                else:
+                    val_series_ = None
 
-                # when `retrain=True`, data transformers are also retrained between iterations to avoid data-leakage
-                # using a single series
-                if data_transformers and retrain:
-                    train_series_, val_series_, past_covariates_, future_covariates_ = (
-                        _apply_data_transformers(
-                            series=train_series_,
-                            val_series=val_series_,
-                            past_covariates=past_covariates_,
-                            future_covariates=future_covariates_,
-                            data_transformers=data_transformers,
-                            max_future_cov_lag=model.extreme_lags[5],
-                            fit_transformers=True,
-                        )
-                    )
-
-                # testing `retrain` to exclude `False` and `0`
+                # check if model must be re-trained
+                apply_retrain = False
                 if (
                     retrain
                     and historical_forecasts_time_index_train is not None
@@ -1133,35 +1121,28 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     <= historical_forecasts_time_index_train[-1]
                 ):
                     # retrain_func processes the series that would be used for training
-                    if retrain_func(
+                    apply_retrain = retrain_func(
                         counter=_counter_train,
                         pred_time=pred_time,
                         train_series=train_series_,
                         past_covariates=past_covariates_,
                         future_covariates=future_covariates_,
+                    )
+                    if (
+                        not apply_retrain
+                        and not _counter_train
+                        and not model._fit_called
                     ):
-                        # avoid fitting the same model multiple times
-                        model = model.untrained_model()
-                        model._fit_wrapper(
-                            series=train_series_,
-                            past_covariates=past_covariates_,
-                            future_covariates=future_covariates_,
-                            sample_weight=sample_weight_,
-                            val_series=val_series_,
-                            **fit_kwargs,
-                        )
-                    else:
                         # untrained model was not trained on the first trainable timestamp
-                        if not _counter_train and not model._fit_called:
-                            raise_log(
-                                ValueError(
-                                    f"`retrain` is `False` in the first train iteration at prediction point (in time) "
-                                    f"`{pred_time}` and the model has not been fit before. Either call `fit()` before "
-                                    f"`historical_forecasts()`, use a different `retrain` value or modify the function "
-                                    f"to return `True` at or before this timestamp."
-                                ),
-                                logger,
-                            )
+                        raise_log(
+                            ValueError(
+                                f"`retrain` is `False` in the first train iteration at prediction point (in time) "
+                                f"`{pred_time}` and the model has not been fit before. Either call `fit()` before "
+                                f"`historical_forecasts()`, use a different `retrain` value or modify the function "
+                                f"to return `True` at or before this timestamp."
+                            ),
+                            logger,
+                        )
                     _counter_train += 1
                 elif not _counter and not model._fit_called:
                     # model must be fit before the first prediction
@@ -1178,11 +1159,41 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         logger,
                     )
 
+                # apply data transformers; only fit transformers if it is a retraining iteration (`apply_retrain=True`)
+                # when `retrain=False`, transformers were already applied to all the series at the beginning
+                if data_transformers and retrain:
+                    (
+                        train_series_,
+                        pred_series_,
+                        past_covariates_,
+                        future_covariates_,
+                    ) = _apply_data_transformers(
+                        series=train_series_,
+                        pred_series=pred_series_,
+                        past_covariates=past_covariates_,
+                        future_covariates=future_covariates_,
+                        data_transformers=data_transformers,
+                        max_future_cov_lag=model.extreme_lags[5],
+                        fit_transformers=apply_retrain,
+                    )
+
+                if apply_retrain:
+                    # fit a new instance of the model
+                    model = model.untrained_model()
+                    model._fit_wrapper(
+                        series=train_series_,
+                        past_covariates=past_covariates_,
+                        future_covariates=future_covariates_,
+                        sample_weight=sample_weight_,
+                        val_series=val_series_,
+                        **fit_kwargs,
+                    )
+
                 # for regression models with lags=None, lags_past_covariates=None and min(lags_future_covariates)>=0,
                 # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
                 # to support `predict()`
-                if len(train_series) == 0:
-                    train_series = TimeSeries(
+                if len(pred_series_) == 0:
+                    pred_series_ = TimeSeries(
                         times=generate_index(
                             start=pred_time - 1 * series_.freq,
                             length=1,
@@ -1195,7 +1206,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
                 forecast = model._predict_wrapper(
                     n=forecast_horizon,
-                    series=train_series,
+                    series=pred_series_,
                     past_covariates=past_covariates_,
                     future_covariates=future_covariates_,
                     num_samples=num_samples,
@@ -1207,7 +1218,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
 
                 forecast = _apply_inverse_data_transformers(
-                    series=train_series,
+                    series=pred_series_,
                     forecasts=forecast,
                     data_transformers=data_transformers,
                     series_idx=idx if using_prefitted_transformers else None,
@@ -1881,9 +1892,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
                 if data_transformers:
-                    series_, past_covariates_, future_covariates_ = (
+                    series_, _, past_covariates_, future_covariates_ = (
                         _apply_data_transformers(
                             series=series,
+                            pred_series=None,
                             past_covariates=past_covariates,
                             future_covariates=future_covariates,
                             data_transformers=data_transformers,
@@ -1939,9 +1951,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
             else:  # split mode
                 if data_transformers:
-                    series_, past_covariates_, future_covariates_ = (
+                    series_, _, past_covariates_, future_covariates_ = (
                         _apply_data_transformers(
                             series=series,
+                            pred_series=None,
                             past_covariates=past_covariates,
                             future_covariates=future_covariates,
                             data_transformers=data_transformers,
