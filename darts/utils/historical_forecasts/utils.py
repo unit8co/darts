@@ -403,15 +403,21 @@ def _historical_forecasts_general_checks(
             ValueError("`val_length` must be a non-negative integer."),
             logger,
         )
-    elif 1 <= n.val_length < model._train_target_sample_lengths[1]:
-        # val length must cover at least one full prediction output (e.g. output window)
-        # the first input window is taken from the end of training series to use all available data
-        raise_log(
-            ValueError(
-                f"`val_length` is too small for the validation requirements of this model. "
-                f"Must be `>={model._train_target_sample_lengths[1]}`."
+    elif n.val_length >= 1:
+        if n.retrain is False:
+            raise_log(
+                ValueError("Cannot use `val_length` with `retrain=False`."),
+                logger,
             )
-        )
+        elif n.val_length < model._train_target_sample_lengths[1]:
+            # val length must cover at least one full prediction output (e.g. output window)
+            # the first input window is taken from the end of training series to use all available data
+            raise_log(
+                ValueError(
+                    f"`val_length` is too small for the validation requirements of this model. "
+                    f"Must be `>={model._train_target_sample_lengths[1]}`."
+                )
+            )
 
     # check retrain value
     if not (
@@ -1109,7 +1115,29 @@ def _reconcile_historical_time_indices(
             effective_val_length = val_length
             start_time = val_length_start
 
+            if not model.supports_transferable_series_prediction:
+                # if the model cannot be trained on partial history, ignore val_length but still
+                if show_warnings:
+                    logger.warning(
+                        "`val_length` is ignored (no validation set will be created) since "
+                        "the model must be trained on the entire series history ending just "
+                        "before the prediction start time. To hide these warnings, set "
+                        "`show_warnings=False`."
+                    )
+                effective_val_length = 0
+
     historical_forecasts_time_index = (start_time, historical_forecasts_time_index[1])
+
+    if historical_forecasts_time_index[0] > historical_forecasts_time_index[1]:
+        raise_log(
+            ValueError(
+                f"The time index of series at index: {series_idx} is too short for the "
+                f"historical forecast scenario. Review the model's minimum training "
+                f"requirements and the values passed for `train_length`, `val_length`, "
+                f"`forecast_horizon`, `overlap_end`."
+            ),
+            logger,
+        )
 
     if warn_train_length and show_warnings:
         logger.warning(
