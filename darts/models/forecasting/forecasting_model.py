@@ -768,9 +768,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             steps, uses the expanding mode. Needs to be at least `min_train_series_length`.
         val_length
             Use a fixed length / number of time steps after every constructed training set as validation set. This set
-            will be passed as `val_series` to `fit()` if the underlying model supports it. Otherwise, the time frame
-            will not be used. Only effective when `retrain` is not ``False``. The default is ``0``, which does
-            not construct a validation set. Needs to be at least `min_train_series_length`.
+            will be passed as `val_series` and `val_*_covariates` to the fit method of the underlying forecasting model
+            (if it supports it). Otherwise, the time frame will be included in the training set. Only effective when
+            `retrain` is not ``False``. If given, cannot pass any `val_*` series in ``fit_kwargs``. The default is
+            ``0``, which does not construct a validation set. Needs to be at least the length of one model output
+            (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
             ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
@@ -1280,6 +1282,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
+        val_length: int = 0,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
@@ -1344,6 +1347,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             mode). Only effective when `retrain` is not ``False``. The default is ``None``, where it uses all time
             steps up until the prediction time (expanding window mode). If larger than the number of available time
             steps, uses the expanding mode. Needs to be at least `min_train_series_length`.
+        val_length
+            Use a fixed length / number of time steps after every constructed training set as validation set. This set
+            will be passed as `val_series` and `val_*_covariates` to the fit method of the underlying forecasting model
+            (if it supports it). Otherwise, the time frame will be included in the training set. Only effective when
+            `retrain` is not ``False``. If given, cannot pass any `val_*` series in ``fit_kwargs``. The default is
+            ``0``, which does not construct a validation set. Needs to be at least the length of one model output
+            (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
             ``float``, ``int``, ``pandas.Timestamp``, and ``None``.
@@ -2018,6 +2028,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
+        val_length: int = 0,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
@@ -2091,6 +2102,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             mode). Only effective when `retrain` is not ``False``. The default is ``None``, where it uses all time
             steps up until the prediction time (expanding window mode). If larger than the number of available time
             steps, uses the expanding mode. Needs to be at least `min_train_series_length`.
+        val_length
+            Use a fixed length / number of time steps after every constructed training set as validation set. This set
+            will be passed as `val_series` and `val_*_covariates` to the fit method of the underlying forecasting model
+            (if it supports it). Otherwise, the time frame will be included in the training set. Only effective when
+            `retrain` is not ``False``. If given, cannot pass any `val_*` series in ``fit_kwargs``. The default is
+            ``0``, which does not construct a validation set. Needs to be at least the length of one model output
+            (``output_chunk_length + output_chunk_shift`` for global models and ``0`` for local models).
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
             ``float``, ``int``, ``pandas.Timestamp``, and ``None``.

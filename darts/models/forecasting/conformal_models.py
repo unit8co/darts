@@ -622,6 +622,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
+        val_length: int = 0,
         start: Optional[Union[pd.Timestamp, int]] = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
@@ -693,6 +694,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             interpolation in-between the quantiles. For larger values, the sample distribution approximates the
             calibrated quantile predictions.
         train_length
+            Currently ignored by conformal models.
+        val_length
             Currently ignored by conformal models.
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
@@ -809,6 +812,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             forecast_horizon=forecast_horizon,
             num_samples=num_samples,
             train_length=train_length,
+            val_length=val_length,
             start=start,
             start_format=start_format,
             stride=stride,
@@ -840,6 +844,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         forecast_horizon: int = 1,
         num_samples: int = 1,
         train_length: Optional[int] = None,
+        val_length: int = 0,
         start: Optional[Union[pd.Timestamp, int]] = None,
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
@@ -921,6 +926,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             interpolation in-between the quantiles. For larger values, the sample distribution approximates the
             calibrated quantile predictions.
         train_length
+            Currently ignored by conformal models.
+        val_length
             Currently ignored by conformal models.
         start
             Optionally, the first point in time at which a prediction is computed. This parameter supports:
@@ -1023,6 +1030,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             forecast_horizon=forecast_horizon,
             num_samples=num_samples,
             train_length=train_length,
+            val_length=val_length,
             start=start,
             start_format=start_format,
             stride=stride,
