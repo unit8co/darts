@@ -512,9 +512,7 @@ class TestHistoricalforecast:
                 _ = model.historical_forecasts(
                     series=y, forecast_horizon=horizon, last_points_only=True
                 )
-            assert str(err.value).startswith(
-                "Cannot build a single input for prediction"
-            )
+            assert str(err.value).startswith("Cannot build a single input for training")
             return
 
         # last_points_only = True: gives a list with a single forecasts per series,

@@ -20,7 +20,7 @@ from darts.utils.ts_utils import (
     get_single_series,
     series2seq,
 )
-from darts.utils.utils import generate_index, n_steps_between
+from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
@@ -700,7 +700,109 @@ def _check_start(
     )
 
 
-def _get_historical_forecastable_time_index(
+def _get_historical_forecasts_setup(
+    model,
+    series: TimeSeries,
+    past_covariates: Optional[TimeSeries],
+    future_covariates: Optional[TimeSeries],
+    series_idx: int,
+    forecast_horizon: int,
+    start: Union[pd.Timestamp, int, float],
+    start_format: Literal["value", "position"],
+    stride: int,
+    overlap_end: bool,
+    retrain: Union[bool, int, Callable[..., bool]],
+    train_length: Optional[int],
+    val_length: int,
+    show_warnings: bool,
+) -> tuple[
+    Optional[Union[tuple[int, int], tuple[pd.Timestamp, pd.Timestamp]]],
+    TimeSeries,
+    Optional[int],
+    int,
+]:
+    # get the first and last historical forecast start points for either (re)training or (zero shot) prediction
+    # mode
+    historical_forecasts_time_index = _get_maximum_historical_forecastable_time_index(
+        model=model,
+        series=series,
+        forecast_horizon=forecast_horizon,
+        overlap_end=overlap_end,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
+        is_training=bool(retrain),
+    )
+
+    if retrain:
+        # trainable time indexes (considering lags and available covariates)
+        if not model._fit_called and historical_forecasts_time_index is None:
+            raise_log(
+                ValueError(
+                    "Cannot build a single input for training with the provided untrained model, "
+                    f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
+                    "training input time index requirements were not met. "
+                    "Please check the time index of `series` and `*_covariates`."
+                ),
+                logger,
+            )
+
+        # We need the first value timestamp to be used in order to properly shift the series
+        # Look at both past and future, since the target lags must be taken in consideration
+        min_timestamp_series = (
+            historical_forecasts_time_index[0]
+            - model._training_sample_time_index_length * series.freq
+        )
+    else:
+        # predictable time indexes (assuming model is already trained)
+        if historical_forecasts_time_index is None:
+            raise_log(
+                ValueError(
+                    "Cannot build a single input for prediction with the provided model, "
+                    f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
+                    "prediction input time index requirements were not met. "
+                    "Please check the time index of `series` and `*_covariates`."
+                )
+            )
+
+        # we are only predicting: start of the series does not have to change
+        min_timestamp_series = series.start_time()
+
+    # based on `retrain`, historical_forecasts_time_index is based either on train or predict
+    (
+        historical_forecasts_time_index,
+        train_length,
+        val_length,
+    ) = _adjust_historical_forecasts_time_index_training(
+        model=model,
+        historical_forecasts_time_index=historical_forecasts_time_index,
+        series=series,
+        series_idx=series_idx,
+        retrain=retrain,
+        train_length=train_length,
+        val_length=val_length,
+        show_warnings=show_warnings,
+    )
+
+    # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
+    historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
+        series=series,
+        series_idx=series_idx,
+        historical_forecasts_time_index=historical_forecasts_time_index,
+        start=start,
+        start_format=start_format,
+        stride=stride,
+        show_warnings=show_warnings,
+    )
+
+    # adjust the start of the series depending on whether we train (at some point), or predict only
+    # must be performed after the operation on historical_forecasts_time_index
+    if min_timestamp_series > series.start_time():
+        series = series.drop_before(min_timestamp_series - 1 * series.freq)
+
+    return historical_forecasts_time_index, series, train_length, val_length
+
+
+def _get_maximum_historical_forecastable_time_index(
     model,
     series: TimeSeries,
     forecast_horizon: int,
@@ -708,17 +810,20 @@ def _get_historical_forecastable_time_index(
     past_covariates: Optional[TimeSeries] = None,
     future_covariates: Optional[TimeSeries] = None,
     is_training: Optional[bool] = False,
-    reduce_to_bounds: bool = False,
-) -> Union[
-    pd.DatetimeIndex,
-    pd.RangeIndex,
-    tuple[int, int],
-    tuple[pd.Timestamp, pd.Timestamp],
-    None,
+) -> Optional[
+    Union[
+        pd.DatetimeIndex,
+        pd.RangeIndex,
+        tuple[int, int],
+        tuple[pd.Timestamp, pd.Timestamp],
+    ]
 ]:
-    """
-    Private function that returns the largest time_index representing the subset of each timestamps
-    for which historical forecasts can be made, given the model's properties, the training series
+    """Computes the maximum historical forecastable time index for training or prediction mode.
+
+    Only accounts for `is_training`, `forecast_horizon`, `overlap_end`.
+
+    Returns the largest time_index representing the subset of each timestamps for which historical forecasts can be
+    made, given the model's properties, the training series
     and the covariates.
         - If ``None`` is returned, there is no point where a forecast can be made.
 
@@ -749,9 +854,6 @@ def _get_historical_forecastable_time_index(
         Optionally, a future covariates.
     is_training
         Whether the returned time_index should be taking into account the training.
-    reduce_to_bounds
-        Whether to only return the minimum and maximum historical forecastable index
-
     Returns
     -------
     Union[pd.DatetimeIndex, pd.RangeIndex, tuple[int, int], tuple[pd.Timestamp, pd.Timestamp], None]
@@ -762,12 +864,12 @@ def _get_historical_forecastable_time_index(
     >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
     >>> model.fit(train_series)
     >>> series = TimeSeries.from_times_and_values(pd.date_range('2000-01-01', '2000-01-10'), np.arange(10))
-    >>> model._get_historical_forecastable_time_index(series=series, is_training=False, forecast_horizon=1)
+    >>> model._get_maximum_historical_forecastable_time_index(series=series, is_training=False, forecast_horizon=1)
     DatetimeIndex(
             ['2000-01-04', '2000-01-05', '2000-01-06', '2000-01-07', '2000-01-08', '2000-01-09', '2000-01-10'],
             dtype='datetime64[ns]', freq='D'
     )
-    >>> model._get_historical_forecastable_time_index(series=series, is_training=True)
+    >>> model._get_maximum_historical_forecastable_time_index(series=series, is_training=True)
     DatetimeIndex(['2000-01-06', '2000-01-08', '2000-01-09', '2000-01-10'], dtype='datetime64[ns]', freq='D')
     >>> model = NBEATSModel(input_chunk_length=3, output_chunk_length=3)
     >>> model.fit(train_series, train_past_covariates)
@@ -776,7 +878,7 @@ def _get_historical_forecastable_time_index(
     >>>     pd.date_range('2000-10-03', '2000-10-20'),
     >>>     np.arange(18)
     >>> )
-    >>> model._get_historical_forecastable_time_index(
+    >>> model._get_maximum_historical_forecastable_time_index(
     >>>     series=series,
     >>>     past_covariates=past_covariates,
     >>>     is_training=False,
@@ -785,7 +887,7 @@ def _get_historical_forecastable_time_index(
     DatetimeIndex(['2000-10-06', '2000-10-07', '2000-10-08', '2000-10-09'], dtype='datetime64[ns]', freq='D')
     >>>  # Only one point is trainable; it corresponds to the first point after we reach a common subset of
     >>> # timestamps of training_sample_length length.
-    >>> model._get_historical_forecastable_time_index(
+    >>> model._get_maximum_historical_forecastable_time_index(
     >>>     series=series,
     >>>     past_covariates=past_covariates,
     >>>     is_training=True,
@@ -898,12 +1000,6 @@ def _get_historical_forecastable_time_index(
             intersect_[1],
         )
 
-    # generate an index
-    if not reduce_to_bounds:
-        intersect_ = generate_index(
-            start=intersect_[0], end=intersect_[1], freq=series.freq
-        )
-
     return intersect_ if len(intersect_) > 0 else None
 
 
@@ -960,82 +1056,9 @@ def _adjust_historical_forecasts_time_index(
     return historical_forecasts_time_index
 
 
-def _get_historical_forecast_predict_index(
+def _adjust_historical_forecasts_time_index_training(
     model,
-    series: TimeSeries,
-    series_idx: int,
-    past_covariates: Optional[TimeSeries],
-    future_covariates: Optional[TimeSeries],
-    forecast_horizon: int,
-    overlap_end: bool,
-) -> TimeIndex:
-    """Obtain the boundaries of the predictable time indices, raise an exception if None"""
-    historical_forecasts_time_index = _get_historical_forecastable_time_index(
-        model=model,
-        series=series,
-        forecast_horizon=forecast_horizon,
-        overlap_end=overlap_end,
-        past_covariates=past_covariates,
-        future_covariates=future_covariates,
-        is_training=False,
-        reduce_to_bounds=True,
-    )
-
-    if historical_forecasts_time_index is None:
-        raise_log(
-            ValueError(
-                "Cannot build a single input for prediction with the provided model, "
-                f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                "prediction input time index requirements were not met. "
-                "Please check the time index of `series` and `*_covariates`."
-            )
-        )
-
-    return historical_forecasts_time_index
-
-
-def _get_historical_forecast_train_index(
-    model,
-    series: TimeSeries,
-    series_idx: int,
-    past_covariates: Optional[TimeSeries],
-    future_covariates: Optional[TimeSeries],
-    forecast_horizon: int,
-    overlap_end: bool,
-) -> TimeIndex:
-    """
-    Obtain the boundaries of the time indices usable for training, raise an exception if training is required and
-    no indices are available.
-    """
-    historical_forecasts_time_index = _get_historical_forecastable_time_index(
-        model=model,
-        series=series,
-        forecast_horizon=forecast_horizon,
-        overlap_end=overlap_end,
-        past_covariates=past_covariates,
-        future_covariates=future_covariates,
-        is_training=True,
-        reduce_to_bounds=True,
-    )
-
-    if not model._fit_called and historical_forecasts_time_index is None:
-        raise_log(
-            ValueError(
-                "Cannot build a single input for training with the provided untrained model, "
-                f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                "training input time index requirements were not met. "
-                "Please check the time index of `series` and `*_covariates`."
-            ),
-            logger,
-        )
-
-    return historical_forecasts_time_index
-
-
-def _reconcile_historical_time_indices(
-    model,
-    historical_forecasts_time_index_predict: TimeIndex,
-    historical_forecasts_time_index_train: TimeIndex,
+    historical_forecasts_time_index: TimeIndex,
     series: TimeSeries,
     series_idx: int,
     retrain: Union[bool, int, Callable[..., bool]],
@@ -1044,26 +1067,9 @@ def _reconcile_historical_time_indices(
     show_warnings: bool,
 ) -> tuple[TimeIndex, Optional[int], int]:
     """
-    Reconcile historical forecast time indices based on retrain parameter, train_length, and val_length.
-
-    Returns the appropriate time index and effective train_length and val_length for historical forecasts.
+    Shrink the beginning of the historical forecasts time index based on the value of `retrain`, `train_length`
+    and `val_length`.
     """
-    # select the base time index based on retrain parameter
-    if isinstance(retrain, Callable):
-        # for callable retrain, use the longer time index (earlier start)
-        if (
-            historical_forecasts_time_index_train is not None
-            and historical_forecasts_time_index_train[0]
-            < historical_forecasts_time_index_predict[0]
-        ):
-            historical_forecasts_time_index = historical_forecasts_time_index_train
-        else:
-            historical_forecasts_time_index = historical_forecasts_time_index_predict
-    elif retrain:
-        historical_forecasts_time_index = historical_forecasts_time_index_train
-    else:
-        historical_forecasts_time_index = historical_forecasts_time_index_predict
-
     # if not retraining and model is already fitted, ignore train_length and val_length
     effective_train_length = None
     effective_val_length = 0
@@ -1178,24 +1184,20 @@ def _get_historical_forecast_boundaries(
     When applicable, move the start boundaries to the value provided by the user.
     """
     # obtain forecastable indexes boundaries, as values from the time index
-    historical_forecasts_time_index = _get_historical_forecast_predict_index(
-        model,
-        series,
-        series_idx,
-        past_covariates,
-        future_covariates,
-        forecast_horizon,
-        overlap_end,
-    )
-
-    # adjust boundaries based on start
-    historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
+    historical_forecasts_time_index, _, _, _ = _get_historical_forecasts_setup(
+        model=model,
         series=series,
+        past_covariates=past_covariates,
+        future_covariates=future_covariates,
         series_idx=series_idx,
-        historical_forecasts_time_index=historical_forecasts_time_index,
+        forecast_horizon=forecast_horizon,
         start=start,
         start_format=start_format,
         stride=stride,
+        overlap_end=overlap_end,
+        retrain=False,
+        train_length=None,
+        val_length=0,
         show_warnings=show_warnings,
     )
 

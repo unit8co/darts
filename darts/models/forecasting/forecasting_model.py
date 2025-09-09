@@ -52,16 +52,13 @@ from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.metrics.utils import METRIC_TYPE
 from darts.utils import _build_tqdm_iterator, _parallel_apply, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
-    _adjust_historical_forecasts_time_index,
     _apply_data_transformers,
     _apply_inverse_data_transformers,
     _convert_data_transformers,
     _extend_series_for_overlap_end,
-    _get_historical_forecast_predict_index,
-    _get_historical_forecast_train_index,
+    _get_historical_forecasts_setup,
     _historical_forecasts_general_checks,
     _process_historical_forecast_for_backtest,
-    _reconcile_historical_time_indices,
 )
 from darts.utils.timeseries_generation import (
     _build_forecast_series,
@@ -984,81 +981,28 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             else:
                 sample_weight_ = sample_weight[idx] if sample_weight else None
 
-            # predictable time indexes (assuming model is already trained)
-            historical_forecasts_time_index_predict = (
-                _get_historical_forecast_predict_index(
-                    model,
-                    series_,
-                    idx,
-                    past_covariates_,
-                    future_covariates_,
-                    forecast_horizon,
-                    overlap_end,
-                )
-            )
-
-            if retrain:
-                # trainable time indexes (considering lags and available covariates)
-                historical_forecasts_time_index_train = (
-                    _get_historical_forecast_train_index(
-                        model,
-                        series_,
-                        idx,
-                        past_covariates_,
-                        future_covariates_,
-                        forecast_horizon,
-                        overlap_end,
-                    )
-                )
-
-                # We need the first value timestamp to be used in order to properly shift the series
-                # Look at both past and future, since the target lags must be taken in consideration
-                min_timestamp_series = (
-                    historical_forecasts_time_index_train[0]
-                    - model._training_sample_time_index_length * series_.freq
-                )
-
-                # based on `retrain`, historical_forecasts_time_index is based either on train or predict
-                (
-                    historical_forecasts_time_index,
-                    train_length_,
-                    val_length_,
-                ) = _reconcile_historical_time_indices(
-                    model=model,
-                    historical_forecasts_time_index_predict=historical_forecasts_time_index_predict,
-                    historical_forecasts_time_index_train=historical_forecasts_time_index_train,
-                    series=series_,
-                    series_idx=idx,
-                    retrain=retrain,
-                    train_length=train_length,
-                    val_length=val_length,
-                    show_warnings=show_warnings,
-                )
-            else:
-                # we are only predicting: start of the series does not have to change
-                min_timestamp_series = series_.time_index[0]
-                historical_forecasts_time_index_train = None
-                historical_forecasts_time_index = (
-                    historical_forecasts_time_index_predict
-                )
-                train_length_ = None
-                val_length_ = 0
-
-            # based on `forecast_horizon` and `overlap_end`, historical_forecasts_time_index is shortened
-            historical_forecasts_time_index = _adjust_historical_forecasts_time_index(
+            # get the historical forecast bounds, and potentially adjusted series, train and val lengths
+            (
+                historical_forecasts_time_index,
+                series_,
+                train_length_,
+                val_length_,
+            ) = _get_historical_forecasts_setup(
+                model=model,
                 series=series_,
+                past_covariates=past_covariates_,
+                future_covariates=future_covariates_,
                 series_idx=idx,
-                historical_forecasts_time_index=historical_forecasts_time_index,
+                forecast_horizon=forecast_horizon,
                 start=start,
                 start_format=start_format,
                 stride=stride,
+                overlap_end=overlap_end,
+                retrain=retrain,
+                train_length=train_length,
+                val_length=val_length,
                 show_warnings=show_warnings,
             )
-
-            # adjust the start of the series depending on whether we train (at some point), or predict only
-            # must be performed after the operation on historical_forecasts_time_index
-            if min_timestamp_series > series_.time_index[0]:
-                series_ = series_.drop_before(min_timestamp_series - 1 * series_.freq)
 
             # generate time index for the iteration
             historical_forecasts_time_index = generate_index(
@@ -1115,13 +1059,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
                 # check if model must be re-trained
                 apply_retrain = False
-                if (
-                    retrain
-                    and historical_forecasts_time_index_train is not None
-                    and historical_forecasts_time_index_train[0]
-                    <= pred_time
-                    <= historical_forecasts_time_index_train[-1]
-                ):
+                if retrain:
                     # retrain_func processes the series that would be used for training
                     apply_retrain = retrain_func(
                         counter=_counter_train,
@@ -1148,7 +1086,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     _counter_train += 1
                 elif not _counter and not model._fit_called:
                     # model must be fit before the first prediction
-                    # `historical_forecasts_time_index_train` is known to be not None
+                    # `historical_forecasts_time_index` is known to be not None
                     raise_log(
                         ValueError(
                             f"Model has not been fit before the first predict iteration at prediction point "
@@ -1156,7 +1094,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             f"set `retrain=True`, modify the function to return `True` at least once before "
                             f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
                             f"timestamp with re-training inside `historical_forecasts` is: "
-                            f"{historical_forecasts_time_index_train[0]} (potential `start` value)."
+                            f"{historical_forecasts_time_index[0]} (potential `start` value)."
                         ),
                         logger,
                     )
