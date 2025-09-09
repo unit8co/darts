@@ -3508,7 +3508,7 @@ class TestHistoricalforecast:
             )
         assert str(err.value) == "`stride` must be a positive integer."
 
-        # start_format="position" but `start` is not `int`
+        # `start_format="position"` but `start` is not `int`
         with pytest.raises(ValueError) as err:
             _ = model.historical_forecasts(
                 series=self.ts_pass_train,
@@ -3517,6 +3517,66 @@ class TestHistoricalforecast:
             )
         assert str(err.value).startswith(
             "Since `start_format='position'`, `start` must be an integer, received"
+        )
+
+        # cannot specify `val_length` and a validation set in `fit_kwargs`
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain=True,
+                val_length=1,
+                fit_kwargs={"val_series": self.ts_pass_train},
+            )
+        assert str(err.value).startswith(
+            "`val_length` must be `0` when `val_series` is provided in `fit_kwargs`."
+        )
+
+        # `retrain` has unexpected type
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain="1",
+            )
+        assert str(err.value).startswith(
+            "`retrain` must be either `bool`, positive `int`"
+        )
+
+        # `retrain` fn is False in first iteration and model has not been fit
+        def retrain_fn(
+            counter, pred_time, train_series, past_covariates, future_covariates
+        ):
+            return False
+
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain=retrain_fn,
+            )
+        assert str(err.value).startswith(
+            "`retrain` is `False` in the first train iteration at prediction point"
+        )
+
+        model.fit(self.ts_pass_train)
+        # `retrain=False` but `train_length` is not None
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain=False,
+                train_length=1,
+            )
+        assert str(err.value).startswith(
+            "Cannot use `train_length` with `retrain=False`."
+        )
+
+        # `retrain=False` but `val_length` larger than 0
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain=False,
+                val_length=1,
+            )
+        assert str(err.value).startswith(
+            "Cannot use `val_length` with `retrain=False`."
         )
 
     @pytest.mark.parametrize(
