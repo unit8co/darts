@@ -303,7 +303,7 @@ class FFT(LocalForecastingModel):
         """Helper function, used to make FFT model pickable."""
         return 0
 
-    def fit(self, series: TimeSeries):
+    def fit(self, series: TimeSeries, verbose: bool = False):
         series = fill_missing_values(series)
         super().fit(series)
         self._assert_univariate(series)
