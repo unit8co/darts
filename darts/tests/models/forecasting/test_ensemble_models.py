@@ -134,6 +134,72 @@ class TestEnsembleModels:
         expected = (-5, 0, -6, -1, 6, 9, 0, None)
         assert expected == ensemble.extreme_lags
 
+    def test_min_train_samples(self):
+        """min_train_samples of the ensemble should be the max of the individual models"""
+        # local models require at least one sample
+        model1 = NaiveSeasonal(K=5)
+        ensemble = NaiveEnsembleModel([model1])
+        assert ensemble._min_train_samples == model1._min_train_samples
+
+        # regression models require at least two samples
+        model2 = LinearRegressionModel(lags=10, output_chunk_length=1)
+        ensemble = NaiveEnsembleModel([model1, model2])
+        assert ensemble._min_train_samples == model2._min_train_samples
+
+        ensemble = NaiveEnsembleModel([model2, model1])
+        assert ensemble._min_train_samples == model2._min_train_samples
+
+    def test_train_target_lengths(self):
+        """Each element in train_target_lengths (input and output windows) of the ensemble should be the max of the
+        individual models."""
+        # model 1 has largest input and output windows
+        model1 = NaiveSeasonal(K=5)
+        lenghts1 = model1._train_target_sample_lengths
+        ensemble = NaiveEnsembleModel([model1])
+        assert ensemble._train_target_sample_lengths == lenghts1
+
+        # model 2 has largest input and output windows
+        model2 = LinearRegressionModel(lags=10, output_chunk_length=1)
+        lenghts2 = model2._train_target_sample_lengths
+        ensemble = NaiveEnsembleModel([model1, model2])
+        assert ensemble._train_target_sample_lengths == lenghts2
+
+        ensemble = NaiveEnsembleModel([model2, model1])
+        assert ensemble._train_target_sample_lengths == lenghts2
+
+        # model 3 has largest output window
+        model3 = LinearRegressionModel(lags=1, output_chunk_length=10)
+        lenghts3 = model3._train_target_sample_lengths
+        ensemble = NaiveEnsembleModel([model2, model1, model3])
+        assert ensemble._train_target_sample_lengths == (lenghts2[0], lenghts3[1])
+
+    def test_min_train_series_lengths(self):
+        """min_train_series_length of the ensemble should be
+        `sum(_train_target_sample_lengths) + _min_train_samples - 1`
+        """
+        # model 1 has largest input and output windows
+        model1 = NaiveSeasonal(K=5)
+        ensemble = NaiveEnsembleModel([model1])
+        assert ensemble.min_train_series_length == model1.min_train_series_length
+
+        # model 2 has largest input and output windows
+        model2 = LinearRegressionModel(lags=10, output_chunk_length=1)
+        lenghts2 = model2._train_target_sample_lengths
+        ensemble = NaiveEnsembleModel([model1, model2])
+        assert ensemble.min_train_series_length == model2.min_train_series_length
+
+        ensemble = NaiveEnsembleModel([model2, model1])
+        assert ensemble.min_train_series_length == model2.min_train_series_length
+
+        # model2 has largest input window, model 3 has largest output window, and min samples from model2 and model3
+        model3 = LinearRegressionModel(lags=1, output_chunk_length=10)
+        lenghts3 = model3._train_target_sample_lengths
+        ensemble = NaiveEnsembleModel([model2, model1, model3])
+        assert (
+            ensemble.min_train_series_length
+            == sum((lenghts2[0], lenghts3[1])) + model3._min_train_samples - 1
+        )
+
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_extreme_lags_rnn(self):
         # RNNModel has the 8th element in `extreme_lags` for the `max_target_lag_train`.
