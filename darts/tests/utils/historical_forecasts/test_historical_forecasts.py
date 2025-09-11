@@ -512,7 +512,9 @@ class TestHistoricalforecast:
                 _ = model.historical_forecasts(
                     series=y, forecast_horizon=horizon, last_points_only=True
                 )
-            assert str(err.value).startswith("Cannot build a single input for training")
+            assert str(err.value).startswith(
+                "Cannot build any input dataset for training"
+            )
             return
 
         # last_points_only = True: gives a list with a single forecasts per series,
@@ -550,6 +552,47 @@ class TestHistoricalforecast:
                 np.testing.assert_array_almost_equal(
                     hfc.values(), y_ref.values()[-horizon:]
                 )
+
+    def test_hfc_too_short_input_for_training_with_multiple_samples(self):
+        model = LinearRegressionModel(lags=3)
+        chunk_lengths = model._train_target_sample_lengths
+        min_samples = model._min_train_samples
+        assert min_samples == 2
+        y = tg.constant_timeseries(
+            value=1.0, length=sum(chunk_lengths) + min_samples - 1
+        )
+
+        # can generate exactly one forecast with minimum required input length
+        out = model.historical_forecasts(series=y, retrain=True, overlap_end=True)
+        assert len(out) == 1
+
+        # cannot generate a single forecast if only one sample is available
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=y[:-1], retrain=True, overlap_end=True
+            )
+        assert str(err.value).startswith("Cannot build any input dataset for training")
+
+    def test_hfc_too_short_input_for_prediction(self):
+        model = LinearRegressionModel(lags=3)
+        y = tg.constant_timeseries(value=1.0, length=model.min_train_series_length)
+        model.fit(y)
+
+        # can generate exactly one forecast with minimum input length
+        min_input_length = model._train_target_sample_lengths[0]
+        out = model.historical_forecasts(
+            series=y[:min_input_length], retrain=False, overlap_end=True
+        )
+        assert len(out) == 1
+
+        # cannot generate a single forecast
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=y[: min_input_length - 1], retrain=False, overlap_end=True
+            )
+        assert str(err.value).startswith(
+            "Cannot build any input dataset for prediction"
+        )
 
     @pytest.mark.parametrize(
         "arima_args",
@@ -4209,3 +4252,140 @@ class TestHistoricalforecast:
                 assert has_val_pc is expected_val_pc
                 assert has_val_fc is expected_val_fc
                 assert has_val_sw is expected_val_sw
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            ["past", "future", "none"],
+            [1, 2],
+            [0, 1],
+            [0, 1],
+        ),
+    )
+    def test_train_length_warnings(self, config, caplog):
+        """Tests that `train_length` raises correct warning for models with input requirements and shorter
+        covariates."""
+        covariates_type, ocl, ocs, train_length_longer = config
+        if covariates_type == "past":
+            kwargs = {"lags_past_covariates": 10}
+        elif covariates_type == "future":
+            kwargs = {"lags_future_covariates": (0, 9)}
+        else:
+            kwargs = {}
+        horizon = ocl
+
+        model = LinearRegressionModel(
+            lags=1, output_chunk_length=ocl, output_chunk_shift=ocs, **kwargs
+        )
+
+        if covariates_type == "none":
+            add_length = 0
+        else:
+            # + 9 as lags_past/future_covariates look 9 steps further back / ahead than target lags
+            add_length = 9 + (ocs if covariates_type == "future" else 0)
+        series = tg.linear_timeseries(length=model.min_train_series_length + add_length)
+
+        if covariates_type != "none":
+            kwargs = {f"{covariates_type}_covariates": series}
+        else:
+            kwargs = {}
+        with caplog.at_level(logging.WARNING):
+            preds = model.historical_forecasts(
+                series=series,
+                train_length=model.min_train_series_length + train_length_longer,
+                overlap_end=True,
+                forecast_horizon=horizon,
+                **kwargs,
+            )
+            assert len(preds) == 1
+            assert ("`train_length` is too large" in caplog.text) is bool(
+                train_length_longer
+            )
+            if covariates_type == "past":
+                # the current past covariates make predictions start at the end of the series
+                assert (
+                    preds.start_time()
+                    == series.end_time() + (horizon + ocs) * series.freq
+                )
+            else:
+                # the current future covariates make predictions start towards the beginning of the series
+                assert preds.start_time() == (
+                    series.start_time()
+                    + (model.min_train_series_length + horizon - 1 + ocs) * series.freq
+                )
+        caplog.clear()
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            ["past", "future", "none"],
+            [1, 2],
+            [0, 1],
+            [0, 1],
+        ),
+    )
+    def test_val_length_warnings(self, config, caplog):
+        """Tests that `val_length` raises correct warning for models with input requirements and shorter covariates."""
+        covariates_type, ocl, ocs, val_length_longer = config
+        if covariates_type == "past":
+            kwargs = {"lags_past_covariates": 10}
+        elif covariates_type == "future":
+            kwargs = {"lags_future_covariates": (0, 9)}
+        else:
+            kwargs = {}
+        horizon = ocl
+
+        model = LinearRegressionModel(
+            lags=1, output_chunk_length=ocl, output_chunk_shift=ocs, **kwargs
+        )
+
+        if covariates_type == "none":
+            add_length = 0
+        else:
+            # + 9 as lags_past/future_covariates look 9 steps further back / ahead than target lags
+            add_length = 9 + (ocs if covariates_type == "future" else 0)
+
+        # minimum requirements for val_length is one output window
+        min_val_length = model._train_target_sample_lengths[1]
+        add_length += min_val_length
+
+        series = tg.linear_timeseries(length=model.min_train_series_length + add_length)
+
+        if covariates_type != "none":
+            kwargs = {f"{covariates_type}_covariates": series}
+        else:
+            kwargs = {}
+        with caplog.at_level(logging.WARNING):
+            preds = model.historical_forecasts(
+                series=series,
+                val_length=min_val_length + val_length_longer,
+                overlap_end=True,
+                forecast_horizon=horizon,
+                **kwargs,
+            )
+            assert ("`val_length` is too large" in caplog.text) is bool(
+                val_length_longer
+            )
+            # if val length too long, we ignore it and start the prediction earlier
+            assert len(preds) == 1 + (min_val_length if val_length_longer else 0)
+
+            if covariates_type == "past":
+                # the current past covariates make predictions start at the end of the series
+                adjust_end = horizon + ocs
+                if val_length_longer:
+                    # if val length too long, we ignore it and start the prediction earlier
+                    adjust_end -= min_val_length
+                assert (
+                    preds.start_time() == series.end_time() + adjust_end * series.freq
+                )
+            else:
+                # the current future covariates make predictions start towards the beginning of the series
+                adjust_start = model.min_train_series_length + horizon - 1 + ocs
+                if not val_length_longer:
+                    # if val length is valid, we start the prediction after the val set
+                    adjust_start += min_val_length
+                assert (
+                    preds.start_time()
+                    == series.start_time() + adjust_start * series.freq
+                )
+        caplog.clear()

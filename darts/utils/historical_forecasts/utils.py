@@ -738,10 +738,10 @@ def _get_historical_forecasts_setup(
         if not model._fit_called and historical_forecasts_time_index is None:
             raise_log(
                 ValueError(
-                    "Cannot build a single input for training with the provided untrained model, "
+                    "Cannot build any input dataset for training the model with the provided "
                     f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                    "training input time index requirements were not met. "
-                    "Please check the time index of `series` and `*_covariates`."
+                    "training input time index requirements were not met. Please check the time "
+                    "index of `series` and `*_covariates`."
                 ),
                 logger,
             )
@@ -750,14 +750,14 @@ def _get_historical_forecasts_setup(
         # Look at both past and future, since the target lags must be taken in consideration
         min_timestamp_series = (
             historical_forecasts_time_index[0]
-            - model._training_sample_time_index_length * series.freq
+            - model.min_train_series_length * series.freq
         )
     else:
         # predictable time indexes (assuming model is already trained)
         if historical_forecasts_time_index is None:
             raise_log(
                 ValueError(
-                    "Cannot build a single input for prediction with the provided model, "
+                    "Cannot build any input dataset for prediction with the provided model, "
                     f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
                     "prediction input time index requirements were not met. "
                     "Please check the time index of `series` and `*_covariates`."
@@ -988,10 +988,6 @@ def _get_maximum_historical_forecastable_time_index(
             end - (forecast_horizon + output_chunk_shift) * series.freq,
         )
 
-    # end comes before the start
-    if intersect_[1] < intersect_[0]:
-        return None
-
     # if SKLearnModel is not multi_models, it looks further in the past
     is_multi_models = getattr(model, "multi_models", None)
     if is_multi_models is not None and not is_multi_models:
@@ -1000,7 +996,18 @@ def _get_maximum_historical_forecastable_time_index(
             intersect_[1],
         )
 
-    return intersect_ if len(intersect_) > 0 else None
+    # more than one training sample is required; start later
+    if is_training and model._min_train_samples > 1:
+        intersect_ = (
+            intersect_[0] + (model._min_train_samples - 1) * series.freq,
+            intersect_[1],
+        )
+
+    # end comes before the start
+    if intersect_[1] < intersect_[0]:
+        return None
+
+    return intersect_
 
 
 def _adjust_historical_forecasts_time_index(
@@ -1084,26 +1091,30 @@ def _adjust_historical_forecasts_time_index_training(
     # adjust start time based on train_length
     warn_train_length = False
     start_time = historical_forecasts_time_index[0]
-    if train_length is None:
-        # No train_length specified - adjust for minimum training samples if needed
-        if model._min_train_samples > 1:
-            start_time += (model._min_train_samples - 1) * series.freq
-    else:
-        # train_length is specified
-        if train_length <= len(series):
-            train_length_start = series._time_index[train_length - 1] + series.freq
-
-            if train_length_start > historical_forecasts_time_index[-1]:
-                # train_length extends beyond available data
-                warn_train_length = True
-            else:
-                # train_length is valid
-                effective_train_length = train_length
-                if train_length_start > historical_forecasts_time_index[0]:
-                    start_time = train_length_start
+    if train_length is not None:
+        # hfc start might already be shifted from target-only start due to shorter covariates;
+        # we want `train_length` to start from the first target step that is used for training
+        start_shifted = n_steps_between(
+            end=historical_forecasts_time_index[0],
+            start=series.start_time() + model.min_train_series_length * series.freq,
+            freq=series.freq,
+        )
+        train_length_adjusted = train_length + start_shifted
+        if train_length_adjusted < len(series):
+            train_length_start = series._time_index[train_length_adjusted]
         else:
-            # train_length exceeds series length
+            train_length_start = (
+                series.start_time() + train_length_adjusted * series.freq
+            )
+
+        if train_length_start > historical_forecasts_time_index[-1]:
+            # train_length extends beyond available data
             warn_train_length = True
+        else:
+            # train_length is valid
+            effective_train_length = train_length
+            if train_length_start > historical_forecasts_time_index[0]:
+                start_time = train_length_start
 
     historical_forecasts_time_index = (start_time, historical_forecasts_time_index[1])
 
@@ -1133,17 +1144,6 @@ def _adjust_historical_forecasts_time_index_training(
                 effective_val_length = 0
 
     historical_forecasts_time_index = (start_time, historical_forecasts_time_index[1])
-
-    if historical_forecasts_time_index[0] > historical_forecasts_time_index[1]:
-        raise_log(
-            ValueError(
-                f"The time index of series at index: {series_idx} is too short for the "
-                f"historical forecast scenario. Review the model's minimum training "
-                f"requirements and the values passed for `train_length`, `val_length`, "
-                f"`forecast_horizon`, `overlap_end`."
-            ),
-            logger,
-        )
 
     if warn_train_length and show_warnings:
         logger.warning(

@@ -427,7 +427,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     ValueError(f"Model cannot be fit/trained with `{series_name}`."),
                     logger,
                 )
-
         self.fit(series=series, **add_kwargs, **kwargs)
 
     def _predict_wrapper(
