@@ -185,9 +185,16 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         output = super().fit(
             series, past_covariates, future_covariates, *args, **kwargs
         )
-        self.predict(
-            n=1, series=series
-        )  # run a dummy prediction to init the trainer model
+        # Saving a naive model fails if self.trainer.strategy.model is not initialized
+        # This is normally done during training, but naive models do not train, so we apply a
+        # dummy predict to initialize it
+        if self.trainer.strategy.model is None:
+            self.predict(
+                n=1,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+            )
         return output
 
     @staticmethod
