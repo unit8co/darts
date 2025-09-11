@@ -182,7 +182,13 @@ class _GlobalNaiveModel(MixedCovariatesTorchModel, ABC):
         self
             Fitted model.
         """
-        return super().fit(series, past_covariates, future_covariates, *args, **kwargs)
+        output = super().fit(
+            series, past_covariates, future_covariates, *args, **kwargs
+        )
+        self.predict(
+            n=1, series=series
+        )  # run a dummy prediction to init the trainer model
+        return output
 
     @staticmethod
     def load_from_checkpoint(

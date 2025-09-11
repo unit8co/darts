@@ -18,6 +18,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed a bug when saving a naive model directly after fitting it (without performing prediction). [#2839](https://github.com/unit8co/darts/issues/2839), by [Alain Gysi](https://github.com/Kurokabe)
+
 **Dependencies**
 
 - We raised the minimum pytorch-lightning version to `pytorch-lightning>=2.0.0`. [#2888](https://github.com/unit8co/darts/pull/2888) by [Dennis Bader](https://github.com/dennisbader).
