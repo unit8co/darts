@@ -291,16 +291,6 @@ class TestGlobalForecastingModels:
                 output_chunk_length=3,
                 **tfm_kwargs,
             ),
-            GlobalNaiveDrift(
-                input_chunk_length=4,
-                output_chunk_length=3,
-                **tfm_kwargs,
-            ),
-            GlobalNaiveAggregate(
-                input_chunk_length=4,
-                output_chunk_length=3,
-                **tfm_kwargs,
-            ),
             LinearRegressionModel(
                 lags=12,
                 lags_past_covariates=[-1, -2, -3],
@@ -312,9 +302,13 @@ class TestGlobalForecastingModels:
         # check if save and load methods work and if loaded model creates same forecasts as original model
         model_path_str = type(model).__name__
         model_clean_path_str = type(model).__name__ + "_clean"
+        model_path_no_predict_str = type(model).__name__ + "_no_predict"
 
         full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
         full_model_clean_path_str = os.path.join(tmpdir_fn, model_clean_path_str)
+        full_model_path_no_predict_str = os.path.join(
+            tmpdir_fn, model_path_no_predict_str
+        )
 
         cov_kwargs = (
             {
@@ -326,6 +320,9 @@ class TestGlobalForecastingModels:
         )
 
         model.fit(series=self.ts_pass_train, **cov_kwargs)
+
+        # test save without predict
+        model.save(full_model_path_no_predict_str)
 
         model_prediction = model.predict(
             self.forecasting_horizon, self.ts_pass_train, **cov_kwargs
@@ -354,9 +351,19 @@ class TestGlobalForecastingModels:
         loaded_model_clean_str = type(model).load(
             full_model_clean_path_str, **load_kwargs
         )
+        loaded_model_no_predict = type(model).load(
+            full_model_path_no_predict_str, **load_kwargs
+        )
 
         assert (
             loaded_model.predict(
+                self.forecasting_horizon, self.ts_pass_train, **cov_kwargs
+            )
+            == model_prediction
+        )
+
+        assert (
+            loaded_model_no_predict.predict(
                 self.forecasting_horizon, self.ts_pass_train, **cov_kwargs
             )
             == model_prediction
@@ -384,69 +391,6 @@ class TestGlobalForecastingModels:
         # When the serie to predict is provided, the prediction is the same
         assert model_prediction == loaded_model_clean_str.predict(
             self.forecasting_horizon, series=self.ts_pass_train, **cov_kwargs
-        )
-
-    @pytest.mark.parametrize(
-        "model",
-        [
-            GlobalNaiveSeasonal(
-                input_chunk_length=4,
-                output_chunk_length=3,
-                **tfm_kwargs,
-            ),
-            GlobalNaiveDrift(
-                input_chunk_length=4,
-                output_chunk_length=3,
-                **tfm_kwargs,
-            ),
-            GlobalNaiveAggregate(
-                input_chunk_length=4,
-                output_chunk_length=3,
-                **tfm_kwargs,
-            ),
-        ],
-    )
-    def test_save_load_naive_torch_model(self, tmpdir_fn, model):
-        # check if save and load methods work and if loaded model creates same forecasts as original model
-        model_path_str = type(model).__name__
-        model_clean_path_str = type(model).__name__ + "_clean"
-
-        full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
-        full_model_clean_path_str = os.path.join(tmpdir_fn, model_clean_path_str)
-
-        model.fit(series=self.ts_pass_train)
-
-        # test save
-        model.save()
-        model.save(full_model_path_str)
-        model_prediction = model.predict(self.forecasting_horizon, self.ts_pass_train)
-
-        model.save(full_model_clean_path_str, clean=True)
-
-        # test load
-        loaded_model = type(model).load(full_model_path_str)
-        if isinstance(model, TorchForecastingModel):
-            load_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
-        else:
-            load_kwargs = {}
-        loaded_model_clean_str = type(model).load(
-            full_model_clean_path_str, **load_kwargs
-        )
-
-        assert (
-            loaded_model.predict(
-                self.forecasting_horizon,
-                self.ts_pass_train,
-            )
-            == model_prediction
-        )
-
-        # Training data is not stored in the clean model
-        assert loaded_model_clean_str.training_series is None
-
-        # When the serie to predict is provided, the prediction is the same
-        assert model_prediction == loaded_model_clean_str.predict(
-            self.forecasting_horizon, series=self.ts_pass_train
         )
 
     @pytest.mark.parametrize("config", models_cls_kwargs_errs)

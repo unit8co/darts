@@ -18,7 +18,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed a bug when saving a naive model directly after fitting it (without performing prediction). [#2839](https://github.com/unit8co/darts/issues/2839), by [Alain Gysi](https://github.com/Kurokabe)
+- Fixed a bug when saving a `GlobalNaiveModel` directly after fitting it (without performing prediction). [#2895](https://github.com/unit8co/darts/pull/2895), by [Alain Gysi](https://github.com/Kurokabe)
 
 **Dependencies**
 
