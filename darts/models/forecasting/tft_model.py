@@ -376,11 +376,11 @@ class _TFTModule(PLForecastingModule):
         return self.variables_meta["model_config"]["time_varying_decoder_input"]
 
     @staticmethod
-    def expand_static_context(context: torch.Tensor, time_steps: int) -> torch.Tensor:
+    def expand_static_context(context: torch.Tensor) -> torch.Tensor:
         """
         add time dimension to static context
         """
-        return context[:, None].expand(-1, time_steps, -1)
+        return context.unsqueeze(1).contiguous()
 
     @staticmethod
     def get_relative_index(
@@ -474,7 +474,6 @@ class _TFTModule(PLForecastingModule):
         batch_size = x_cont_past.shape[dim_samples]
         encoder_length = self.input_chunk_length
         decoder_length = self.output_chunk_length
-        time_steps = encoder_length + decoder_length
 
         # avoid unnecessary regeneration of attention mask
         if batch_size != self.batch_size_last:
@@ -557,7 +556,7 @@ class _TFTModule(PLForecastingModule):
             static_covariate_var = None
 
         static_context_expanded = self.expand_static_context(
-            context=self.static_context_grn(static_embedding), time_steps=time_steps
+            self.static_context_grn(static_embedding)
         )
 
         embeddings_varying_encoder = {
@@ -565,7 +564,7 @@ class _TFTModule(PLForecastingModule):
         }
         embeddings_varying_encoder, encoder_sparse_weights = self.encoder_vsn(
             x=embeddings_varying_encoder,
-            context=static_context_expanded[:, :encoder_length],
+            context=static_context_expanded,
         )
 
         embeddings_varying_decoder = {
@@ -573,7 +572,7 @@ class _TFTModule(PLForecastingModule):
         }
         embeddings_varying_decoder, decoder_sparse_weights = self.decoder_vsn(
             x=embeddings_varying_decoder,
-            context=static_context_expanded[:, encoder_length:],
+            context=static_context_expanded,
         )
 
         # LSTM
@@ -611,9 +610,7 @@ class _TFTModule(PLForecastingModule):
         static_context_enriched = self.static_context_enrichment(static_embedding)
         attn_input = self.static_enrichment_grn(
             x=lstm_out,
-            context=self.expand_static_context(
-                context=static_context_enriched, time_steps=time_steps
-            ),
+            context=self.expand_static_context(static_context_enriched),
         )
 
         # multi-head attention
