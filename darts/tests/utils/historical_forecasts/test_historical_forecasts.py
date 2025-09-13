@@ -4,6 +4,7 @@ import math
 from copy import deepcopy
 from itertools import product
 from typing import Optional
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ from darts.dataprocessing.transformers import (
 from darts.datasets import AirPassengersDataset
 from darts.models import (
     ARIMA,
+    AutoARIMA,
     CatBoostModel,
     ConformalNaiveModel,
     LightGBMModel,
@@ -28,6 +30,7 @@ from darts.models import (
     NaiveDrift,
     NaiveSeasonal,
     Prophet,
+    XGBModel,
 )
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
@@ -333,6 +336,11 @@ else:
     models_torch_cls_kwargs = []
 
 PROPHET_AVAILABLE = not isinstance(Prophet, NotImportedModule)
+xgb_test_params = {
+    "n_estimators": 1,
+    "max_depth": 1,
+    "max_leaves": 1,
+}
 
 
 class TestHistoricalforecast:
@@ -504,9 +512,7 @@ class TestHistoricalforecast:
                 _ = model.historical_forecasts(
                     series=y, forecast_horizon=horizon, last_points_only=True
                 )
-            assert str(err.value).startswith(
-                "Cannot build a single input for prediction"
-            )
+            assert str(err.value).startswith("Cannot build a single input for training")
             return
 
         # last_points_only = True: gives a list with a single forecasts per series,
@@ -695,6 +701,12 @@ class TestHistoricalforecast:
         # set train length to be the minimum required training length
         # +1 as sklearn models require min 2 train samples
         train_length = bounds[0] + bounds[1] + 1
+        assert train_length == model.min_train_series_length
+
+        # set val length to be the minimum required validation length (one output window since hfc will take
+        # input window from training set)
+        val_length = bounds[1]
+        assert val_length == model._train_target_sample_lengths[1]
 
         if model.output_chunk_shift > 0:
             with pytest.raises(ValueError) as err:
@@ -718,6 +730,7 @@ class TestHistoricalforecast:
             forecast_horizon=forecast_horizon,
             stride=1,
             train_length=None,
+            val_length=0,
             retrain=True,
             overlap_end=False,
         )
@@ -728,6 +741,7 @@ class TestHistoricalforecast:
             forecast_horizon=forecast_horizon,
             stride=1,
             train_length=train_length,
+            val_length=0,
             retrain=True,
             overlap_end=False,
         )
@@ -747,6 +761,39 @@ class TestHistoricalforecast:
         )
         assert forecasts.time_index.equals(
             self.ts_pass_val.time_index[-theoretical_forecast_length:]
+        )
+
+        # time index with only val length
+        forecasts = model.historical_forecasts(
+            series=self.ts_pass_val,
+            forecast_horizon=forecast_horizon,
+            stride=1,
+            train_length=None,
+            val_length=val_length,
+            retrain=True,
+            overlap_end=False,
+        )
+
+        theoretical_forecast_length_vl = theoretical_forecast_length - val_length
+        assert len(forecasts) == theoretical_forecast_length_vl
+        assert forecasts.time_index.equals(
+            self.ts_pass_val.time_index[-theoretical_forecast_length_vl:]
+        )
+
+        # time index with minimum train and val length
+        forecasts = model.historical_forecasts(
+            series=self.ts_pass_val,
+            forecast_horizon=forecast_horizon,
+            stride=1,
+            train_length=train_length,
+            val_length=val_length,
+            retrain=True,
+            overlap_end=False,
+        )
+
+        assert len(forecasts) == theoretical_forecast_length_vl
+        assert forecasts.time_index.equals(
+            self.ts_pass_val.time_index[-theoretical_forecast_length_vl:]
         )
 
         # range index
@@ -851,6 +898,26 @@ class TestHistoricalforecast:
         np.testing.assert_equal(
             last_points_times,
             self.ts_pass_val_range.time_index[-theoretical_forecast_length:].values,
+        )
+
+        # last points only False and val_length
+        forecasts = model.historical_forecasts(
+            series=self.ts_pass_val_range,
+            forecast_horizon=forecast_horizon,
+            train_length=train_length,
+            val_length=val_length,
+            stride=1,
+            retrain=True,
+            overlap_end=False,
+            last_points_only=False,
+        )
+
+        assert len(forecasts) == theoretical_forecast_length_vl
+        assert len(forecasts[0]) == forecast_horizon
+        last_points_times = np.array([fc.end_time() for fc in forecasts])
+        np.testing.assert_equal(
+            last_points_times,
+            self.ts_pass_val_range.time_index[-theoretical_forecast_length_vl:].values,
         )
 
         if not model.supports_past_covariates:
@@ -2768,35 +2835,50 @@ class TestHistoricalforecast:
         end_idx: int,
         ocl: int,
         series_idx: Optional[int] = None,
+        train_length: Optional[int] = None,
+        val_length: int = 0,
     ):
         ts_copy = deepcopy(ts)
         hf_scaler_copy = deepcopy(hf_scaler)
+
+        if model.supports_transferable_series_prediction:
+            end_idx_ = end_idx
+            end_idx_ -= val_length
+        else:
+            end_idx_ = end_idx
+        start_index_ = None if train_length is None else end_idx_ - train_length
+
         for ts_name in hf_scaler_copy:
             # train the fittable scaler without leaking data
             if isinstance(hf_scaler_copy[ts_name], FittableDataTransformer):
-                if ts_name == "series" or ts_name == "past_covariates":
-                    tmp_ts = ts_copy[ts_name][:end_idx]
+                if ts_name == "series":
+                    tmp_ts = ts_copy[ts_name][start_index_:end_idx_]
+                elif ts_name == "past_covariates":
+                    tmp_ts = ts_copy[ts_name][:end_idx_]
                 else:
                     # for future covariates, the scaler may access future information
-                    tmp_ts = ts_copy[ts_name][: end_idx + max(0, model.extreme_lags[5])]
+                    tmp_ts = ts_copy[ts_name][
+                        : end_idx_ + max(0, model.extreme_lags[5])
+                    ]
                 if retrain:
                     hf_scaler_copy[ts_name].fit(tmp_ts)
             # apply the scaler on the whole series
             ts_copy[ts_name] = hf_scaler_copy[ts_name].transform(
                 ts_copy[ts_name], series_idx=series_idx
             )
-
-        series = ts_copy.pop("series")[:end_idx]
+        series = ts_copy.pop("series")
+        train_series = series[start_index_:end_idx_]
+        pred_series = series[:end_idx]
         if retrain:
             # completly reset model for reproducibility of the predict()
             model = model.untrained_model()
-            model.fit(series=series, **ts_copy)
+            model.fit(series=train_series, **ts_copy)
 
         # local model does not support the "series" argument in predict()
         if isinstance(model, LocalForecastingModel):
             pred = model.predict(n=ocl, **ts_copy)
         else:
-            pred = model.predict(n=ocl, series=series, **ts_copy)
+            pred = model.predict(n=ocl, series=pred_series, **ts_copy)
 
         # scale back the forecasts
         if isinstance(hf_scaler_copy.get("series"), InvertibleDataTransformer):
@@ -2887,6 +2969,8 @@ class TestHistoricalforecast:
             ],
             [True, False],  # retrain
             [True, False],  # last point only
+            [False, True],  # use train length
+            [False, True],  # use val length
             models,
         ),
     )
@@ -2895,10 +2979,24 @@ class TestHistoricalforecast:
         optimized and un-optimized historical forecasts
         """
 
-        (ts, hf_scaler), retrain, last_points_only, model_cls = params
+        (
+            (ts, hf_scaler),
+            retrain,
+            last_points_only,
+            use_train_length,
+            use_val_length,
+            model_cls,
+        ) = params
+        if not retrain and (use_train_length or use_val_length):
+            # cannot run hfc with retrain=False and train_length or val_length
+            return
         ocl = 6
         model_params = self.helper_get_model_params(model_cls, ts, ocl)
         model = model_cls(**model_params)
+
+        # minimum train and validation lengths
+        train_length = model.min_train_series_length if use_train_length else None
+        val_length = model._train_target_sample_lengths[1] if use_val_length else 0
 
         # local models do not support historical forecast with retrain=False
         if isinstance(model, LocalForecastingModel) and not retrain:
@@ -2924,6 +3022,8 @@ class TestHistoricalforecast:
             "overlap_end": False,
             "last_points_only": last_points_only,
             "verbose": False,
+            "train_length": train_length,
+            "val_length": val_length,
             "enable_optimization": False,
         }
         # un-transformed series, scaler applied within the method
@@ -2960,11 +3060,25 @@ class TestHistoricalforecast:
 
         # for 2nd to last historical forecast
         manual_hf_0 = self.helper_manual_scaling_prediction(
-            model, ts, hf_scaler, retrain, -ocl - 1, ocl
+            model,
+            ts,
+            hf_scaler,
+            retrain,
+            -ocl - 1,
+            ocl,
+            train_length=train_length,
+            val_length=val_length,
         )
         # for last historical forecast
         manual_hf_1 = self.helper_manual_scaling_prediction(
-            model, ts, hf_scaler, retrain, -ocl, ocl
+            model,
+            ts,
+            hf_scaler,
+            retrain,
+            -ocl,
+            ocl,
+            train_length=train_length,
+            val_length=val_length,
         )
 
         # verify that automatic and manual pre-scaling produce identical forecasts
@@ -3390,12 +3504,9 @@ class TestHistoricalforecast:
                 series=self.ts_pass_train,
                 stride=0,
             )
-        assert (
-            str(err.value)
-            == "The provided stride parameter must be a positive integer."
-        )
+        assert str(err.value) == "`stride` must be a positive integer."
 
-        # start_format="position" but `start` is not `int`
+        # `start_format="position"` but `start` is not `int`
         with pytest.raises(ValueError) as err:
             _ = model.historical_forecasts(
                 series=self.ts_pass_train,
@@ -3404,6 +3515,66 @@ class TestHistoricalforecast:
             )
         assert str(err.value).startswith(
             "Since `start_format='position'`, `start` must be an integer, received"
+        )
+
+        # cannot specify `val_length` and a validation set in `fit_kwargs`
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain=True,
+                val_length=1,
+                fit_kwargs={"val_series": self.ts_pass_train},
+            )
+        assert str(err.value).startswith(
+            "`val_length` must be `0` when `val_series` is provided in `fit_kwargs`."
+        )
+
+        # `retrain` has unexpected type
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain="1",
+            )
+        assert str(err.value).startswith(
+            "`retrain` must be either `bool`, positive `int`"
+        )
+
+        # `retrain` fn is False in first iteration and model has not been fit
+        def retrain_fn(
+            counter, pred_time, train_series, past_covariates, future_covariates
+        ):
+            return False
+
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain=retrain_fn,
+            )
+        assert str(err.value).startswith(
+            "`retrain` is `False` in the first train iteration at prediction point"
+        )
+
+        model.fit(self.ts_pass_train)
+        # `retrain=False` but `train_length` is not None
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain=False,
+                train_length=1,
+            )
+        assert str(err.value).startswith(
+            "Cannot use `train_length` with `retrain=False`."
+        )
+
+        # `retrain=False` but `val_length` larger than 0
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=self.ts_pass_train,
+                retrain=False,
+                val_length=1,
+            )
+        assert str(err.value).startswith(
+            "Cannot use `val_length` with `retrain=False`."
         )
 
     @pytest.mark.parametrize(
@@ -3855,3 +4026,186 @@ class TestHistoricalforecast:
             start=start_too_early_stride, **hfc_params, **pred_lklp
         )
         assert hist_fct_too_early == hist_fct
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            [
+                # doesn't support val set, and no transferable series for prediction
+                (NaiveSeasonal, {"K": 3}),
+                # doesn't support val set, supports transferable series for prediction
+                (AutoARIMA, {}),
+                # doesn't support val set, global model (multi series)
+                (LinearRegressionModel, {"lags": 3, "output_chunk_length": 2}),
+                # supports val set, global model (multi series)
+                (
+                    XGBModel,
+                    {
+                        "lags": 3,
+                        "output_chunk_length": 2,
+                        "output_chunk_shift": 1,
+                        **xgb_test_params,
+                    },
+                ),
+                # supports val set, global model (multi series)
+                (
+                    NLinearModel,
+                    {
+                        "input_chunk_length": 3,
+                        "output_chunk_length": 2,
+                        "n_epochs": 1,
+                        **tfm_kwargs,
+                    },
+                ),
+            ],
+            [False, True],  # use covariates
+        ),
+    )
+    def test_val_length(self, config, caplog):
+        """Tests that `val_length` is correctly handled for models with different validation requirements."""
+        (model_cls, kwargs), use_covariates = config
+        model = model_cls(**kwargs)
+        ocs = model.output_chunk_shift
+        ocl = model.output_chunk_length or 0
+        horizon = ocl + 2 if not ocs else ocl
+
+        min_val_length = model._train_target_sample_lengths[1]
+        assert min_val_length == ocs + ocl
+
+        # number of steps to generate two forecasts (with minimum val_length and `overlap_end=False`)
+        n_steps = (
+            model.min_train_series_length + horizon + ocs + (min_val_length or 1) + 1
+        )
+        series = tg.linear_timeseries(length=n_steps)
+
+        pc, fc = None, None
+        if use_covariates and model.supports_past_covariates:
+            pc = series
+        if use_covariates and model.supports_future_covariates:
+            fc = tg.linear_timeseries(length=n_steps + ocs + horizon)
+
+        if model.supports_sample_weight:
+            sample_weight = tg.constant_timeseries(length=n_steps)
+        else:
+            sample_weight = None
+
+        model.fit(series)
+
+        with pytest.raises(ValueError) as err:
+            _ = model.historical_forecasts(
+                series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                sample_weight=sample_weight,
+                forecast_horizon=horizon,
+                val_length=-1,
+                overlap_end=False,
+            )
+        assert str(err.value) == "`val_length` must be a non-negative integer."
+
+        # must be at least output_chunk_length + output_chunk_shift (one valid output window)
+        if min_val_length > 0:
+            with pytest.raises(ValueError) as err:
+                _ = model.historical_forecasts(
+                    series=series,
+                    past_covariates=pc,
+                    future_covariates=fc,
+                    sample_weight=sample_weight,
+                    forecast_horizon=horizon,
+                    val_length=min_val_length - 1,
+                    overlap_end=False,
+                )
+            assert str(err.value).startswith(
+                f"`val_length` is too small for the validation requirements of this model. Must be `>={min_val_length}`"
+            )
+
+        # use minimum val length for model's supporting val set, and 1 otherwise
+        val_length = min_val_length or 1
+        # with the minimum val length, we can generate two forecasts
+        with caplog.at_level(logging.WARNING):
+            forecast = model.historical_forecasts(
+                series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                sample_weight=sample_weight,
+                forecast_horizon=horizon,
+                val_length=val_length,
+                overlap_end=False,
+                last_points_only=False,
+            )
+            warning_expected = (
+                "`val_length` is ignored (no validation set will be created)"
+            )
+            if not model.supports_transferable_series_prediction:
+                assert warning_expected in caplog.text
+            else:
+                assert warning_expected not in caplog.text
+        caplog.clear()
+
+        theoretical_forecast_length = (
+            n_steps
+            - model.min_train_series_length  # because we train
+            - val_length  # because we have overlap_end = False
+            - horizon  # because we forecast at least one horizon
+            - ocs  # because we have output_chunk_shift
+            + 1  # because we include the first element
+        )
+        assert len(forecast) == theoretical_forecast_length == 2
+        assert (
+            forecast[0].start_time()
+            == series.time_index[-(theoretical_forecast_length + (horizon - 1))]
+        )
+
+        # increasing val length reduces the number of forecasts
+        forecast = model.historical_forecasts(
+            series=series,
+            past_covariates=pc,
+            future_covariates=fc,
+            sample_weight=sample_weight,
+            forecast_horizon=horizon,
+            val_length=val_length + 1,
+            overlap_end=False,
+            last_points_only=False,
+        )
+        theoretical_forecast_length -= 1
+        assert len(forecast) == theoretical_forecast_length
+        assert (
+            forecast[0].start_time()
+            == series.time_index[-(theoretical_forecast_length + (horizon - 1))]
+        )
+
+        intercepted_fit_args = []
+
+        def intercept_fit_args(*args, **kwargs):
+            intercepted_fit_args.append({"args": args, "kwargs": kwargs})
+            return model
+
+        # target is categorical by default for classifiers supporting it
+        with (
+            patch.object(model.__class__, "fit", side_effect=intercept_fit_args),
+            patch.object(model.__class__, "predict", side_effect=series[:horizon]),
+        ):
+            _ = model.historical_forecasts(
+                series=series,
+                past_covariates=pc,
+                future_covariates=fc,
+                sample_weight=sample_weight,
+                forecast_horizon=horizon,
+                val_length=val_length + 1,
+                overlap_end=False,
+                last_points_only=False,
+            )
+
+            expected_val_set = model._supports_val_series
+            expected_val_pc = expected_val_set and pc is not None
+            expected_val_fc = expected_val_set and fc is not None
+            expected_val_sw = expected_val_set and sample_weight is not None
+            for call in intercepted_fit_args:
+                has_val_series = call["kwargs"].get("val_series") is not None
+                has_val_pc = call["kwargs"].get("val_past_covariates") is not None
+                has_val_fc = call["kwargs"].get("val_future_covariates") is not None
+                has_val_sw = call["kwargs"].get("val_sample_weight") is not None
+                assert has_val_series is expected_val_set
+                assert has_val_pc is expected_val_pc
+                assert has_val_fc is expected_val_fc
+                assert has_val_sw is expected_val_sw

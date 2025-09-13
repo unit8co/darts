@@ -685,8 +685,6 @@ class TestBacktesting:
         with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, train_length=0, start=0.5)
         with pytest.raises(TypeError):
-            NaiveDrift().backtest(linear_series, train_length=1.2, start=0.5)
-        with pytest.raises(TypeError):
             NaiveDrift().backtest(linear_series, train_length="wrong type", start=0.5)
 
         with pytest.raises(ValueError):

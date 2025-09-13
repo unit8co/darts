@@ -614,19 +614,13 @@ class SKLearnModel(GlobalForecastingModel):
         return True
 
     @property
-    def min_train_series_length(self) -> int:
-        return max(
-            3,
-            (
-                -self.lags["target"][0] + self.output_chunk_length
-                if "target" in self.lags
-                else self.output_chunk_length
-            )
-            + self.output_chunk_shift,
-        )
+    def _train_target_sample_lengths(self) -> tuple[int, int]:
+        input_chunk_length = -self.lags["target"][0] if "target" in self.lags else 0
+        return input_chunk_length, self.output_chunk_length + self.output_chunk_shift
 
     @property
-    def min_train_samples(self) -> int:
+    def _min_train_samples(self) -> int:
+        # some models require more than 1 sample to train (e.g. CatBoost); for consistency, we set the minimum to 2
         return 2
 
     @property
@@ -863,7 +857,7 @@ class SKLearnModel(GlobalForecastingModel):
             stride=stride,
         )
 
-        if self.supports_val_set and val_series is not None:
+        if self._supports_val_series and val_series is not None:
             kwargs = self._add_val_set_to_kwargs(
                 kwargs=kwargs,
                 val_series=val_series,
@@ -999,7 +993,7 @@ class SKLearnModel(GlobalForecastingModel):
                 "constructor.",
             )
 
-        if self.supports_val_set:
+        if self._supports_val_series:
             val_series, val_past_covariates, val_future_covariates = (
                 self._process_validation_set(
                     series=series,
@@ -1473,11 +1467,6 @@ class SKLearnModel(GlobalForecastingModel):
     @property
     def supports_probabilistic_prediction(self) -> bool:
         return self.likelihood is not None
-
-    @property
-    def supports_val_set(self) -> bool:
-        """Whether the model supports a validation set during training."""
-        return False
 
     @property
     def supports_sample_weight(self) -> bool:
