@@ -230,6 +230,16 @@ class _ResampleNorm(nn.Module):
             self.gate = nn.Sigmoid()
         self.norm = norm(self.output_size)
 
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        if self.input_size != self.output_size:
+            x = self.resample(x)
+
+        if self.trainable_add:
+            x = x * self.gate(self.mask) * 2.0
+
+        output = self.norm(x)
+        return output
+
 
 class _ProjectNorm(nn.Module):
     def __init__(
