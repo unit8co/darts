@@ -445,14 +445,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
         dtype = self.train_sample[0].dtype
         if precision_user is not None:
-            logger.warning(
-                f"Using user-defined precision: {precision_user}. "
-                "For mixed precision training, recommended options are 'bf16-mixed' "
-                "and '16-mixed'. See https://github.com/unit8co/darts/pull/2883 for "
-                "a discussion on low precision options across hardware platforms and "
-                "https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.trainer.trainer.Trainer.html#lightning.pytorch.trainer.trainer.Trainer.params.precision"
-                " for a full list of options in PyTorch-Lightning."
+            logger.info(
+                f"Using user-defined precision: {precision_user}. The model output will have the same dtype. If you "
+                f"encounter issues, it's usually due to a conflict between input series data type and precision, or an "
+                f"unsupported precision for the given device or model. For more information, see "
+                f"https://github.com/unit8co/darts/pull/2883 for a discussion on low precision options across hardware "
+                f"platforms."
             )
+            if "16" in str(precision_user):
+                logger.warning(
+                    "Detected user-defined float16-like precision. For mixed precision training, recommended "
+                    "options are 'bf16-mixed' and '16-mixed'."
+                )
             precision = precision_user
         elif np.issubdtype(dtype, np.float32):
             logger.info("Time series values are 32-bits; casting model to float32.")
@@ -462,7 +466,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             precision = "64-true"
         elif np.issubdtype(dtype, np.float16):
             logger.warning(
-                "Time series values are 16-bits; casting model to bfloat16. "
+                "Time series values are 16-bits; casting model to bfloat16 and model output will have dtype float32. "
                 "Training with 16-bit time series may lead to numerical instability "
                 "in some models. If you encounter issues, consider casting your data "
                 "to 32-bit, e.g. with `TimeSeries.astype(np.float32)`."
