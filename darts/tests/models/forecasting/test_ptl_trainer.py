@@ -25,7 +25,7 @@ class TestPTLTrainer:
         16: "bf16-true",
         32: "32-true",
         64: "64-true",
-        "mixed": "16-mixed",
+        "mixed": "bf16-mixed",
     }
 
     def test_prediction_loaded_custom_trainer(self, tmpdir_module):
@@ -82,19 +82,39 @@ class TestPTLTrainer:
         # both should produce identical prediction
         assert model.predict(n=4) == model2.predict(n=4)
 
-    def test_custom_trainer_setup(self):
+    @pytest.mark.parametrize(
+        "precision, dtype",
+        [
+            (16, np.float16),
+            (32, np.float32),
+            (64, np.float64),
+            ("mixed", np.float32),
+        ],
+    )
+    def test_custom_trainer_setup(self, precision, dtype):
         model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
 
         # no error with correct precision
         trainer = pl.Trainer(
             **self.trainer_params,
-            precision=self.precisions[32],
+            precision=self.precisions[precision],
             **tfm_kwargs["pl_trainer_kwargs"],
         )
-        model.fit(self.series, trainer=trainer)
+        model.fit(self.series.astype(dtype), trainer=trainer)
 
         # check if number of epochs trained is same as trainer.max_epochs
         assert trainer.max_epochs == model.epochs_trained
+
+        preds = model.predict(n=3)
+        assert model.trainer.precision == self.precisions[precision]
+        if dtype != np.float16:
+            # predictions should have same dtype as input except for float16
+            assert preds.dtype == dtype
+        else:
+            # predictions are float32 when input is float16
+            assert preds.dtype == np.float32
+        # predictions should not contain NaNs or infs
+        assert np.all(np.isfinite(preds.values()))
 
     def test_higher_precision_custom_trainer(self):
         model = RNNModel(12, "RNN", 10, 10, random_state=42, **tfm_kwargs)
@@ -172,29 +192,41 @@ class TestPTLTrainer:
             )
             model.fit(self.series.astype(np.float64), epochs=1)
 
-        for precision in [64, 32, 16]:
-            valid_trainer_kwargs = {
-                "precision": self.precisions[precision],
-                **tfm_kwargs["pl_trainer_kwargs"],
-            }
+    @pytest.mark.parametrize(
+        "precision, dtype",
+        [
+            (16, np.float16),
+            (32, np.float32),
+            (64, np.float64),
+            ("mixed", np.float32),
+        ],
+    )
+    def test_precision_builtin_extended_trainer(self, precision, dtype):
+        valid_trainer_kwargs = {
+            "precision": self.precisions[precision],
+            **tfm_kwargs["pl_trainer_kwargs"],
+        }
 
-            # valid parameters shouldn't raise error
-            model = RNNModel(
-                12,
-                "RNN",
-                10,
-                10,
-                random_state=42,
-                pl_trainer_kwargs=valid_trainer_kwargs,
-            )
-            ts_dtype = getattr(np, f"float{precision}")
-            model.fit(self.series.astype(ts_dtype), epochs=1)
-            preds = model.predict(n=3)
-            assert model.trainer.precision == self.precisions[precision]
-            if ts_dtype != np.float16:
-                assert preds.dtype == ts_dtype
-            else:
-                assert preds.dtype == np.float32
+        # valid parameters shouldn't raise error
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            random_state=42,
+            pl_trainer_kwargs=valid_trainer_kwargs,
+        )
+        model.fit(self.series.astype(dtype), epochs=1)
+        preds = model.predict(n=3)
+        assert model.trainer.precision == self.precisions[precision]
+        if dtype != np.float16:
+            # predictions should have same dtype as input except for float16
+            assert preds.dtype == dtype
+        else:
+            # predictions are float32 when input is float16
+            assert preds.dtype == np.float32
+        # predictions should not contain NaNs or infs
+        assert np.all(np.isfinite(preds.values()))
 
     def test_custom_callback(self, tmpdir_module):
         class CounterCallback(pl.callbacks.Callback):

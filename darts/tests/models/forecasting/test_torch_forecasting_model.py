@@ -1127,26 +1127,36 @@ class TestTorchForecastingModel:
         model1.fit(self.series, epochs=15)
         assert 15 == model1.epochs_trained
 
-    def test_auto_precision_casting(self):
-        for dtype in [np.float16, np.float32, np.float64]:
-            model = RNNModel(
-                12,
-                "RNN",
-                10,
-                10,
-                n_epochs=20,
-                **tfm_kwargs,
-            )
-            model.fit(self.series.astype(dtype), epochs=1)
-            assert 1 == model.epochs_trained
+    @pytest.mark.parametrize(
+        "dtype,auto_precision",
+        [
+            (np.float16, "bf16-true"),
+            (np.float32, "32-true"),
+            (np.float64, "64-true"),
+        ],
+    )
+    def test_auto_precision_casting(self, dtype, auto_precision):
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            n_epochs=20,
+            **tfm_kwargs,
+        )
+        model.fit(self.series.astype(dtype), epochs=1)
+        assert 1 == model.epochs_trained
+        assert model.trainer.precision == auto_precision
 
-            preds = model.predict(n=10)
-            if dtype != np.float16:
-                # predictions should have same dtype as input except for float16
-                assert preds.dtype == dtype
-            else:
-                # predictions are float32 when input is float16
-                assert preds.dtype == np.float32
+        preds = model.predict(n=10)
+        if dtype != np.float16:
+            # predictions should have same dtype as input except for float16
+            assert preds.dtype == dtype
+        else:
+            # predictions are float32 when input is float16
+            assert preds.dtype == np.float32
+        # predictions should not contain NaNs or infs
+        assert np.all(np.isfinite(preds.values()))
 
     def test_mixed_precision_training(self):
         # test model training with mixed precision (16-mixed and bf16-mixed)
