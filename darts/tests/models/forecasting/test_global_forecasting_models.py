@@ -302,9 +302,13 @@ class TestGlobalForecastingModels:
         # check if save and load methods work and if loaded model creates same forecasts as original model
         model_path_str = type(model).__name__
         model_clean_path_str = type(model).__name__ + "_clean"
+        model_path_no_predict_str = type(model).__name__ + "_no_predict"
 
         full_model_path_str = os.path.join(tmpdir_fn, model_path_str)
         full_model_clean_path_str = os.path.join(tmpdir_fn, model_clean_path_str)
+        full_model_path_no_predict_str = os.path.join(
+            tmpdir_fn, model_path_no_predict_str
+        )
 
         cov_kwargs = (
             {
@@ -316,6 +320,9 @@ class TestGlobalForecastingModels:
         )
 
         model.fit(series=self.ts_pass_train, **cov_kwargs)
+
+        # test save without predict
+        model.save(full_model_path_no_predict_str)
 
         model_prediction = model.predict(
             self.forecasting_horizon, self.ts_pass_train, **cov_kwargs
@@ -341,8 +348,9 @@ class TestGlobalForecastingModels:
             load_kwargs = {"pl_trainer_kwargs": {"accelerator": "cpu"}}
         else:
             load_kwargs = {}
-        loaded_model_clean_str = type(model).load(
-            full_model_clean_path_str, **load_kwargs
+        loaded_model_clean = type(model).load(full_model_clean_path_str, **load_kwargs)
+        loaded_model_no_predict = type(model).load(
+            full_model_path_no_predict_str, **load_kwargs
         )
 
         assert (
@@ -352,12 +360,19 @@ class TestGlobalForecastingModels:
             == model_prediction
         )
 
+        assert (
+            loaded_model_no_predict.predict(
+                self.forecasting_horizon, self.ts_pass_train, **cov_kwargs
+            )
+            == model_prediction
+        )
+
         # Training data is not stored in the clean model
-        assert loaded_model_clean_str.training_series is None
+        assert loaded_model_clean.training_series is None
 
         # The serie to predict need to be provided at prediction time
         with pytest.raises(ValueError) as err:
-            loaded_model_clean_str.predict(self.forecasting_horizon)
+            loaded_model_clean.predict(self.forecasting_horizon)
         if isinstance(model, TorchForecastingModel):
             assert str(err.value) == (
                 "Input `series` must be provided. This is the result either from fitting on multiple series, "
@@ -372,7 +387,7 @@ class TestGlobalForecastingModels:
             )
 
         # When the serie to predict is provided, the prediction is the same
-        assert model_prediction == loaded_model_clean_str.predict(
+        assert model_prediction == loaded_model_clean.predict(
             self.forecasting_horizon, series=self.ts_pass_train, **cov_kwargs
         )
 
