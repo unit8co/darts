@@ -1104,7 +1104,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
                 # to support `predict()`
                 if len(pred_series_) == 0:
-                    pred_series_ = TimeSeries.with_times_and_values(
+                    pred_series_ = pred_series_.with_times_and_values(
                         times=generate_index(
                             start=pred_time - 1 * series_.freq,
                             length=1,

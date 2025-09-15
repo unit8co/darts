@@ -538,12 +538,14 @@ class TestRegressionEnsembleModels:
     def test_call_backtest_regression_ensemble_local_models(self):
         regr_train_n = 10
         ensemble = RegressionEnsembleModel(
-            [NaiveSeasonal(5), Theta(2, 5)], regression_train_n_points=regr_train_n
+            forecasting_models=[NaiveSeasonal(5), Theta(2, 5)],
+            regression_train_n_points=regr_train_n,
         )
-        ensemble.fit(self.sine_series)
         assert (
             max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
         )
+
+        ensemble.fit(self.sine_series)
         # -10 comes from the maximum minimum train series length of all models
         assert ensemble.extreme_lags == (
             -10 - regr_train_n,
