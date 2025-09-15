@@ -1501,7 +1501,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         return self.model._train_target_sample_lengths
 
     @property
-    def _min_train_samples(self) -> int:
+    def min_train_samples(self) -> int:
         return self.cal_length or 1
 
     @property

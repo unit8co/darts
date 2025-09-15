@@ -1266,7 +1266,7 @@ class TestSKLearnModels:
         model_cls, mode = config
         model = model_cls(lags=4, multi_models=mode)
         # min target lag + output_chunk_length + output_chunk_shift + (min samples -1)
-        add_min_samples = model._min_train_samples - 1
+        add_min_samples = model.min_train_samples - 1
         assert model.min_train_series_length == 4 + 1 + 0 + add_min_samples
 
         model = model_cls(lags=2, multi_models=mode)

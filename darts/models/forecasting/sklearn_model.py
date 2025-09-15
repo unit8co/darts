@@ -619,7 +619,7 @@ class SKLearnModel(GlobalForecastingModel):
         return input_chunk_length, self.output_chunk_length + self.output_chunk_shift
 
     @property
-    def _min_train_samples(self) -> int:
+    def min_train_samples(self) -> int:
         # some models require more than 1 sample to train (e.g. CatBoost); for consistency, we set the minimum to 2
         return 2
 

@@ -239,7 +239,7 @@ class TestConformalModel:
         model = ConformalNaiveModel(train_model(self.ts_pass_train), quantiles=q)
         cal_length = model.cal_length or 1
         assert model.extreme_lags == model.model.extreme_lags
-        assert model._min_train_samples == cal_length
+        assert model.min_train_samples == cal_length
         assert model.min_train_series_length == sum(
             model.model._train_target_sample_lengths
         ) + (cal_length - 1)

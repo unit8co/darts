@@ -507,13 +507,18 @@ class EnsembleModel(GlobalForecastingModel):
         return model
 
     @property
-    def _min_train_samples(self) -> int:
-        # for ensemble, the min samples is the max of the sub-models' min samples
-        return max(model._min_train_samples for model in self.forecasting_models)
+    def min_train_series_length(self) -> int:
+        # for ensemble, it is the max of the sub-models' train series lengths
+        return max(model.min_train_series_length for model in self.forecasting_models)
+
+    @property
+    def min_train_samples(self) -> int:
+        # for ensemble, it is the max of the sub-models' min samples
+        return max(model.min_train_samples for model in self.forecasting_models)
 
     @property
     def _train_target_sample_lengths(self) -> tuple[int, int]:
-        # for ensemble, the target sample length is the max of the sub-models' target sample lengths
+        # for ensemble, it is the max of each of the sub-models' target sample lengths
         lengths_max = (0, 0)
         for model in self.forecasting_models:
             input_length, output_length = model._train_target_sample_lengths

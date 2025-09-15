@@ -997,9 +997,9 @@ def _get_maximum_historical_forecastable_time_index(
         )
 
     # more than one training sample is required; start later
-    if is_training and model._min_train_samples > 1:
+    if is_training and model.min_train_samples > 1:
         intersect_ = (
-            intersect_[0] + (model._min_train_samples - 1) * series.freq,
+            intersect_[0] + (model.min_train_samples - 1) * series.freq,
             intersect_[1],
         )
 

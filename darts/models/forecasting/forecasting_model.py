@@ -470,11 +470,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         The minimum required length for the training series.
         """
-        return sum(self._train_target_sample_lengths) + (self._min_train_samples - 1)
+        return sum(self._train_target_sample_lengths) + (self.min_train_samples - 1)
 
     @property
     @abstractmethod
-    def _min_train_samples(self) -> int:
+    def min_train_samples(self) -> int:
         """
         The minimum number of samples for training the model.
         """
@@ -549,33 +549,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         >>> model.extreme_lags
         (-10, 6, None, None, 4, 6, 0, None)
         """
-
-    @property
-    def _training_sample_time_index_length(self) -> int:
-        """
-        Required time_index length for one training sample respecting all covariates.
-        """
-        (
-            min_target_lag,
-            max_target_lag,
-            min_past_cov_lag,
-            max_past_cov_lag,
-            min_future_cov_lag,
-            max_future_cov_lag,
-            output_chunk_shift,
-            max_target_lag_train,
-        ) = self.extreme_lags
-
-        # some models can have different output chunks for training and prediction (e.g. `RNNModel`)
-        output_lag = max_target_lag_train or max_target_lag
-        return max(
-            output_lag + 1,
-            max_future_cov_lag + 1 if max_future_cov_lag else 0,
-        ) - min(
-            min_target_lag if min_target_lag else 0,
-            min_past_cov_lag if min_past_cov_lag else 0,
-            min_future_cov_lag if min_future_cov_lag else 0,
-        )
 
     def _generate_new_dates(
         self, n: int, input_series: Optional[TimeSeries] = None
@@ -1035,7 +1008,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else:
                     pred_series_ = series_
 
-                # get current training input (account for validation window);
+                # get current training input (already account for potential validation set);
                 if train_length_ and len(pred_series_) > train_length_:
                     # moving training window with potential validation window
                     train_series_ = pred_series_[
@@ -1047,14 +1020,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else:
                     # expanding training window
                     train_series_ = pred_series_
-
-                # get current validation input;
-                if val_length_:
-                    # include one model input window to allow direct evaluation after the training set
-                    input_length = model._train_target_sample_lengths[0]
-                    val_series_ = pred_series_[-(val_length_ + input_length) :]
-                else:
-                    val_series_ = None
 
                 # check if model must be re-trained
                 apply_retrain = False
@@ -1115,8 +1080,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         max_future_cov_lag=model.extreme_lags[5],
                         fit_transformers=apply_retrain,
                     )
-
                 if apply_retrain:
+                    # get current validation input from transformed series;
+                    if val_length_:
+                        # include one model input window to allow direct evaluation after the training set
+                        input_length = model._train_target_sample_lengths[0]
+                        val_series_ = pred_series_[-(val_length_ + input_length) :]
+                    else:
+                        val_series_ = None
+
                     # fit a new instance of the model
                     model = model.untrained_model()
                     model._fit_wrapper(
@@ -1132,7 +1104,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
                 # to support `predict()`
                 if len(pred_series_) == 0:
-                    pred_series_ = TimeSeries(
+                    pred_series_ = TimeSeries.with_times_and_values(
                         times=generate_index(
                             start=pred_time - 1 * series_.freq,
                             length=1,
@@ -1140,7 +1112,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             name=series_._time_index.name,
                         ),
                         values=np.array([np.nan]),
-                        copy=False,
                     )
 
                 forecast = model._predict_wrapper(
@@ -2909,7 +2880,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
         return False
 
     @property
-    def _min_train_samples(self) -> int:
+    def min_train_samples(self) -> int:
         # local models do not work with samples, so only one training sample is needed
         return 1
 
@@ -3395,10 +3366,6 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
         #  that use an input to predict an output.
         return -self.min_train_series_length, -1, None, None, 0, 0, 0, None
-
-    @property
-    def supports_past_covariates(self) -> bool:
-        return False
 
     @property
     def supports_future_covariates(self) -> bool:

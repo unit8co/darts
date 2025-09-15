@@ -139,15 +139,15 @@ class TestEnsembleModels:
         # local models require at least one sample
         model1 = NaiveSeasonal(K=5)
         ensemble = NaiveEnsembleModel([model1])
-        assert ensemble._min_train_samples == model1._min_train_samples
+        assert ensemble.min_train_samples == model1.min_train_samples
 
         # regression models require at least two samples
         model2 = LinearRegressionModel(lags=10, output_chunk_length=1)
         ensemble = NaiveEnsembleModel([model1, model2])
-        assert ensemble._min_train_samples == model2._min_train_samples
+        assert ensemble.min_train_samples == model2.min_train_samples
 
         ensemble = NaiveEnsembleModel([model2, model1])
-        assert ensemble._min_train_samples == model2._min_train_samples
+        assert ensemble.min_train_samples == model2.min_train_samples
 
     def test_train_target_lengths(self):
         """Each element in train_target_lengths (input and output windows) of the ensemble should be the max of the
@@ -197,7 +197,7 @@ class TestEnsembleModels:
         ensemble = NaiveEnsembleModel([model2, model1, model3])
         assert (
             ensemble.min_train_series_length
-            == sum((lenghts2[0], lenghts3[1])) + model3._min_train_samples - 1
+            == sum((lenghts2[0], lenghts3[1])) + model3.min_train_samples - 1
         )
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")

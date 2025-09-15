@@ -556,7 +556,7 @@ class TestHistoricalforecast:
     def test_hfc_too_short_input_for_training_with_multiple_samples(self):
         model = LinearRegressionModel(lags=3)
         chunk_lengths = model._train_target_sample_lengths
-        min_samples = model._min_train_samples
+        min_samples = model.min_train_samples
         assert min_samples == 2
         y = tg.constant_timeseries(
             value=1.0, length=sum(chunk_lengths) + min_samples - 1

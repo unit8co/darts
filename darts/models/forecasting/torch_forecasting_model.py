@@ -1049,11 +1049,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             len(train_dataset)
         except ValueError:
             length_ok = False
-        if not length_ok or len(train_dataset) < self._min_train_samples:
+        if not length_ok or len(train_dataset) < self.min_train_samples:
             raise_log(
                 ValueError(
                     f"The train dataset is either empty or contains less than "
-                    f"`{self._min_train_samples}` training sample (minimum requirement). "
+                    f"`{self.min_train_samples}` training sample (minimum requirement). "
                     f"This is likely due to the provided training series being too short. "
                     f"This model expect series of length at least "
                     f"{self.min_train_series_length}."
@@ -2417,7 +2417,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return True
 
     @property
-    def _min_train_samples(self) -> int:
+    def min_train_samples(self) -> int:
         # dataset requires at least one sample
         return 1
 
