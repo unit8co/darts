@@ -2,6 +2,7 @@
 Ensemble Model Base Class
 """
 
+import copy
 import os
 import sys
 from abc import abstractmethod
@@ -26,9 +27,12 @@ from darts.utils.ts_utils import series2seq
 from darts.utils.utils import TORCH_AVAILABLE
 
 if TORCH_AVAILABLE:
-    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+    from darts.models.forecasting.torch_forecasting_model import (
+        TFM_ATTRS_NO_PICKLE,
+        TorchForecastingModel,
+    )
 else:
-    TorchForecastingModel = None
+    TorchForecastingModel, TFM_ATTRS_NO_PICKLE = None, None
 
 logger = get_logger(__name__)
 
@@ -209,6 +213,19 @@ class EnsembleModel(GlobalForecastingModel):
                     " will be provided only to the models supporting them when calling `fit()` or `predict()`. "
                     "To hide these warnings, set `show_warnings=False`."
                 )
+
+    def untrained_model(self):
+        model = self.__class__(**copy.deepcopy(self.model_params))
+        if not self.train_forecasting_models:
+            # torch models drop the underlying network when calling `untrained_model()`;
+            # add them back in case the models are not retrained
+            for sub_model, sub_model_orig in zip(
+                model.forecasting_models, self.forecasting_models
+            ):
+                if TORCH_AVAILABLE and isinstance(sub_model, TorchForecastingModel):
+                    for attr in TFM_ATTRS_NO_PICKLE:
+                        setattr(sub_model, attr, getattr(sub_model_orig, attr))
+        return model
 
     @abstractmethod
     def fit(
