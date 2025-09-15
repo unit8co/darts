@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added hyperparameter `skip_resampling` in `TFTModel` to skip resampling operations on feature embeddings which may cause time bottlenecks. When set to `True`, it could provide substantial training and inference speed-up. [#2897](https://github.com/unit8co/darts/issues/2897) by [Zhihao Dai](https://github.com/daidahao).
 - 🔴 Added future and static covariates support to `BlockRNNModel`. This improvement required changes to the underlying model architecture which means that saved model instances from older Darts versions cannot be loaded any longer. [#2845](https://github.com/unit8co/darts/pull/2845) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
 - `from_group_dataframe()` now supports creating `TimeSeries` from **additional DataFrame backends** (Polars, PyArrow, ...). We leverage `narwhals` as the compatibility layer between DataFrame libraries. See their [documentation](https://narwhals-dev.github.io/narwhals/) for all supported backends. [#2766](https://github.com/unit8co/darts/pull/2766) by [He Weilin](https://github.com/cnhwl).
 - Added `add_regressor_configs` parameter to the `Prophet` model, enabling component-specific control over `prior_scale`, `mode`, and `standardize` for the future covariates. [#2882](https://github.com/unit8co/darts/issues/2882) by [Ramsay Davis](https://github.com/RamsayDavisWL).
@@ -18,6 +19,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed a bug causing crashes when running `TFTModel` on MPS devices (macOS with GPUs). [#2897](https://github.com/unit8co/darts/issues/2897) by [Zhihao Dai](https://github.com/daidahao).
 - Fixed a bug when saving a `GlobalNaiveModel` directly after fitting it (without performing prediction). [#2895](https://github.com/unit8co/darts/pull/2895), by [Alain Gysi](https://github.com/Kurokabe)
 
 **Dependencies**
