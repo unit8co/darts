@@ -319,6 +319,7 @@ class NaiveEnsembleModel(EnsembleModel):
             train_num_samples=1,
             train_samples_reduction=None,
             train_forecasting_models=train_forecasting_models,
+            train_n_points=0,
             show_warnings=show_warnings,
         )
 

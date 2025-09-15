@@ -60,6 +60,10 @@ class EnsembleModel(GlobalForecastingModel):
     train_forecasting_models
         If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
         if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
+    train_n_points
+        The number of points per series to use to train the ensemble model. Can be set to `-1` to use the
+        entire series to train the regressor if `forecasting_models` are already fitted and
+        `train_forecasting_models=False`.
     show_warnings
         Whether to show warnings related to models covariates support.
     """
@@ -70,8 +74,11 @@ class EnsembleModel(GlobalForecastingModel):
         train_num_samples: int,
         train_samples_reduction: Optional[Union[str, float]],
         train_forecasting_models: bool = True,
+        train_n_points: int = 0,
         show_warnings: bool = True,
     ):
+        super().__init__()
+
         raise_if_not(
             isinstance(forecasting_models, list) and forecasting_models,
             "Cannot instantiate EnsembleModel with an empty list of `forecasting_models`",
@@ -166,12 +173,21 @@ class EnsembleModel(GlobalForecastingModel):
                 logger,
             )
 
-        super().__init__()
+        raise_if(
+            train_n_points == -1
+            and not (self.all_trained and (not train_forecasting_models)),
+            "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
+            "all `forecasting_models` are already fitted.",
+            logger,
+        )
+
         self.forecasting_models = forecasting_models
         self.train_num_samples = train_num_samples
         self.train_samples_reduction = train_samples_reduction
         self.train_forecasting_models = train_forecasting_models
         self.show_warnings = show_warnings
+        # converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series
+        self.train_n_points: Union[int, list[int]] = train_n_points
 
         if show_warnings:
             if (
@@ -509,12 +525,16 @@ class EnsembleModel(GlobalForecastingModel):
     @property
     def min_train_series_length(self) -> int:
         # for ensemble, it is the max of the sub-models' train series lengths
-        return max(model.min_train_series_length for model in self.forecasting_models)
+        return self.train_n_points + max(
+            model.min_train_series_length for model in self.forecasting_models
+        )
 
     @property
     def min_train_samples(self) -> int:
         # for ensemble, it is the max of the sub-models' min samples
-        return max(model.min_train_samples for model in self.forecasting_models)
+        return self.train_n_points + max(
+            model.min_train_samples for model in self.forecasting_models
+        )
 
     @property
     def _train_target_sample_lengths(self) -> tuple[int, int]:
@@ -552,9 +572,17 @@ class EnsembleModel(GlobalForecastingModel):
             return max_lag
 
         lag_aggregators = (min, max, min, max, min, max, max, max)
-        return tuple(
+        extreme_lags_ = [
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
-        )
+        ]
+
+        max_target_lag_train = extreme_lags_[-1]
+        if max_target_lag_train is not None and max_target_lag_train < extreme_lags_[1]:
+            # if the maximum of the max_target_lag_train is lower than the max_target_lag, use only the max_target_lag;
+            # this avoids always using `RNNModel` max_target_lag_train in historical forecasts, even if it's not the
+            # actual maximum output lag
+            extreme_lags_[-1] = None
+        return tuple(extreme_lags_)
 
     @property
     def output_chunk_length(self) -> Optional[int]:

@@ -77,7 +77,7 @@ class RegressionEnsembleModel(EnsembleModel):
             or float value corresponding to the desired quantile. Default: "median"
         train_forecasting_models
             If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
-            if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
+            if all the `forecasting_models` are pre-trained `GlobalForecastingModels`). Default: ``True``.
         train_using_historical_forecasts
             If set to `True`, use `historical_forecasts()` to generate the forecasting models' predictions used to
             train the regression model in `fit()`. Available when `forecasting_models` contains only
@@ -117,6 +117,7 @@ class RegressionEnsembleModel(EnsembleModel):
             train_num_samples=regression_train_num_samples,
             train_samples_reduction=regression_train_samples_reduction,
             train_forecasting_models=train_forecasting_models,
+            train_n_points=regression_train_n_points,
             show_warnings=show_warnings,
         )
 
@@ -146,17 +147,6 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         self.regression_model: SKLearnModel = regression_model
-
-        raise_if(
-            regression_train_n_points == -1
-            and not (self.all_trained and (not train_forecasting_models)),
-            "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
-            "all `forecasting_models` are already fitted.",
-            logger,
-        )
-
-        # converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series
-        self.train_n_points: Union[int, list[int]] = regression_train_n_points
 
         raise_if(
             train_using_historical_forecasts and not self.is_global_ensemble,
@@ -469,26 +459,6 @@ class RegressionEnsembleModel(EnsembleModel):
             for serie, prediction in zip(series, predictions)
         ]
         return seq2series(ensembled) if is_single_series else ensembled
-
-    @property
-    def extreme_lags(
-        self,
-    ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        int,
-        Optional[int],
-    ]:
-        extreme_lags_ = super().extreme_lags
-        # shift min_target_lag in the past to account for the regression model training set
-        if extreme_lags_[0] is None:
-            return (-self.train_n_points,) + extreme_lags_[1:]
-        else:
-            return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
 
     @property
     def output_chunk_length(self) -> int:

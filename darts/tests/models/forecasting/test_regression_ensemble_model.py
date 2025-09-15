@@ -544,11 +544,13 @@ class TestRegressionEnsembleModels:
         assert (
             max(m_.min_train_series_length for m_ in ensemble.forecasting_models) == 10
         )
+        # 10 from training the forecasting models, and 10 from training the regression model
+        assert ensemble.min_train_series_length == 10 + regr_train_n
 
         ensemble.fit(self.sine_series)
         # -10 comes from the maximum minimum train series length of all models
         assert ensemble.extreme_lags == (
-            -10 - regr_train_n,
+            -10,
             -1,
             None,
             None,
@@ -557,6 +559,12 @@ class TestRegressionEnsembleModels:
             0,
             None,
         )
+        preds = ensemble.historical_forecasts(self.sine_series)
+
+        expected_start = (
+            self.sine_series.start_time() + (10 + regr_train_n) * self.sine_series.freq
+        )
+        assert preds.start_time() == expected_start
         ensemble.backtest(self.sine_series)
 
     def test_extreme_lags(self):
@@ -571,7 +579,8 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-train_n_points, 0, -3, -1, 0, 0, 0, None)
+        assert model.extreme_lags == (None, 0, -3, -1, 0, 0, 0, None)
+        assert model.min_train_samples == model2.min_train_samples + train_n_points
 
         # mix of all the lags
         model3 = RandomForestModel(
@@ -583,29 +592,47 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-7 - train_n_points, 0, -3, -1, -2, 5, 0, None)
+        assert model.extreme_lags == (-7, 0, -3, -1, -2, 5, 0, None)
+        assert model.min_train_samples == model3.min_train_samples + train_n_points
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
-    def test_extreme_lags_torch(self):
+    @pytest.mark.parametrize("rnn_out_larger", [False, True])
+    def test_extreme_lags_torch(self, rnn_out_larger):
         # test RNN case which has the 8th extreme lags element (max_target_lag_train)
-        train_n_points = 10
+        train_n_points = 2
         icl = 20
-        ocl = 5
+        if rnn_out_larger:
+            ocl = 1
+        else:
+            ocl = 20
         training_length = 24
         model = RegressionEnsembleModel(
             forecasting_models=self.get_global_models(ocl, icl, training_length),
             regression_train_n_points=train_n_points,
         )
+        if rnn_out_larger:
+            # training length output from RNN is larger than BlockRNN output; use RNN output
+            expected_last_lag = training_length - icl if rnn_out_larger else None
+        else:
+            # training length output from RNN is smaller than BlockRNN output; use BlockRNN output
+            expected_last_lag = None
         assert model.extreme_lags == (
-            -icl - train_n_points,
+            -icl,
             ocl - 1,
             -icl,  # past covs from BlockRNN
             -1,  # past covs from BlockRNN
             -icl,  # future covs from RNN
             ocl - 1,  # future covs from RNN
             0,
-            training_length - icl,  # training length from RNN
+            expected_last_lag,
         )
+        assert model.min_train_samples == (
+            train_n_points
+            + max(model.min_train_samples for model in model.forecasting_models)
+        )
+        series = self.sine_series[: model.min_train_series_length]
+        preds = model.historical_forecasts(series, overlap_end=True)
+        assert preds.start_time() == series.end_time() + series.freq
 
     def test_stochastic_regression_ensemble_model(self):
         quantiles = [0.25, 0.5, 0.75]
