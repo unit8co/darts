@@ -1325,6 +1325,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 val_dataloaders=val_loader,
                 ckpt_path=ckpt_path,
             )
+        else:
+            trainer.strategy.connect(model)
         self.model = model
         self.trainer = trainer
 
