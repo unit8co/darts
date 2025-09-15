@@ -184,20 +184,19 @@ class TestEnsembleModels:
 
         # model 2 has largest input and output windows
         model2 = LinearRegressionModel(lags=10, output_chunk_length=1)
-        lenghts2 = model2._train_target_sample_lengths
         ensemble = NaiveEnsembleModel([model1, model2])
         assert ensemble.min_train_series_length == model2.min_train_series_length
 
         ensemble = NaiveEnsembleModel([model2, model1])
         assert ensemble.min_train_series_length == model2.min_train_series_length
 
-        # model2 has largest input window, model 3 has largest output window, and min samples from model2 and model3
+        # model2 and model3 have the same training lengths
         model3 = LinearRegressionModel(lags=1, output_chunk_length=10)
-        lenghts3 = model3._train_target_sample_lengths
         ensemble = NaiveEnsembleModel([model2, model1, model3])
         assert (
             ensemble.min_train_series_length
-            == sum((lenghts2[0], lenghts3[1])) + model3.min_train_samples - 1
+            == model2.min_train_series_length
+            == model3.min_train_series_length
         )
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
