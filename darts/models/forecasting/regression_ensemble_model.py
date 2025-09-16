@@ -283,6 +283,7 @@ class RegressionEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        verbose: bool = False,
     ):
         """
         Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which
@@ -311,6 +312,8 @@ class RegressionEnsembleModel(EnsembleModel):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
         """
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
@@ -395,6 +398,7 @@ class RegressionEnsembleModel(EnsembleModel):
                     sample_weight=sample_weight
                     if model.supports_sample_weight
                     else None,
+                    verbose=verbose,
                 )
 
         # we can call direct prediction in any case. Even if we overwrite with historical
@@ -442,6 +446,7 @@ class RegressionEnsembleModel(EnsembleModel):
                     sample_weight=sample_weight
                     if model.supports_sample_weight
                     else None,
+                    verbose=verbose,
                 )
         return self
 
