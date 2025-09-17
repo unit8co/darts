@@ -1,3 +1,5 @@
+import copy
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -423,7 +425,7 @@ class TestTFTModel:
         times = pd.date_range("20130101", "20130410")
         pd_series = pd.Series(np.linspace(0, 1, 100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series).astype(np.float32)
-        tfm_kwargs_mps = tfm_kwargs.copy()
+        tfm_kwargs_mps = copy.deepcopy(tfm_kwargs)
         tfm_kwargs_mps["pl_trainer_kwargs"]["accelerator"] = "mps"
 
         model = TFTModel(
