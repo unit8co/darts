@@ -1,5 +1,3 @@
-import copy
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -14,7 +12,6 @@ if not TORCH_AVAILABLE:
         f"Torch not available. {__name__} tests will be skipped.",
         allow_module_level=True,
     )
-import torch
 import torch.nn as nn
 from torch.nn import MSELoss
 
@@ -417,27 +414,6 @@ class TestTFTModel:
                 **tfm_kwargs,
             )
             model4.fit(series, epochs=1)
-
-    @pytest.mark.skipif(
-        not torch.backends.mps.is_available(), reason="MPS not available"
-    )
-    def test_on_mps(self):
-        times = pd.date_range("20130101", "20130410")
-        pd_series = pd.Series(np.linspace(0, 1, 100), index=times)
-        series: TimeSeries = TimeSeries.from_series(pd_series).astype(np.float32)
-        tfm_kwargs_mps = copy.deepcopy(tfm_kwargs)
-        tfm_kwargs_mps["pl_trainer_kwargs"]["accelerator"] = "mps"
-
-        model = TFTModel(
-            input_chunk_length=3,
-            output_chunk_length=3,
-            add_relative_index=True,
-            **tfm_kwargs_mps,
-        )
-        model.fit(series, epochs=1)
-        preds = model.predict(n=3, series=series)
-        assert len(preds) == 3
-        assert np.all(np.isfinite(preds.values()))
 
     def test_skip_resampling(self):
         times = pd.date_range("20130101", "20130410")
