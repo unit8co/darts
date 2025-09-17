@@ -567,6 +567,28 @@ class TestRegressionEnsembleModels:
         assert preds.start_time() == expected_start
         ensemble.backtest(self.sine_series)
 
+    def test_no_fcm_retrain_historical_forecasts(self):
+        m1 = LinearRegressionModel(lags=2, output_chunk_length=1)
+        m2 = BlockRNNModel(3, 4, **tfm_kwargs, n_epochs=1)
+        for model in [m1, m2]:
+            model.fit(self.sine_series[: model.min_train_series_length])
+
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[m1, m2],
+            regression_train_n_points=10,
+            train_forecasting_models=False,
+            train_using_historical_forecasts=True,
+        )
+        # TODO: fix hfc if models don't need to be re-trained
+        series = self.sine_series[: ensemble.min_train_series_length]
+        hfc = ensemble.historical_forecasts(
+            series=series,
+            retrain=True,
+            overlap_end=True,
+            last_points_only=False,
+        )
+        assert hfc.start_time() == series.end_time() + series.freq
+
     def test_extreme_lags(self):
         # forecasting models do not use target lags
         train_n_points = 10
