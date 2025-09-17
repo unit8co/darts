@@ -1682,7 +1682,7 @@ class TestSKLearnModels:
                     pred_sub_model = sub_model.predict(dummy_feats)[0]
                     assert (
                         pred_sub_model
-                        == pred[f"{ts.components[j]}_q{q:.2f}"].values()[i][0]
+                        == pred[f"{ts.components[j]}_q{q:.3f}"].values()[i][0]
                     )
 
     def test_get_estimator_exceptions(self, caplog):

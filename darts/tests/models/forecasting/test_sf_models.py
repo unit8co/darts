@@ -203,7 +203,7 @@ class TestSFModels:
         assert pred_params.n_samples == 1
         # one component for each quantile
         name = series.components[0]
-        q_names = [name + f"_{q_name}" for q_name in ["q0.10", "q0.50", "q0.90"]]
+        q_names = [name + f"_{q_name}" for q_name in ["q0.100", "q0.500", "q0.900"]]
         assert list(pred_params.components) == q_names
 
         # center quantile is the mean
