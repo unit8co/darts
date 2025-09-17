@@ -488,13 +488,13 @@ class _VariableSelectionNetwork(nn.Module):
                 self.single_variable_grns[name] = single_variable_grns[name]
             elif self.input_embedding_flags.get(name, False):
                 if skip_resampling:
-                    self.single_variable_grns[name] = _ResampleNorm(
+                    self.single_variable_grns[name] = _ProjectNorm(
                         input_size,
                         self.hidden_size,
                         norm=layer_norm,
                     )
                 else:
-                    self.single_variable_grns[name] = _ProjectNorm(
+                    self.single_variable_grns[name] = _ResampleNorm(
                         input_size,
                         self.hidden_size,
                         norm=layer_norm,
