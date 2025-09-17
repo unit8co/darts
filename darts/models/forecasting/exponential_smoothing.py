@@ -25,6 +25,8 @@ class ExponentialSmoothing(LocalForecastingModel):
         damped: Optional[bool] = False,
         seasonal: Optional[SeasonalityMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
+        error: Optional[str] = "add",
+        random_errors: Optional[Any] = None,
         random_state: Optional[int] = None,
         kwargs: Optional[dict[str, Any]] = None,
         **fit_kwargs,
@@ -63,6 +65,19 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
+        error
+            Specifies the type of error model for state space formulation to use when using predict()
+            with ``num_samples > 1``. Default is `"add"`.
+            Argument that will be used to call
+            :func:`statsmodels.tsa.holtwinters.HoltWintersResults.simulate()`.
+            See `the documentation
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`_.
+        random_errors
+            Specifies how the random errors should be obtained, when using predict() with ``num_samples > 1``.
+            Argument that will be used to call
+            :func:`statsmodels.tsa.holtwinters.HoltWintersResults.simulate()`.
+            See `the documentation
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`_.
         random_state
             Controls the randomness for reproducible forecasting.
         kwargs
@@ -100,6 +115,8 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.seasonal = seasonal
         self.infer_seasonal_periods = seasonal_periods is None
         self.seasonal_periods = seasonal_periods
+        self.error = error
+        self.random_errors = random_errors
         self.constructor_kwargs = dict() if kwargs is None else kwargs
         self.fit_kwargs = fit_kwargs
         self.model = None
@@ -156,7 +173,13 @@ class ExponentialSmoothing(LocalForecastingModel):
             rng = check_random_state(random_state)
 
             forecast = np.expand_dims(
-                self.model.simulate(n, repetitions=num_samples, random_state=rng),
+                self.model.simulate(
+                    n,
+                    repetitions=num_samples,
+                    random_state=rng,
+                    random_errors=self.random_errors,
+                    error=self.error,
+                ),
                 axis=1,
             )
 

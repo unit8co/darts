@@ -91,3 +91,31 @@ class TestExponentialSmoothing:
         # forecasts should be slightly different
         assert pred.time_index.equals(pred_ls.time_index)
         assert all(np.not_equal(pred.values(), pred_ls.values()))
+
+    def test_random_errors(self):
+        """Test whether random_errors parameter is correctly passed to simulate()"""
+        series = tg.sine_timeseries(length=100, freq="H")
+        model = ExponentialSmoothing()
+        model.fit(series)
+        pred = model.predict(n=10, num_samples=10, random_state=42)
+
+        model_boot = ExponentialSmoothing(random_errors="bootstrap")
+        model_boot.fit(series)
+        pred_boot = model_boot.predict(n=10, num_samples=10, random_state=42)
+
+        # methods with different random_errors set should yield different forecasts
+        assert not np.allclose(pred.values(), pred_boot.values(), atol=1e-5)
+
+    def test_error(self):
+        """Test whether error parameter is correctly passed to simulate()"""
+        series = tg.sine_timeseries(length=100, freq="H")
+        model = ExponentialSmoothing()
+        model.fit(series)
+        pred = model.predict(n=10, num_samples=10, random_state=42)
+
+        model_boot = ExponentialSmoothing(error="mul")
+        model_boot.fit(series)
+        pred_boot = model_boot.predict(n=10, num_samples=10, random_state=42)
+
+        # methods with different error set should yield different forecasts
+        assert not np.allclose(pred.values(), pred_boot.values(), atol=1e-5)
