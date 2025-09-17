@@ -166,7 +166,8 @@ class TestTFTModel:
             kwargs_tft=kwargs_TFT_full_coverage,
         )
 
-    def test_static_covariates_support(self):
+    @pytest.mark.parametrize("skip_resampling", [True, False])
+    def test_static_covariates_support(self, skip_resampling):
         target_multi = concatenate(
             [tg.sine_timeseries(length=10, freq="h")] * 2, axis=1
         )
@@ -186,6 +187,7 @@ class TestTFTModel:
             output_chunk_length=4,
             add_encoders={"cyclic": {"future": "hour"}},
             categorical_embedding_sizes={"cat1": 2, "cat2": (2, 2)},
+            skip_resampling=skip_resampling,
             pl_trainer_kwargs={
                 "fast_dev_run": True,
                 **tfm_kwargs["pl_trainer_kwargs"],
@@ -238,6 +240,7 @@ class TestTFTModel:
             output_chunk_length=4,
             use_static_covariates=False,
             add_relative_index=True,
+            skip_resampling=skip_resampling,
             n_epochs=1,
             **tfm_kwargs,
         )
@@ -250,6 +253,7 @@ class TestTFTModel:
             output_chunk_length=4,
             use_static_covariates=False,
             add_relative_index=True,
+            skip_resampling=skip_resampling,
             n_epochs=1,
             **tfm_kwargs,
         )
