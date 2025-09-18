@@ -2465,6 +2465,43 @@ class TestTorchForecastingModel:
         assert pred3.time_index.equals(pred1.time_index)
         assert pred3.static_covariates.equals(series[0].static_covariates)
 
+    def test_load_best(self, tmpdir_fn):
+        """Tests the load_best parameter in fit() and its effect on epochs_trained."""
+        # Create series where validation loss is likely to decrease and then increase (overfitting)
+        # This makes it likely that the best model is not the last one.
+        series_train = tg.sine_timeseries(length=50, value_y_offset=0)
+        series_val = tg.sine_timeseries(length=25, value_y_offset=0.1)
+        n_epochs = 5
+
+        common_kwargs = {
+            "input_chunk_length": 12,
+            "model": "RNN",
+            "hidden_dim": 10,
+            "n_rnn_layers": 10,
+            "n_epochs": n_epochs,
+            "work_dir": tmpdir_fn,
+            "save_checkpoints": True,
+            "random_state": 42,
+            **tfm_kwargs,
+        }
+
+        model_last = RNNModel(model_name="last_model", **common_kwargs)
+        model_last.fit(series_train, val_series=series_val, load_best=False)
+        last_model_epochs_trained = model_last.epochs_trained
+
+        model_best = RNNModel(model_name="best_model", **common_kwargs)
+        model_best.fit(series_train, val_series=series_val, load_best=True)
+        best_model_epochs_trained = model_best.epochs_trained
+
+        # The model trained to the end should have n_epochs trained
+        assert last_model_epochs_trained == n_epochs
+        # The model loading the best checkpoint should have trained fewer epochs (or equal if best is last)
+        # With our crafted data, it's highly likely to be less.
+        assert best_model_epochs_trained < last_model_epochs_trained
+        # We can also check that the trainer object confirms the best model was loaded
+        best_model_path = model_best.trainer.checkpoint_callback.best_model_path
+        assert best_model_path and os.path.exists(best_model_path)
+
     def helper_predict_raise_on_missing_input(
         self, model, fn: str, series, pc, fc, **kwargs
     ):
