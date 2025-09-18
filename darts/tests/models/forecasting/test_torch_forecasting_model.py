@@ -1679,7 +1679,7 @@ class TestTorchForecastingModel:
         res = model.scale_batch_size(series=train_series, val_series=val_series)
         assert isinstance(res, int)
         assert res == model.batch_size
-        # verify that learning rate finder bypasses the `fit` logic
+        # verify that batch size finder bypasses the `fit` logic
         assert model.model is None
         assert not model._fit_called
         # cannot predict with an untrained model

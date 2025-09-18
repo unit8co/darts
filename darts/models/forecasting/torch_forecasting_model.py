@@ -1551,7 +1551,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     ):
         """
         A wrapper around PyTorch Lightning's `Tuner.scale_batch_size()`. Performs a batch size range test to find a
-        good batch size to use for training. For more information on PyTorch Lightning's Tuner check out
+        the largest batch size to use for training. It is recommended to re-initialize the model after calling this
+        method before fitting, using the found batch size. For more information on PyTorch Lightning's Tuner check out
         `this link <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.tuner.tuning.Tuner.html>`_.
 
         Example using a :class:`NBEATSModel`:
