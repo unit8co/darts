@@ -68,16 +68,14 @@ class ExponentialSmoothing(LocalForecastingModel):
         error
             Specifies the type of error model for state space formulation to use when using predict()
             with ``num_samples > 1``. Default is `"add"`.
-            Argument that will be used to call
-            :func:`statsmodels.tsa.holtwinters.HoltWintersResults.simulate()`.
-            See `the documentation
-            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`_.
+            Will be passed to statsmodels' :func:`simulate()` method. See the documentation `here
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`_
+            for more information.
         random_errors
             Specifies how the random errors should be obtained, when using predict() with ``num_samples > 1``.
-            Argument that will be used to call
-            :func:`statsmodels.tsa.holtwinters.HoltWintersResults.simulate()`.
-            See `the documentation
-            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`_.
+            Will be passed to statsmodels' :func:`simulate()` method. See the documentation `here
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`_
+            for more information.
         random_state
             Controls the randomness for reproducible forecasting.
         kwargs
