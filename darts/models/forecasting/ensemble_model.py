@@ -9,6 +9,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import BinaryIO, Optional, Union
 
+# from darts.models import SKLearnModel
 from darts.utils.likelihood_models.base import LikelihoodType
 
 if sys.version_info >= (3, 11):
@@ -75,6 +76,7 @@ class EnsembleModel(GlobalForecastingModel):
     def __init__(
         self,
         forecasting_models: list[ForecastingModel],
+        ensemble_model: Optional[ForecastingModel],
         train_num_samples: int,
         train_samples_reduction: Optional[Union[str, float]],
         train_forecasting_models: bool = True,
@@ -185,7 +187,9 @@ class EnsembleModel(GlobalForecastingModel):
             logger,
         )
 
+        # ensemble model checks
         self.forecasting_models = forecasting_models
+        self.ensemble_model = ensemble_model
         self.train_num_samples = train_num_samples
         self.train_samples_reduction = train_samples_reduction
         self.train_forecasting_models = train_forecasting_models
@@ -539,26 +543,42 @@ class EnsembleModel(GlobalForecastingModel):
                 )
         return model
 
-    @property
-    def min_train_series_length(self) -> int:
-        # for ensemble, it is the max of the sub-models' train series lengths
-        if self.train_forecasting_models:
-            train_series_length = max(
-                model.min_train_series_length for model in self.forecasting_models
-            )
-        else:
-            train_series_length = self._train_target_sample_lengths[0]
-        return self.train_n_points + train_series_length
+    # @property
+    # def min_train_series_length(self) -> int:
+    #     # for ensemble, it is the max of the sub-models' train series lengths
+    #     if self.train_forecasting_models:
+    #         train_series_length = max(
+    #             model.min_train_series_length for model in self.forecasting_models
+    #         )
+    #     else:
+    #         train_series_length = self._train_target_sample_lengths[0]
+    #     return self.train_n_points + train_series_length
 
     @property
     def min_train_samples(self) -> int:
-        # for ensemble, it is the max of the sub-models' min samples
-        train_samples = self.train_n_points
+        # train_samples = self.train_n_points
+        # if self.extreme_lags[1] >= 0:
+        #     train_samples -= (self.extreme_lags[1] + 1)
+        # base_ocl = max(self.extreme_lags[1] + 1, 0)
+        # train_n_points = self.train_n_points if self.train_n_points >= 0 else 1
+
         if self.train_forecasting_models:
-            train_samples += max(
+            # for ensemble, it is the max of the sub-models' min samples
+            base_train_samples = max(
                 model.min_train_samples for model in self.forecasting_models
             )
-        return train_samples
+        else:
+            base_train_samples = 0
+
+        # # `train_n_points` can only be >= 0 if `train_forecasting_models=True`
+        # train_samples = base_train_samples + max(self.train_n_points, 0)
+        # else:
+        #     train_samples = self.train_n_points
+        # # regression model requires at least 2 samples to train
+        # train_samples = max(train_samples, 2)
+        #
+        # return train_samples
+        return base_train_samples
 
     @property
     def _train_target_sample_lengths(self) -> tuple[int, int]:
@@ -604,12 +624,28 @@ class EnsembleModel(GlobalForecastingModel):
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
         ]
 
+        if self.ensemble_model is not None:
+            if self.ensemble_model.extreme_lags[1] > extreme_lags_[1]:
+                # if the ensemble model max_target_lag is greater than the maximum of the forecasting models,
+                # use it instead
+                extreme_lags_[1] = self.ensemble_model.extreme_lags[1]
+
         max_target_lag_train = extreme_lags_[-1]
         if max_target_lag_train is not None and max_target_lag_train < extreme_lags_[1]:
             # if the maximum of the max_target_lag_train is lower than the max_target_lag, use only the max_target_lag;
             # this avoids always using `RNNModel` max_target_lag_train in historical forecasts, even if it's not the
             # actual maximum output lag
             extreme_lags_[-1] = None
+
+        # - `train_forecasting_models=False`: account for ocl of fcs and train_n_points
+        # - `train_forecasting_models=True`: account for the training of fcs and train_n_points
+        # - account for train_points=-1
+        #
+        # if self.train_n_points:
+        #     train_lag = max(self.train_n_points - 1, 0)
+        #
+        #     if train_lag > extreme_lags_[-1]:
+        #     extreme_lags_[-1] = extreme_lags_[-2]
         return tuple(extreme_lags_)
 
     @property

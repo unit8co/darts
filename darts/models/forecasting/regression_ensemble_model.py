@@ -112,15 +112,6 @@ class RegressionEnsembleModel(EnsembleModel):
                [557.35256055],
                [630.24334385]])
         """
-        super().__init__(
-            forecasting_models=forecasting_models,
-            train_num_samples=regression_train_num_samples,
-            train_samples_reduction=regression_train_samples_reduction,
-            train_forecasting_models=train_forecasting_models,
-            train_n_points=regression_train_n_points,
-            show_warnings=show_warnings,
-        )
-
         if regression_model is None:
             regression_model = LinearRegressionModel(
                 lags=None, lags_future_covariates=[0], fit_intercept=False
@@ -146,7 +137,15 @@ class RegressionEnsembleModel(EnsembleModel):
             f"{regression_model.lags}",
         )
 
-        self.regression_model: SKLearnModel = regression_model
+        super().__init__(
+            forecasting_models=forecasting_models,
+            ensemble_model=regression_model,
+            train_num_samples=regression_train_num_samples,
+            train_samples_reduction=regression_train_samples_reduction,
+            train_forecasting_models=train_forecasting_models,
+            train_n_points=regression_train_n_points,
+            show_warnings=show_warnings,
+        )
 
         raise_if(
             train_using_historical_forecasts and not self.is_global_ensemble,
@@ -408,7 +407,7 @@ class RegressionEnsembleModel(EnsembleModel):
             )
 
         # train the regression model on the individual models' predictions
-        self.regression_model.fit(
+        self.ensemble_model.fit(
             series=regression_target,
             future_covariates=predictions,
             sample_weight=sample_weight,
@@ -448,7 +447,7 @@ class RegressionEnsembleModel(EnsembleModel):
         series = series2seq(series) if series is not None else [None]
 
         ensembled = [
-            self.regression_model.predict(
+            self.ensemble_model.predict(
                 n=len(prediction),
                 series=serie,
                 future_covariates=prediction,
@@ -463,18 +462,17 @@ class RegressionEnsembleModel(EnsembleModel):
     @property
     def output_chunk_length(self) -> int:
         """Return the `output_chunk_length` of the regression model (ensembling layer)"""
-        return self.regression_model.output_chunk_length
+        return self.ensemble_model.output_chunk_length
 
     @property
     def supports_likelihood_parameter_prediction(self) -> bool:
         """RegressionEnsembleModel supports likelihood parameters predictions if its regression model does"""
-        return self.regression_model.supports_likelihood_parameter_prediction
+        return self.ensemble_model.supports_likelihood_parameter_prediction
 
     @property
     def supports_multivariate(self) -> bool:
         return (
-            super().supports_multivariate
-            and self.regression_model.supports_multivariate
+            super().supports_multivariate and self.ensemble_model.supports_multivariate
         )
 
     @property
@@ -483,4 +481,4 @@ class RegressionEnsembleModel(EnsembleModel):
         A RegressionEnsembleModel is probabilistic if its regression
         model is probabilistic (ensembling layer)
         """
-        return self.regression_model.supports_probabilistic_prediction
+        return self.ensemble_model.supports_probabilistic_prediction
