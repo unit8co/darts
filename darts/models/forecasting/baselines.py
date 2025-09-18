@@ -316,6 +316,7 @@ class NaiveEnsembleModel(EnsembleModel):
         """
         super().__init__(
             forecasting_models=forecasting_models,
+            ensemble_model=None,
             train_num_samples=1,
             train_samples_reduction=None,
             train_forecasting_models=train_forecasting_models,

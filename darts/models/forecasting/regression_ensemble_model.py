@@ -8,8 +8,10 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 from collections.abc import Sequence
 from typing import Optional, Union
 
+import numpy as np
+
 from darts import TimeSeries, concatenate
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
@@ -194,8 +196,20 @@ class RegressionEnsembleModel(EnsembleModel):
 
         predictions = []
         for m_idx, model in enumerate(self.forecasting_models):
+            # get the columns corresponding to the current model's predictions
+            pred_cols_slice = slice(m_idx * n_components, (m_idx + 1) * n_components)
+            pred_cols = model_predict_cols[pred_cols_slice]
+
             # we start historical fc at multiple of the output length before the end.
             n_ocl_back = train_n_points // model.output_chunk_length
+
+            if not n_ocl_back:
+                # no historical forecasts required, use direct predictions
+                predictions.append([
+                    preds_dir[pred_cols] for preds_dir in direct_predictions
+                ])
+                continue
+
             start_hist_forecasts = n_ocl_back * model.output_chunk_length
 
             # we use the precomputed `direct_prediction` to fill any missing prediction
@@ -223,26 +237,27 @@ class RegressionEnsembleModel(EnsembleModel):
                 show_warnings=self.show_warnings,
                 predict_likelihood_parameters=False,
             )
-            # concatenate the strided predictions of output_chunk_length values each
+            # concatenate the stridden predictions of output_chunk_length values each
             tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
 
             # add the missing steps at beginning by taking the first values of precomputed predictions
             if missing_steps:
                 # add the missing steps at beginning by taking the first values of precomputed predictions
                 # get the model's direct (uni/multivariate) predictions
-                pred_cols = model_predict_cols[
-                    m_idx * n_components : (m_idx + 1) * n_components
-                ]
-                hfc_cols = tmp_pred[0].columns.tolist()
                 tmp_pred = [
-                    concatenate(
-                        [
-                            preds_dir[:missing_steps][pred_cols].with_columns_renamed(
-                                pred_cols, hfc_cols
-                            ),
-                            preds_hfc,
-                        ],
-                        axis=0,
+                    preds_hfc.with_times_and_values(
+                        times=preds_dir.time_index[:missing_steps].union(
+                            preds_hfc.time_index
+                        ),
+                        values=np.concatenate(
+                            [
+                                preds_dir.all_values(copy=False)[
+                                    :missing_steps, pred_cols_slice
+                                ],
+                                preds_hfc.all_values(copy=False),
+                            ],
+                            axis=0,
+                        ),
                     )
                     for preds_dir, preds_hfc in zip(direct_predictions, tmp_pred)
                 ]
@@ -305,9 +320,28 @@ class RegressionEnsembleModel(EnsembleModel):
             series, past_covariates=past_covariates, future_covariates=future_covariates
         )
 
-        # spare train_n_points points to serve as regression target
         is_single_series = isinstance(series, TimeSeries)
+
+        # the minimum train series length includes the training requirements from `forecasting_models` as
+        # well as the ones from the ensemble model
+        min_train_series_length = self.min_train_series_length
+        if is_single_series:
+            series_too_short = len(series) < min_train_series_length
+        else:
+            series_too_short = any([len(s) < min_train_series_length for s in series])
+
+        if series_too_short:
+            raise_log(
+                ValueError(
+                    f"{'All time series in ' if not is_single_series else ''}`series` must have "
+                    f"a minimum length of `{min_train_series_length}` to fit the model. "
+                ),
+                logger,
+            )
+
         if self.train_n_points == -1:
+            # determine the actual number of training points to use
+            # TODO: delete this block =========>
             if is_single_series:
                 train_n_points = [len(series)]
             else:
@@ -323,7 +357,9 @@ class RegressionEnsembleModel(EnsembleModel):
                 if min_target_lag is not None:
                     all_shifts.append(-min_target_lag)
 
-            input_shift = max(all_shifts)
+            input_shift_ = max(all_shifts)
+            input_shift = self._train_target_sample_lengths[0]
+            assert input_shift == input_shift_
             idx_series_too_short = []
             tmp_train_n_points = []
             for idx, ts_length in enumerate(train_n_points):
@@ -345,23 +381,15 @@ class RegressionEnsembleModel(EnsembleModel):
             else:
                 self.train_n_points = tmp_train_n_points
 
-            train_n_points_too_big = False
-        else:
-            # self.train_n_points is necessarily an integer
+            # TODO: delete this block <=========
+            # determine the actual number of training points to use
+            input_shift = self._train_target_sample_lengths[0]
             if is_single_series:
-                train_n_points_too_big = len(series) <= self.train_n_points
+                self.train_n_points = len(series) - input_shift
             else:
-                train_n_points_too_big = any([
-                    len(s) <= self.train_n_points for s in series
-                ])
+                self.train_n_points = [len(ts) - input_shift for ts in series]
 
-        raise_if(
-            train_n_points_too_big,
-            "`regression_train_n_points` parameter too big (must be strictly smaller than "
-            "the number of points in training_series)",
-            logger,
-        )
-
+        # spare train_n_points points to serve as regression target
         if is_single_series:
             forecast_training = series[: -self.train_n_points]
             regression_target = series[-self.train_n_points :]

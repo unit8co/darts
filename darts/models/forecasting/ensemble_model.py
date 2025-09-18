@@ -115,14 +115,24 @@ class EnsembleModel(GlobalForecastingModel):
         self.all_trained = all(model_fit_status)
         some_trained = any(model_fit_status)
 
-        raise_if(
-            (not self.is_global_ensemble and some_trained)
-            or (self.is_global_ensemble and not (self.all_trained or not some_trained)),
-            "Cannot instantiate EnsembleModel with a mixture of unfitted and fitted `forecasting_models`. "
-            "Consider resetting all models with `my_model.untrained_model()` or using only trained "
-            "GlobalForecastingModels together with `train_forecasting_models=False`.",
-            logger,
-        )
+        if not self.is_global_ensemble and some_trained:
+            raise_log(
+                ValueError(
+                    "Some models in `forecasting_models` are already fitted. Using pre-trained models is "
+                    "only supported if all models are of type `GlobalForecastingModel`. "
+                    "Consider resetting all models with `my_model.untrained_model()`."
+                ),
+                logger,
+            )
+        elif self.is_global_ensemble and not (self.all_trained or not some_trained):
+            raise_log(
+                ValueError(
+                    "All `forecasting_models` are global but there is a mixture of fitted and unfitted models. "
+                    "Consider resetting all models with `my_model.untrained_model()` or using only trained "
+                    "`GlobalForecastingModel` together with `train_forecasting_models=False`."
+                ),
+                logger,
+            )
 
         if train_forecasting_models:
             # prevent issues with pytorch-lightning trainer during retraining
@@ -543,41 +553,18 @@ class EnsembleModel(GlobalForecastingModel):
                 )
         return model
 
-    # @property
-    # def min_train_series_length(self) -> int:
-    #     # for ensemble, it is the max of the sub-models' train series lengths
-    #     if self.train_forecasting_models:
-    #         train_series_length = max(
-    #             model.min_train_series_length for model in self.forecasting_models
-    #         )
-    #     else:
-    #         train_series_length = self._train_target_sample_lengths[0]
-    #     return self.train_n_points + train_series_length
-
     @property
     def min_train_samples(self) -> int:
-        # train_samples = self.train_n_points
-        # if self.extreme_lags[1] >= 0:
-        #     train_samples -= (self.extreme_lags[1] + 1)
-        # base_ocl = max(self.extreme_lags[1] + 1, 0)
-        # train_n_points = self.train_n_points if self.train_n_points >= 0 else 1
-
+        train_n_points = abs(self.train_n_points)
         if self.train_forecasting_models:
-            # for ensemble, it is the max of the sub-models' min samples
-            base_train_samples = max(
-                model.min_train_samples for model in self.forecasting_models
+            # for ensemble, it is the max of the sub-models' min samples + train_n_points
+            base_train_samples = (
+                max(model.min_train_samples for model in self.forecasting_models)
+                + train_n_points
             )
         else:
-            base_train_samples = 0
-
-        # # `train_n_points` can only be >= 0 if `train_forecasting_models=True`
-        # train_samples = base_train_samples + max(self.train_n_points, 0)
-        # else:
-        #     train_samples = self.train_n_points
-        # # regression model requires at least 2 samples to train
-        # train_samples = max(train_samples, 2)
-        #
-        # return train_samples
+            base_ocl = max(self.extreme_lags[1] + 1, 0)
+            base_train_samples = max(train_n_points - base_ocl, 0) + 1
         return base_train_samples
 
     @property
@@ -590,10 +577,6 @@ class EnsembleModel(GlobalForecastingModel):
                 lengths_max = (input_length, lengths_max[1])
             if output_length > lengths_max[1]:
                 lengths_max = (lengths_max[0], output_length)
-
-        # # we need at least an output window of `1` to train the ensemble model
-        # if lengths_max[1] == 0:
-        #     lengths_max = (lengths_max[0], 1)
         return lengths_max
 
     @property
@@ -624,11 +607,11 @@ class EnsembleModel(GlobalForecastingModel):
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
         ]
 
-        if self.ensemble_model is not None:
-            if self.ensemble_model.extreme_lags[1] > extreme_lags_[1]:
-                # if the ensemble model max_target_lag is greater than the maximum of the forecasting models,
-                # use it instead
-                extreme_lags_[1] = self.ensemble_model.extreme_lags[1]
+        # if self.ensemble_model is not None:
+        #     if self.ensemble_model.extreme_lags[1] > extreme_lags_[1]:
+        #         # if the ensemble model max_target_lag is greater than the maximum of the forecasting models,
+        #         # use it instead
+        #         extreme_lags_[1] = self.ensemble_model.extreme_lags[1]
 
         max_target_lag_train = extreme_lags_[-1]
         if max_target_lag_train is not None and max_target_lag_train < extreme_lags_[1]:

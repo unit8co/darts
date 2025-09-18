@@ -190,14 +190,11 @@ class TestEnsembleModels:
         ensemble = NaiveEnsembleModel([model2, model1])
         assert ensemble.min_train_series_length == model2.min_train_series_length
 
-        # model2 and model3 have the same training lengths
+        # model2 and model3 have the same training lengths but input and output windows are different
         model3 = LinearRegressionModel(lags=1, output_chunk_length=10)
         ensemble = NaiveEnsembleModel([model2, model1, model3])
-        assert (
-            ensemble.min_train_series_length
-            == model2.min_train_series_length
-            == model3.min_train_series_length
-        )
+        # (max(lags) + max(ocl)) + (min_train_samples - 1)
+        assert ensemble.min_train_series_length == (10 + 10) + (2 - 1)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_extreme_lags_rnn(self):
@@ -723,9 +720,9 @@ class TestEnsembleModels:
             ],
         }
         if issubclass(model_cls, RegressionEnsembleModel):
-            kwargs["regression_train_n_points"] = 3
+            kwargs["regression_train_n_points"] = 2
 
-        ts = TimeSeries.from_values(np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0]))
+        ts = TimeSeries.from_values(np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]))
         # weights too short
         model = model_cls(**copy.deepcopy(kwargs))
         with pytest.raises(ValueError) as err:

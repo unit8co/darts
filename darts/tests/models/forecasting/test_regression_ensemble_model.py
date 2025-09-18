@@ -5,6 +5,7 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
+from tqdm.contrib.itertools import product
 
 from darts import TimeSeries
 from darts.metrics import mape, rmse
@@ -199,7 +200,7 @@ class TestRegressionEnsembleModels:
         ensemble.fit(self.combined)
 
         # 3 values are necessary to predict the first value for the 2nd forecasting model
-        assert ensemble.regression_model.training_series == self.combined[3:]
+        assert ensemble.ensemble_model.training_series == self.combined[3:]
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_torch_models_retrain(self):
@@ -260,7 +261,7 @@ class TestRegressionEnsembleModels:
         pred_predict = ensemble_predict.predict(len(val))
 
         assert (
-            len(ensemble_predict.regression_model.training_series)
+            len(ensemble_predict.ensemble_model.training_series)
             == regression_train_n_points
         )
 
@@ -277,7 +278,7 @@ class TestRegressionEnsembleModels:
         pred_hist_fct = ensemble_hist_fct.predict(len(val))
 
         assert (
-            len(ensemble_hist_fct.regression_model.training_series)
+            len(ensemble_hist_fct.ensemble_model.training_series)
             == regression_train_n_points
         )
 
@@ -322,9 +323,7 @@ class TestRegressionEnsembleModels:
         )
         # covariates have the appropriate length
         ensemble.fit(ts, past_covariates=past_covs)
-        assert (
-            len(ensemble.regression_model.training_series) == regression_train_n_points
-        )
+        assert len(ensemble.ensemble_model.training_series) == regression_train_n_points
         # since past covariates extend far in the past, they are available for the regression model
 
         # future covariates finishes 5 steps after the target series
@@ -348,9 +347,7 @@ class TestRegressionEnsembleModels:
 
         # covariates have the appropriate length
         ensemble.fit(ts, future_covariates=future_covs)
-        assert (
-            len(ensemble.regression_model.training_series) == regression_train_n_points
-        )
+        assert len(ensemble.ensemble_model.training_series) == regression_train_n_points
 
         with pytest.raises(ValueError):
             # covariates are too short (ends too early)
@@ -567,19 +564,56 @@ class TestRegressionEnsembleModels:
         assert preds.start_time() == expected_start
         ensemble.backtest(self.sine_series)
 
-    def test_no_fcm_retrain_historical_forecasts(self):
-        m1 = LinearRegressionModel(lags=2, output_chunk_length=1)
-        m2 = BlockRNNModel(3, 4, **tfm_kwargs, n_epochs=1)
-        for model in [m1, m2]:
-            model.fit(self.sine_series[: model.min_train_series_length])
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            [
+                (
+                    2,
+                    10,
+                ),  # the 2 points are within first output chunk of m2 (4) -> min length=icl + ocl
+                (4, 12),  # same as above
+                (
+                    5,
+                    13,
+                ),  # the fifth point is outside the first output chunk of m2 (4) -> min length=icl + ocl + 1
+            ],
+            [
+                ("sklearn", "sklearn"),
+                ("sklearn", "torch"),
+                ("torch", "torch"),
+            ],
+        ),
+    )
+    def test_with_fcm_retrain_historical_forecasts(self, config):
+        (n_points, expected_min_length), (m1_type, m2_type) = config
+
+        if m1_type == "sklearn":
+            m1 = LinearRegressionModel(lags=4, output_chunk_length=1)
+        else:
+            m1 = BlockRNNModel(
+                input_chunk_length=4, output_chunk_length=1, **tfm_kwargs, n_epochs=1
+            )
+
+        if m2_type == "sklearn":
+            m2 = LinearRegressionModel(lags=3, output_chunk_length=4)
+        else:
+            m2 = BlockRNNModel(
+                input_chunk_length=3, output_chunk_length=4, **tfm_kwargs, n_epochs=1
+            )
 
         ensemble = RegressionEnsembleModel(
             forecasting_models=[m1, m2],
-            regression_train_n_points=10,
-            train_forecasting_models=False,
+            regression_train_n_points=n_points,
+            train_forecasting_models=True,
             train_using_historical_forecasts=True,
         )
-        # TODO: fix hfc if models don't need to be re-trained
+        min_samples_fc = max(m_.min_train_samples for m_ in ensemble.forecasting_models)
+        assert ensemble.min_train_series_length == expected_min_length + (
+            min_samples_fc - 1
+        )
+
+        # using the minimum length and `overlap_end=True` should return a single forecast
         series = self.sine_series[: ensemble.min_train_series_length]
         hfc = ensemble.historical_forecasts(
             series=series,
@@ -587,7 +621,76 @@ class TestRegressionEnsembleModels:
             overlap_end=True,
             last_points_only=False,
         )
-        assert hfc.start_time() == series.end_time() + series.freq
+        assert len(hfc) == 1
+        assert hfc[0].start_time() == series.end_time() + series.freq
+
+        # anything less than min_train_series_length should raise an error
+        with pytest.raises(ValueError) as exc:
+            _ = ensemble.historical_forecasts(
+                series=series[:-1],
+                retrain=True,
+                overlap_end=True,
+                last_points_only=False,
+            )
+        assert str(exc.value).startswith(
+            "Cannot build any input dataset for training the model"
+        )
+        # ensemble.fit(series[:-1])
+
+    @pytest.mark.parametrize(
+        "n_points, expected_min_length",
+        [
+            (
+                -1,
+                8,
+            ),  # -1 means at least one sample which is within first output chunk of m2 (4) -> min length=icl + ocl
+            (
+                2,
+                8,
+            ),  # the 2 points are within first output chunk of m2 (4) -> min length=icl + ocl
+            (4, 8),  # same as above
+            (
+                5,
+                9,
+            ),  # the fifth point is outside the first output chunk of m2 (4) -> min length=icl + ocl + 1
+        ],
+    )
+    def test_no_fcm_retrain_historical_forecasts(self, n_points, expected_min_length):
+        m1 = LinearRegressionModel(lags=4, output_chunk_length=1)
+        m2 = BlockRNNModel(3, 4, **tfm_kwargs, n_epochs=1)
+        for model in [m1, m2]:
+            model.fit(self.sine_series[: model.min_train_series_length])
+
+        ensemble = RegressionEnsembleModel(
+            forecasting_models=[m1, m2],
+            regression_train_n_points=n_points,
+            train_forecasting_models=False,
+            train_using_historical_forecasts=True,
+        )
+        assert ensemble.min_train_series_length == expected_min_length
+
+        # using the minimum length and `overlap_end=True` should return a single forecast
+        series = self.sine_series[: ensemble.min_train_series_length]
+        hfc = ensemble.historical_forecasts(
+            series=series,
+            retrain=True,
+            overlap_end=True,
+            last_points_only=False,
+        )
+        assert len(hfc) == 1
+        assert hfc[0].start_time() == series.end_time() + series.freq
+
+        # anything less than min_train_series_length should raise an error
+        with pytest.raises(ValueError) as exc:
+            _ = ensemble.historical_forecasts(
+                series=series[:-1],
+                retrain=True,
+                overlap_end=True,
+                last_points_only=False,
+            )
+        assert str(exc.value).startswith(
+            "Cannot build any input dataset for training the model"
+        )
 
     def test_extreme_lags(self):
         # forecasting models do not use target lags
