@@ -1667,18 +1667,17 @@ class TestTorchForecastingModel:
                 ).reshape(-1, 1),
             )
 
-        def create_model(batch_size: Optional[int] = None) -> RNNModel:
-            batch_size_kwarg = {"batch_size": batch_size} if batch_size else {}
-            return RNNModel(12, "RNN", 10, 10, **batch_size_kwarg, **tfm_kwargs)
-
         series = create_series(10_000)
         train_series, val_series = series.split_after(0.8)
 
-        model = create_model()
-        # find the batch size
+        model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
+        # find the largest batch size
         res = model.scale_batch_size(series=train_series, val_series=val_series)
+
+        # verify results and that batch size is set
         assert isinstance(res, int)
         assert res == model.batch_size
+
         # verify that batch size finder bypasses the `fit` logic
         assert model.model is None
         assert not model._fit_called
@@ -1686,16 +1685,36 @@ class TestTorchForecastingModel:
         with pytest.raises(ValueError):
             model.predict(n=3, series=self.series)
 
-        # check that results are reproducible
-        model = create_model()
-        res2 = model.scale_batch_size(series=train_series, val_series=val_series)
-        assert res == res2
-
         # check that batch size could indeed fit in the memory
-        model = create_model(batch_size=res)
         model.fit(train_series, val_series=val_series, epochs=1)
         assert model.batch_size == res
         assert model.epochs_trained == 1
+
+        # check that results are reproducible
+        model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
+        res2 = model.scale_batch_size(series=train_series, val_series=val_series)
+        assert res == res2
+
+    @pytest.mark.slow
+    def test_scale_batch_size_no_updates(self):
+        model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
+
+        # train for 1 epoch with default batch size
+        model.fit(self.series, epochs=1)
+        assert model.epochs_trained == 1
+        # store the predictions after 1 epoch
+        preds = model.predict(n=3, series=self.series)
+
+        # find the largest batch size, should not change the model weights
+        res = model.scale_batch_size(series=self.series)
+        # verify that batch size is set
+        assert isinstance(res, int)
+        assert res == model.batch_size
+
+        # verify that weights have not changed after batch size scaling
+        preds_after = model.predict(n=3, series=self.series)
+        assert isinstance(preds, TimeSeries) and isinstance(preds_after, TimeSeries)
+        assert np.isclose(preds.values(), preds_after.values()).all()
 
     def test_encoders(self, tmpdir_fn):
         series = tg.linear_timeseries(length=10)
