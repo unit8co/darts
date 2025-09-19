@@ -7,13 +7,14 @@ import pytest
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import Prophet
+from darts.tests.conftest import PROPHET_AVAILABLE
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import NotImportedModule, freqs, generate_index
+from darts.utils.utils import freqs, generate_index
 
 logger = get_logger(__name__)
 
 
-@pytest.mark.skipif(isinstance(Prophet, NotImportedModule), reason="requires prophet")
+@pytest.mark.skipif(not PROPHET_AVAILABLE, reason="requires prophet")
 class TestProphet:
     def test_add_seasonality_calls(self):
         # test if adding seasonality at model creation and with method model.add_seasonality() are equal

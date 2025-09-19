@@ -3,6 +3,15 @@ import math
 import numpy as np
 import pandas as pd
 import pytest
+
+from darts.tests.conftest import SF_AVAILABLE
+
+if not SF_AVAILABLE:
+    pytest.skip(
+        f"StatsForecast not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
+
 from statsforecast.models import AutoETS as SF_AutoETS
 from statsforecast.models import SimpleExponentialSmoothing as SF_ETS
 from statsforecast.utils import ConformalIntervals

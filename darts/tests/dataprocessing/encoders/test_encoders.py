@@ -304,6 +304,7 @@ class TestEncoder:
         for fc, fc_in in zip(future_covs_pred, expected_future_idx_ts):
             assert fc.time_index.equals(fc_in.time_index)
 
+    @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def helper_encoder_from_model(self, add_encoder_dict):
         """extracts encoders from parameters at model creation"""
         model = TFTModel(
