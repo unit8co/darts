@@ -181,14 +181,12 @@ class _CustomDataModule(LightningDataModule):
             **self.dataloader_kwargs,
         )
 
-
-class _CustomDataModuleWithVal(_CustomDataModule):
-    """Custom LightningDataModule (with validation dataset) to handle train and val dataloaders."""
-
     def val_dataloader(self):
         """Validation dataloader."""
+        if self.val_dataset is None:
+            return []
         return DataLoader(
-            self.val_dataset,  # pyright: ignore[reportArgumentType]
+            self.val_dataset,
             batch_size=self.batch_size,
             shuffle=False,
             **self.dataloader_kwargs,
@@ -1312,8 +1310,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 )
 
         # setup datamodule
-        datamodule_cls = _CustomDataModuleWithVal if val_dataset else _CustomDataModule
-        datamodule = datamodule_cls(
+        datamodule = _CustomDataModule(
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             batch_size=self.batch_size,
@@ -1550,9 +1547,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         max_trials: int = 25,
     ):
         """
-        A wrapper around PyTorch Lightning's `Tuner.scale_batch_size()`. Performs a batch size range test to find a
-        the largest batch size to use for training. It is recommended to re-initialize the model after calling this
-        method before fitting, using the found batch size. For more information on PyTorch Lightning's Tuner check out
+        A wrapper around PyTorch Lightning's `Tuner.scale_batch_size()`. Performs a batch size scaling test to
+        find the largest batch size to use for training. The batch size in the model would be updated after this
+        call. For more information on PyTorch Lightning's Tuner check out
         `this link <https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.tuner.tuning.Tuner.html>`_.
 
         Example using a :class:`NBEATSModel`:
@@ -1567,10 +1564,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 train, val = series[:-18], series[-18:]
                 model = NBEATSModel(12, 6, random_state=42)
                 # run the batch size tuner
-                batch_size = model.scale_batch_size(series=train, val_series=val)
-                # create a new model with the optimal batch size
-                model = NBEATSModel(12, 6, random_state=42, batch_size=batch_size)
-                # train the new model
+                model.scale_batch_size(series=train, val_series=val)
+                # train the model with the suggested batch size
                 model.fit(train, val_series=val, epochs=1)
             ..
 
