@@ -590,7 +590,6 @@ class EnsembleModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         def find_max_lag_or_none(lag_id, aggregator) -> Optional[int]:
             max_lag = None
@@ -602,33 +601,10 @@ class EnsembleModel(GlobalForecastingModel):
                     max_lag = aggregator(max_lag, curr_lag)
             return max_lag
 
-        lag_aggregators = (min, max, min, max, min, max, max, max)
+        lag_aggregators = (min, max, min, max, min, max, max)
         extreme_lags_ = [
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
         ]
-
-        # if self.ensemble_model is not None:
-        #     if self.ensemble_model.extreme_lags[1] > extreme_lags_[1]:
-        #         # if the ensemble model max_target_lag is greater than the maximum of the forecasting models,
-        #         # use it instead
-        #         extreme_lags_[1] = self.ensemble_model.extreme_lags[1]
-
-        max_target_lag_train = extreme_lags_[-1]
-        if max_target_lag_train is not None and max_target_lag_train < extreme_lags_[1]:
-            # if the maximum of the max_target_lag_train is lower than the max_target_lag, use only the max_target_lag;
-            # this avoids always using `RNNModel` max_target_lag_train in historical forecasts, even if it's not the
-            # actual maximum output lag
-            extreme_lags_[-1] = None
-
-        # - `train_forecasting_models=False`: account for ocl of fcs and train_n_points
-        # - `train_forecasting_models=True`: account for the training of fcs and train_n_points
-        # - account for train_points=-1
-        #
-        # if self.train_n_points:
-        #     train_lag = max(self.train_n_points - 1, 0)
-        #
-        #     if train_lag > extreme_lags_[-1]:
-        #     extreme_lags_[-1] = extreme_lags_[-2]
         return tuple(extreme_lags_)
 
     @property

@@ -117,7 +117,6 @@ class TestEnsembleModels:
             None,
             None,
             0,
-            None,
         )  # test if default is okay
 
         model1 = LinearRegressionModel(
@@ -131,7 +130,7 @@ class TestEnsembleModels:
             model1,
             model2,
         ])  # test if infers extreme lags is okay
-        expected = (-5, 0, -6, -1, 6, 9, 0, None)
+        expected = (-5, 0, -6, -1, 6, 9, 0)
         assert expected == ensemble.extreme_lags
 
     def test_min_train_samples(self):
@@ -198,15 +197,22 @@ class TestEnsembleModels:
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_extreme_lags_rnn(self):
-        # RNNModel has the 8th element in `extreme_lags` for the `max_target_lag_train`.
-        # it is given by `training_length - input_chunk_length`.
-        # for the ensemble model we want the max lag of all forecasting models.
+        # RNNModel itself has a training length which will go through multiple samples / steps in one training sample;
+        # the ensemble input requirements are the max(icl), max(ocl=1) + max(training samples)
         model1 = RNNModel(input_chunk_length=14, training_length=24)
         model2 = RNNModel(input_chunk_length=12, training_length=37)
 
         ensemble = NaiveEnsembleModel([model1, model2])
-        expected = (-14, 0, None, None, -14, 0, 0, 37 - 12)
-        assert expected == ensemble.extreme_lags
+        expected_lags = (-14, 0, None, None, -14, 0, 0)
+        assert ensemble.extreme_lags == expected_lags
+
+        # max(train_length)=37 - icl(of that model)=12 + 1
+        expected_samples = (37 - 12) + 1
+        assert ensemble.min_train_samples == expected_samples
+
+        # max(icl)=14 + max(ocl)=1 + (expected_samples - 1)
+        expected_length = 14 + 1 + (expected_samples - 1)
+        assert ensemble.min_train_series_length == expected_length
 
     def test_input_models_local_models(self):
         with pytest.raises(ValueError):
@@ -240,7 +246,7 @@ class TestEnsembleModels:
     def test_call_backtest_naive_ensemble_local_models(self):
         ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
         ensemble.fit(self.series1)
-        assert ensemble.extreme_lags == (-10, -1, None, None, None, None, 0, None)
+        assert ensemble.extreme_lags == (-10, -1, None, None, None, None, 0)
         ensemble.backtest(self.series1)
 
     def test_predict_univariate_ensemble_local_models(self):

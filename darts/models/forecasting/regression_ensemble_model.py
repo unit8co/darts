@@ -334,7 +334,7 @@ class RegressionEnsembleModel(EnsembleModel):
             raise_log(
                 ValueError(
                     f"{'All time series in ' if not is_single_series else ''}`series` must have "
-                    f"a minimum length of `{min_train_series_length}` to fit the model. "
+                    f"a minimum length of `{min_train_series_length}` to fit the model."
                 ),
                 logger,
             )
@@ -353,7 +353,7 @@ class RegressionEnsembleModel(EnsembleModel):
             # when it's not clearly defined, extreme_lags returns
             # `min_train_series_length` for the LocalForecastingModels
             for model in self.forecasting_models:
-                min_target_lag, _, _, _, _, _, _, _ = model.extreme_lags
+                min_target_lag, _, _, _, _, _, _ = model.extreme_lags
                 if min_target_lag is not None:
                     all_shifts.append(-min_target_lag)
 

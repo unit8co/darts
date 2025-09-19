@@ -1049,11 +1049,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             len(train_dataset)
         except ValueError:
             length_ok = False
-        if not length_ok or len(train_dataset) < self.min_train_samples:
+        if not length_ok or len(train_dataset) == 0:
             raise_log(
                 ValueError(
-                    f"The train dataset is either empty or contains less than "
-                    f"`{self.min_train_samples}` training sample (minimum requirement). "
+                    f"The train dataset does not contain a single sample. "
                     f"This is likely due to the provided training series being too short. "
                     f"This model expect series of length at least "
                     f"{self.min_train_series_length}."
@@ -2712,7 +2711,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2722,7 +2720,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             None,
             None,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2746,7 +2743,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2756,7 +2752,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2780,7 +2775,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2790,7 +2784,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2814,7 +2807,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2824,7 +2816,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2848,7 +2839,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2858,5 +2848,4 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )

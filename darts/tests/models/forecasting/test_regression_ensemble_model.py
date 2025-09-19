@@ -554,7 +554,6 @@ class TestRegressionEnsembleModels:
             None,
             None,
             0,
-            None,
         )
         preds = ensemble.historical_forecasts(self.sine_series)
 
@@ -704,7 +703,7 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (None, 0, -3, -1, 0, 0, 0, None)
+        assert model.extreme_lags == (None, 0, -3, -1, 0, 0, 0)
         assert model.min_train_samples == model2.min_train_samples + train_n_points
 
         # mix of all the lags
@@ -717,7 +716,7 @@ class TestRegressionEnsembleModels:
             regression_train_n_points=train_n_points,
         )
 
-        assert model.extreme_lags == (-7, 0, -3, -1, -2, 5, 0, None)
+        assert model.extreme_lags == (-7, 0, -3, -1, -2, 5, 0)
         assert model.min_train_samples == model3.min_train_samples + train_n_points
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
@@ -735,12 +734,9 @@ class TestRegressionEnsembleModels:
             forecasting_models=self.get_global_models(ocl, icl, training_length),
             regression_train_n_points=train_n_points,
         )
-        if rnn_out_larger:
-            # training length output from RNN is larger than BlockRNN output; use RNN output
-            expected_last_lag = training_length - icl if rnn_out_larger else None
-        else:
-            # training length output from RNN is smaller than BlockRNN output; use BlockRNN output
-            expected_last_lag = None
+        # RNN's training length requires more samples (training_length - icl + 1)
+        # plus the points for training the regression ensemble model
+        expected_samples = (training_length - icl + 1) + train_n_points
         assert model.extreme_lags == (
             -icl,
             ocl - 1,
@@ -749,15 +745,25 @@ class TestRegressionEnsembleModels:
             -icl,  # future covs from RNN
             ocl - 1,  # future covs from RNN
             0,
-            expected_last_lag,
         )
-        assert model.min_train_samples == (
-            train_n_points
-            + max(model.min_train_samples for model in model.forecasting_models)
-        )
+        assert model.min_train_samples == expected_samples
+        assert model.min_train_series_length == icl + ocl + (expected_samples - 1)
+
         series = self.sine_series[: model.min_train_series_length]
         preds = model.historical_forecasts(series, overlap_end=True)
         assert preds.start_time() == series.end_time() + series.freq
+
+        with pytest.raises(ValueError) as exc:
+            model.historical_forecasts(series[:-1], overlap_end=True)
+        assert str(exc.value).startswith(
+            "Cannot build any input dataset for training the model"
+        )
+
+        with pytest.raises(ValueError) as exc:
+            model.fit(series[:-1])
+        assert str(exc.value).startswith(
+            f"`series` must have a minimum length of `{model.min_train_series_length}` to fit the model."
+        )
 
     def test_stochastic_regression_ensemble_model(self):
         quantiles = [0.25, 0.5, 0.75]

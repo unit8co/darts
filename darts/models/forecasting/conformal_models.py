@@ -1492,7 +1492,6 @@ class ConformalModel(GlobalForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return self.model.extreme_lags
 

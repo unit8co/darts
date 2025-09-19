@@ -586,7 +586,6 @@ class SKLearnModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         min_target_lag = self.lags["target"][0] if "target" in self.lags else None
         max_target_lag = self.output_chunk_length - 1 + self.output_chunk_shift
@@ -602,7 +601,6 @@ class SKLearnModel(GlobalForecastingModel):
             min_future_cov_lag,
             max_future_cov_lag,
             self.output_chunk_shift,
-            None,
         )
 
     @property

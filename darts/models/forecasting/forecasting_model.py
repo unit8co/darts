@@ -498,13 +498,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         """
-        A 8-tuple containing in order:
-        (min target lag, max target lag, min past covariate lag, max past covariate lag, min future covariate
-        lag, max future covariate lag, output shift, max target lag train (only for RNNModel)). If 0 is the index of the
-        first prediction, then all lags are relative to this index.
+        A seven element tuple containing in order:
+
+        (
+            min target lag,
+            max target lag,
+            min past covariate lag,
+            max past covariate lag,
+            min future covariate lag,
+            max future covariate lag,
+            output shift,
+        )
+
+        If `0` is the index of the first prediction point, then all lags are relative to this index.
 
         See examples below.
 
@@ -527,27 +535,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-3, 1, None, None, None, None, 0, None)
+        (-3, 1, None, None, None, None, 0)
         >>> model = LinearRegressionModel(lags=3, output_chunk_length=2, output_chunk_shift=2)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-3, 1, None, None, None, None, 2, None)
+        (-3, 1, None, None, None, None, 2)
         >>> model = LinearRegressionModel(lags=[-3, -5], lags_past_covariates = 4, output_chunk_length=7)
         >>> model.fit(train_series, past_covariates=past_covariates)
         >>> model.extreme_lags
-        (-5, 6, -4, -1,  None, None, 0, None)
+        (-5, 6, -4, -1,  None, None, 0)
         >>> model = LinearRegressionModel(lags=[3, 5], lags_future_covariates = [4, 6], output_chunk_length=7)
         >>> model.fit(train_series, future_covariates=future_covariates)
         >>> model.extreme_lags
-        (-5, 6, None, None, 4, 6, 0, None)
+        (-5, 6, None, None, 4, 6, 0)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7)
         >>> model.fit(train_series)
         >>> model.extreme_lags
-        (-10, 6, None, None, None, None, 0, None)
+        (-10, 6, None, None, None, None, 0)
         >>> model = NBEATSModel(input_chunk_length=10, output_chunk_length=7, lags_future_covariates=[4, 6])
         >>> model.fit(train_series, future_covariates)
         >>> model.extreme_lags
-        (-10, 6, None, None, 4, 6, 0, None)
+        (-10, 6, None, None, 4, 6, 0)
         """
 
     def _generate_new_dates(
@@ -2864,13 +2872,12 @@ class LocalForecastingModel(ForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
         #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
         #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
         #  that use an input to predict an output.
-        return -self.min_train_series_length, -1, None, None, None, None, 0, None
+        return -self.min_train_series_length, -1, None, None, None, None, 0
 
     @property
     def supports_transferable_series_prediction(self) -> bool:
@@ -3359,13 +3366,12 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         # TODO: LocalForecastingModels do not yet handle extreme lags properly. Especially
         #  TransferableFutureCovariatesLocalForecastingModel, where there is a difference between fit and predict mode)
         #  do not yet. In general, Local models train on the entire series (input=output), different to Global models
         #  that use an input to predict an output.
-        return -self.min_train_series_length, -1, None, None, 0, 0, 0, None
+        return -self.min_train_series_length, -1, None, None, 0, 0, 0
 
     @property
     def supports_future_covariates(self) -> bool:

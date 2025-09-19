@@ -624,7 +624,7 @@ class TestHistoricalforecast:
         res = model.historical_forecasts(
             series, future_covariates=series, retrain=False, forecast_horizon=1
         )
-        # currently even though transferrable local models would allow , the models currently still take the
+        # currently even though transferable local models would allow , the models currently still take the
         # min_train_length as input for historical forecast predictions (due to extreme_lags not differentiating
         # between fit and predict)
         # (series has length 31)
@@ -1889,7 +1889,6 @@ class TestHistoricalforecast:
             min_future_cov_lag,
             max_future_cov_lag,
             output_chunk_shift,
-            _,
         ) = model.extreme_lags
 
         past_lag = min(
@@ -2002,7 +2001,6 @@ class TestHistoricalforecast:
             min_future_cov_lag,
             max_future_cov_lag,
             output_chunk_shift,
-            _,
         ) = model.extreme_lags
 
         past_lag = min(
@@ -2070,12 +2068,8 @@ class TestHistoricalforecast:
 
         # with the required time spans we expect to get `n_fcs` forecasts
         if not retrain:
-            # with retrain=False, we can start `output_chunk_length` steps earlier for non-RNNModels
-            # and `training_length - input_chunk_length` steps for RNNModels
-            if not isinstance(model, RNNModel):
-                add_fcs = model.extreme_lags[1] + 1
-            else:
-                add_fcs = model.extreme_lags[7] + 1
+            # with retrain=False, we can start `output_chunk_length + min train samples` steps earlier
+            add_fcs = model.extreme_lags[1] + model.min_train_samples
         else:
             add_fcs = 0
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
@@ -2167,9 +2161,8 @@ class TestHistoricalforecast:
 
         # with the required time spans we expect to get `n_fcs` forecasts
         if not retrain:
-            # with retrain=False, we can start `output_chunk_length` steps earlier for non-RNNModels
-            # and `training_length - input_chunk_length` steps for RNNModels
-            add_fcs = model.extreme_lags[1] + 1
+            # with retrain=False, we can start `output_chunk_length + min train samples` steps earlier
+            add_fcs = model.extreme_lags[1] + model.min_train_samples
         else:
             add_fcs = 0
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
@@ -2303,12 +2296,8 @@ class TestHistoricalforecast:
 
         # with the required time spans we expect to get `n_fcs` forecasts
         if not retrain:
-            # with retrain=False, we can start `output_chunk_length` steps earlier for non-RNNModels
-            # and `training_length - input_chunk_length` steps for RNNModels
-            if not isinstance(model, RNNModel):
-                add_fcs = model.extreme_lags[1] + 1
-            else:
-                add_fcs = model.extreme_lags[7] + 1
+            # with retrain=False, we can start `output_chunk_length + min train samples` steps earlier
+            add_fcs = model.extreme_lags[1] + model.min_train_samples
         else:
             add_fcs = 0
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
@@ -2459,12 +2448,8 @@ class TestHistoricalforecast:
 
         # with the required time spans we expect to get `n_fcs` forecasts
         if not retrain:
-            # with retrain=False, we can start `output_chunk_length` steps earlier for non-RNNModels
-            # and `training_length - input_chunk_length` steps for RNNModels
-            if not isinstance(model, RNNModel):
-                add_fcs = model.extreme_lags[1] + 1
-            else:
-                add_fcs = model.extreme_lags[7] + 1
+            # with retrain=False, we can start `output_chunk_length + min train samples` steps earlier
+            add_fcs = model.extreme_lags[1] + model.min_train_samples
         else:
             add_fcs = 0
         assert len(forecasts[0]) == len(forecasts[1]) == n_fcs + add_fcs
