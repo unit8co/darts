@@ -905,7 +905,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             caution as it might introduce bias in the forecasts.
         load_best
             Whether the model should automatically load the best checkpoint found during training according to the
-            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a 
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a
             validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
         Returns
         -------
@@ -1125,7 +1125,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         load_best
             Whether the model should automatically load the best checkpoint found during training according to the
-            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a 
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a
             validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
 
         Returns
