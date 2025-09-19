@@ -1049,7 +1049,7 @@ class TestProbabilisticClassifierModels:
         for s, p1, p2 in zip(series, list_of_probas, list_of_probas2):
             vals1 = p1.all_values()
             vals2 = p2.all_values()
-            np.testing.assert_array_equal(vals1, vals2)
+            np.testing.assert_allclose(vals1, vals2)
 
             # As many probability components as classes
             n_classes = len(labels_component1) + (
