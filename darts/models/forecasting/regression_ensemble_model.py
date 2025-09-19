@@ -11,7 +11,7 @@ from typing import Optional, Union
 import numpy as np
 
 from darts import TimeSeries, concatenate
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
@@ -320,69 +320,11 @@ class RegressionEnsembleModel(EnsembleModel):
             series, past_covariates=past_covariates, future_covariates=future_covariates
         )
 
+        # at this point, we know that all target series all long enough
         is_single_series = isinstance(series, TimeSeries)
 
-        # the minimum train series length includes the training requirements from `forecasting_models` as
-        # well as the ones from the ensemble model
-        min_train_series_length = self.min_train_series_length
-        if is_single_series:
-            series_too_short = len(series) < min_train_series_length
-        else:
-            series_too_short = any([len(s) < min_train_series_length for s in series])
-
-        if series_too_short:
-            raise_log(
-                ValueError(
-                    f"{'All time series in ' if not is_single_series else ''}`series` must have "
-                    f"a minimum length of `{min_train_series_length}` to fit the model."
-                ),
-                logger,
-            )
-
+        # determine the actual number of training points to use
         if self.train_n_points == -1:
-            # determine the actual number of training points to use
-            # TODO: delete this block =========>
-            if is_single_series:
-                train_n_points = [len(series)]
-            else:
-                # maximize each series usage
-                train_n_points = [len(ts) for ts in series]
-
-            # shift by the forecasting models' largest input length
-            all_shifts = []
-            # when it's not clearly defined, extreme_lags returns
-            # `min_train_series_length` for the LocalForecastingModels
-            for model in self.forecasting_models:
-                min_target_lag, _, _, _, _, _, _ = model.extreme_lags
-                if min_target_lag is not None:
-                    all_shifts.append(-min_target_lag)
-
-            input_shift_ = max(all_shifts)
-            input_shift = self._target_window_lengths[0]
-            assert input_shift == input_shift_
-            idx_series_too_short = []
-            tmp_train_n_points = []
-            for idx, ts_length in enumerate(train_n_points):
-                ajusted_length = ts_length - input_shift
-                if ajusted_length < 0:
-                    idx_series_too_short.append(idx)
-                else:
-                    tmp_train_n_points.append(ajusted_length)
-
-            raise_if(
-                len(idx_series_too_short) > 0,
-                f"TimeSeries at indexes {idx_series_too_short} of `series` are too short to train the regression "
-                f"model due to the number of values necessary to produce one prediction : {input_shift}.",
-                logger,
-            )
-
-            if is_single_series:
-                self.train_n_points = tmp_train_n_points[0]
-            else:
-                self.train_n_points = tmp_train_n_points
-
-            # TODO: delete this block <=========
-            # determine the actual number of training points to use
             input_shift = self._target_window_lengths[0]
             if is_single_series:
                 self.train_n_points = len(series) - input_shift
@@ -415,7 +357,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 )
 
         # we can call direct prediction in any case. Even if we overwrite with historical
-        # forecasts later on, it serves as a input validation
+        # forecasts later on, it serves as input validation
         predictions = self._make_multiple_predictions(
             n=self.train_n_points,
             series=forecast_training,

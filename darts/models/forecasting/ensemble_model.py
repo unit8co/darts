@@ -9,6 +9,7 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import BinaryIO, Optional, Union
 
+from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.utils.likelihood_models.base import LikelihoodType
 
 if sys.version_info >= (3, 11):
@@ -75,7 +76,7 @@ class EnsembleModel(GlobalForecastingModel):
     def __init__(
         self,
         forecasting_models: list[ForecastingModel],
-        ensemble_model: Optional[ForecastingModel],
+        ensemble_model: Optional[SKLearnModel],
         train_num_samples: int,
         train_samples_reduction: Optional[Union[str, float]],
         train_forecasting_models: bool = True,
@@ -282,6 +283,24 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
         self._verify_past_future_covariates(past_covariates, future_covariates)
+
+        # the minimum train series length includes the training requirements from `forecasting_models` as
+        # well as the ones from the ensemble model
+        min_train_series_length = self.min_train_series_length
+        if is_single_series:
+            series_too_short = len(series) < min_train_series_length
+        else:
+            series_too_short = any([len(s) < min_train_series_length for s in series])
+
+        if series_too_short:
+            raise_log(
+                ValueError(
+                    f"{'All time series in ' if not is_single_series else ''}`series` must have "
+                    f"a minimum length of `{min_train_series_length}` to fit the model."
+                ),
+                logger,
+            )
+
         super().fit(series, past_covariates, future_covariates)
         return self
 
