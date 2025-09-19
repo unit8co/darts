@@ -21,7 +21,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Fixed a bug causing crashes when running `TFTModel` on MPS devices (macOS with GPUs). [#2897](https://github.com/unit8co/darts/issues/2897) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed a bug causing crashes when running `TFTModel` on MPS devices (macOS with GPUs). [#2898](https://github.com/unit8co/darts/pull/2898) by [Zhihao Dai](https://github.com/daidahao).
 - Fixed a bug when saving a `GlobalNaiveModel` directly after fitting it (without performing prediction). [#2895](https://github.com/unit8co/darts/pull/2895), by [Alain Gysi](https://github.com/Kurokabe)
 
 **Dependencies**
