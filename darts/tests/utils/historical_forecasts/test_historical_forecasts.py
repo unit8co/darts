@@ -32,7 +32,13 @@ from darts.models import (
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import (
+    CB_AVAILABLE,
+    LGBM_AVAILABLE,
+    PROPHET_AVAILABLE,
+    TORCH_AVAILABLE,
+    tfm_kwargs,
+)
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import (
@@ -40,7 +46,6 @@ from darts.utils.likelihood_models.base import (
     quantile_names,
 )
 from darts.utils.ts_utils import SeriesType, get_series_seq_type
-from darts.utils.utils import NotImportedModule
 
 if TORCH_AVAILABLE:
     import torch
@@ -81,14 +86,14 @@ models_reg_no_cov_cls_kwargs = [
     (LinearRegressionModel, {"lags": [-5]}, {}, (5, 1)),
     (LinearRegressionModel, {"lags": [-5], "output_chunk_shift": 1}, {}, (5, 2)),
 ]
-if not isinstance(CatBoostModel, NotImportedModule):
+if CB_AVAILABLE:
     models_reg_no_cov_cls_kwargs.append((
         CatBoostModel,
         {"lags": 6},
         {"iterations": 1},
         (6, 1),
     ))
-if not isinstance(LightGBMModel, NotImportedModule):
+if LGBM_AVAILABLE:
     models_reg_no_cov_cls_kwargs.append((
         LightGBMModel,
         {"lags": 4},
@@ -331,8 +336,6 @@ if TORCH_AVAILABLE:
     ]
 else:
     models_torch_cls_kwargs = []
-
-PROPHET_AVAILABLE = not isinstance(Prophet, NotImportedModule)
 
 
 class TestHistoricalforecast:
