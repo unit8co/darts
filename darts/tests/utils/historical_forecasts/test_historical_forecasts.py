@@ -555,7 +555,7 @@ class TestHistoricalforecast:
 
     def test_hfc_too_short_input_for_training_with_multiple_samples(self):
         model = LinearRegressionModel(lags=3)
-        chunk_lengths = model._train_target_sample_lengths
+        chunk_lengths = model._target_window_lengths
         min_samples = model.min_train_samples
         assert min_samples == 2
         y = tg.constant_timeseries(
@@ -579,7 +579,7 @@ class TestHistoricalforecast:
         model.fit(y)
 
         # can generate exactly one forecast with minimum input length
-        min_input_length = model._train_target_sample_lengths[0]
+        min_input_length = model._target_window_lengths[0]
         out = model.historical_forecasts(
             series=y[:min_input_length], retrain=False, overlap_end=True
         )
@@ -749,7 +749,7 @@ class TestHistoricalforecast:
         # set val length to be the minimum required validation length (one output window since hfc will take
         # input window from training set)
         val_length = bounds[1]
-        assert val_length == model._train_target_sample_lengths[1]
+        assert val_length == model._target_window_lengths[1]
 
         if model.output_chunk_shift > 0:
             with pytest.raises(ValueError) as err:
@@ -3024,7 +3024,7 @@ class TestHistoricalforecast:
 
         # minimum train and validation lengths
         train_length = model.min_train_series_length if use_train_length else None
-        val_length = model._train_target_sample_lengths[1] if use_val_length else 0
+        val_length = model._target_window_lengths[1] if use_val_length else 0
 
         # local models do not support historical forecast with retrain=False
         if isinstance(model, LocalForecastingModel) and not retrain:
@@ -4097,7 +4097,7 @@ class TestHistoricalforecast:
         ocl = model.output_chunk_length or 0
         horizon = ocl + 2 if not ocs else ocl
 
-        min_val_length = model._train_target_sample_lengths[1]
+        min_val_length = model._target_window_lengths[1]
         assert min_val_length == ocs + ocl
 
         # number of steps to generate two forecasts (with minimum val_length and `overlap_end=False`)
@@ -4331,7 +4331,7 @@ class TestHistoricalforecast:
             add_length = 9 + (ocs if covariates_type == "future" else 0)
 
         # minimum requirements for val_length is one output window
-        min_val_length = model._train_target_sample_lengths[1]
+        min_val_length = model._target_window_lengths[1]
         add_length += min_val_length
 
         series = tg.linear_timeseries(length=model.min_train_series_length + add_length)

@@ -339,7 +339,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         return False
 
     @property
-    def _train_target_sample_lengths(self) -> tuple[int, int]:
+    def _target_window_lengths(self) -> tuple[int, int]:
         return 10, 0
 
     @property

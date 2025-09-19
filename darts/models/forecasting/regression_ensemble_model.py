@@ -358,7 +358,7 @@ class RegressionEnsembleModel(EnsembleModel):
                     all_shifts.append(-min_target_lag)
 
             input_shift_ = max(all_shifts)
-            input_shift = self._train_target_sample_lengths[0]
+            input_shift = self._target_window_lengths[0]
             assert input_shift == input_shift_
             idx_series_too_short = []
             tmp_train_n_points = []
@@ -383,7 +383,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
             # TODO: delete this block <=========
             # determine the actual number of training points to use
-            input_shift = self._train_target_sample_lengths[0]
+            input_shift = self._target_window_lengths[0]
             if is_single_series:
                 self.train_n_points = len(series) - input_shift
             else:

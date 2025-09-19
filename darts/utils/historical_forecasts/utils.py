@@ -409,13 +409,13 @@ def _historical_forecasts_general_checks(
                 ValueError("Cannot use `val_length` with `retrain=False`."),
                 logger,
             )
-        elif n.val_length < model._train_target_sample_lengths[1]:
+        elif n.val_length < model._target_window_lengths[1]:
             # val length must cover at least one full prediction output (e.g. output window)
             # the first input window is taken from the end of training series to use all available data
             raise_log(
                 ValueError(
                     f"`val_length` is too small for the validation requirements of this model. "
-                    f"Must be `>={model._train_target_sample_lengths[1]}`."
+                    f"Must be `>={model._target_window_lengths[1]}`."
                 )
             )
 

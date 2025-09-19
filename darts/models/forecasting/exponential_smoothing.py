@@ -171,7 +171,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         return True
 
     @property
-    def _train_target_sample_lengths(self) -> tuple[int, int]:
+    def _target_window_lengths(self) -> tuple[int, int]:
         if self.seasonal_periods is not None and self.seasonal_periods > 1:
             return 2 * self.seasonal_periods, 0
         return 3, 0

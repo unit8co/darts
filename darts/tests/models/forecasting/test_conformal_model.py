@@ -241,7 +241,7 @@ class TestConformalModel:
         assert model.extreme_lags == model.model.extreme_lags
         assert model.min_train_samples == cal_length
         assert model.min_train_series_length == sum(
-            model.model._train_target_sample_lengths
+            model.model._target_window_lengths
         ) + (cal_length - 1)
 
         unsupported_properties = ["_model_encoder_settings"]

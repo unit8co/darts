@@ -9,7 +9,6 @@ from abc import abstractmethod
 from collections.abc import Sequence
 from typing import BinaryIO, Optional, Union
 
-# from darts.models import SKLearnModel
 from darts.utils.likelihood_models.base import LikelihoodType
 
 if sys.version_info >= (3, 11):
@@ -568,11 +567,11 @@ class EnsembleModel(GlobalForecastingModel):
         return base_train_samples
 
     @property
-    def _train_target_sample_lengths(self) -> tuple[int, int]:
+    def _target_window_lengths(self) -> tuple[int, int]:
         # for ensemble, it is the max of each of the sub-models' target sample lengths
         lengths_max = (0, 0)
         for model in self.forecasting_models:
-            input_length, output_length = model._train_target_sample_lengths
+            input_length, output_length = model._target_window_lengths
             if input_length > lengths_max[0]:
                 lengths_max = (input_length, lengths_max[1])
             if output_length > lengths_max[1]:

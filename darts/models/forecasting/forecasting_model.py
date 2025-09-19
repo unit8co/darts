@@ -470,7 +470,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         The minimum required length for the training series.
         """
-        return sum(self._train_target_sample_lengths) + (self.min_train_samples - 1)
+        return sum(self._target_window_lengths) + (self.min_train_samples - 1)
 
     @property
     @abstractmethod
@@ -481,9 +481,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     @abstractmethod
-    def _train_target_sample_lengths(self) -> tuple[int, int]:
+    def _target_window_lengths(self) -> tuple[int, int]:
         """
-        The minimum input and output lengths for the training target series to create one training sample.
+        The input and output target series window lengths consumed (input + output for training, input for prediction)
+        or generated (output for prediction) by the model.
         """
 
     @property
@@ -1092,7 +1093,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     # get current validation input from transformed series;
                     if val_length_:
                         # include one model input window to allow direct evaluation after the training set
-                        input_length = model._train_target_sample_lengths[0]
+                        input_length = model._target_window_lengths[0]
                         val_series_ = pred_series_[-(val_length_ + input_length) :]
                     else:
                         val_series_ = None
@@ -2892,7 +2893,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
         return 1
 
     @property
-    def _train_target_sample_lengths(self) -> tuple[int, int]:
+    def _target_window_lengths(self) -> tuple[int, int]:
         # local models do not work with samples, so the length of the training sample is not tied to lags
         return 3, self.output_chunk_length or 0
 

@@ -153,24 +153,24 @@ class TestEnsembleModels:
         individual models."""
         # model 1 has largest input and output windows
         model1 = NaiveSeasonal(K=5)
-        lenghts1 = model1._train_target_sample_lengths
+        lenghts1 = model1._target_window_lengths
         ensemble = NaiveEnsembleModel([model1])
-        assert ensemble._train_target_sample_lengths == lenghts1
+        assert ensemble._target_window_lengths == lenghts1
 
         # model 2 has largest input and output windows
         model2 = LinearRegressionModel(lags=10, output_chunk_length=1)
-        lenghts2 = model2._train_target_sample_lengths
+        lenghts2 = model2._target_window_lengths
         ensemble = NaiveEnsembleModel([model1, model2])
-        assert ensemble._train_target_sample_lengths == lenghts2
+        assert ensemble._target_window_lengths == lenghts2
 
         ensemble = NaiveEnsembleModel([model2, model1])
-        assert ensemble._train_target_sample_lengths == lenghts2
+        assert ensemble._target_window_lengths == lenghts2
 
         # model 3 has largest output window
         model3 = LinearRegressionModel(lags=1, output_chunk_length=10)
-        lenghts3 = model3._train_target_sample_lengths
+        lenghts3 = model3._target_window_lengths
         ensemble = NaiveEnsembleModel([model2, model1, model3])
-        assert ensemble._train_target_sample_lengths == (lenghts2[0], lenghts3[1])
+        assert ensemble._target_window_lengths == (lenghts2[0], lenghts3[1])
 
     def test_min_train_series_lengths(self):
         """min_train_series_length of the ensemble should be

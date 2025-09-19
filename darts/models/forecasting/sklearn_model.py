@@ -612,7 +612,7 @@ class SKLearnModel(GlobalForecastingModel):
         return True
 
     @property
-    def _train_target_sample_lengths(self) -> tuple[int, int]:
+    def _target_window_lengths(self) -> tuple[int, int]:
         input_chunk_length = -self.lags["target"][0] if "target" in self.lags else 0
         return input_chunk_length, self.output_chunk_length + self.output_chunk_shift
 

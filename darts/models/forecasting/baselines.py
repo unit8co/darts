@@ -109,7 +109,7 @@ class NaiveSeasonal(LocalForecastingModel):
         return True
 
     @property
-    def _train_target_sample_lengths(self):
+    def _target_window_lengths(self):
         return max(self.K, 3), 0
 
     def fit(self, series: TimeSeries):
@@ -229,7 +229,7 @@ class NaiveMovingAverage(LocalForecastingModel):
         return True
 
     @property
-    def _train_target_sample_lengths(self):
+    def _target_window_lengths(self):
         return self.input_chunk_length, 0
 
     def __str__(self):

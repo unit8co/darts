@@ -191,7 +191,7 @@ class Theta(LocalForecastingModel):
         return False
 
     @property
-    def _train_target_sample_lengths(self) -> tuple[int, int]:
+    def _target_window_lengths(self) -> tuple[int, int]:
         if (
             self.season_mode != SeasonalityMode.NONE
             and self.seasonality_period
@@ -513,7 +513,7 @@ class FourTheta(LocalForecastingModel):
         return False
 
     @property
-    def _train_target_sample_lengths(self) -> tuple[int, int]:
+    def _target_window_lengths(self) -> tuple[int, int]:
         if (
             self.season_mode != SeasonalityMode.NONE
             and self.seasonality_period

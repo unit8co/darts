@@ -1855,7 +1855,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return 0
 
     @property
-    def _train_target_sample_lengths(self) -> tuple[int, int]:
+    def _target_window_lengths(self) -> tuple[int, int]:
         return (
             self.input_chunk_length,
             self.output_chunk_length + self.output_chunk_shift,

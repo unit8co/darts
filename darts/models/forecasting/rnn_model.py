@@ -603,7 +603,6 @@ class RNNModel(DualCovariatesTorchModel):
 
     @property
     def min_train_samples(self) -> int:
-        # TODO: maybe it is `super().min_train_samples -1 + self.training_length - self.input_chunk_length`
         return (
             super().min_train_samples + self.training_length - self.input_chunk_length
         )
