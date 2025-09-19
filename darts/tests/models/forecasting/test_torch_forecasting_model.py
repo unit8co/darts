@@ -10,6 +10,7 @@ if not TORCH_AVAILABLE:
 
 import copy
 import itertools
+import logging
 import math
 import os
 from typing import Any, Optional
@@ -2616,6 +2617,55 @@ class TestTorchForecastingModel:
         preds_last = model_last.predict(n=1)
         preds_best = model_best.predict(n=1)
         assert preds_last != preds_best
+
+    @pytest.mark.parametrize(
+        "save_checkpoints, val_series_provided", [(False, True), (True, False)]
+    )
+    def test_load_best_ignored(
+        self, tmpdir_fn, caplog, save_checkpoints, val_series_provided
+    ):
+        """Tests that `load_best` is ignored with a warning when conditions are not met."""
+        series_train = tg.sine_timeseries(length=50).astype(np.float32)
+        series_val = (
+            tg.sine_timeseries(length=25).astype(np.float32)
+            if val_series_provided
+            else None
+        )
+        n_epochs = 3
+
+        model_kwargs = {
+            "input_chunk_length": 12,
+            "model": "RNN",
+            "hidden_dim": 10,
+            "n_rnn_layers": 1,
+            "n_epochs": n_epochs,
+            "work_dir": tmpdir_fn,
+            "random_state": 42,
+            "save_checkpoints": save_checkpoints,
+            "model_name": f"test_load_best_ignored_{save_checkpoints}_{val_series_provided}",
+            **tfm_kwargs,
+        }
+
+        model = RNNModel(**model_kwargs)
+
+        with caplog.at_level(logging.WARNING):
+            model.fit(
+                series_train,
+                val_series=series_val,
+                load_best=True,
+            )
+
+        # Check that the specific warning is logged
+        assert (
+            "Loading the best model will be skipped (`load_best` is ignored)"
+            in caplog.text
+        )
+
+        # Model should have trained for all epochs since load_best was ignored.
+        assert model.epochs_trained == n_epochs
+
+        # also check that prediction works
+        model.predict(n=1)
 
     def helper_predict_raise_on_missing_input(
         self, model, fn: str, series, pc, fc, **kwargs
