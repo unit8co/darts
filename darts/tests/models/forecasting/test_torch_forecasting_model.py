@@ -18,8 +18,9 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
+import pytorch_lightning as pl
 import torch
-from pytorch_lightning.callbacks import Callback
+from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from pytorch_lightning.loggers.logger import DummyLogger
 from pytorch_lightning.tuner.lr_finder import _LRFinder
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
@@ -2515,7 +2516,8 @@ class TestTorchForecastingModel:
         assert pred3.time_index.equals(pred1.time_index)
         assert pred3.static_covariates.equals(series[0].static_covariates)
 
-    def test_load_best(self, tmpdir_fn):
+    @pytest.mark.parametrize("use_custom_trainer", [False, True])
+    def test_load_best(self, tmpdir_fn, use_custom_trainer):
         """Tests the load_best parameter in fit() and its effect on epochs_trained."""
         # Create series where validation loss is likely to decrease and then increase (overfitting)
         # This makes it likely that the best model is not the last one.
@@ -2530,17 +2532,69 @@ class TestTorchForecastingModel:
             "n_rnn_layers": 10,
             "n_epochs": n_epochs,
             "work_dir": tmpdir_fn,
-            "save_checkpoints": True,
             "random_state": 42,
             **tfm_kwargs,
         }
 
-        model_last = RNNModel(model_name="last_model", **common_kwargs)
-        model_last.fit(series_train, val_series=series_val, load_best=False)
+        trainer_last, trainer_best = None, None
+        if not use_custom_trainer:
+            # Case A: Darts' automatic checkpointing
+            kwargs_last = dict(
+                common_kwargs, model_name="last_model", save_checkpoints=True
+            )
+            kwargs_best = dict(
+                common_kwargs, model_name="best_model", save_checkpoints=True
+            )
+        else:
+            # Case B: User provides a custom `trainer` with a ModelCheckpoint callback
+            kwargs_last = dict(
+                common_kwargs, model_name="last_model", save_checkpoints=False
+            )
+            kwargs_best = dict(
+                common_kwargs, model_name="best_model", save_checkpoints=False
+            )
+
+            # for last model
+            checkpoints_folder_last = os.path.join(tmpdir_fn, "last_checkpoints")
+            checkpoint_callback_last = ModelCheckpoint(
+                dirpath=checkpoints_folder_last,
+                save_last=True,
+                monitor="val_loss",
+                filename="best-{epoch}-{val_loss:.2f}",
+            )
+            trainer_last = pl.Trainer(
+                max_epochs=n_epochs,
+                callbacks=[checkpoint_callback_last],
+                **tfm_kwargs["pl_trainer_kwargs"],
+            )
+
+            # for best model
+            checkpoints_folder_best = os.path.join(tmpdir_fn, "best_checkpoints")
+            checkpoint_callback_best = ModelCheckpoint(
+                dirpath=checkpoints_folder_best,
+                save_last=True,
+                monitor="val_loss",
+                filename="best-{epoch}-{val_loss:.2f}",
+            )
+            trainer_best = pl.Trainer(
+                max_epochs=n_epochs,
+                callbacks=[checkpoint_callback_best],
+                **tfm_kwargs["pl_trainer_kwargs"],
+            )
+
+        model_last = RNNModel(**kwargs_last)
+        model_last.fit(
+            series_train,
+            val_series=series_val,
+            load_best=False,
+            trainer=trainer_last,
+        )
         last_model_epochs_trained = model_last.epochs_trained
 
-        model_best = RNNModel(model_name="best_model", **common_kwargs)
-        model_best.fit(series_train, val_series=series_val, load_best=True)
+        model_best = RNNModel(**kwargs_best)
+        model_best.fit(
+            series_train, val_series=series_val, load_best=True, trainer=trainer_best
+        )
         best_model_epochs_trained = model_best.epochs_trained
 
         # The model trained to the end should have n_epochs trained
@@ -2548,9 +2602,12 @@ class TestTorchForecastingModel:
         # The model loading the best checkpoint should have trained fewer epochs (or equal if best is last)
         # With our crafted data, it's highly likely to be less.
         assert best_model_epochs_trained < last_model_epochs_trained
+
         # We can also check that the trainer object confirms the best model was loaded
-        best_model_path = model_best.trainer.checkpoint_callback.best_model_path
+        trainer_to_check = trainer_best if use_custom_trainer else model_best.trainer
+        best_model_path = trainer_to_check.checkpoint_callback.best_model_path
         assert best_model_path and os.path.exists(best_model_path)
+
         # predictions must work and be different
         preds_last = model_last.predict(n=1)
         preds_best = model_best.predict(n=1)
