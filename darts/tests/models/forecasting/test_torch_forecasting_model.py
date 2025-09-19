@@ -2521,8 +2521,12 @@ class TestTorchForecastingModel:
         """Tests the load_best parameter in fit() and its effect on epochs_trained."""
         # Create series where validation loss is likely to decrease and then increase (overfitting)
         # This makes it likely that the best model is not the last one.
-        series_train = tg.sine_timeseries(length=50, value_y_offset=0)
-        series_val = tg.sine_timeseries(length=25, value_y_offset=0.1)
+        series_train = tg.sine_timeseries(length=50, value_y_offset=0).astype(
+            np.float32
+        )
+        series_val = tg.sine_timeseries(length=25, value_y_offset=0.1).astype(
+            np.float32
+        )
         n_epochs = 5
 
         common_kwargs = {
