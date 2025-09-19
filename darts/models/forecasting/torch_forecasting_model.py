@@ -1124,9 +1124,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         load_best
-            If set to `True`, the model will load the best checkpoint found during training according to the validation
-            loss. This requires `save_checkpoints` to be `True` in the model constructor and `val_dataset` to be
-            provided. Default: ``False``.
+            Whether the model should automatically load the best checkpoint found during training according to the
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a 
+            validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
 
         Returns
         -------
