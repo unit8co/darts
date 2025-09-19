@@ -904,9 +904,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             stride will be applied to both the training and evaluation set (if supplied). This should be used with
             caution as it might introduce bias in the forecasts.
         load_best
-            If set to `True`, the model will load the best checkpoint found during training according to the validation
-            loss. This requires `save_checkpoints` to be `True` in the model constructor and a validation set to be
-            provided. Default: ``False``.
+            Whether the model should automatically load the best checkpoint found during training according to the
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a 
+            validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
         Returns
         -------
         self
