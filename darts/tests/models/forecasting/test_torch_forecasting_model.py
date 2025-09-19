@@ -1127,6 +1127,56 @@ class TestTorchForecastingModel:
         model1.fit(self.series, epochs=15)
         assert 15 == model1.epochs_trained
 
+    @pytest.mark.parametrize(
+        "dtype,auto_precision",
+        [
+            (np.float16, "bf16-true"),
+            (np.float32, "32-true"),
+            (np.float64, "64-true"),
+        ],
+    )
+    def test_auto_precision_casting(self, dtype, auto_precision):
+        model = RNNModel(
+            12,
+            "RNN",
+            10,
+            10,
+            n_epochs=20,
+            **tfm_kwargs,
+        )
+        model.fit(self.series.astype(dtype), epochs=1)
+        assert 1 == model.epochs_trained
+        assert model.trainer.precision == auto_precision
+
+        preds = model.predict(n=10)
+        if dtype != np.float16:
+            # predictions should have same dtype as input except for float16
+            assert preds.dtype == dtype
+        else:
+            # predictions are float32 when input is float16
+            assert preds.dtype == np.float32
+        # predictions should not contain NaNs or infs
+        assert np.all(np.isfinite(preds.values()))
+
+    def test_mixed_precision_training(self):
+        # test model training with mixed precision (16-mixed and bf16-mixed)
+        for precision in ["16-mixed", "bf16-mixed"]:
+            kwargs = copy.deepcopy(tfm_kwargs)
+            kwargs["pl_trainer_kwargs"]["precision"] = precision
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=20,
+                **kwargs,
+            )
+            model.fit(self.series.astype(np.float32), epochs=1)
+            assert 1 == model.epochs_trained
+
+            preds = model.predict(n=10)
+            assert preds.dtype == np.float32
+
     def test_load_weights_from_checkpoint(self, tmpdir_fn):
         ts_training, ts_test = self.series.split_before(90)
         original_model_name = "original"
@@ -2501,6 +2551,10 @@ class TestTorchForecastingModel:
         # We can also check that the trainer object confirms the best model was loaded
         best_model_path = model_best.trainer.checkpoint_callback.best_model_path
         assert best_model_path and os.path.exists(best_model_path)
+        # predictions must work and be different
+        preds_last = model_last.predict(n=1)
+        preds_best = model_best.predict(n=1)
+        assert preds_last != preds_best
 
     def helper_predict_raise_on_missing_input(
         self, model, fn: str, series, pc, fc, **kwargs
