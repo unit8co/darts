@@ -575,15 +575,17 @@ class EnsembleModel(GlobalForecastingModel):
     def min_train_samples(self) -> int:
         train_n_points = abs(self.train_n_points)
         if self.train_forecasting_models:
-            # for ensemble, it is the max of the sub-models' min samples + train_n_points
-            base_train_samples = (
+            # if base models are re-trained, it is the max of the sub-models' min samples + train_n_points
+            min_train_samples = (
                 max(model.min_train_samples for model in self.forecasting_models)
                 + train_n_points
             )
         else:
+            # if base models not re-trained, we might already have some training points within the base model's
+            # first output chunk; if we need more, we add them as additional required samples
             base_ocl = max(self.extreme_lags[1] + 1, 0)
-            base_train_samples = max(train_n_points - base_ocl, 0) + 1
-        return base_train_samples
+            min_train_samples = max(train_n_points - base_ocl, 0) + 1
+        return min_train_samples
 
     @property
     def _target_window_lengths(self) -> tuple[int, int]:
@@ -619,6 +621,7 @@ class EnsembleModel(GlobalForecastingModel):
                     max_lag = aggregator(max_lag, curr_lag)
             return max_lag
 
+        # extreme lags is given by the min or max of the extreme lags of the sub-models
         lag_aggregators = (min, max, min, max, min, max, max)
         extreme_lags_ = [
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
