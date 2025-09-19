@@ -623,10 +623,9 @@ class EnsembleModel(GlobalForecastingModel):
 
         # extreme lags is given by the min or max of the extreme lags of the sub-models
         lag_aggregators = (min, max, min, max, min, max, max)
-        extreme_lags_ = [
+        return tuple(
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
-        ]
-        return tuple(extreme_lags_)
+        )
 
     @property
     def output_chunk_length(self) -> Optional[int]:
