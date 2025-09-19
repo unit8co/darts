@@ -2551,6 +2551,10 @@ class TestTorchForecastingModel:
         # We can also check that the trainer object confirms the best model was loaded
         best_model_path = model_best.trainer.checkpoint_callback.best_model_path
         assert best_model_path and os.path.exists(best_model_path)
+        # predictions must work and be different
+        preds_last = model_last.predict(n=1)
+        preds_best = model_best.predict(n=1)
+        assert preds_last != preds_best
 
     def helper_predict_raise_on_missing_input(
         self, model, fn: str, series, pc, fc, **kwargs
