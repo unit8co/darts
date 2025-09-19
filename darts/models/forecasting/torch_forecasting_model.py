@@ -1335,6 +1335,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
 
+        if load_best:
+            ckpt_callback: Optional[pl.callbacks.ModelCheckpoint] = (
+                trainer.checkpoint_callback
+            )
+            ckpt_activated = ckpt_callback is not None and hasattr(
+                ckpt_callback, "best_model_path"
+            )
+            if not ckpt_activated or val_loader is None:
+                logger.warning(
+                    "Loading the best model will be skipped (`load_best` is ignored), as it requires "
+                    "active checkpointing and a validation set to be provided to the current fit method."
+                    "If not using a custom `trainer`, make sure to set `save_checkpoints=True` at model creation. "
+                    "Otherwise, make sure the custom `trainer` uses a pytorch-lightning `ModelCheckpoint` callback."
+                )
+                load_best = False
+        else:
+            ckpt_callback = None
+
         if self._requires_training:
             trainer.fit(
                 model,
@@ -1342,33 +1360,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 val_dataloaders=val_loader,
                 ckpt_path=ckpt_path,
             )
+            if load_best:
+                best_model_path = ckpt_callback.best_model_path
+                logger.info(
+                    f"Loading best model from checkpoint: '{os.path.basename(best_model_path)}'"
+                )
+                model = self._load_from_checkpoint(best_model_path)
         else:
             trainer.strategy.connect(model)
         self.model = model
-
-        if load_best:
-            if not self.save_checkpoints:
-                logger.warning(
-                    "`load_best` is set to `True`, but `save_checkpoints` is `False`. "
-                    "Cannot load the best model."
-                )
-            elif val_loader is None:
-                logger.warning(
-                    "`load_best` is set to `True`, but no validation set was provided. "
-                    "Cannot load the best model."
-                )
-            else:
-                best_model_path = trainer.checkpoint_callback.best_model_path
-                if best_model_path and os.path.exists(best_model_path):
-                    logger.info(
-                        f"Loading best model from checkpoint: '{os.path.basename(best_model_path)}'"
-                    )
-                    self.model = self._load_from_checkpoint(best_model_path)
-                else:
-                    logger.warning(
-                        "Could not load best model. No best model path found after training."
-                    )
-
         self.trainer = trainer
 
     @random_method
