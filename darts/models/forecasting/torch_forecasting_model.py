@@ -1048,16 +1048,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             len(train_dataset)
         except ValueError:
             length_ok = False
-        if not length_ok or len(train_dataset) == 0:
-            raise_log(
-                ValueError(
-                    f"The train dataset does not contain a single sample. "
-                    f"This is likely due to the provided training series being too short. "
-                    f"This model expect series of length at least "
-                    f"{self.min_train_series_length}."
-                ),
-                logger,
-            )
+        raise_if(
+            not length_ok or len(train_dataset) == 0,  # mind the order
+            "The train dataset does not contain even one training sample. "
+            + "This is likely due to the provided training series being too short. "
+            + f"This model expect series of length at least {self.min_train_series_length}.",
+        )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
         series_input = (series, past_covariates, future_covariates)

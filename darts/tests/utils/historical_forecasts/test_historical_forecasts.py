@@ -2869,11 +2869,9 @@ class TestHistoricalforecast:
         ts_copy = deepcopy(ts)
         hf_scaler_copy = deepcopy(hf_scaler)
 
+        end_idx_ = end_idx
         if model.supports_transferable_series_prediction:
-            end_idx_ = end_idx
             end_idx_ -= val_length
-        else:
-            end_idx_ = end_idx
         start_index_ = None if train_length is None else end_idx_ - train_length
 
         for ts_name in hf_scaler_copy:

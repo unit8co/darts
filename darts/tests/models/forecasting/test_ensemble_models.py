@@ -148,8 +148,8 @@ class TestEnsembleModels:
         ensemble = NaiveEnsembleModel([model2, model1])
         assert ensemble.min_train_samples == model2.min_train_samples
 
-    def test_train_target_lengths(self):
-        """Each element in train_target_lengths (input and output windows) of the ensemble should be the max of the
+    def test_train_window_lengths(self):
+        """Each element in target_window_lengths (input and output windows) of the ensemble should be the max of the
         individual models."""
         # model 1 has largest input and output windows
         model1 = NaiveSeasonal(K=5)
