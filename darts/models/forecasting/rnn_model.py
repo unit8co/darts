@@ -602,29 +602,7 @@ class RNNModel(DualCovariatesTorchModel):
         )
 
     @property
-    def min_train_series_length(self) -> int:
-        return self.training_length + 1
-
-    @property
-    def extreme_lags(
-        self,
-    ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        int,
-        Optional[int],
-    ]:
+    def min_train_samples(self) -> int:
         return (
-            -self.input_chunk_length,
-            self.output_chunk_length - 1,
-            None,
-            None,
-            -self.input_chunk_length,
-            self.output_chunk_length - 1,
-            self.output_chunk_shift,
-            self.training_length - self.input_chunk_length,
+            super().min_train_samples + self.training_length - self.input_chunk_length
         )
