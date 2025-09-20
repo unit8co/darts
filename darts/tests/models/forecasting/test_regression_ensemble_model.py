@@ -580,8 +580,12 @@ class TestRegressionEnsembleModels:
             [
                 ("local", "local"),
                 ("local", "sklearn"),
+            ]
+            + [
                 ("local", "torch"),
-            ],
+            ]
+            if TORCH_AVAILABLE
+            else [],
             [False, True],
         ),
     )
@@ -632,9 +636,13 @@ class TestRegressionEnsembleModels:
             ],
             [
                 ("sklearn", "sklearn"),
+            ]
+            + [
                 ("sklearn", "torch"),
                 ("torch", "torch"),
-            ],
+            ]
+            if TORCH_AVAILABLE
+            else [],
             [True, False],
             [False, True],
         ),
@@ -704,7 +712,10 @@ class TestRegressionEnsembleModels:
 
         (n_points, expected_min_length), train_with_hfc, multi_series = config
         m1 = LinearRegressionModel(lags=4, output_chunk_length=1)
-        m2 = BlockRNNModel(3, 4, **tfm_kwargs, n_epochs=1)
+        if TORCH_AVAILABLE:
+            m2 = BlockRNNModel(3, 4, **tfm_kwargs, n_epochs=1)
+        else:
+            m2 = LinearRegressionModel(lags=3, output_chunk_length=4)
         for model in [m1, m2]:
             model.fit(self.sine_series[: model.min_train_series_length])
 
