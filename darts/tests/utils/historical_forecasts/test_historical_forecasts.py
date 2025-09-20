@@ -4069,6 +4069,8 @@ class TestHistoricalforecast:
                         **xgb_test_params,
                     },
                 ),
+            ]
+            + [
                 # supports val set, global model (multi series)
                 (
                     NLinearModel,
@@ -4079,7 +4081,9 @@ class TestHistoricalforecast:
                         **tfm_kwargs,
                     },
                 ),
-            ],
+            ]
+            if TORCH_AVAILABLE
+            else [],
             [False, True],  # use covariates
         ),
     )
