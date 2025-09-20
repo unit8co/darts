@@ -1847,13 +1847,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return ts_forecasts
 
     @property
-    def first_prediction_index(self) -> int:
-        """
-        Returns the index of the first predicted within the output of self.model.
-        """
-        return 0
-
-    @property
     def _target_window_lengths(self) -> tuple[int, int]:
         return (
             self.input_chunk_length,

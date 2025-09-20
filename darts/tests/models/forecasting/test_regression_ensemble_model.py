@@ -1,3 +1,4 @@
+from itertools import product
 from typing import Union
 
 import numpy as np
@@ -5,7 +6,6 @@ import pandas as pd
 import pytest
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
-from tqdm.contrib.itertools import product
 
 from darts import TimeSeries
 from darts.metrics import mape, rmse
@@ -582,6 +582,7 @@ class TestRegressionEnsembleModels:
                 ("local", "sklearn"),
                 ("local", "torch"),
             ],
+            [False, True],
         ),
     )
     def test_with_fcm_retrain_local_and_global(self, config):
@@ -589,7 +590,7 @@ class TestRegressionEnsembleModels:
         trained. In this case, the minimum training length depends on the forecasting models' min_train_samples
         since they are retrained.
         """
-        (n_points, expected_min_length), (m1_type, m2_type) = config
+        (n_points, expected_min_length), (m1_type, m2_type), multi_series = config
 
         m1 = NaiveSeasonal(K=4)
         # icl = K
@@ -612,6 +613,7 @@ class TestRegressionEnsembleModels:
             train_fcm=True,
             train_with_hfc=False,
             expected_min_length=expected_min_length,
+            multi_series=multi_series,
         )
 
     @pytest.mark.parametrize(
@@ -634,6 +636,7 @@ class TestRegressionEnsembleModels:
                 ("torch", "torch"),
             ],
             [True, False],
+            [False, True],
         ),
     )
     def test_with_fcm_retrain_global_only(self, config):
@@ -641,7 +644,12 @@ class TestRegressionEnsembleModels:
         trained. In this case, the minimum training length depends on the forecasting models' min_train_samples
         since they are retrained.
         """
-        (n_points, expected_min_length), (m1_type, m2_type), train_with_hfc = config
+        (
+            (n_points, expected_min_length),
+            (m1_type, m2_type),
+            train_with_hfc,
+            multi_series,
+        ) = config
 
         if m1_type == "sklearn":
             m1 = LinearRegressionModel(lags=4, output_chunk_length=1)
@@ -663,6 +671,7 @@ class TestRegressionEnsembleModels:
             train_fcm=True,
             train_with_hfc=train_with_hfc,
             expected_min_length=expected_min_length,
+            multi_series=multi_series,
         )
 
     @pytest.mark.parametrize(
@@ -684,6 +693,7 @@ class TestRegressionEnsembleModels:
                 ),  # the fifth point is outside the first output chunk of m2 (4) -> min length=icl + ocl + 1
             ],
             [True, False],
+            [False, True],
         ),
     )
     def test_without_fcm_retrain_global_only(self, config):
@@ -692,7 +702,7 @@ class TestRegressionEnsembleModels:
         since they are not retrained.
         """
 
-        (n_points, expected_min_length), train_with_hfc = config
+        (n_points, expected_min_length), train_with_hfc, multi_series = config
         m1 = LinearRegressionModel(lags=4, output_chunk_length=1)
         m2 = BlockRNNModel(3, 4, **tfm_kwargs, n_epochs=1)
         for model in [m1, m2]:
@@ -704,6 +714,7 @@ class TestRegressionEnsembleModels:
             train_fcm=False,
             train_with_hfc=train_with_hfc,
             expected_min_length=expected_min_length,
+            multi_series=multi_series,
         )
 
     def helper_test_min_train_series_requirements(
@@ -713,6 +724,7 @@ class TestRegressionEnsembleModels:
         train_fcm,
         train_with_hfc,
         expected_min_length,
+        multi_series,
     ):
         ensemble = RegressionEnsembleModel(
             forecasting_models=models,
@@ -731,15 +743,23 @@ class TestRegressionEnsembleModels:
 
         # using the minimum length and `overlap_end=True` should return a single forecast
         series = self.sine_series[: ensemble.min_train_series_length]
+        if multi_series:
+            series = [series, series.shift(1)]
         hfc = ensemble.historical_forecasts(
             series=series,
             retrain=True,
             overlap_end=True,
             last_points_only=False,
         )
-        assert len(hfc) == 1
-        assert hfc[0].start_time() == series.end_time() + series.freq
+        if not multi_series:
+            series = [series]
+            hfc = [hfc]
 
+        for series_, hfc_ in zip(series, hfc):
+            assert len(hfc_) == 1
+            assert hfc_[0].start_time() == series_.end_time() + series_.freq
+
+        series = series[0]
         # anything less than min_train_series_length should raise an error
         with pytest.raises(ValueError) as exc:
             _ = ensemble.historical_forecasts(
@@ -748,9 +768,7 @@ class TestRegressionEnsembleModels:
                 overlap_end=True,
                 last_points_only=False,
             )
-        assert str(exc.value).startswith(
-            "Cannot build any input dataset for training the model"
-        )
+        assert str(exc.value).startswith("Cannot build any dataset to train the model")
         with pytest.raises(ValueError) as exc:
             _ = ensemble.fit(series=series[:-1])
         assert str(exc.value).startswith(
@@ -821,9 +839,7 @@ class TestRegressionEnsembleModels:
 
         with pytest.raises(ValueError) as exc:
             model.historical_forecasts(series[:-1], overlap_end=True)
-        assert str(exc.value).startswith(
-            "Cannot build any input dataset for training the model"
-        )
+        assert str(exc.value).startswith("Cannot build any dataset to train the model")
 
         with pytest.raises(ValueError) as exc:
             model.fit(series[:-1])

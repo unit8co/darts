@@ -512,9 +512,7 @@ class TestHistoricalforecast:
                 _ = model.historical_forecasts(
                     series=y, forecast_horizon=horizon, last_points_only=True
                 )
-            assert str(err.value).startswith(
-                "Cannot build any input dataset for training"
-            )
+            assert str(err.value).startswith("Cannot build any dataset to train")
             return
 
         # last_points_only = True: gives a list with a single forecasts per series,
@@ -571,7 +569,7 @@ class TestHistoricalforecast:
             _ = model.historical_forecasts(
                 series=y[:-1], retrain=True, overlap_end=True
             )
-        assert str(err.value).startswith("Cannot build any input dataset for training")
+        assert str(err.value).startswith("Cannot build any dataset to train")
 
     def test_hfc_too_short_input_for_prediction(self):
         model = LinearRegressionModel(lags=3)
@@ -590,9 +588,7 @@ class TestHistoricalforecast:
             _ = model.historical_forecasts(
                 series=y[: min_input_length - 1], retrain=False, overlap_end=True
             )
-        assert str(err.value).startswith(
-            "Cannot build any input dataset for prediction"
-        )
+        assert str(err.value).startswith("Cannot build any dataset for prediction")
 
     @pytest.mark.parametrize(
         "arima_args",

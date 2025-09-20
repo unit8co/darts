@@ -352,6 +352,56 @@ def _historical_forecasts_general_checks(
                     logger=logger,
                 )
 
+    # check retrain value
+    if not (
+        isinstance(n.retrain, bool)
+        or (isinstance(n.retrain, int) and n.retrain >= 0)
+        or (isinstance(n.retrain, Callable))
+    ):
+        raise_log(
+            ValueError(
+                "`retrain` must be either `bool`, positive `int` or a "
+                "`Callable` returning a `bool`."
+            ),
+            logger,
+        )
+    elif isinstance(n.retrain, Callable):
+        retrain_func = n.retrain
+
+        # check that the signature matches the documentation
+        expected_arguments = [
+            "counter",
+            "pred_time",
+            "train_series",
+            "past_covariates",
+            "future_covariates",
+        ]
+        passed_arguments = list(inspect.signature(retrain_func).parameters.keys())
+        if expected_arguments != passed_arguments:
+            raise_log(
+                ValueError(
+                    f"the Callable `retrain` must have a signature/arguments matching "
+                    f"the following positional arguments: `{expected_arguments}`."
+                ),
+                logger,
+            )
+
+        # passing dummy values to check the type of the output
+        result = retrain_func(
+            counter=0,
+            pred_time=get_single_series(series).time_index[-1],
+            train_series=get_single_series(series),
+            past_covariates=get_single_series(n.past_covariates),
+            future_covariates=get_single_series(n.future_covariates),
+        )
+        if not isinstance(result, bool):
+            raise_log(
+                ValueError(
+                    f"Return value of `retrain` must be bool, received {type(result)}"
+                ),
+                logger,
+            )
+
     # model must have been fitted if not retraining
     if not model._fit_called and n.retrain is False:
         raise_log(
@@ -417,56 +467,6 @@ def _historical_forecasts_general_checks(
                     f"`val_length` is too small for the validation requirements of this model. "
                     f"Must be `>={model._target_window_lengths[1]}`."
                 )
-            )
-
-    # check retrain value
-    if not (
-        isinstance(n.retrain, bool)
-        or (isinstance(n.retrain, int) and n.retrain >= 0)
-        or (isinstance(n.retrain, Callable))
-    ):
-        raise_log(
-            ValueError(
-                "`retrain` must be either `bool`, positive `int` or a "
-                "`Callable` returning a `bool`."
-            ),
-            logger,
-        )
-    elif isinstance(n.retrain, Callable):
-        retrain_func = n.retrain
-
-        # check that the signature matches the documentation
-        expected_arguments = [
-            "counter",
-            "pred_time",
-            "train_series",
-            "past_covariates",
-            "future_covariates",
-        ]
-        passed_arguments = list(inspect.signature(retrain_func).parameters.keys())
-        if expected_arguments != passed_arguments:
-            raise_log(
-                ValueError(
-                    f"the Callable `retrain` must have a signature/arguments matching "
-                    f"the following positional arguments: `{expected_arguments}`."
-                ),
-                logger,
-            )
-
-        # passing dummy values to check the type of the output
-        result = retrain_func(
-            counter=0,
-            pred_time=get_single_series(series).time_index[-1],
-            train_series=get_single_series(series),
-            past_covariates=get_single_series(n.past_covariates),
-            future_covariates=get_single_series(n.future_covariates),
-        )
-        if not isinstance(result, bool):
-            raise_log(
-                ValueError(
-                    f"Return value of `retrain` must be bool, received {type(result)}"
-                ),
-                logger,
             )
 
     # check fit and predict kwargs
@@ -738,7 +738,7 @@ def _get_historical_forecasts_setup(
         if not model._fit_called and historical_forecasts_time_index is None:
             raise_log(
                 ValueError(
-                    "Cannot build any input dataset for training the model with the provided "
+                    "Cannot build any dataset to train the model with the provided "
                     f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
                     "training input time index requirements were not met. Please check the time "
                     "index of `series` and `*_covariates`."
@@ -757,7 +757,7 @@ def _get_historical_forecasts_setup(
         if historical_forecasts_time_index is None:
             raise_log(
                 ValueError(
-                    "Cannot build any input dataset for prediction with the provided model, "
+                    "Cannot build any dataset for prediction with the provided model, "
                     f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
                     "prediction input time index requirements were not met. "
                     "Please check the time index of `series` and `*_covariates`."

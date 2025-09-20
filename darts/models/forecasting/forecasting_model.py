@@ -1057,20 +1057,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             logger,
                         )
                     _counter_train += 1
-                elif not _counter and not model._fit_called:
-                    # model must be fit before the first prediction
-                    # `historical_forecasts_time_index` is known to be not None
-                    raise_log(
-                        ValueError(
-                            f"Model has not been fit before the first predict iteration at prediction point "
-                            f"(in time) `{pred_time}`. Either call `fit()` before `historical_forecasts()`, "
-                            f"set `retrain=True`, modify the function to return `True` at least once before "
-                            f"`{pred_time}`, or use a different `start` value. The first 'predictable' "
-                            f"timestamp with re-training inside `historical_forecasts` is: "
-                            f"{historical_forecasts_time_index[0]} (potential `start` value)."
-                        ),
-                        logger,
-                    )
 
                 # apply data transformers; only fit transformers if it is a retraining iteration (`apply_retrain=True`)
                 # when `retrain=False`, transformers were already applied to all the series at the beginning

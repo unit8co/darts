@@ -717,7 +717,7 @@ class TestEnsembleModels:
             with pytest.raises(AssertionError):
                 np.testing.assert_array_almost_equal(pred_w.values(), pred_nw.values())
 
-    @pytest.mark.parametrize("model_cls", [NaiveEnsembleModel, RegressionEnsembleModel])
+    @pytest.mark.parametrize("model_cls", [RegressionEnsembleModel, NaiveEnsembleModel])
     def test_invalid_sample_weight(self, model_cls):
         kwargs = {
             "forecasting_models": [
@@ -728,9 +728,11 @@ class TestEnsembleModels:
         if issubclass(model_cls, RegressionEnsembleModel):
             kwargs["regression_train_n_points"] = 2
 
-        ts = TimeSeries.from_values(np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0]))
         # weights too short
         model = model_cls(**copy.deepcopy(kwargs))
+        ts = TimeSeries.from_values(
+            np.array([float(i) for i in range(model.min_train_series_length)])
+        )
         with pytest.raises(ValueError) as err:
             model.fit(ts, sample_weight=ts[:-1])
         assert (
@@ -914,3 +916,11 @@ class TestEnsembleModels:
                 assert m.past_covariate_series is None
                 assert m.future_covariate_series is None
         assert model.predict(5) == clean_model.predict(5, self.series1 + self.series2)
+
+    def test_multivariate_support(self):
+        assert NaiveEnsembleModel([NaiveSeasonal(1)]).supports_multivariate
+        assert not NaiveEnsembleModel([AutoARIMA()]).supports_multivariate
+        assert not NaiveEnsembleModel([
+            NaiveSeasonal(1),
+            AutoARIMA(),
+        ]).supports_multivariate

@@ -440,12 +440,6 @@ class RegressionEnsembleModel(EnsembleModel):
         return self.ensemble_model.supports_likelihood_parameter_prediction
 
     @property
-    def supports_multivariate(self) -> bool:
-        return (
-            super().supports_multivariate and self.ensemble_model.supports_multivariate
-        )
-
-    @property
     def supports_probabilistic_prediction(self) -> bool:
         """
         A RegressionEnsembleModel is probabilistic if its regression
