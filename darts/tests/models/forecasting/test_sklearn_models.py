@@ -1495,7 +1495,7 @@ class TestSKLearnModels:
         model_1.fit(series=self.sine_univariate1)
         assert not isinstance(model_1.model, MultiOutputRegressor)
 
-        models = [model_1]
+        models_repr = [model_1]
 
         if XGB_AVAILABLE:
             model_2 = XGBModel(
@@ -1507,11 +1507,10 @@ class TestSKLearnModels:
                 **xgb_test_params,
             )
             model_2.fit(series=self.sine_univariate1)
-            models.append(model_2)
+            assert isinstance(model_2.model, MultiOutputRegressor)
+            models_repr.append(model_2)
 
-        assert isinstance(model_2.model, MultiOutputRegressor)
-
-        for model in models:
+        for model in models_repr:
             assert model.__repr__().startswith(model.__class__.__name__)
             assert model.__str__().startswith(model.model.__class__.__name__)
 

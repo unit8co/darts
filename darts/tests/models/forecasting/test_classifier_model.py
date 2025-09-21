@@ -254,21 +254,24 @@ class TestClassifierModel:
             (c1 == c2).all() for c1, c2 in zip(model.class_labels, expected_classes)
         ]).all()
 
-    @pytest.mark.skipif(not XGB_AVAILABLE, reason="XGB required")
     @pytest.mark.parametrize(
         "clf_params",
-        [
-            (SKLearnClassifierModel, {}),
-            (
-                XGBClassifierModel,
-                {
-                    "n_estimators": 1,
-                    "max_depth": 1,
-                    "max_leaves": 1,
-                    "random_state": 42,
-                },
-            ),
-        ],
+        [(SKLearnClassifierModel, {})]
+        + (
+            [
+                (
+                    XGBClassifierModel,
+                    {
+                        "n_estimators": 1,
+                        "max_depth": 1,
+                        "max_leaves": 1,
+                        "random_state": 42,
+                    },
+                ),
+            ]
+            if XGB_AVAILABLE
+            else []
+        ),
     )
     def test_error_on_different_classes_for_same_component(self, clf_params):
         """check that estimators for the same component see the same labels"""
@@ -633,7 +636,6 @@ class TestClassifierModel:
             "The number of components of the target series and the covariates"
         )
 
-    @pytest.mark.skipif(not XGB_AVAILABLE, reason="XGB required")
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_labels_constraints(self, clf_params):
         clf, kwargs = clf_params
@@ -647,7 +649,7 @@ class TestClassifierModel:
             )
 
         # XGBClassifierModel require labels to be integers between 0 and n_classes
-        if issubclass(clf, XGBClassifierModel):
+        if XGB_AVAILABLE and issubclass(clf, XGBClassifierModel):
             # negative labels
             with pytest.raises(ValueError) as err:
                 model.fit(

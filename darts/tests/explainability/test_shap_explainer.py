@@ -23,7 +23,12 @@ from darts.models import (
     SKLearnModel,
     XGBModel,
 )
-from darts.tests.conftest import CB_AVAILABLE, GBM_AVAILABLE, LGBM_AVAILABLE
+from darts.tests.conftest import (
+    CB_AVAILABLE,
+    GBM_AVAILABLE,
+    LGBM_AVAILABLE,
+    XGB_AVAILABLE,
+)
 from darts.utils.timeseries_generation import linear_timeseries
 
 
@@ -713,16 +718,15 @@ class TestShapExplainer:
             shap.Explanation,
         )
 
-    @pytest.mark.skipif(not GBM_AVAILABLE, reason="requires gradient boosting model")
     @pytest.mark.parametrize(
         "config",
-        [
-            (XGBModel, {}),
-            (
-                LightGBMModel if LGBM_AVAILABLE else XGBModel,
-                {"likelihood": "quantile", "quantiles": [0.5]},
-            ),
-        ],
+        [(LinearRegressionModel, {})]
+        + ([(XGBModel, {})] if XGB_AVAILABLE else [])
+        + (
+            [(LightGBMModel, {"likelihood": "quantile", "quantiles": [0.5]})]
+            if LGBM_AVAILABLE
+            else []
+        ),
     )
     def test_shap_selected_components(self, config):
         """Test selected components with and without Darts' MultiOutputRegressor"""

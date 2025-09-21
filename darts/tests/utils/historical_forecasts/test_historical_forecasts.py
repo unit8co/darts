@@ -39,6 +39,7 @@ from darts.tests.conftest import (
     CB_AVAILABLE,
     LGBM_AVAILABLE,
     PROPHET_AVAILABLE,
+    SF_AVAILABLE,
     TORCH_AVAILABLE,
     XGB_AVAILABLE,
     tfm_kwargs,
@@ -4060,12 +4061,18 @@ class TestHistoricalforecast:
             [
                 # doesn't support val set, and no transferable series for prediction
                 (NaiveSeasonal, {"K": 3}),
-                # doesn't support val set, supports transferable series for prediction
-                (AutoARIMA, {}),
                 # doesn't support val set, global model (multi series)
                 (LinearRegressionModel, {"lags": 3, "output_chunk_length": 2}),
                 # supports val set, global model (multi series)
             ]
+            + (
+                [
+                    # doesn't support val set, supports transferable series for prediction
+                    (AutoARIMA, {}),
+                ]
+                if SF_AVAILABLE
+                else []
+            )
             + (
                 [
                     # supports val set, global model (multi series)
