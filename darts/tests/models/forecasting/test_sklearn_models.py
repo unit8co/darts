@@ -1251,30 +1251,40 @@ class TestSKLearnModels:
             ocl,
         )
 
-    @pytest.mark.parametrize("mode", [True, False])
-    def test_min_train_series_length(self, mode):
-        lgbm_cls = LightGBMModel if lgbm_available else XGBModel
-        cb_cls = CatBoostModel if cb_available else XGBModel
-        model = lgbm_cls(lags=4, multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [XGBModel]
+                + ([LightGBMModel] if lgbm_available else [])
+                + ([CatBoostModel] if cb_available else [])
+            ),
+            [True, False],
+        ),
+    )
+    def test_min_train_series_length(self, config):
+        model_cls, mode = config
+        model = model_cls(lags=4, multi_models=mode)
+        # min target lag + output_chunk_length + output_chunk_shift + (min samples -1)
+        add_min_samples = model.min_train_samples - 1
+        assert model.min_train_series_length == 4 + 1 + 0 + add_min_samples
+
+        model = model_cls(lags=2, multi_models=mode)
+        assert model.min_train_series_length == 2 + 1 + 0 + add_min_samples
+
+        model = model_cls(lags=2, output_chunk_length=3, multi_models=mode)
+        assert model.min_train_series_length == 2 + 3 + 0 + add_min_samples
+
+        model = model_cls(
+            lags=2, output_chunk_length=3, output_chunk_shift=1, multi_models=mode
         )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = cb_cls(lags=2, multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
-        )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = lgbm_cls(lags=[-4, -3, -2], multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
-        )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = XGBModel(lags=[-4, -3, -2], multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
-        )
-        assert min_train_series_length_expected == model.min_train_series_length
+        assert model.min_train_series_length == 2 + 3 + 1 + add_min_samples
+
+        model = model_cls(lags=[-4, -3, -2], multi_models=mode)
+        assert model.min_train_series_length == 4 + 1 + 0 + add_min_samples
+
+        model = model_cls(lags=None, lags_past_covariates=5, multi_models=mode)
+        assert model.min_train_series_length == 0 + 1 + 0 + add_min_samples
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_historical_forecast(self, mode):
