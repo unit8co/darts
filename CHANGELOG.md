@@ -31,6 +31,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For developers of the library:
 
+ - Reworked the `_validate_model_params` function of `TorchForecastingModel` to support more complicated cases of class inheritance. [#2908](https://github.com/unit8co/darts/pull/2908) by [Tim Rosenflanz](https://github.com/trosenflanz).
+
 ## [0.37.1](https://github.com/unit8co/darts/tree/0.37.1) (2025-08-18)
 
 ### For users of the library:
