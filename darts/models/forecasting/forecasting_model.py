@@ -675,7 +675,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
-        train_globally: bool = False,
+        apply_globally: bool = False,
         overlap_end: bool = False,
         last_points_only: bool = True,
         verbose: bool = False,
@@ -803,11 +803,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Note: some models require being retrained every time and do not support anything other than
             `retrain=True`.
             Note: also controls the retraining of the `data_transformers`.
-        train_globally
-            Whether to train the model globally on all series, or independently on each series. Only really effective
-            for global forecasting models, but can also be used with local models to generate forecasts on the same
-            time frame. If `True`, considers only the time intersection of all series for historical forecasting.
-            If `False`, considers the entire extent of each individual series for historical forecasting.
+        apply_globally
+            Whether to apply historical forecasts globally on all series, or independently on each series. This includes
+            global model- and data transformer fitting. Only really effective for global forecasting models, but can
+            also be used with local models to generate forecasts on the same time frame. If `True`, considers only the
+            time intersection of all series for historical forecasting. If `False`, considers the entire extent of each
+            individual series for historical forecasting.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
@@ -906,7 +907,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 fit_transformers=False,
             )
 
-        if train_globally and not ((retrain is False) or (retrain == 0)):
+        if apply_globally:
             series = slice_intersect(series)
             past_covariates = (
                 slice_intersect(past_covariates)
@@ -919,7 +920,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 else None
             )
 
-            if isinstance(self, GlobalForecastingModel):
+            if retrain and isinstance(self, GlobalForecastingModel):
                 self._global_historical_forecasts(
                     series=series,
                     past_covariates=past_covariates,
