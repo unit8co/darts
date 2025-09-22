@@ -2544,21 +2544,24 @@ class TestTorchForecastingModel:
         kwargs_last = dict(
             common_kwargs, model_name="last_model", save_checkpoints=True
         )
-        kwargs_best = dict(
-            common_kwargs, model_name="best_model", save_checkpoints=True
-        )
         if not use_custom_trainer:
             # Case A: Darts' automatic checkpointing
             trainer_best = None
+            kwargs_best = dict(
+                common_kwargs, model_name="best_model", save_checkpoints=True
+            )
         else:
-            # Case B: User provides a custom `trainer` with a ModelCheckpoint callback
+            # Case B: Darts' automatic checkpointing is deactivated but user provides a custom `trainer` with a
+            # ModelCheckpoint callback
+            kwargs_best = dict(
+                common_kwargs, model_name="best_model", save_checkpoints=False
+            )
             ckpt_folder = os.path.join(tmpdir_fn, "best_model", "checkpoints")
             os.makedirs(ckpt_folder, exist_ok=True)
             checkpoint_callback_last = ModelCheckpoint(
                 dirpath=ckpt_folder,
                 save_last=True,
                 monitor="val_loss",
-                filename="best-{epoch}-{val_loss:.2f}",
             )
             trainer_best = pl.Trainer(
                 max_epochs=n_epochs,
