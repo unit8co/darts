@@ -2553,14 +2553,17 @@ class TestTorchForecastingModel:
         else:
             # Case B: User provides a custom `trainer` with a ModelCheckpoint callback
             kwargs_last = dict(
-                common_kwargs, model_name="last_model", save_checkpoints=False
+                common_kwargs, model_name="last_model", save_checkpoints=True
             )
             kwargs_best = dict(
-                common_kwargs, model_name="best_model", save_checkpoints=False
+                common_kwargs, model_name="best_model", save_checkpoints=True
             )
 
             # for last model
-            checkpoints_folder_last = os.path.join(tmpdir_fn, "last_checkpoints")
+            checkpoints_folder_last = os.path.join(
+                tmpdir_fn, "last_model", "checkpoints"
+            )
+            os.makedirs(checkpoints_folder_last, exist_ok=True)
             checkpoint_callback_last = ModelCheckpoint(
                 dirpath=checkpoints_folder_last,
                 save_last=True,
@@ -2574,7 +2577,10 @@ class TestTorchForecastingModel:
             )
 
             # for best model
-            checkpoints_folder_best = os.path.join(tmpdir_fn, "best_checkpoints")
+            checkpoints_folder_best = os.path.join(
+                tmpdir_fn, "best_model", "checkpoints"
+            )
+            os.makedirs(checkpoints_folder_best, exist_ok=True)
             checkpoint_callback_best = ModelCheckpoint(
                 dirpath=checkpoints_folder_best,
                 save_last=True,
@@ -2617,6 +2623,16 @@ class TestTorchForecastingModel:
         preds_last = model_last.predict(n=1)
         preds_best = model_best.predict(n=1)
         assert preds_last != preds_best
+
+        # Check that loading the best model from the training run of `model_last`
+        # is equivalent to the model obtained from `fit(..., load_best=True)`.
+        model_last_best = RNNModel.load_from_checkpoint(
+            model_name=model_last.model_name,
+            work_dir=model_last.work_dir,
+            best=True,
+        )
+        preds_last_best = model_last_best.predict(n=1)
+        assert preds_last_best == preds_best
 
     @pytest.mark.parametrize(
         "save_checkpoints, val_series_provided", [(False, True), (True, False)]
