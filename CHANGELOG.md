@@ -17,6 +17,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - `from_group_dataframe()` now supports creating `TimeSeries` from **additional DataFrame backends** (Polars, PyArrow, ...). We leverage `narwhals` as the compatibility layer between DataFrame libraries. See their [documentation](https://narwhals-dev.github.io/narwhals/) for all supported backends. [#2766](https://github.com/unit8co/darts/pull/2766) by [He Weilin](https://github.com/cnhwl).
 - Added `add_regressor_configs` parameter to the `Prophet` model, enabling component-specific control over `prior_scale`, `mode`, and `standardize` for the future covariates. [#2882](https://github.com/unit8co/darts/issues/2882) by [Ramsay Davis](https://github.com/RamsayDavisWL).
 - 🔴 Increased the decimal places for quantile component names from 2 to 3 for more precise quantiles. (e.g. `component_name_q0.500` for quantile 0.5). This affects quantile forecasts as well as quantiles computed with `TimeSeries.quantile()`. [#2887](https://github.com/unit8co/darts/pull/2786) by [He Weilin](https://github.com/cnhwl).
+- Added parameter `load_best` to `TorchForecastingModel.fit()` and `fit_from_dataset()` which, when `True`, will automatically load (and use) the best model on the validation set at the end of the training process. [#2903](https://github.com/unit8co/darts/pull/2903) by [He Weilin](https://github.com/cnhwl).
 - Added model creation parameters `random_errors` and `error` to `ExponentialSmoothing` that give control over how probabilistic forecasts are generated. [#2290491](https://github.com/unit8co/darts/pull/2904) by [Jakub Chłapek](https://github.com/jakubchlapek)
 - Added parameter `val_length` to `ForecastingModel.historical_forecasts()`, `backtest()` and `residuals()` which will extract a validation set of length `val_length` after the end of each training set when `retrain=True`. The validation set is then used to fit the underlying forecasting model if it supports it. This is especially useful for early stopping mechanisms to reduce overfitting and / or training times. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Renamed the `RegressionEnsembleModel` ensemble model attribute from `regression_model` to `ensemble_model` to make it more clear that this model is used to combine the predictions of the base models. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
@@ -1201,6 +1202,7 @@ Patch release
   attributes as past and future covariates, an absolute/relative position (index), and
   even some custom mapping of the index (such as a function of the year). A `Scaler` will
   be applied to fit/transform all of these covariates both during training and inference.
+
 - The scalers can now also be applied on stochastic `TimeSeries`.
 - There is now a new argument `max_samples_per_ts` to the :func:`fit()` method of Torch-based
   models, which can be used to limit the number of samples contained in the underlying
@@ -1692,6 +1694,7 @@ ts: TimeSeries = AirPassengers().load()
 **Changed:**
 
 - 🔴 Removed `cols` parameter from `map()`. Using indexing on `TimeSeries` is preferred.
+
   ```python
   # Assuming a multivariate TimeSeries named series with 3 columns or variables.
   # To apply fn to columns with names '0' and '2':
@@ -1701,9 +1704,11 @@ ts: TimeSeries = AirPassengers().load()
   #new syntax
   series[['0', '2']].map(fn) # returns a time series with only 2 columns
   ```
+
 - 🔴 Renamed `ScalerWrapper` into `Scaler`
 - 🔴 Renamed the `preprocessing` module into `dataprocessing`
 - 🔴 Unified `auto_fillna()` and `fillna()` into a single `fill_missing_value()` function
+
   ```python
   #old syntax
   fillna(series, fill=0)
@@ -1747,7 +1752,9 @@ ts: TimeSeries = AirPassengers().load()
 **Changed:**
 
 - 🔴 **Refactored backtesting** [#184](https://github.com/unit8co/darts/pull/184)
+
   - Moved backtesting functionalities inside `ForecastingModel` and `RegressionModel`
+
     ```python
     # old syntax:
     backtest_forecasting(forecasting_model, *args, **kwargs)
@@ -1761,8 +1768,11 @@ ts: TimeSeries = AirPassengers().load()
     # new syntax:
     regression_model.backtest(*args, **kwargs)
     ```
+
   - Consequently removed the `backtesting` module
+
 - 🔴 `ForecastingModel` `fit()` **method syntax** using TimeSeries indexing instead of additional parameters [#161](https://github.com/unit8co/darts/pull/161)
+
   ```python
   # old syntax:
   multivariate_model.fit(multivariate_series, target_indices=[0, 1])
