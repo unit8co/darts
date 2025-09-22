@@ -37,8 +37,7 @@ As some models have relatively heavy dependencies, we provide four conda-forge p
 ## Other Information
 
 ### Enabling Optional Dependencies
-As of version 0.38.0, the default `darts` package does not install Prophet, CatBoost, LightGBM, XGBoost and StatsForecast dependencies anymore, because their
-build processes were too often causing issues. We continue supporting the model wrappers `Prophet`, `CatBoostModel`, `LightGBMModel`, `XGBoost` and `StatsForecast` in Darts though. If you want to use any of them, you will need to manually install the corresponding packages (or install a Darts flavor as described above).
+As of version 0.38.0, we made the default `darts` package more lightweight. Packages Prophet, CatBoost, LightGBM, XGBoost and StatsForecast will not be installed anymore. Don't worry though, we keep supporting our model wrappers `Prophet`, `CatBoostModel`, `LightGBMModel`, `XGBoost` and `StatsForecast` in Darts. If you want to use any of them, you will need to manually install the corresponding packages (or install a Darts flavor as described above).
 
 #### Prophet
 Install the `prophet` package (version 1.1.1 or more recent) using the [Prophet install guide](https://facebook.github.io/prophet/docs/installation.html#python)

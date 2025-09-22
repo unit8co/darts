@@ -20,12 +20,13 @@ except ImportError:
 try:
     import catboost
     import lightgbm
-    import prophet
     import xgboost  # noqa: F401
 
     GBM_AVAILABLE = True
 except ImportError:
-    logger.warning("Gradient Boost Model not installed - Some tests will be skipped.")
+    logger.warning(
+        "Gradient Boosting Models not installed - Some tests will be skipped."
+    )
     GBM_AVAILABLE = False
 
 try:

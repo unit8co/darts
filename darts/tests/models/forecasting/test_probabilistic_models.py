@@ -302,16 +302,7 @@ extra_configs = [
 ]
 
 if SF_AVAILABLE:
-    extra_configs += [
-        (
-            AutoARIMA,
-            {
-                "random_state": 42,
-                "season_length": 12,
-            },
-            0.04,
-            0.04,
-        ),
+    models_cls_kwargs_errs += [
         (
             TBATS,
             {
@@ -321,6 +312,17 @@ if SF_AVAILABLE:
                 "use_boxcox": True,
                 "use_arma_errors": False,
                 "random_state": 42,
+            },
+            0.04,
+            0.04,
+        ),
+    ]
+    extra_configs += [
+        (
+            AutoARIMA,
+            {
+                "random_state": 42,
+                "season_length": 12,
             },
             0.04,
             0.04,

@@ -24,7 +24,6 @@ from darts.models import (
     XGBModel,
 )
 from darts.tests.conftest import (
-    CB_AVAILABLE,
     GBM_AVAILABLE,
     LGBM_AVAILABLE,
     XGB_AVAILABLE,
@@ -140,89 +139,93 @@ class TestShapExplainer:
         np.concatenate([fut_cov_1.reshape(-1, 1), fut_cov_2.reshape(-1, 1)], axis=1),
     )
 
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="requires gradient boosting models")
+    @pytest.mark.parametrize(
+        "model",
+        [
+            {
+                "model_cls": LightGBMModel,
+                "config": {
+                    "lags": 4,
+                    "lags_past_covariates": [-1, -2, -3],
+                    "lags_future_covariates": [0],
+                    "output_chunk_length": 4,
+                    "add_encoders": add_encoders,
+                },
+            },
+            {
+                "model_cls": CatBoostModel,
+                "config": {
+                    "lags": 4,
+                    "lags_past_covariates": [-1, -2, -6],
+                    "lags_future_covariates": [0],
+                    "output_chunk_length": 4,
+                },
+            },
+            {
+                "model_cls": XGBModel,
+                "config": {
+                    "lags": 4,
+                    "lags_past_covariates": [-1, -2, -3],
+                    "lags_future_covariates": [0],
+                    "output_chunk_length": 4,
+                    "add_encoders": add_encoders,
+                },
+            },
+        ],
+    )
+    def test_gbm_creation(self, model):
+        model_cls = model["model_cls"]
+        config = model["config"]
+        # Model should be fitted first
+        m = model_cls(**config)
+
+        with pytest.raises(ValueError):
+            ShapExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
+
+        m.fit(
+            series=self.target_ts,
+            past_covariates=self.past_cov_ts,
+            future_covariates=self.fut_cov_ts,
+        )
+
+        # Should have the same number of target, past and futures in the respective lists
+        with pytest.raises(ValueError):
+            ShapExplainer(
+                m,
+                [self.target_ts, self.target_ts],
+                self.past_cov_ts,
+                self.fut_cov_ts,
+            )
+
+        # Missing a future covariate if you choose to use a new background
+        with pytest.raises(ValueError):
+            ShapExplainer(
+                m, self.target_ts, background_past_covariates=self.past_cov_ts
+            )
+
+        # Missing a past covariate if you choose to use a new background
+        with pytest.raises(ValueError):
+            ShapExplainer(
+                m, self.target_ts, background_future_covariates=self.fut_cov_ts
+            )
+
+        # Good type of explainers
+        shap_explain = ShapExplainer(m)
+        if m._supports_native_multioutput:
+            # since xgboost > 2.1.0, model supports native multi-output regression
+            # CatBoostModel supports multi-output for certain loss functions
+            assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
+        else:
+            assert isinstance(
+                shap_explain.explainers.explainers[0][0], shap.explainers.Tree
+            )
+
+        # Bad choice of shap explainer
+        with pytest.raises(ValueError):
+            ShapExplainer(m, shap_method="bad_choice")
+
     def test_creation(self):
-        # Tests only for gradient boosting models
-        if GBM_AVAILABLE:
-            model_cls = LightGBMModel if LGBM_AVAILABLE else XGBModel
-            # Model should be fitted first
-            m = model_cls(
-                lags=4,
-                lags_past_covariates=[-1, -2, -3],
-                lags_future_covariates=[0],
-                output_chunk_length=4,
-                add_encoders=self.add_encoders,
-            )
-
-            with pytest.raises(ValueError):
-                ShapExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
-
-            m.fit(
-                series=self.target_ts,
-                past_covariates=self.past_cov_ts,
-                future_covariates=self.fut_cov_ts,
-            )
-
-            # Should have the same number of target, past and futures in the respective lists
-            with pytest.raises(ValueError):
-                ShapExplainer(
-                    m,
-                    [self.target_ts, self.target_ts],
-                    self.past_cov_ts,
-                    self.fut_cov_ts,
-                )
-
-            # Missing a future covariate if you choose to use a new background
-            with pytest.raises(ValueError):
-                ShapExplainer(
-                    m, self.target_ts, background_past_covariates=self.past_cov_ts
-                )
-
-            # Missing a past covariate if you choose to use a new background
-            with pytest.raises(ValueError):
-                ShapExplainer(
-                    m, self.target_ts, background_future_covariates=self.fut_cov_ts
-                )
-
-            # Good type of explainers
-            shap_explain = ShapExplainer(m)
-            if m._supports_native_multioutput:
-                # since xgboost > 2.1.0, model supports native multi-output regression
-                # CatBoostModel supports multi-output for certain loss functions
-                assert isinstance(
-                    shap_explain.explainers.explainers, shap.explainers.Tree
-                )
-            else:
-                assert isinstance(
-                    shap_explain.explainers.explainers[0][0], shap.explainers.Tree
-                )
-
-            # CatBoost
-            model_cls = CatBoostModel if CB_AVAILABLE else XGBModel
-            m = model_cls(
-                lags=4,
-                lags_past_covariates=[-1, -2, -6],
-                lags_future_covariates=[0],
-                output_chunk_length=4,
-            )
-            m.fit(
-                series=self.target_ts,
-                past_covariates=self.past_cov_ts,
-                future_covariates=self.fut_cov_ts,
-            )
-            shap_explain = ShapExplainer(m)
-            if m._supports_native_multioutput:
-                assert isinstance(
-                    shap_explain.explainers.explainers, shap.explainers.Tree
-                )
-            else:
-                assert isinstance(
-                    shap_explain.explainers.explainers[0][0], shap.explainers.Tree
-                )
-
-            # Bad choice of shap explainer
-            with pytest.raises(ValueError):
-                ShapExplainer(m, shap_method="bad_choice")
-
         # Model should be a SKLearnModel
         m = ExponentialSmoothing()
         m.fit(self.target_ts["price"])
