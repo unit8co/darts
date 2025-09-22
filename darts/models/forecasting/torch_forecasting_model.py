@@ -825,6 +825,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
         stride: int = 1,
+        load_best: bool = False,
     ) -> "TorchForecastingModel":
         """Fit/train the model on one or multiple series.
 
@@ -902,7 +903,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             The number of time steps between consecutive samples, applied starting from the end of the series. The same
             stride will be applied to both the training and evaluation set (if supplied). This should be used with
             caution as it might introduce bias in the forecasts.
-
+        load_best
+            Whether the model should automatically load the best checkpoint found during training according to the
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a
+            validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
         Returns
         -------
         self
@@ -930,6 +934,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             epochs=epochs,
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
+            load_best=load_best,
         )
         # call super fit only if user is actually fitting the model
         super().fit(
@@ -957,6 +962,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
+        load_best: bool = False,
     ) -> tuple[
         tuple[
             Sequence[TimeSeries],
@@ -970,6 +976,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optional[bool],
             int,
             Optional[dict[str, Any]],
+            bool,
         ],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
@@ -1064,6 +1071,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose,
             epochs,
             dataloader_kwargs,
+            load_best,
         )
         return series_input, fit_from_ds_params
 
@@ -1076,6 +1084,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
+        load_best: bool = False,
     ) -> "TorchForecastingModel":
         """
         Train the model with a specific :class:`darts.utils.data.TorchTrainingDataset` instance.
@@ -1114,6 +1123,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
+        load_best
+            Whether the model should automatically load the best checkpoint found during training according to the
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a
+            validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
 
         Returns
         -------
@@ -1128,6 +1141,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 verbose=verbose,
                 epochs=epochs,
                 dataloader_kwargs=dataloader_kwargs,
+                load_best=load_best,
             )
         )
         return self
@@ -1140,7 +1154,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
-    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
+        load_best: bool = False,
+    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader], bool]:
         """This method acts on `TorchTrainingDataset` inputs. It performs sanity checks, and sets up / returns the
         trainer, model, and dataset loaders required for training the model with `_train()`.
         """
@@ -1286,7 +1301,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f"discouraged. Consider model `{self.__class__.__name__}.load_weights()` to load the weights for "
                 f"fine-tuning."
             )
-        return trainer, model, train_loader, val_loader
+        return trainer, model, train_loader, val_loader, load_best
 
     def _train(
         self,
@@ -1294,6 +1309,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model: PLForecastingModule,
         train_loader: DataLoader,
         val_loader: Optional[DataLoader],
+        load_best: bool = False,
     ) -> None:
         """
         Performs the actual training
@@ -1304,6 +1320,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             the training data loader feeding the training data and targets
         val_loader
             optionally, a validation set loader
+        load_best
+            Whether to load the best model checkpoint after training.
         """
         self._fit_called = True
 
@@ -1312,6 +1330,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
 
+        if load_best:
+            ckpt_callback: Optional[pl.callbacks.ModelCheckpoint] = (
+                trainer.checkpoint_callback
+            )
+            ckpt_activated = ckpt_callback is not None and hasattr(
+                ckpt_callback, "best_model_path"
+            )
+            if not ckpt_activated or val_loader is None:
+                logger.warning(
+                    "Loading the best model will be skipped (`load_best` is ignored), as it requires "
+                    "active checkpointing and a validation set to be provided to the current fit method."
+                    "If not using a custom `trainer`, make sure to set `save_checkpoints=True` at model creation. "
+                    "Otherwise, make sure the custom `trainer` uses a pytorch-lightning `ModelCheckpoint` callback."
+                )
+                load_best = False
+        else:
+            ckpt_callback = None
+
         if self._requires_training:
             trainer.fit(
                 model,
@@ -1319,6 +1355,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 val_dataloaders=val_loader,
                 ckpt_path=ckpt_path,
             )
+            if load_best:
+                best_model_path = ckpt_callback.best_model_path
+                logger.info(
+                    f"Loading best model from checkpoint: '{os.path.basename(best_model_path)}'"
+                )
+                model = self._load_from_checkpoint(best_model_path)
         else:
             trainer.strategy.connect(model)
         self.model = model
@@ -1466,7 +1508,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
         )
-        trainer, model, train_loader, val_loader = self._setup_for_train(*params)
+        trainer, model, train_loader, val_loader, _ = self._setup_for_train(*params)
         return Tuner(trainer).lr_find(
             model,
             train_dataloaders=train_loader,
