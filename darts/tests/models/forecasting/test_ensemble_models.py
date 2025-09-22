@@ -117,7 +117,6 @@ class TestEnsembleModels:
             None,
             None,
             0,
-            None,
         )  # test if default is okay
 
         model1 = LinearRegressionModel(
@@ -131,20 +130,89 @@ class TestEnsembleModels:
             model1,
             model2,
         ])  # test if infers extreme lags is okay
-        expected = (-5, 0, -6, -1, 6, 9, 0, None)
+        expected = (-5, 0, -6, -1, 6, 9, 0)
         assert expected == ensemble.extreme_lags
+
+    def test_min_train_samples(self):
+        """min_train_samples of the ensemble should be the max of the individual models"""
+        # local models require at least one sample
+        model1 = NaiveSeasonal(K=5)
+        ensemble = NaiveEnsembleModel([model1])
+        assert ensemble.min_train_samples == model1.min_train_samples
+
+        # regression models require at least two samples
+        model2 = LinearRegressionModel(lags=10, output_chunk_length=1)
+        ensemble = NaiveEnsembleModel([model1, model2])
+        assert ensemble.min_train_samples == model2.min_train_samples
+
+        ensemble = NaiveEnsembleModel([model2, model1])
+        assert ensemble.min_train_samples == model2.min_train_samples
+
+    def test_train_window_lengths(self):
+        """Each element in target_window_lengths (input and output windows) of the ensemble should be the max of the
+        individual models."""
+        # model 1 has largest input and output windows
+        model1 = NaiveSeasonal(K=5)
+        lenghts1 = model1._target_window_lengths
+        ensemble = NaiveEnsembleModel([model1])
+        assert ensemble._target_window_lengths == lenghts1
+
+        # model 2 has largest input and output windows
+        model2 = LinearRegressionModel(lags=10, output_chunk_length=1)
+        lenghts2 = model2._target_window_lengths
+        ensemble = NaiveEnsembleModel([model1, model2])
+        assert ensemble._target_window_lengths == lenghts2
+
+        ensemble = NaiveEnsembleModel([model2, model1])
+        assert ensemble._target_window_lengths == lenghts2
+
+        # model 3 has largest output window
+        model3 = LinearRegressionModel(lags=1, output_chunk_length=10)
+        lenghts3 = model3._target_window_lengths
+        ensemble = NaiveEnsembleModel([model2, model1, model3])
+        assert ensemble._target_window_lengths == (lenghts2[0], lenghts3[1])
+
+    def test_min_train_series_lengths(self):
+        """min_train_series_length of the ensemble should be
+        `sum(_train_target_sample_lengths) + _min_train_samples - 1`
+        """
+        # model 1 has largest input and output windows
+        model1 = NaiveSeasonal(K=5)
+        ensemble = NaiveEnsembleModel([model1])
+        assert ensemble.min_train_series_length == model1.min_train_series_length
+
+        # model 2 has largest input and output windows
+        model2 = LinearRegressionModel(lags=10, output_chunk_length=1)
+        ensemble = NaiveEnsembleModel([model1, model2])
+        assert ensemble.min_train_series_length == model2.min_train_series_length
+
+        ensemble = NaiveEnsembleModel([model2, model1])
+        assert ensemble.min_train_series_length == model2.min_train_series_length
+
+        # model2 and model3 have the same training lengths but input and output windows are different
+        model3 = LinearRegressionModel(lags=1, output_chunk_length=10)
+        ensemble = NaiveEnsembleModel([model2, model1, model3])
+        # (max(lags) + max(ocl)) + (min_train_samples - 1)
+        assert ensemble.min_train_series_length == (10 + 10) + (2 - 1)
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_extreme_lags_rnn(self):
-        # RNNModel has the 8th element in `extreme_lags` for the `max_target_lag_train`.
-        # it is given by `training_length - input_chunk_length`.
-        # for the ensemble model we want the max lag of all forecasting models.
+        # RNNModel itself has a training length which will go through multiple samples / steps in one training sample;
+        # the ensemble input requirements are the max(icl), max(ocl=1) + max(training samples)
         model1 = RNNModel(input_chunk_length=14, training_length=24)
         model2 = RNNModel(input_chunk_length=12, training_length=37)
 
         ensemble = NaiveEnsembleModel([model1, model2])
-        expected = (-14, 0, None, None, -14, 0, 0, 37 - 12)
-        assert expected == ensemble.extreme_lags
+        expected_lags = (-14, 0, None, None, -14, 0, 0)
+        assert ensemble.extreme_lags == expected_lags
+
+        # max(train_length)=37 - icl(of that model)=12 + 1
+        expected_samples = (37 - 12) + 1
+        assert ensemble.min_train_samples == expected_samples
+
+        # max(icl)=14 + max(ocl)=1 + (expected_samples - 1)
+        expected_length = 14 + 1 + (expected_samples - 1)
+        assert ensemble.min_train_series_length == expected_length
 
     def test_input_models_local_models(self):
         with pytest.raises(ValueError):
@@ -178,7 +246,7 @@ class TestEnsembleModels:
     def test_call_backtest_naive_ensemble_local_models(self):
         ensemble = NaiveEnsembleModel([NaiveSeasonal(5), Theta(2, 5)])
         ensemble.fit(self.series1)
-        assert ensemble.extreme_lags == (-10, -1, None, None, None, None, 0, None)
+        assert ensemble.extreme_lags == (-10, -1, None, None, None, None, 0)
         ensemble.backtest(self.series1)
 
     def test_predict_univariate_ensemble_local_models(self):
@@ -649,7 +717,7 @@ class TestEnsembleModels:
             with pytest.raises(AssertionError):
                 np.testing.assert_array_almost_equal(pred_w.values(), pred_nw.values())
 
-    @pytest.mark.parametrize("model_cls", [NaiveEnsembleModel, RegressionEnsembleModel])
+    @pytest.mark.parametrize("model_cls", [RegressionEnsembleModel, NaiveEnsembleModel])
     def test_invalid_sample_weight(self, model_cls):
         kwargs = {
             "forecasting_models": [
@@ -658,11 +726,13 @@ class TestEnsembleModels:
             ],
         }
         if issubclass(model_cls, RegressionEnsembleModel):
-            kwargs["regression_train_n_points"] = 3
+            kwargs["regression_train_n_points"] = 2
 
-        ts = TimeSeries.from_values(np.array([0.0, 1.0, 2.0, 3.0, 4.0, 5.0]))
         # weights too short
         model = model_cls(**copy.deepcopy(kwargs))
+        ts = TimeSeries.from_values(
+            np.array([float(i) for i in range(model.min_train_series_length)])
+        )
         with pytest.raises(ValueError) as err:
             model.fit(ts, sample_weight=ts[:-1])
         assert (
@@ -846,3 +916,11 @@ class TestEnsembleModels:
                 assert m.past_covariate_series is None
                 assert m.future_covariate_series is None
         assert model.predict(5) == clean_model.predict(5, self.series1 + self.series2)
+
+    def test_multivariate_support(self):
+        assert NaiveEnsembleModel([NaiveSeasonal(1)]).supports_multivariate
+        assert not NaiveEnsembleModel([AutoARIMA()]).supports_multivariate
+        assert not NaiveEnsembleModel([
+            NaiveSeasonal(1),
+            AutoARIMA(),
+        ]).supports_multivariate

@@ -109,8 +109,8 @@ class NaiveSeasonal(LocalForecastingModel):
         return True
 
     @property
-    def min_train_series_length(self):
-        return max(self.K, 3)
+    def _target_window_lengths(self):
+        return max(self.K, 3), 0
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -229,8 +229,8 @@ class NaiveMovingAverage(LocalForecastingModel):
         return True
 
     @property
-    def min_train_series_length(self):
-        return self.input_chunk_length
+    def _target_window_lengths(self):
+        return self.input_chunk_length, 0
 
     def __str__(self):
         return f"NaiveMovingAverage({self.input_chunk_length})"
@@ -316,9 +316,11 @@ class NaiveEnsembleModel(EnsembleModel):
         """
         super().__init__(
             forecasting_models=forecasting_models,
+            ensemble_model=None,
             train_num_samples=1,
             train_samples_reduction=None,
             train_forecasting_models=train_forecasting_models,
+            train_n_points=0,
             show_warnings=show_warnings,
         )
 

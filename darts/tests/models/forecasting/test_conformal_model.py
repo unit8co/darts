@@ -197,8 +197,7 @@ class TestConformalModel:
         cp_model = ConformalNaiveModel(model=model, quantiles=q, cal_stride=2)
 
         expected_error_start = (
-            "The provided `stride` parameter must be a round-multiple of "
-            "`cal_stride=2` and `>=cal_stride`."
+            "`stride` must be a round-multiple of `cal_stride=2` and `>=cal_stride`."
         )
         # `stride` must be >= `cal_stride`
         with pytest.raises(ValueError) as exc:
@@ -238,12 +237,14 @@ class TestConformalModel:
     def test_unsupported_properties(self):
         """Tests only here for coverage, maybe at some point we support these properties."""
         model = ConformalNaiveModel(train_model(self.ts_pass_train), quantiles=q)
-        unsupported_properties = [
-            "_model_encoder_settings",
-            "extreme_lags",
-            "min_train_series_length",
-            "min_train_samples",
-        ]
+        cal_length = model.cal_length or 1
+        assert model.extreme_lags == model.model.extreme_lags
+        assert model.min_train_samples == cal_length
+        assert model.min_train_series_length == sum(
+            model.model._target_window_lengths
+        ) + (cal_length - 1)
+
+        unsupported_properties = ["_model_encoder_settings"]
         for prop in unsupported_properties:
             with pytest.raises(NotImplementedError):
                 getattr(model, prop)
