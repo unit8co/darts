@@ -3,15 +3,18 @@ Additional util functions
 -------------------------
 """
 
+import contextlib
 from collections.abc import Iterator
 from enum import Enum
 from functools import wraps
 from inspect import Parameter, getcallargs, signature
 from typing import Any, Callable, Optional, TypeVar, Union
 
+import narwhals as nw
 import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
+from narwhals import DataFrame
 from pandas._libs.tslibs.offsets import BusinessMixin
 from sklearn.utils import check_random_state
 from tqdm import tqdm
@@ -729,3 +732,68 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
 class ModelType(Enum):
     FORECASTING_REGRESSOR = 0
     FORECASTING_CLASSIFIER = 1
+
+
+def dataframe_col_to_time_index(
+    df: DataFrame,
+    time_col: str,
+) -> Union[pd.Index, pd.DatetimeIndex]:
+    """Convert a dataframe column to a pandas Index or DatetimeIndex.
+
+    Parameters
+    ----------
+    df
+        The dataframe containing the time column.
+    time_col
+        The name of the time column.
+    skip_uniqueness_check
+        Whether to skip uniqueness checks in case of an integer index.
+    """
+    if time_col not in df.columns:
+        raise_log(AttributeError(f"time_col='{time_col}' is not present."))
+
+    time_col_vals = df.get_column(time_col)
+
+    if time_col_vals.dtype == nw.String:
+        # Try to convert to integers if needed
+        with contextlib.suppress(Exception):
+            time_col_vals = time_col_vals.cast(nw.Int64)
+
+    if time_col_vals.dtype.is_integer():
+        # Temporarily use an integer `pd.Index` to sort the values; later replaced with
+        # a `pd.RangeIndex` in `__init__()`
+        time_index = pd.Index(time_col_vals)
+
+    elif isinstance(time_col_vals.dtype, nw.String):
+        # The integer conversion failed; try datetimes
+        try:
+            time_index = pd.DatetimeIndex(time_col_vals)
+        except ValueError:
+            raise_log(
+                AttributeError(
+                    "'time_col' is of 'String' dtype but doesn't contain valid timestamps"
+                )
+            )
+    elif isinstance(time_col_vals.dtype, nw.Datetime):
+        # force time index to be timezone naive, as polars converts to UTC
+        time_zone = time_col_vals.dtype.time_zone
+        if time_zone is not None:
+            logger.warning(
+                "The provided DatetimeIndex was associated with a timezone (tz), which is currently not "
+                "supported. To avoid unexpected behaviour, the tz information was removed. Consider calling "
+                f"`ts.time_index.tz_localize({time_zone})` when exporting the results."
+                "To plot the series with the right time steps, consider setting the matplotlib.pyplot "
+                "`rcParams['timezone']` parameter to automatically convert the time axis back to the "
+                "original timezone."
+            )
+            time_col_vals = time_col_vals.dt.replace_time_zone(None)
+        time_index = pd.DatetimeIndex(time_col_vals)
+    else:
+        raise_log(
+            AttributeError(
+                "Invalid type of `time_col`: it needs to be of either 'String', 'Datetime' or 'Int' dtype."
+            )
+        )
+    if not time_index.name:
+        time_index.name = time_col
+    return time_index

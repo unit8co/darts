@@ -118,6 +118,19 @@ class TestTimeSeries:
         ts_pd_df = ts.to_dataframe(time_as_index=False)
         assert ts_pd_df.equals(pd_df.reset_index())
 
+    def test_df_time_col_not_present(self):
+        df = pd.DataFrame({"a": [i for i in range(10)]})
+        with pytest.raises(AttributeError) as exc:
+            _ = TimeSeries.from_dataframe(df, time_col="missing_col")
+        assert str(exc.value) == "time_col='missing_col' is not present."
+
+    def test_df_invalid_time_col_dtype(self):
+        # cannot be float
+        df = pd.DataFrame({"a": [i for i in range(10)], "times": [1.0] * 10})
+        with pytest.raises(AttributeError) as exc:
+            _ = TimeSeries.from_dataframe(df, time_col="times")
+        assert str(exc.value).startswith("Invalid type of `time_col`")
+
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
     def test_polars_creation(self, caplog):
         expected_idx = pl.Series("time", range(10))
