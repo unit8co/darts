@@ -2635,14 +2635,10 @@ class TestTorchForecastingModel:
 
         model_kwargs = {
             "input_chunk_length": 12,
-            "model": "RNN",
-            "hidden_dim": 10,
-            "n_rnn_layers": 1,
             "n_epochs": n_epochs,
             "work_dir": tmpdir_fn,
             "random_state": 42,
             "save_checkpoints": save_checkpoints,
-            "model_name": f"test_load_best_ignored_{save_checkpoints}_{val_series_provided}",
             **tfm_kwargs,
         }
 
