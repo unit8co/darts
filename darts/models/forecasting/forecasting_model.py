@@ -1021,11 +1021,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if train_length_ and len(pred_series_) > train_length_:
                     # moving training window with potential validation window
                     train_series_ = pred_series_[
-                        -(train_length_ + val_length_) : -val_length or None
+                        -(train_length_ + val_length_) : -val_length_ or None
                     ]
                 elif val_length_:
                     # expanding training window with validation window
-                    train_series_ = pred_series_[:-val_length]
+                    train_series_ = pred_series_[:-val_length_]
                 else:
                     # expanding training window
                     train_series_ = pred_series_
