@@ -1133,21 +1133,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-        trainer, model, train_loader, val_loader = self._setup_for_train(
-            train_dataset=train_dataset,
-            val_dataset=val_dataset,
-            trainer=trainer,
-            verbose=verbose,
-            epochs=epochs,
-            dataloader_kwargs=dataloader_kwargs,
-        )
-
         self._train(
-            trainer=trainer,
-            model=model,
-            train_loader=train_loader,
-            val_loader=val_loader,
-            load_best=load_best,
+            *self._setup_for_train(
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
+                trainer=trainer,
+                verbose=verbose,
+                epochs=epochs,
+                dataloader_kwargs=dataloader_kwargs,
+                load_best=load_best,
+            )
         )
         return self
 
@@ -1159,7 +1154,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
-    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
+        load_best: bool = False,
+    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader], bool]:
         """This method acts on `TorchTrainingDataset` inputs. It performs sanity checks, and sets up / returns the
         trainer, model, and dataset loaders required for training the model with `_train()`.
         """
@@ -1305,7 +1301,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f"discouraged. Consider model `{self.__class__.__name__}.load_weights()` to load the weights for "
                 f"fine-tuning."
             )
-        return trainer, model, train_loader, val_loader
+        return trainer, model, train_loader, val_loader, load_best
 
     def _train(
         self,
@@ -1512,24 +1508,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
         )
-        (
-            train_dataset,
-            val_dataset,
-            trainer,
-            verbose,
-            epochs,
-            dataloader_kwargs,
-            _,
-        ) = params
-        trainer, model, train_loader, val_loader = self._setup_for_train(
-            train_dataset=train_dataset,
-            val_dataset=val_dataset,
-            trainer=trainer,
-            verbose=verbose,
-            epochs=epochs,
-            dataloader_kwargs=dataloader_kwargs,
-        )
-
+        trainer, model, train_loader, val_loader, _ = self._setup_for_train(*params)
         return Tuner(trainer).lr_find(
             model,
             train_dataloaders=train_loader,

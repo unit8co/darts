@@ -2541,55 +2541,28 @@ class TestTorchForecastingModel:
             **tfm_kwargs,
         }
 
-        trainer_last, trainer_best = None, None
+        kwargs_last = dict(
+            common_kwargs, model_name="last_model", save_checkpoints=True
+        )
+        kwargs_best = dict(
+            common_kwargs, model_name="best_model", save_checkpoints=True
+        )
         if not use_custom_trainer:
             # Case A: Darts' automatic checkpointing
-            kwargs_last = dict(
-                common_kwargs, model_name="last_model", save_checkpoints=True
-            )
-            kwargs_best = dict(
-                common_kwargs, model_name="best_model", save_checkpoints=True
-            )
+            trainer_best = None
         else:
             # Case B: User provides a custom `trainer` with a ModelCheckpoint callback
-            kwargs_last = dict(
-                common_kwargs, model_name="last_model", save_checkpoints=True
-            )
-            kwargs_best = dict(
-                common_kwargs, model_name="best_model", save_checkpoints=True
-            )
-
-            # for last model
-            checkpoints_folder_last = os.path.join(
-                tmpdir_fn, "last_model", "checkpoints"
-            )
-            os.makedirs(checkpoints_folder_last, exist_ok=True)
+            ckpt_folder = os.path.join(tmpdir_fn, "best_model", "checkpoints")
+            os.makedirs(ckpt_folder, exist_ok=True)
             checkpoint_callback_last = ModelCheckpoint(
-                dirpath=checkpoints_folder_last,
-                save_last=True,
-                monitor="val_loss",
-                filename="best-{epoch}-{val_loss:.2f}",
-            )
-            trainer_last = pl.Trainer(
-                max_epochs=n_epochs,
-                callbacks=[checkpoint_callback_last],
-                **tfm_kwargs["pl_trainer_kwargs"],
-            )
-
-            # for best model
-            checkpoints_folder_best = os.path.join(
-                tmpdir_fn, "best_model", "checkpoints"
-            )
-            os.makedirs(checkpoints_folder_best, exist_ok=True)
-            checkpoint_callback_best = ModelCheckpoint(
-                dirpath=checkpoints_folder_best,
+                dirpath=ckpt_folder,
                 save_last=True,
                 monitor="val_loss",
                 filename="best-{epoch}-{val_loss:.2f}",
             )
             trainer_best = pl.Trainer(
                 max_epochs=n_epochs,
-                callbacks=[checkpoint_callback_best],
+                callbacks=[checkpoint_callback_last],
                 **tfm_kwargs["pl_trainer_kwargs"],
             )
 
@@ -2598,7 +2571,7 @@ class TestTorchForecastingModel:
             series_train,
             val_series=series_val,
             load_best=False,
-            trainer=trainer_last,
+            trainer=None,
         )
         last_model_epochs_trained = model_last.epochs_trained
 
