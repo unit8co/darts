@@ -921,13 +921,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
             if retrain and isinstance(self, GlobalForecastingModel):
-                self._global_historical_forecasts(
+                return self._global_historical_forecasts(
                     series=series,
                     past_covariates=past_covariates,
                     future_covariates=future_covariates,
                     forecast_horizon=forecast_horizon,
                     num_samples=num_samples,
                     train_length=train_length,
+                    val_length=val_length,
                     start=start,
                     start_format=start_format,
                     stride=stride,
@@ -3141,6 +3142,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         forecast_horizon: int,
         num_samples: int,
         train_length: Optional[int],
+        val_length: int,
         start: Optional[Union[pd.Timestamp, float, int]],
         start_format: Literal["position", "value"],
         stride: int,
@@ -3195,7 +3197,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             overlap_end=overlap_end,
             retrain=retrain,
             train_length=train_length,
-            val_length=0,
+            val_length=val_length,
             show_warnings=show_warnings,
         )
 
