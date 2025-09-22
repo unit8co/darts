@@ -1512,25 +1512,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
         )
-
-        (
-            train_dataset,
-            val_dataset,
-            trainer,
-            verbose,
-            epochs,
-            dataloader_kwargs,
-            _,
-        ) = params
-        trainer, model, train_loader, val_loader = self._setup_for_train(
-            train_dataset=train_dataset,
-            val_dataset=val_dataset,
-            trainer=trainer,
-            verbose=verbose,
-            epochs=epochs,
-            dataloader_kwargs=dataloader_kwargs,
-        )
-
         return Tuner(trainer).lr_find(
             model,
             train_dataloaders=train_loader,
