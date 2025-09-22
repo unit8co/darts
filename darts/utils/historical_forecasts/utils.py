@@ -1410,21 +1410,14 @@ def _apply_data_transformers(
     """Transform each series using the corresponding Pipeline.
 
     If the Pipeline is fittable and `fit_transformers=True`, the series are sliced to correspond
-    to the information available at model training time
+    to the information available at model training time.
+
+    If `series` is a list of `TimeSeries` (multi series) and `fit_transformers=True`, the series are expected to have
+    the same time index (e.g. when running historical forecasts with `apply_globally=True`).
     """
-    # `global_fit`` is not supported, requires too complex time indexes manipulation across series (slice and align)
-    if fit_transformers and any(
-        not (isinstance(ts, TimeSeries) or ts is None)
-        for ts in [series, past_covariates, future_covariates]
-    ):
-        raise_log(
-            ValueError(
-                "Fitting the data transformers on multiple series is not supported, either provide trained "
-                "`data_transformers` or a single series (including for the covariates).",
-                logger,
-            )
-        )
     transformed_ts = []
+    is_multi_series = get_series_seq_type(series) == SeriesType.SEQ
+    series_end = get_single_series(series).end_time()
     for ts_type, apply_fit, ts in zip(
         ["series", "series", "past_covariates", "future_covariates"],
         [True, False, True, True],
@@ -1437,25 +1430,36 @@ def _apply_data_transformers(
     ):
         if ts is None or data_transformers.get(ts_type) is None:
             transformed_ts.append(ts)
-        else:
-            if fit_transformers and data_transformers[ts_type].fittable:
-                # must slice the ts to distinguish accessible information from future information
-                if ts_type == "past_covariates":
-                    # known information is aligned with the target series
-                    tmp_ts = ts.drop_after(series.end_time())
-                elif ts_type == "future_covariates":
-                    # known information goes up to the first forecasts iteration (in case of autoregression)
-                    tmp_ts = ts.drop_after(
-                        series.end_time() + max(0, max_future_cov_lag + 1) * series.freq
-                    )
-                else:  # "series" and "pred_series"
-                    # nothing to do, the target series is already sliced appropriately
-                    tmp_ts = ts
+            continue
 
-                if apply_fit:
-                    data_transformers[ts_type].fit(tmp_ts)
-            # transforming the series
-            transformed_ts.append(data_transformers[ts_type].transform(ts))
+        if fit_transformers and data_transformers[ts_type].fittable:
+            if not is_multi_series:
+                ts = [ts]
+
+            # must slice the ts to distinguish accessible information from future information
+            if ts_type == "past_covariates":
+                # information is known until the end of the target series
+                tmp_ts = [ts_.drop_after(series_end) for ts_ in ts]
+            elif ts_type == "future_covariates":
+                # information is known until `max_future_cov_lag` steps after the end of the target series
+                tmp_ts = [
+                    ts_.drop_after(
+                        series_end + max(0, max_future_cov_lag + 1) * series.freq
+                    )
+                    for ts_ in ts
+                ]
+            else:  # "series" and "pred_series"
+                # nothing to do, the target series is already sliced appropriately
+                tmp_ts = ts
+
+            if not is_multi_series:
+                ts = get_single_series(ts)
+                tmp_ts = get_single_series(tmp_ts)
+
+            if apply_fit:
+                data_transformers[ts_type].fit(tmp_ts)
+        # transforming the series
+        transformed_ts.append(data_transformers[ts_type].transform(ts))
     return tuple(transformed_ts)
 
 

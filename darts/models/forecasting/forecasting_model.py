@@ -3278,7 +3278,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             if data_transformers and retrain:
                 (
                     train_series_,
-                    pred_series,
+                    pred_series_,
                     past_covariates_,
                     future_covariates_,
                 ) = _apply_data_transformers(
