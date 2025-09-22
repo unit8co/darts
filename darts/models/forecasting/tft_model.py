@@ -52,7 +52,7 @@ class _TFTModule(PLForecastingModule):
         dropout: float,
         add_relative_index: bool,
         norm_type: Union[str, type[nn.Module]],
-        skip_resampling: bool = False,
+        skip_interpolation: bool = False,
         **kwargs,
     ):
         """PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
@@ -101,9 +101,10 @@ class _TFTModule(PLForecastingModule):
             a ``QuantileRegression`` likelihood.
         norm_type: str | type[nn.Module]
             The type of LayerNorm variant to use.
-        skip_resampling: bool
-            Whether to skip resampling on feature embeddings in VariableSelectionNetwork. Setting this to `True`
-            could increase training and inference speed. Defaults to `False`.
+        skip_interpolation: bool
+            Whether to skip interpolation and replace with linear projection on feature embeddings in
+            VariableSelectionNetwork. Setting this to `True` could increase training and inference speed.
+            Defaults to `False` to preserve the permutation in the feature embedding space.
         **kwargs
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
@@ -123,7 +124,7 @@ class _TFTModule(PLForecastingModule):
         self.feed_forward = feed_forward
         self.dropout = dropout
         self.add_relative_index = add_relative_index
-        self.skip_resampling = skip_resampling
+        self.skip_interpolation = skip_interpolation
 
         if isinstance(norm_type, str):
             try:
@@ -187,7 +188,7 @@ class _TFTModule(PLForecastingModule):
             single_variable_grns={},
             context_size=None,  # no context for static variables
             layer_norm=self.layer_norm,
-            skip_resampling=self.skip_resampling,
+            skip_interpolation=self.skip_interpolation,
         )
 
         # variable selection for encoder and decoder
@@ -208,7 +209,7 @@ class _TFTModule(PLForecastingModule):
             prescalers=self.prescalers_linear,
             single_variable_grns={},
             layer_norm=self.layer_norm,
-            skip_resampling=self.skip_resampling,
+            skip_interpolation=self.skip_interpolation,
         )
 
         self.decoder_vsn = _VariableSelectionNetwork(
@@ -220,7 +221,7 @@ class _TFTModule(PLForecastingModule):
             prescalers=self.prescalers_linear,
             single_variable_grns={},
             layer_norm=self.layer_norm,
-            skip_resampling=self.skip_resampling,
+            skip_interpolation=self.skip_interpolation,
         )
 
         # static encoders
@@ -665,7 +666,7 @@ class TFTModel(MixedCovariatesTorchModel):
             dict[str, Union[int, tuple[int, int]]]
         ] = None,
         add_relative_index: bool = False,
-        skip_resampling: bool = False,
+        skip_interpolation: bool = False,
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[TorchLikelihood] = None,
         norm_type: Union[str, nn.Module] = "LayerNorm",
@@ -748,9 +749,10 @@ class TFTModel(MixedCovariatesTorchModel):
             This allows to use the TFTModel without having to pass future_covariates to :func:`fit()` and
             :func:`train()`. It gives a value to the position of each step from input and output chunk relative
             to the prediction point. The values are normalized with ``input_chunk_length``.
-        skip_resampling
-            Whether to skip resampling on feature embeddings in VariableSelectionNetwork. Setting this to ``True``
-            could increase training and inference speed. Defaults to ``False``.
+        skip_interpolation
+            Whether to skip interpolation and replace with linear projection on feature embeddings in
+            VariableSelectionNetwork. Setting this to ``True`` could increase training and inference speed.
+            Defaults to ``False`` to preserve the permutation in the feature embedding space.
         loss_fn: nn.Module
             PyTorch loss function used for training. By default, the TFT model is probabilistic and uses a
             ``likelihood`` instead (``QuantileRegression``). To make the model deterministic, you can set the `
@@ -958,7 +960,7 @@ class TFTModel(MixedCovariatesTorchModel):
             else {}
         )
         self.add_relative_index = add_relative_index
-        self.skip_resampling = skip_resampling
+        self.skip_interpolation = skip_interpolation
         self.output_dim: Optional[tuple[int, int]] = None
         self.norm_type = norm_type
         self._considers_static_covariates = use_static_covariates
@@ -1150,7 +1152,7 @@ class TFTModel(MixedCovariatesTorchModel):
             hidden_continuous_size=self.hidden_continuous_size,
             categorical_embedding_sizes=self.categorical_embedding_sizes,
             add_relative_index=self.add_relative_index,
-            skip_resampling=self.skip_resampling,
+            skip_interpolation=self.skip_interpolation,
             norm_type=self.norm_type,
             **self.pl_module_params,
         )
