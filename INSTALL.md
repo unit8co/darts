@@ -3,7 +3,7 @@
 Below, we detail how to install Darts using either `conda` or `pip`.
 
 ## From PyPI
-Install Darts with all models except the ones from optional dependencies (Prophet, LightGBM, CatBoost, see more on that [here](#enabling-optional-dependencies)): `pip install darts`.
+Install Darts with all models except the ones from optional dependencies (Prophet, LightGBM, CatBoost, XGBoost, StatsForecast see more on that [here](#enabling-optional-dependencies)): `pip install darts`.
 
 If this fails on your platform, please follow the official installation
 guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
@@ -12,8 +12,8 @@ As some dependencies are relatively big or involve non-Python dependencies,
 we also maintain the `u8darts` package, which provides the following alternate lighter install options:
 
 * Install Darts with all available models: `pip install "u8darts[all]"`
-* Install core only (without neural networks, Prophet, LightGBM and Catboost): `pip install u8darts`
-* Install core + Prophet + LightGBM + CatBoost: `pip install "u8darts[notorch]"`
+* Install core only (without neural networks, Prophet, LightGBM, Catboost, XGBoost and StatsForecast): `pip install u8darts`
+* Install core + Prophet + LightGBM + CatBoost + XGBoost + StatsForecast: `pip install "u8darts[notorch]"`
 * Install core + neural networks (PyTorch): `pip install "u8darts[torch]"` (equivalent to `pip install darts`)
 
 ## From conda-forge
@@ -29,16 +29,15 @@ Activate the environment
 As some models have relatively heavy dependencies, we provide four conda-forge packages:
 
 * Install Darts with all available models: `conda install -c conda-forge -c pytorch u8darts-all`
-* Install core only (without neural networks, Prophet, LightGBM and Catboost): `conda install -c conda-forge u8darts`
-* Install core + Prophet + LightGBM + CatBoost: `conda install -c conda-forge u8darts-notorch`
+* Install core only (without neural networks, Prophet, LightGBM, Catboost, XGBoost and StatsForecast): `conda install -c conda-forge u8darts`
+* Install core + Prophet + LightGBM + CatBoost + XGBoost + StatsForecast: `conda install -c conda-forge u8darts-notorch`
 * Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
 
 
 ## Other Information
 
 ### Enabling Optional Dependencies
-As of version 0.25.0, the default `darts` package does not install Prophet, CatBoost, and LightGBM dependencies anymore, because their
-build processes were too often causing issues. We continue supporting the model wrappers `Prophet`, `CatBoostModel`, and `LightGBMModel` in Darts though. If you want to use any of them, you will need to manually install the corresponding packages (or install a Darts flavor as described above).
+As of version 0.38.0, we made the default `darts` package more lightweight. Packages Prophet, CatBoost, LightGBM, XGBoost and StatsForecast will not be installed anymore. Don't worry though, we keep supporting our model wrappers `Prophet`, `CatBoostModel`, `LightGBMModel`, `XGBoost` and `StatsForecast` in Darts. If you want to use any of them, you will need to manually install the corresponding packages (or install a Darts flavor as described above).
 
 #### Prophet
 Install the `prophet` package (version 1.1.1 or more recent) using the [Prophet install guide](https://facebook.github.io/prophet/docs/installation.html#python)
@@ -48,6 +47,12 @@ Install the `catboost` package (version 1.0.6 or more recent) using the [CatBoos
 
 #### LightGBMModel
 Install the `lightgbm` package (version 3.2.0 or more recent) using the [LightGBM install guide](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html)
+
+#### XGBoost
+Install the `xgboost` package (version 2.1.4 or more recent) using the [XGBoost install guide](https://xgboost.readthedocs.io/en/stable/install.html)
+
+#### StatsForecast
+Install the `statsforecast` package (version 1.4 or more recent) using the [StatsForecast install guide](https://nixtlaverse.nixtla.io/statsforecast/index.html#installation)
 
 ### Enabling GPU support
 Darts relies on PyTorch for the neural network models.

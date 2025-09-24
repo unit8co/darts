@@ -4,16 +4,23 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from darts.tests.conftest import PROPHET_AVAILABLE
+
+if not PROPHET_AVAILABLE:
+    pytest.skip(
+        f"Prophet not available. {__name__} tests will be skipped.",
+        allow_module_level=True,
+    )
+
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import Prophet
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import NotImportedModule, freqs, generate_index
+from darts.utils.utils import freqs, generate_index
 
 logger = get_logger(__name__)
 
 
-@pytest.mark.skipif(isinstance(Prophet, NotImportedModule), reason="requires prophet")
 class TestProphet:
     def test_add_seasonality_calls(self):
         # test if adding seasonality at model creation and with method model.add_seasonality() are equal
