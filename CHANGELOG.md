@@ -17,7 +17,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added `add_regressor_configs` parameter to the `Prophet` model, enabling component-specific control over `prior_scale`, `mode`, and `standardize` for the future covariates. [#2882](https://github.com/unit8co/darts/issues/2882) by [Ramsay Davis](https://github.com/RamsayDavisWL).
 - 🔴 Increased the decimal places for quantile component names from 2 to 3 for more precise quantiles. (e.g. `component_name_q0.500` for quantile 0.5). This affects quantile forecasts as well as quantiles computed with `TimeSeries.quantile()`. [#2887](https://github.com/unit8co/darts/pull/2786) by [He Weilin](https://github.com/cnhwl).
 - Added parameter `load_best` to `TorchForecastingModel.fit()` and `fit_from_dataset()` which, when `True`, will automatically load (and use) the best model on the validation set at the end of the training process. [#2903](https://github.com/unit8co/darts/pull/2903) by [He Weilin](https://github.com/cnhwl).
-- Added model creation parameters `random_errors` and `error` to `ExponentialSmoothing` that give control over how probabilistic forecasts are generated. [#2290491](https://github.com/unit8co/darts/pull/2904) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- Added model creation parameters `random_errors` and `error` to `ExponentialSmoothing` that give control over how probabilistic forecasts are generated. [#2904](https://github.com/unit8co/darts/pull/2904) by [Jakub Chłapek](https://github.com/jakubchlapek)
 - Added parameter `val_length` to `ForecastingModel.historical_forecasts()`, `backtest()` and `residuals()` which will extract a validation set of length `val_length` after the end of each training set when `retrain=True`. The validation set is then used to fit the underlying forecasting model if it supports it. This is especially useful for early stopping mechanisms to reduce overfitting and / or training times. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
 - 🔴 Renamed the `RegressionEnsembleModel` ensemble model attribute from `regression_model` to `ensemble_model` to make it more clear that this model is used to combine the predictions of the base models. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
 
@@ -29,6 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 - We raised the minimum pytorch-lightning version to `pytorch-lightning>=2.0.0`. [#2888](https://github.com/unit8co/darts/pull/2888) by [Dennis Bader](https://github.com/dennisbader).
+- We made the Darts core and `torch` packages lighter by removing XGBoost and StatsForecast from the dependencies. All our forecasting models wrapping around these libraries will still be supported. To use them simply install the packages manually or via `u8darts[notorch]` and `u8darts[all]`. [#2906](https://github.com/unit8co/darts/pull/2906) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
 ### For developers of the library:
 
