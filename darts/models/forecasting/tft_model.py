@@ -42,7 +42,7 @@ class _TFTModule(PLForecastingModule):
         output_dim: tuple[int, int],
         variables_meta: dict[str, dict[str, list[str]]],
         num_static_components: int,
-        hidden_size: Union[int, list[int]],
+        hidden_size: int,
         lstm_layers: int,
         num_attention_heads: int,
         full_attention: bool,
@@ -51,7 +51,8 @@ class _TFTModule(PLForecastingModule):
         categorical_embedding_sizes: dict[str, tuple[int, int]],
         dropout: float,
         add_relative_index: bool,
-        norm_type: Union[str, nn.Module],
+        norm_type: Union[str, type[nn.Module]],
+        skip_interpolation: bool = False,
         **kwargs,
     ):
         """PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
@@ -98,8 +99,12 @@ class _TFTModule(PLForecastingModule):
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
-        norm_type: str | nn.Module
+        norm_type: str | type[nn.Module]
             The type of LayerNorm variant to use.
+        skip_interpolation: bool
+            Whether to skip interpolation and replace with linear projection on feature embeddings in
+            VariableSelectionNetwork. Setting this to `True` could increase training and inference speed.
+            Defaults to `False` to preserve the permutation in the feature embedding space.
         **kwargs
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
@@ -119,6 +124,7 @@ class _TFTModule(PLForecastingModule):
         self.feed_forward = feed_forward
         self.dropout = dropout
         self.add_relative_index = add_relative_index
+        self.skip_interpolation = skip_interpolation
 
         if isinstance(norm_type, str):
             try:
@@ -182,6 +188,7 @@ class _TFTModule(PLForecastingModule):
             single_variable_grns={},
             context_size=None,  # no context for static variables
             layer_norm=self.layer_norm,
+            skip_interpolation=self.skip_interpolation,
         )
 
         # variable selection for encoder and decoder
@@ -202,6 +209,7 @@ class _TFTModule(PLForecastingModule):
             prescalers=self.prescalers_linear,
             single_variable_grns={},
             layer_norm=self.layer_norm,
+            skip_interpolation=self.skip_interpolation,
         )
 
         self.decoder_vsn = _VariableSelectionNetwork(
@@ -213,6 +221,7 @@ class _TFTModule(PLForecastingModule):
             prescalers=self.prescalers_linear,
             single_variable_grns={},
             layer_norm=self.layer_norm,
+            skip_interpolation=self.skip_interpolation,
         )
 
         # static encoders
@@ -368,11 +377,11 @@ class _TFTModule(PLForecastingModule):
         return self.variables_meta["model_config"]["time_varying_decoder_input"]
 
     @staticmethod
-    def expand_static_context(context: torch.Tensor, time_steps: int) -> torch.Tensor:
+    def expand_static_context(context: torch.Tensor) -> torch.Tensor:
         """
         add time dimension to static context
         """
-        return context[:, None].expand(-1, time_steps, -1)
+        return context.unsqueeze(1).contiguous()
 
     @staticmethod
     def get_relative_index(
@@ -409,7 +418,7 @@ class _TFTModule(PLForecastingModule):
         encoder_length: int,
         decoder_length: int,
         batch_size: int,
-        device: str,
+        device: torch.device,
         full_attention: bool,
     ) -> torch.Tensor:
         """
@@ -466,7 +475,6 @@ class _TFTModule(PLForecastingModule):
         batch_size = x_cont_past.shape[dim_samples]
         encoder_length = self.input_chunk_length
         decoder_length = self.output_chunk_length
-        time_steps = encoder_length + decoder_length
 
         # avoid unnecessary regeneration of attention mask
         if batch_size != self.batch_size_last:
@@ -549,7 +557,7 @@ class _TFTModule(PLForecastingModule):
             static_covariate_var = None
 
         static_context_expanded = self.expand_static_context(
-            context=self.static_context_grn(static_embedding), time_steps=time_steps
+            self.static_context_grn(static_embedding)
         )
 
         embeddings_varying_encoder = {
@@ -557,7 +565,7 @@ class _TFTModule(PLForecastingModule):
         }
         embeddings_varying_encoder, encoder_sparse_weights = self.encoder_vsn(
             x=embeddings_varying_encoder,
-            context=static_context_expanded[:, :encoder_length],
+            context=static_context_expanded,
         )
 
         embeddings_varying_decoder = {
@@ -565,7 +573,7 @@ class _TFTModule(PLForecastingModule):
         }
         embeddings_varying_decoder, decoder_sparse_weights = self.decoder_vsn(
             x=embeddings_varying_decoder,
-            context=static_context_expanded[:, encoder_length:],
+            context=static_context_expanded,
         )
 
         # LSTM
@@ -603,9 +611,7 @@ class _TFTModule(PLForecastingModule):
         static_context_enriched = self.static_context_enrichment(static_embedding)
         attn_input = self.static_enrichment_grn(
             x=lstm_out,
-            context=self.expand_static_context(
-                context=static_context_enriched, time_steps=time_steps
-            ),
+            context=self.expand_static_context(static_context_enriched),
         )
 
         # multi-head attention
@@ -660,6 +666,7 @@ class TFTModel(MixedCovariatesTorchModel):
             dict[str, Union[int, tuple[int, int]]]
         ] = None,
         add_relative_index: bool = False,
+        skip_interpolation: bool = False,
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[TorchLikelihood] = None,
         norm_type: Union[str, nn.Module] = "LayerNorm",
@@ -742,6 +749,10 @@ class TFTModel(MixedCovariatesTorchModel):
             This allows to use the TFTModel without having to pass future_covariates to :func:`fit()` and
             :func:`train()`. It gives a value to the position of each step from input and output chunk relative
             to the prediction point. The values are normalized with ``input_chunk_length``.
+        skip_interpolation
+            Whether to skip interpolation and replace with linear projection on feature embeddings in
+            VariableSelectionNetwork. Setting this to ``True`` could increase training and inference speed.
+            Defaults to ``False`` to preserve the permutation in the feature embedding space.
         loss_fn: nn.Module
             PyTorch loss function used for training. By default, the TFT model is probabilistic and uses a
             ``likelihood`` instead (``QuantileRegression``). To make the model deterministic, you can set the `
@@ -949,11 +960,12 @@ class TFTModel(MixedCovariatesTorchModel):
             else {}
         )
         self.add_relative_index = add_relative_index
+        self.skip_interpolation = skip_interpolation
         self.output_dim: Optional[tuple[int, int]] = None
         self.norm_type = norm_type
         self._considers_static_covariates = use_static_covariates
 
-    def _create_model(self, train_sample: TorchTrainingSample) -> nn.Module:
+    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         """
         `train_sample` contains the following tensors:
             (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
@@ -1140,6 +1152,7 @@ class TFTModel(MixedCovariatesTorchModel):
             hidden_continuous_size=self.hidden_continuous_size,
             categorical_embedding_sizes=self.categorical_embedding_sizes,
             add_relative_index=self.add_relative_index,
+            skip_interpolation=self.skip_interpolation,
             norm_type=self.norm_type,
             **self.pl_module_params,
         )
@@ -1149,7 +1162,7 @@ class TFTModel(MixedCovariatesTorchModel):
         series: Sequence[TimeSeries],
         past_covariates: Optional[Sequence[TimeSeries]],
         future_covariates: Optional[Sequence[TimeSeries]],
-        sample_weight: Optional[Sequence[TimeSeries]],
+        sample_weight: Optional[Union[Sequence[TimeSeries], str]],
         max_samples_per_ts: Optional[int],
         stride: int = 1,
     ) -> TorchTrainingDataset:

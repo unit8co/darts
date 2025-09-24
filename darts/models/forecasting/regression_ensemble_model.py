@@ -8,6 +8,8 @@ An ensemble model which uses a regression model to compute the ensemble forecast
 from collections.abc import Sequence
 from typing import Optional, Union
 
+import numpy as np
+
 from darts import TimeSeries, concatenate
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.ensemble_model import EnsembleModel
@@ -77,7 +79,7 @@ class RegressionEnsembleModel(EnsembleModel):
             or float value corresponding to the desired quantile. Default: "median"
         train_forecasting_models
             If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
-            if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
+            if all the `forecasting_models` are pre-trained `GlobalForecastingModels`). Default: ``True``.
         train_using_historical_forecasts
             If set to `True`, use `historical_forecasts()` to generate the forecasting models' predictions used to
             train the regression model in `fit()`. Available when `forecasting_models` contains only
@@ -112,14 +114,6 @@ class RegressionEnsembleModel(EnsembleModel):
                [557.35256055],
                [630.24334385]])
         """
-        super().__init__(
-            forecasting_models=forecasting_models,
-            train_num_samples=regression_train_num_samples,
-            train_samples_reduction=regression_train_samples_reduction,
-            train_forecasting_models=train_forecasting_models,
-            show_warnings=show_warnings,
-        )
-
         if regression_model is None:
             regression_model = LinearRegressionModel(
                 lags=None, lags_future_covariates=[0], fit_intercept=False
@@ -145,18 +139,15 @@ class RegressionEnsembleModel(EnsembleModel):
             f"{regression_model.lags}",
         )
 
-        self.regression_model: SKLearnModel = regression_model
-
-        raise_if(
-            regression_train_n_points == -1
-            and not (self.all_trained and (not train_forecasting_models)),
-            "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
-            "all `forecasting_models` are already fitted.",
-            logger,
+        super().__init__(
+            forecasting_models=forecasting_models,
+            ensemble_model=regression_model,
+            train_num_samples=regression_train_num_samples,
+            train_samples_reduction=regression_train_samples_reduction,
+            train_forecasting_models=train_forecasting_models,
+            train_n_points=regression_train_n_points,
+            show_warnings=show_warnings,
         )
-
-        # converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series
-        self.train_n_points: Union[int, list[int]] = regression_train_n_points
 
         raise_if(
             train_using_historical_forecasts and not self.is_global_ensemble,
@@ -205,8 +196,20 @@ class RegressionEnsembleModel(EnsembleModel):
 
         predictions = []
         for m_idx, model in enumerate(self.forecasting_models):
+            # get the columns corresponding to the current model's predictions
+            pred_cols_slice = slice(m_idx * n_components, (m_idx + 1) * n_components)
+            pred_cols = model_predict_cols[pred_cols_slice]
+
             # we start historical fc at multiple of the output length before the end.
             n_ocl_back = train_n_points // model.output_chunk_length
+
+            if not n_ocl_back:
+                # no historical forecasts required, use direct predictions
+                predictions.append([
+                    preds_dir[pred_cols] for preds_dir in direct_predictions
+                ])
+                continue
+
             start_hist_forecasts = n_ocl_back * model.output_chunk_length
 
             # we use the precomputed `direct_prediction` to fill any missing prediction
@@ -234,26 +237,27 @@ class RegressionEnsembleModel(EnsembleModel):
                 show_warnings=self.show_warnings,
                 predict_likelihood_parameters=False,
             )
-            # concatenate the strided predictions of output_chunk_length values each
+            # concatenate the stridden predictions of output_chunk_length values each
             tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
 
             # add the missing steps at beginning by taking the first values of precomputed predictions
             if missing_steps:
                 # add the missing steps at beginning by taking the first values of precomputed predictions
                 # get the model's direct (uni/multivariate) predictions
-                pred_cols = model_predict_cols[
-                    m_idx * n_components : (m_idx + 1) * n_components
-                ]
-                hfc_cols = tmp_pred[0].columns.tolist()
                 tmp_pred = [
-                    concatenate(
-                        [
-                            preds_dir[:missing_steps][pred_cols].with_columns_renamed(
-                                pred_cols, hfc_cols
-                            ),
-                            preds_hfc,
-                        ],
-                        axis=0,
+                    preds_hfc.with_times_and_values(
+                        times=preds_dir.time_index[:missing_steps].union(
+                            preds_hfc.time_index
+                        ),
+                        values=np.concatenate(
+                            [
+                                preds_dir.all_values(copy=False)[
+                                    :missing_steps, pred_cols_slice
+                                ],
+                                preds_hfc.all_values(copy=False),
+                            ],
+                            axis=0,
+                        ),
                     )
                     for preds_dir, preds_hfc in zip(direct_predictions, tmp_pred)
                 ]
@@ -319,63 +323,18 @@ class RegressionEnsembleModel(EnsembleModel):
             series, past_covariates=past_covariates, future_covariates=future_covariates
         )
 
-        # spare train_n_points points to serve as regression target
+        # at this point, we know that all target series all long enough
         is_single_series = isinstance(series, TimeSeries)
+
+        # determine the actual number of training points to use
         if self.train_n_points == -1:
+            input_shift = self._target_window_lengths[0]
             if is_single_series:
-                train_n_points = [len(series)]
+                self.train_n_points = len(series) - input_shift
             else:
-                # maximize each series usage
-                train_n_points = [len(ts) for ts in series]
+                self.train_n_points = [len(ts) - input_shift for ts in series]
 
-            # shift by the forecasting models' largest input length
-            all_shifts = []
-            # when it's not clearly defined, extreme_lags returns
-            # `min_train_series_length` for the LocalForecastingModels
-            for model in self.forecasting_models:
-                min_target_lag, _, _, _, _, _, _, _ = model.extreme_lags
-                if min_target_lag is not None:
-                    all_shifts.append(-min_target_lag)
-
-            input_shift = max(all_shifts)
-            idx_series_too_short = []
-            tmp_train_n_points = []
-            for idx, ts_length in enumerate(train_n_points):
-                ajusted_length = ts_length - input_shift
-                if ajusted_length < 0:
-                    idx_series_too_short.append(idx)
-                else:
-                    tmp_train_n_points.append(ajusted_length)
-
-            raise_if(
-                len(idx_series_too_short) > 0,
-                f"TimeSeries at indexes {idx_series_too_short} of `series` are too short to train the regression "
-                f"model due to the number of values necessary to produce one prediction : {input_shift}.",
-                logger,
-            )
-
-            if is_single_series:
-                self.train_n_points = tmp_train_n_points[0]
-            else:
-                self.train_n_points = tmp_train_n_points
-
-            train_n_points_too_big = False
-        else:
-            # self.train_n_points is necessarily an integer
-            if is_single_series:
-                train_n_points_too_big = len(series) <= self.train_n_points
-            else:
-                train_n_points_too_big = any([
-                    len(s) <= self.train_n_points for s in series
-                ])
-
-        raise_if(
-            train_n_points_too_big,
-            "`regression_train_n_points` parameter too big (must be strictly smaller than "
-            "the number of points in training_series)",
-            logger,
-        )
-
+        # spare train_n_points points to serve as regression target
         if is_single_series:
             forecast_training = series[: -self.train_n_points]
             regression_target = series[-self.train_n_points :]
@@ -402,7 +361,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 )
 
         # we can call direct prediction in any case. Even if we overwrite with historical
-        # forecasts later on, it serves as a input validation
+        # forecasts later on, it serves as input validation
         predictions = self._make_multiple_predictions(
             n=self.train_n_points,
             series=forecast_training,
@@ -422,7 +381,7 @@ class RegressionEnsembleModel(EnsembleModel):
             )
 
         # train the regression model on the individual models' predictions
-        self.regression_model.fit(
+        self.ensemble_model.fit(
             series=regression_target,
             future_covariates=predictions,
             sample_weight=sample_weight,
@@ -463,7 +422,7 @@ class RegressionEnsembleModel(EnsembleModel):
         series = series2seq(series) if series is not None else [None]
 
         ensembled = [
-            self.regression_model.predict(
+            self.ensemble_model.predict(
                 n=len(prediction),
                 series=serie,
                 future_covariates=prediction,
@@ -476,41 +435,14 @@ class RegressionEnsembleModel(EnsembleModel):
         return seq2series(ensembled) if is_single_series else ensembled
 
     @property
-    def extreme_lags(
-        self,
-    ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        int,
-        Optional[int],
-    ]:
-        extreme_lags_ = super().extreme_lags
-        # shift min_target_lag in the past to account for the regression model training set
-        if extreme_lags_[0] is None:
-            return (-self.train_n_points,) + extreme_lags_[1:]
-        else:
-            return (extreme_lags_[0] - self.train_n_points,) + extreme_lags_[1:]
-
-    @property
     def output_chunk_length(self) -> int:
         """Return the `output_chunk_length` of the regression model (ensembling layer)"""
-        return self.regression_model.output_chunk_length
+        return self.ensemble_model.output_chunk_length
 
     @property
     def supports_likelihood_parameter_prediction(self) -> bool:
         """RegressionEnsembleModel supports likelihood parameters predictions if its regression model does"""
-        return self.regression_model.supports_likelihood_parameter_prediction
-
-    @property
-    def supports_multivariate(self) -> bool:
-        return (
-            super().supports_multivariate
-            and self.regression_model.supports_multivariate
-        )
+        return self.ensemble_model.supports_likelihood_parameter_prediction
 
     @property
     def supports_probabilistic_prediction(self) -> bool:
@@ -518,4 +450,4 @@ class RegressionEnsembleModel(EnsembleModel):
         A RegressionEnsembleModel is probabilistic if its regression
         model is probabilistic (ensembling layer)
         """
-        return self.regression_model.supports_probabilistic_prediction
+        return self.ensemble_model.supports_probabilistic_prediction

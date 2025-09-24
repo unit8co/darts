@@ -353,26 +353,12 @@ class XGBModel(SKLearnModel):
         return self
 
     @property
-    def supports_val_set(self) -> bool:
+    def _supports_val_series(self) -> bool:
         return True
 
     @property
     def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
         return "eval_set", "sample_weight_eval_set"
-
-    @property
-    def min_train_series_length(self) -> int:
-        # XGBModel  requires a minimum of 2 training samples,
-        # therefore the min_train_series_length should be one
-        # more than for other regression models
-        return max(
-            3,
-            (
-                -self.lags["target"][0] + self.output_chunk_length + 1
-                if "target" in self.lags
-                else self.output_chunk_length
-            ),
-        )
 
     @property
     def _supports_native_multioutput(self) -> bool:

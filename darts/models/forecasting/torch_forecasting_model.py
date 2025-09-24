@@ -20,7 +20,6 @@ import copy
 import datetime
 import inspect
 import os
-import re
 import shutil
 import sys
 from abc import ABC, abstractmethod
@@ -38,6 +37,8 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
+from pytorch_lightning.callbacks import ProgressBar
+from pytorch_lightning.tuner import Tuner
 from torch.utils.data import DataLoader
 
 from darts import TimeSeries
@@ -77,18 +78,6 @@ from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
-
-# Check whether we are running pytorch-lightning >= 2.0.0 or not:
-tokens = pl.__version__.split(".")
-pl_200_or_above = int(tokens[0]) >= 2
-
-if pl_200_or_above:
-    from pytorch_lightning.callbacks import ProgressBar
-    from pytorch_lightning.tuner import Tuner
-else:
-    from pytorch_lightning.callbacks import ProgressBarBase as ProgressBar
-    from pytorch_lightning.tuner.tuning import Tuner
-
 
 DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
@@ -446,53 +435,51 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = self._create_model(self.train_sample)
         self._module_name = model.__class__.__name__
 
+        # we should determine the precision based on time series data type
+        # however if user has defined a precision, we should follow that
         precision = None
-        dtype = self.train_sample[0].dtype
-        if np.issubdtype(dtype, np.float32):
-            logger.info("Time series values are 32-bits; casting model to float32.")
-            precision = "32" if not pl_200_or_above else "32-true"
-        elif np.issubdtype(dtype, np.float64):
-            logger.info("Time series values are 64-bits; casting model to float64.")
-            precision = "64" if not pl_200_or_above else "64-true"
-        else:
-            raise_log(
-                ValueError(
-                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
-                    f"or `np.float64`, e.g. with `TimeSeries.astype(np.float32)`."
-                ),
-                logger,
-            )
-        precision_int = int(re.findall(r"\d+", str(precision))[0])
-
         precision_user = (
             self.trainer_params.get("precision", None)
             if trainer is None
             else trainer.precision
         )
+        dtype = self.train_sample[0].dtype
         if precision_user is not None:
-            # currently, we only support float 64 and 32
-            valid_precisions = (
-                ["64", "32"] if not pl_200_or_above else ["64-true", "32-true"]
+            logger.info(
+                f"Using user-defined precision: {precision_user}. The model output will have the same dtype. If you "
+                f"encounter issues, it's usually due to a conflict between input series data type and precision, or an "
+                f"unsupported precision for the given device or model. For more information, see "
+                f"https://github.com/unit8co/darts/pull/2883 for a discussion on low precision options across hardware "
+                f"platforms."
             )
-            if str(precision_user) not in valid_precisions:
-                raise_log(
-                    ValueError(
-                        f"Invalid user-defined trainer_kwarg `precision={precision_user}`. "
-                        f"Use one of ({valid_precisions})"
-                    ),
-                    logger,
+            if "16" in str(precision_user):
+                logger.warning(
+                    "Detected user-defined float16-like precision. For mixed precision training, recommended "
+                    "options are 'bf16-mixed' and '16-mixed'."
                 )
-            precision_user_int = int(re.findall(r"\d+", str(precision_user))[0])
+            precision = precision_user
+        elif np.issubdtype(dtype, np.float32):
+            logger.info("Time series values are 32-bits; casting model to float32.")
+            precision = "32-true"
+        elif np.issubdtype(dtype, np.float64):
+            logger.info("Time series values are 64-bits; casting model to float64.")
+            precision = "64-true"
+        elif np.issubdtype(dtype, np.float16):
+            logger.warning(
+                "Time series values are 16-bits; casting model to bfloat16 and model output will have dtype float32. "
+                "Training with 16-bit time series may lead to numerical instability "
+                "in some models. If you encounter issues, consider casting your data "
+                "to 32-bit, e.g. with `TimeSeries.astype(np.float32)`."
+            )
+            precision = "bf16-true"
         else:
-            precision_user_int = None
-
-        raise_if(
-            precision_user is not None and precision_user_int != precision_int,
-            f"User-defined trainer_kwarg `precision='{precision_user}'` does not match dtype: `{dtype}` of the "
-            f"underlying TimeSeries. Set `precision` to `{precision}` or cast your data to `{precision_user}"
-            f"` with `TimeSeries.astype(np.float{precision_user_int})`.",
-            logger,
-        )
+            raise_log(
+                ValueError(
+                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
+                    f"or `np.float64` or `np.float16`, e.g. with `TimeSeries.astype(np.float32)`."
+                ),
+                logger,
+            )
         self.trainer_params["precision"] = precision
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
@@ -838,6 +825,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
         stride: int = 1,
+        load_best: bool = False,
     ) -> "TorchForecastingModel":
         """Fit/train the model on one or multiple series.
 
@@ -915,7 +903,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             The number of time steps between consecutive samples, applied starting from the end of the series. The same
             stride will be applied to both the training and evaluation set (if supplied). This should be used with
             caution as it might introduce bias in the forecasts.
-
+        load_best
+            Whether the model should automatically load the best checkpoint found during training according to the
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a
+            validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
         Returns
         -------
         self
@@ -943,6 +934,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             epochs=epochs,
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
+            load_best=load_best,
         )
         # call super fit only if user is actually fitting the model
         super().fit(
@@ -970,6 +962,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
+        load_best: bool = False,
     ) -> tuple[
         tuple[
             Sequence[TimeSeries],
@@ -983,6 +976,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optional[bool],
             int,
             Optional[dict[str, Any]],
+            bool,
         ],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
@@ -1077,6 +1071,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose,
             epochs,
             dataloader_kwargs,
+            load_best,
         )
         return series_input, fit_from_ds_params
 
@@ -1089,6 +1084,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
+        load_best: bool = False,
     ) -> "TorchForecastingModel":
         """
         Train the model with a specific :class:`darts.utils.data.TorchTrainingDataset` instance.
@@ -1127,6 +1123,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
+        load_best
+            Whether the model should automatically load the best checkpoint found during training according to the
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a
+            validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
 
         Returns
         -------
@@ -1141,6 +1141,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 verbose=verbose,
                 epochs=epochs,
                 dataloader_kwargs=dataloader_kwargs,
+                load_best=load_best,
             )
         )
         return self
@@ -1153,7 +1154,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
-    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
+        load_best: bool = False,
+    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader], bool]:
         """This method acts on `TorchTrainingDataset` inputs. It performs sanity checks, and sets up / returns the
         trainer, model, and dataset loaders required for training the model with `_train()`.
         """
@@ -1299,7 +1301,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f"discouraged. Consider model `{self.__class__.__name__}.load_weights()` to load the weights for "
                 f"fine-tuning."
             )
-        return trainer, model, train_loader, val_loader
+        return trainer, model, train_loader, val_loader, load_best
 
     def _train(
         self,
@@ -1307,6 +1309,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model: PLForecastingModule,
         train_loader: DataLoader,
         val_loader: Optional[DataLoader],
+        load_best: bool = False,
     ) -> None:
         """
         Performs the actual training
@@ -1317,6 +1320,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             the training data loader feeding the training data and targets
         val_loader
             optionally, a validation set loader
+        load_best
+            Whether to load the best model checkpoint after training.
         """
         self._fit_called = True
 
@@ -1325,6 +1330,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
 
+        if load_best:
+            ckpt_callback: Optional[pl.callbacks.ModelCheckpoint] = (
+                trainer.checkpoint_callback
+            )
+            ckpt_activated = ckpt_callback is not None and hasattr(
+                ckpt_callback, "best_model_path"
+            )
+            if not ckpt_activated or val_loader is None:
+                logger.warning(
+                    "Loading the best model will be skipped (`load_best` is ignored), as it requires "
+                    "active checkpointing and a validation set to be provided to the current fit method."
+                    "If not using a custom `trainer`, make sure to set `save_checkpoints=True` at model creation. "
+                    "Otherwise, make sure the custom `trainer` uses a pytorch-lightning `ModelCheckpoint` callback."
+                )
+                load_best = False
+        else:
+            ckpt_callback = None
+
         if self._requires_training:
             trainer.fit(
                 model,
@@ -1332,6 +1355,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 val_dataloaders=val_loader,
                 ckpt_path=ckpt_path,
             )
+            if load_best:
+                best_model_path = ckpt_callback.best_model_path
+                logger.info(
+                    f"Loading best model from checkpoint: '{os.path.basename(best_model_path)}'"
+                )
+                model = self._load_from_checkpoint(best_model_path)
+        else:
+            trainer.strategy.connect(model)
         self.model = model
         self.trainer = trainer
 
@@ -1477,7 +1508,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
         )
-        trainer, model, train_loader, val_loader = self._setup_for_train(*params)
+        trainer, model, train_loader, val_loader, _ = self._setup_for_train(*params)
         return Tuner(trainer).lr_find(
             model,
             train_dataloaders=train_loader,
@@ -1817,6 +1848,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # flatten output for parallelization
         for pred, ss, ps in out:
+            # model output is <BFloat16> when "bf16-mixed" is used, say, mixed precision on CPU,
+            # numpy does not support conversion from BFloat16, so we need to convert it to float32 first
+            if pred.dtype == torch.bfloat16:
+                pred = pred.float()
             predictions.append(pred.numpy())
             series_schemas += ss
             pred_starts += ps
@@ -1854,20 +1889,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return ts_forecasts
 
     @property
-    def first_prediction_index(self) -> int:
-        """
-        Returns the index of the first predicted within the output of self.model.
-        """
-        return 0
-
-    @property
-    def min_train_series_length(self) -> int:
-        """
-        Class property defining the minimum required length for the training series;
-        overriding the default value of 3 of ForecastingModel
-        """
+    def _target_window_lengths(self) -> tuple[int, int]:
         return (
-            self.input_chunk_length + self.output_chunk_length + self.output_chunk_shift
+            self.input_chunk_length,
+            self.output_chunk_length + self.output_chunk_shift,
         )
 
     @staticmethod
@@ -2423,6 +2448,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
+    def _supports_val_series(self) -> bool:
+        return True
+
+    @property
+    def min_train_samples(self) -> int:
+        # dataset requires at least one sample
+        return 1
+
+    @property
     def _requires_training(self) -> bool:
         """Whether the model should be trained when calling a `fit*` method."""
         return True
@@ -2711,7 +2745,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2721,7 +2754,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             None,
             None,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2745,7 +2777,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2755,7 +2786,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2779,7 +2809,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2789,7 +2818,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2813,7 +2841,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2823,7 +2850,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2847,7 +2873,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2857,5 +2882,4 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )

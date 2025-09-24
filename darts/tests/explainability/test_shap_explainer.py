@@ -23,11 +23,12 @@ from darts.models import (
     SKLearnModel,
     XGBModel,
 )
+from darts.tests.conftest import (
+    GBM_AVAILABLE,
+    LGBM_AVAILABLE,
+    XGB_AVAILABLE,
+)
 from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.utils import NotImportedModule
-
-lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
-cb_available = not isinstance(CatBoostModel, NotImportedModule)
 
 
 def extract_year(index):
@@ -138,43 +139,49 @@ class TestShapExplainer:
         np.concatenate([fut_cov_1.reshape(-1, 1), fut_cov_2.reshape(-1, 1)], axis=1),
     )
 
-    def test_creation(self):
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="requires gradient boosting models")
+    @pytest.mark.parametrize(
+        "model",
+        [
+            {
+                "model_cls": LightGBMModel,
+                "config": {
+                    "lags": 4,
+                    "lags_past_covariates": [-1, -2, -3],
+                    "lags_future_covariates": [0],
+                    "output_chunk_length": 4,
+                    "add_encoders": add_encoders,
+                },
+            },
+            {
+                "model_cls": CatBoostModel,
+                "config": {
+                    "lags": 4,
+                    "lags_past_covariates": [-1, -2, -6],
+                    "lags_future_covariates": [0],
+                    "output_chunk_length": 4,
+                },
+            },
+            {
+                "model_cls": XGBModel,
+                "config": {
+                    "lags": 4,
+                    "lags_past_covariates": [-1, -2, -3],
+                    "lags_future_covariates": [0],
+                    "output_chunk_length": 4,
+                    "add_encoders": add_encoders,
+                },
+            },
+        ],
+    )
+    def test_gbm_creation(self, model):
+        model_cls = model["model_cls"]
+        config = model["config"]
         # Model should be fitted first
-        m = model_cls(
-            lags=4,
-            lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[0],
-            output_chunk_length=4,
-            add_encoders=self.add_encoders,
-        )
+        m = model_cls(**config)
+
         with pytest.raises(ValueError):
             ShapExplainer(m, self.target_ts, self.past_cov_ts, self.fut_cov_ts)
-
-        # Model should be a SKLearnModel
-        m = ExponentialSmoothing()
-        m.fit(self.target_ts["price"])
-        with pytest.raises(ValueError):
-            ShapExplainer(m)
-
-        # For now, multi_models=False not allowed
-        m = LinearRegressionModel(lags=1, output_chunk_length=2, multi_models=False)
-        m.fit(
-            series=self.target_ts,
-        )
-        with pytest.raises(ValueError):
-            ShapExplainer(
-                m,
-                self.target_ts,
-            )
-
-        m = model_cls(
-            lags=4,
-            lags_past_covariates=[-1, -2, -3],
-            lags_future_covariates=[0],
-            output_chunk_length=4,
-            add_encoders=self.add_encoders,
-        )
 
         m.fit(
             series=self.target_ts,
@@ -212,6 +219,28 @@ class TestShapExplainer:
         else:
             assert isinstance(
                 shap_explain.explainers.explainers[0][0], shap.explainers.Tree
+            )
+
+        # Bad choice of shap explainer
+        with pytest.raises(ValueError):
+            ShapExplainer(m, shap_method="bad_choice")
+
+    def test_creation(self):
+        # Model should be a SKLearnModel
+        m = ExponentialSmoothing()
+        m.fit(self.target_ts["price"])
+        with pytest.raises(ValueError):
+            ShapExplainer(m)
+
+        # For now, multi_models=False not allowed
+        m = LinearRegressionModel(lags=1, output_chunk_length=2, multi_models=False)
+        m.fit(
+            series=self.target_ts,
+        )
+        with pytest.raises(ValueError):
+            ShapExplainer(
+                m,
+                self.target_ts,
             )
 
         # Linear model - also not a MultiOutputRegressor
@@ -257,33 +286,8 @@ class TestShapExplainer:
         shap_explain = ShapExplainer(m)
         assert isinstance(shap_explain.explainers.explainers, shap.explainers.Linear)
 
-        # CatBoost
-        model_cls = CatBoostModel if cb_available else XGBModel
-        m = model_cls(
-            lags=4,
-            lags_past_covariates=[-1, -2, -6],
-            lags_future_covariates=[0],
-            output_chunk_length=4,
-        )
-        m.fit(
-            series=self.target_ts,
-            past_covariates=self.past_cov_ts,
-            future_covariates=self.fut_cov_ts,
-        )
-        shap_explain = ShapExplainer(m)
-        if m._supports_native_multioutput:
-            assert isinstance(shap_explain.explainers.explainers, shap.explainers.Tree)
-        else:
-            assert isinstance(
-                shap_explain.explainers.explainers[0][0], shap.explainers.Tree
-            )
-
-        # Bad choice of shap explainer
-        with pytest.raises(ValueError):
-            ShapExplainer(m, shap_method="bad_choice")
-
     def test_explain(self):
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         m = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
@@ -440,7 +444,7 @@ class TestShapExplainer:
         assert isinstance(shap_explain.explain(), ShapExplainabilityResult)
 
     def test_explain_with_lags_future_covariates_series_of_same_length_as_target(self):
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         model = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
@@ -476,7 +480,7 @@ class TestShapExplainer:
         fut_cov = np.random.normal(0, 1, len(days)).astype("float32")
         fut_cov_ts = TimeSeries.from_times_and_values(days, fut_cov.reshape(-1, 1))
 
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         model = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
@@ -512,7 +516,7 @@ class TestShapExplainer:
         past_cov = np.random.normal(0, 1, len(days)).astype("float32")
         past_cov_ts = TimeSeries.from_times_and_values(days, past_cov.reshape(-1, 1))
 
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         model = model_cls(
             lags=None,
             lags_past_covariates=[-1, -2],
@@ -539,7 +543,7 @@ class TestShapExplainer:
             assert explanation.start_time() == self.target_ts.start_time()
 
     def test_plot(self):
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         m_0 = model_cls(
             lags=4,
             lags_past_covariates=[-1, -2, -3],
@@ -641,7 +645,7 @@ class TestShapExplainer:
         plt.close()
 
     def test_feature_values_align_with_input(self):
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         model = model_cls(
             lags=4,
             output_chunk_length=1,
@@ -668,7 +672,7 @@ class TestShapExplainer:
         )
 
     def test_feature_values_align_with_raw_output_shap(self):
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         model = model_cls(
             lags=4,
             output_chunk_length=1,
@@ -695,7 +699,7 @@ class TestShapExplainer:
         ), "The shape of the feature values should be the same as the shap values"
 
     def test_shap_explanation_object_validity(self):
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         model = model_cls(
             lags=4,
             lags_past_covariates=2,
@@ -719,13 +723,13 @@ class TestShapExplainer:
 
     @pytest.mark.parametrize(
         "config",
-        [
-            (XGBModel, {}),
-            (
-                LightGBMModel if lgbm_available else XGBModel,
-                {"likelihood": "quantile", "quantiles": [0.5]},
-            ),
-        ],
+        [(LinearRegressionModel, {})]
+        + ([(XGBModel, {})] if XGB_AVAILABLE else [])
+        + (
+            [(LightGBMModel, {"likelihood": "quantile", "quantiles": [0.5]})]
+            if LGBM_AVAILABLE
+            else []
+        ),
     )
     def test_shap_selected_components(self, config):
         """Test selected components with and without Darts' MultiOutputRegressor"""
@@ -768,7 +772,7 @@ class TestShapExplainer:
 
     def test_shapley_with_static_cov(self):
         ts = self.target_ts_with_static_covs
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         model = model_cls(
             lags=4,
             output_chunk_length=1,
@@ -813,7 +817,7 @@ class TestShapExplainer:
             ]
 
     def test_shapley_multiple_series_with_different_static_covs(self):
-        model_cls = LightGBMModel if lgbm_available else XGBModel
+        model_cls = LightGBMModel if LGBM_AVAILABLE else LinearRegressionModel
         model = model_cls(
             lags=4,
             output_chunk_length=1,

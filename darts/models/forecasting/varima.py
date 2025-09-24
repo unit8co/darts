@@ -267,8 +267,8 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         return True
 
     @property
-    def min_train_series_length(self) -> int:
-        return 30
+    def _target_window_lengths(self) -> tuple[int, int]:
+        return 30, 0
 
     @property
     def supports_probabilistic_prediction(self) -> bool:

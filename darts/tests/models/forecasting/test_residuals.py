@@ -350,9 +350,7 @@ class TestResiduals:
                 metric=metrics.mape,
                 last_points_only=True,
             )
-        assert str(err.value).endswith(
-            "got an unexpected keyword argument 'time_reduction'"
-        )
+        assert "got an unexpected keyword argument 'time_reduction'" in str(err.value)
 
     def test_forecasting_residuals_nocov_output(self):
         model = NaiveSeasonal(K=1)

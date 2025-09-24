@@ -8,7 +8,11 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pandas as pd
 import pytest
-from statsforecast.models import AutoARIMA as SFAutoARIMA
+
+from darts.tests.conftest import PROPHET_AVAILABLE, SF_AVAILABLE
+
+if SF_AVAILABLE:
+    from statsforecast.models import AutoARIMA as SFAutoARIMA
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
@@ -17,15 +21,7 @@ from darts.metrics import mape
 from darts.models import (
     ARIMA,
     FFT,
-    TBATS,
     VARIMA,
-    AutoARIMA,
-    AutoCES,
-    AutoETS,
-    AutoMFLES,
-    AutoTBATS,
-    AutoTheta,
-    Croston,
     ExponentialSmoothing,
     FourTheta,
     KalmanForecaster,
@@ -34,12 +30,25 @@ from darts.models import (
     NaiveMean,
     NaiveMovingAverage,
     NaiveSeasonal,
-    Prophet,
     RandomForestModel,
     SKLearnModel,
-    StatsForecastModel,
     Theta,
 )
+
+if PROPHET_AVAILABLE:
+    from darts.models import Prophet
+if SF_AVAILABLE:
+    from darts.models import (
+        TBATS,
+        AutoARIMA,
+        AutoCES,
+        AutoETS,
+        AutoMFLES,
+        AutoTBATS,
+        AutoTheta,
+        Croston,
+        StatsForecastModel,
+    )
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
     TransferableFutureCovariatesLocalForecastingModel,
@@ -47,7 +56,6 @@ from darts.models.forecasting.forecasting_model import (
 from darts.utils import timeseries_generation as tg
 from darts.utils.utils import (
     ModelMode,
-    NotImportedModule,
     SeasonalityMode,
     TrendMode,
     generate_index,
@@ -60,15 +68,6 @@ models = [
     (ExponentialSmoothing(), 5.4),
     (ARIMA(12, 2, 1), 5.2),
     (ARIMA(1, 1, 1), 24),
-    (AutoARIMA(season_length=12), 4.6),
-    (StatsForecastModel(SFAutoARIMA(season_length=12)), 4.6),
-    (AutoTheta(season_length=12), 5.5),
-    (AutoCES(season_length=12, model="Z"), 7.3),
-    (AutoETS(season_length=12, model="AAZ"), 7.3),
-    (AutoMFLES(season_length=12, test_size=12), 9.8),
-    (AutoTBATS(season_length=12), 10.0),
-    (Croston(version="classic"), 23),
-    (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
     (Theta(), 11),
     (Theta(1), 17),
     (Theta(-1), 12),
@@ -81,10 +80,6 @@ models = [
     (KalmanForecaster(dim_x=3), 20),
     (LinearRegressionModel(lags=12), 13),
     (RandomForestModel(lags=12, n_estimators=5, max_depth=3), 14),
-    (
-        TBATS(season_length=12, use_trend=True, use_arma_errors=True, use_boxcox=True),
-        10,
-    ),
 ]
 
 # forecasting models with exogenous variables support
@@ -100,9 +95,6 @@ multivariate_models = [
 
 dual_models = [
     ARIMA(),
-    AutoARIMA(season_length=12),
-    AutoMFLES(season_length=12, test_size=12),
-    AutoETS(season_length=12),
 ]
 
 # test only a few models for encoder support reduce time
@@ -111,10 +103,35 @@ encoder_support_models = [
     ARIMA(),
     KalmanForecaster(dim_x=30),
 ]
-if not isinstance(Prophet, NotImportedModule):
+
+if PROPHET_AVAILABLE:
     models.append((Prophet(), 9.0))
     dual_models.append(Prophet())
     encoder_support_models.append(Prophet())
+
+if SF_AVAILABLE:
+    models.extend([
+        (AutoARIMA(season_length=12), 4.6),
+        (StatsForecastModel(SFAutoARIMA(season_length=12)), 4.6),
+        (AutoTheta(season_length=12), 5.5),
+        (AutoCES(season_length=12, model="Z"), 7.3),
+        (AutoETS(season_length=12, model="AAZ"), 7.3),
+        (AutoMFLES(season_length=12, test_size=12), 9.8),
+        (AutoTBATS(season_length=12), 10.0),
+        (Croston(version="classic"), 23),
+        (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 23),
+        (
+            TBATS(
+                season_length=12, use_trend=True, use_arma_errors=True, use_boxcox=True
+            ),
+            10,
+        ),
+    ])
+    dual_models.extend([
+        AutoARIMA(season_length=12),
+        AutoMFLES(season_length=12, test_size=12),
+        AutoETS(season_length=12),
+    ])
 
 
 class TestLocalForecastingModels:
@@ -647,13 +664,12 @@ class TestLocalForecastingModels:
                 "KalmanForecaster(add_encoders={'cyclic': {'past': ['month']}})",
             ),
             (
-                TBATS(
-                    season_length=12,
-                    use_trend=True,
-                    use_arma_errors=True,
-                    use_boxcox=True,
+                Theta(
+                    theta=12,
+                    seasonality_period=3,
+                    season_mode=SeasonalityMode.ADDITIVE,
                 ),
-                "TBATS(season_length=12, use_trend=True, use_arma_errors=True, use_boxcox=True)",
+                "Theta(theta=12, seasonality_period=3, season_mode=SeasonalityMode.ADDITIVE)",
             ),
         ],
     )
@@ -667,7 +683,7 @@ class TestLocalForecastingModels:
             (
                 ExponentialSmoothing(),
                 "ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, "
-                + "seasonal_periods=None, random_state=None, kwargs=None)",
+                + "seasonal_periods=None, error=add, random_errors=None, random_state=None, kwargs=None)",
             ),  # no params changed
             (
                 ARIMA(1, 1, 1),

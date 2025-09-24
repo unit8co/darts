@@ -15,7 +15,9 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
     io_processor,
 )
-from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import (
+    MixedCovariatesTorchModel,
+)
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 
 logger = get_logger(__name__)
@@ -26,6 +28,7 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         self,
         input_size: int,
         hidden_dim: int,
+        future_cov_dim: int,
         num_layers: int,
         target_size: int,
         nr_params: int,
@@ -54,6 +57,8 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
             The dimensionality of the input time series.
         hidden_dim
             The number of features in the hidden state `h` of the RNN module.
+        future_cov_dim
+            Number of future covariates.
         num_layers
             The number of recurrent layers.
         target_size
@@ -76,13 +81,13 @@ class CustomBlockRNNModule(PLForecastingModule, ABC):
         # Defining parameters
         self.input_size = input_size
         self.hidden_dim = hidden_dim
+        self.future_cov_dim = future_cov_dim
         self.num_layers = num_layers
         self.target_size = target_size
         self.nr_params = nr_params
         self.num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.dropout = dropout
         self.activation = activation
-        self.out_len = self.output_chunk_length
 
     @io_processor
     @abstractmethod
@@ -160,12 +165,25 @@ class _BlockRNNModule(CustomBlockRNNModule):
             dropout=self.dropout,
         )
 
+        # Fully connected layer to map the output for each timestep in the input sequence (out) to the output chunk
+        # length
+        if self.output_chunk_length > self.input_chunk_length:
+            self.up_sampler = nn.Linear(
+                self.input_chunk_length, self.output_chunk_length
+            )
+        else:
+            self.up_sampler = None
+
+        if self.future_cov_dim > 0:
+            last = self.hidden_dim + self.future_cov_dim
+        else:
+            last = self.hidden_dim
+
         # The RNN module is followed by a fully connected layer, which maps the last hidden layer
         # to the output of desired length
-        last = self.hidden_dim
         feats = []
         for index, feature in enumerate(
-            self.num_layers_out_fc + [self.out_len * self.target_size * self.nr_params]
+            self.num_layers_out_fc + [self.nr_params * self.target_size]
         ):
             feats.append(nn.Linear(last, feature))
 
@@ -178,27 +196,65 @@ class _BlockRNNModule(CustomBlockRNNModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
-        x, _, _ = x_in
-        # data is of size (batch_size, input_chunk_length, input_size)
-        batch_size = x.size(0)
+        # B: batch size
+        # L: input chunk length
+        # T: output chunk length
+        # C: target components
+        # P: past cov features
+        # F: future cov features
+        # S: static cov features
+        # H = C + P + F: historic features
+        # H_D: hidden dim
+        # N_P: likelihood parameters
 
-        out, hidden = self.rnn(x)
+        # `x_past`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1 = C1, S)
+        x_past, x_future, x_static = x_in
 
-        """ Here, we apply the FC network only on the last output point (at the last time step)
-        """
-        if self.name == "LSTM":
-            hidden = hidden[0]
-        predictions = hidden[-1, :, :]
-        predictions = self.fc(predictions)
+        batch_size = x_past.shape[0]
+
+        # concatenate static covariates if given
+        if x_static is not None:
+            # -> (B, 1, C1 * S)
+            x_static = x_static.reshape(batch_size, -1).unsqueeze(dim=1)
+            # -> (B, L, C1 * S)
+            x_static = x_static.repeat(1, self.input_chunk_length, 1)
+            # -> (B, L, H + C1 * S)
+            x_past = torch.concat([x_past, x_static], dim=-1)
+
+        # -> (B, L, H_D)
+        out, _ = self.rnn(x_past)
+
+        # use the RNN output of length `T` as input for the FC
+        # -> (B, T, H_D)
+        if self.output_chunk_length > self.input_chunk_length:
+            # up-sample to `T` if history is too short
+            # -> (B, H_D, L)
+            out = out.permute(0, 2, 1)
+            # -> (B, H_D, T)
+            out = self.up_sampler(out)
+            # -> (B, T, H_D)
+            out = out.permute(0, 2, 1)
+        else:
+            # otherwise, take `T` last predictions
+            # -> (B, T, H_D)
+            out = out[:, -self.output_chunk_length :, :]
+
+        # concatenate future covariates if given
+        if x_future is not None:
+            # -> (B, T, H_D + F)
+            out = torch.cat([out, x_future], dim=-1)
+
+        # predict using the FC
+        # -> (B, T, C * N_P)
+        predictions = self.fc(out)
+        # -> (B, T, C, N_P)
         predictions = predictions.view(
-            batch_size, self.out_len, self.target_size, self.nr_params
+            batch_size, self.output_chunk_length, self.target_size, self.nr_params
         )
-
-        # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
 
 
-class BlockRNNModel(PastCovariatesTorchModel):
+class BlockRNNModel(MixedCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -210,6 +266,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
         hidden_fc_sizes: Optional[list] = None,
         dropout: float = 0.0,
         activation: str = "ReLU",
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         """Block Recurrent Neural Network Model (RNNs).
@@ -261,6 +318,10 @@ class BlockRNNModel(PastCovariatesTorchModel):
         activation
             The name of a torch.nn activation function to be applied between the layers of the fully connected network.
             Default: "ReLU".
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -453,17 +514,29 @@ class BlockRNNModel(PastCovariatesTorchModel):
         self.dropout = dropout
         self.activation = activation
 
+        self._considers_static_covariates = use_static_covariates
+
     def _create_model(self, train_sample: TorchTrainingSample) -> torch.nn.Module:
         # samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)
-        (past_target, past_covariates, _, _, _, _) = train_sample
-        input_dim = past_target.shape[1] + (
-            past_covariates.shape[1] if past_covariates is not None else 0
+        (past_target, past_covariates, _, future_covariates, static_covariates, _) = (
+            train_sample
+        )
+        past_cov_dim = past_covariates.shape[1] if past_covariates is not None else 0
+        future_cov_dim = (
+            future_covariates.shape[1] if future_covariates is not None else 0
+        )
+        static_cov_dim = (
+            static_covariates.shape[0] * static_covariates.shape[1]
+            if static_covariates is not None
+            else 0
+        )
+        input_dim = (
+            past_target.shape[1] + past_cov_dim + future_cov_dim + static_cov_dim
         )
         output_dim = past_target.shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
-
         kwargs = {}
         if isinstance(self.rnn_type_or_module, str):
             model_cls = _BlockRNNModule
@@ -475,6 +548,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
             target_size=output_dim,
             nr_params=nr_params,
             hidden_dim=self.hidden_dim,
+            future_cov_dim=future_cov_dim,
             num_layers=self.n_rnn_layers,
             num_layers_out_fc=hidden_fc_sizes,
             dropout=self.dropout,
@@ -490,3 +564,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
             if param not in tfm_save.model_params:
                 tfm_save.model_params[param] = "ReLU"
         super()._check_ckpt_parameters(tfm_save)
+
+    @property
+    def supports_static_covariates(self) -> bool:
+        return True

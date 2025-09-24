@@ -31,17 +31,19 @@ from darts.models import (
     SKLearnModel,
     XGBModel,
 )
+from darts.tests.conftest import (
+    CB_AVAILABLE,
+    GBM_AVAILABLE,
+    LGBM_AVAILABLE,
+    XGB_AVAILABLE,
+)
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import Likelihood, LikelihoodType
 from darts.utils.likelihood_models.sklearn import _get_likelihood
 from darts.utils.multioutput import MultiOutputRegressor
-from darts.utils.utils import NotImportedModule, generate_index
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
-
-# replace catboost and lgbm with xgb in case of core requirements
-cb_available = not isinstance(CatBoostModel, NotImportedModule)
-lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
 
 
 def train_test_split(series, split_ts):
@@ -197,18 +199,6 @@ class TestSKLearnModels:
     PoissonLinearRegressionModel = partialclass(
         LinearRegressionModel, likelihood="poisson", random_state=42
     )
-    PoissonXGBModel = partialclass(
-        XGBModel,
-        likelihood="poisson",
-        tree_method="exact",
-        **xgb_test_params,
-    )
-    QuantileXGBModel = partialclass(
-        XGBModel,
-        likelihood="quantile",
-        tree_method="exact",
-        **xgb_test_params,
-    )
     KNeighborsRegressorModel = partialclass(
         SKLearnModel,
         model=KNeighborsRegressor(n_neighbors=1),
@@ -217,8 +207,6 @@ class TestSKLearnModels:
     models.extend([
         QuantileLinearRegressionModel,
         PoissonLinearRegressionModel,
-        PoissonXGBModel,
-        QuantileXGBModel,
     ])
 
     univariate_accuracies = [
@@ -227,8 +215,6 @@ class TestSKLearnModels:
         1e-13,  # SKLearnModel
         0.8,  # QuantileLinearRegressionModel
         0.4,  # PoissonLinearRegressionModel
-        0.75,  # PoissonXGBModel
-        0.75,  # QuantileXGBModel
     ]
     multivariate_accuracies = [
         0.3,  # RandomForestModel
@@ -236,8 +222,6 @@ class TestSKLearnModels:
         1e-13,  # SKLearnModel
         0.8,  # QuantileLinearRegressionModel
         0.4,  # PoissonLinearRegressionModel
-        0.75,  # PoissonXGBModel
-        0.75,  # QuantileXGBModel
     ]
     multivariate_multiseries_accuracies = [
         0.05,  # RandomForestModel
@@ -245,11 +229,36 @@ class TestSKLearnModels:
         1e-13,  # SKLearnModel
         0.8,  # QuantileLinearRegressionModel
         0.4,  # PoissonLinearRegressionModel
-        0.85,  # PoissonXGBModel
-        0.65,  # QuantileXGBModel
     ]
 
-    if lgbm_available:
+    if XGB_AVAILABLE:
+        PoissonXGBModel = partialclass(
+            XGBModel,
+            likelihood="poisson",
+            tree_method="exact",
+            **xgb_test_params,
+        )
+        QuantileXGBModel = partialclass(
+            XGBModel,
+            likelihood="quantile",
+            tree_method="exact",
+            **xgb_test_params,
+        )
+        models += [PoissonXGBModel, QuantileXGBModel]
+        univariate_accuracies += [
+            0.75,  # PoissonXGBModel
+            0.75,  # QuantileXGBModel
+        ]
+        multivariate_accuracies += [
+            0.75,  # PoissonXGBModel
+            0.8,  # QuantileXGBModel
+        ]
+        multivariate_multiseries_accuracies += [
+            0.85,  # PoissonXGBModel
+            0.65,  # QuantileXGBModel
+        ]
+
+    if LGBM_AVAILABLE:
         RegularLightGBMModel = partialclass(LightGBMModel, **lgbm_test_params)
         QuantileLightGBMModel = partialclass(
             LightGBMModel,
@@ -283,7 +292,7 @@ class TestSKLearnModels:
             0.7,  # QuantileLightGBMModel
             0.75,  # PoissonLightGBMModel
         ]
-    if cb_available:
+    if CB_AVAILABLE:
         RegularCatBoostModel = partialclass(
             CatBoostModel,
             **cb_test_params,
@@ -1252,30 +1261,41 @@ class TestSKLearnModels:
             ocl,
         )
 
-    @pytest.mark.parametrize("mode", [True, False])
-    def test_min_train_series_length(self, mode):
-        lgbm_cls = LightGBMModel if lgbm_available else XGBModel
-        cb_cls = CatBoostModel if cb_available else XGBModel
-        model = lgbm_cls(lags=4, multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [LinearRegressionModel]
+                + ([XGBModel] if XGB_AVAILABLE else [])
+                + ([LightGBMModel] if LGBM_AVAILABLE else [])
+                + ([CatBoostModel] if CB_AVAILABLE else [])
+            ),
+            [True, False],
+        ),
+    )
+    def test_min_train_series_length(self, config):
+        model_cls, mode = config
+        model = model_cls(lags=4, multi_models=mode)
+        # min target lag + output_chunk_length + output_chunk_shift + (min samples -1)
+        add_min_samples = model.min_train_samples - 1
+        assert model.min_train_series_length == 4 + 1 + 0 + add_min_samples
+
+        model = model_cls(lags=2, multi_models=mode)
+        assert model.min_train_series_length == 2 + 1 + 0 + add_min_samples
+
+        model = model_cls(lags=2, output_chunk_length=3, multi_models=mode)
+        assert model.min_train_series_length == 2 + 3 + 0 + add_min_samples
+
+        model = model_cls(
+            lags=2, output_chunk_length=3, output_chunk_shift=1, multi_models=mode
         )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = cb_cls(lags=2, multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
-        )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = lgbm_cls(lags=[-4, -3, -2], multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
-        )
-        assert min_train_series_length_expected == model.min_train_series_length
-        model = XGBModel(lags=[-4, -3, -2], multi_models=mode)
-        min_train_series_length_expected = (
-            -model.lags["target"][0] + model.output_chunk_length + 1
-        )
-        assert min_train_series_length_expected == model.min_train_series_length
+        assert model.min_train_series_length == 2 + 3 + 1 + add_min_samples
+
+        model = model_cls(lags=[-4, -3, -2], multi_models=mode)
+        assert model.min_train_series_length == 4 + 1 + 0 + add_min_samples
+
+        model = model_cls(lags=None, lags_past_covariates=5, multi_models=mode)
+        assert model.min_train_series_length == 0 + 1 + 0 + add_min_samples
 
     @pytest.mark.parametrize("mode", [True, False])
     def test_historical_forecast(self, mode):
@@ -1424,12 +1444,15 @@ class TestSKLearnModels:
             True,
         ),
         (LinearRegressionModel, {"lags": 4}, True),
-        (XGBModel, {"lags": 4}, True),
-        (XGBModel, {"lags": 4, "likelihood": "poisson"}, False),
     ]
-    if lgbm_available:
+    if XGB_AVAILABLE:
+        model_configs_multioutput += [
+            (XGBModel, {"lags": 4}, True),
+            (XGBModel, {"lags": 4, "likelihood": "poisson"}, False),
+        ]
+    if LGBM_AVAILABLE:
         model_configs_multioutput += [(LightGBMModel, {"lags": 4}, False)]
-    if cb_available:
+    if CB_AVAILABLE:
         model_configs_multioutput += [
             (CatBoostModel, {"lags": 4, "loss_function": "RMSE"}, False),
             (CatBoostModel, {"lags": 4, "loss_function": "MultiRMSE"}, True),
@@ -1442,12 +1465,17 @@ class TestSKLearnModels:
         model = model_cls(**model_config)
         assert model._supports_native_multioutput == supports_native_multioutput
 
-    model_configs = [(XGBModel, dict({"likelihood": "poisson"}, **xgb_test_params))]
-    if lgbm_available:
+    model_configs = []
+    if XGB_AVAILABLE:
+        model_configs += [
+            (XGBModel, dict({"likelihood": "poisson"}, **xgb_test_params))
+        ]
+    if LGBM_AVAILABLE:
         model_configs += [(LightGBMModel, lgbm_test_params)]
-    if cb_available:
+    if CB_AVAILABLE:
         model_configs += [(CatBoostModel, cb_test_params)]
 
+    @pytest.mark.skipif(not model_configs, reason="gradient boosting model required")
     @pytest.mark.parametrize("config", product(model_configs, [1, 2], [True, False]))
     def test_multioutput_validation(self, config):
         """Check that models not supporting multi-output are properly wrapped when ocl>1"""
@@ -1468,21 +1496,26 @@ class TestSKLearnModels:
         model_1.fit(series=self.sine_univariate1)
         assert not isinstance(model_1.model, MultiOutputRegressor)
 
-        model_2 = XGBModel(
-            lags=4,
-            output_chunk_length=2,
-            multi_models=True,
-            likelihood="quantile",
-            quantiles=[0.1, 0.5, 0.9],
-            **xgb_test_params,
-        )
-        model_2.fit(series=self.sine_univariate1)
-        assert isinstance(model_2.model, MultiOutputRegressor)
+        models_repr = [model_1]
 
-        for model in [model_1, model_2]:
+        if XGB_AVAILABLE:
+            model_2 = XGBModel(
+                lags=4,
+                output_chunk_length=2,
+                multi_models=True,
+                likelihood="quantile",
+                quantiles=[0.1, 0.5, 0.9],
+                **xgb_test_params,
+            )
+            model_2.fit(series=self.sine_univariate1)
+            assert isinstance(model_2.model, MultiOutputRegressor)
+            models_repr.append(model_2)
+
+        for model in models_repr:
             assert model.__repr__().startswith(model.__class__.__name__)
             assert model.__str__().startswith(model.model.__class__.__name__)
 
+    @pytest.mark.skipif(not XGB_AVAILABLE, reason="xgboost required")
     def test_get_estimator_multi_models(self):
         """Craft training data so that estimator_[i].predict(X) == i + 1"""
 
@@ -1547,15 +1580,10 @@ class TestSKLearnModels:
         "config",
         product(
             (
-                [
-                    (LinearRegressionModel, {}),
-                    (XGBModel, xgb_test_params),
-                ]
-                + [(LightGBMModel, lgbm_test_params)]
-                if lgbm_available
-                else [] + [(CatBoostModel, cb_test_params)]
-                if cb_available
-                else []
+                [(LinearRegressionModel, {})]
+                + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+                + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
+                + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
             ),
             [True, False],  # multi_models
             [True, False],  # multi components
@@ -1613,15 +1641,10 @@ class TestSKLearnModels:
         "config",
         product(
             (
-                [
-                    (LinearRegressionModel, {}),
-                    (XGBModel, xgb_test_params),
-                ]
-                + [(LightGBMModel, lgbm_test_params)]
-                if lgbm_available
-                else [] + [(CatBoostModel, cb_test_params)]
-                if cb_available
-                else []
+                [(LinearRegressionModel, {})]
+                + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+                + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
+                + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
             ),
             [True, False],  # multi_models
             [True, False],  # multi components
@@ -1683,7 +1706,7 @@ class TestSKLearnModels:
                     pred_sub_model = sub_model.predict(dummy_feats)[0]
                     assert (
                         pred_sub_model
-                        == pred[f"{ts.components[j]}_q{q:.2f}"].values()[i][0]
+                        == pred[f"{ts.components[j]}_q{q:.3f}"].values()[i][0]
                     )
 
     def test_get_estimator_exceptions(self, caplog):
@@ -1730,6 +1753,9 @@ class TestSKLearnModels:
         assert str(err.value).startswith(
             "`target_dim` must be `>= 0`, and `< n_target_components="
         )
+
+        if not XGB_AVAILABLE:
+            return
 
         # univariate, probabilistic
         # using the quantiles argument to force wrapping in MultiOutputRegressor
@@ -1923,15 +1949,15 @@ class TestSKLearnModels:
             [
                 (LinearRegressionModel, {}),
                 (RandomForestModel, {"bootstrap": False}),
-                (XGBModel, xgb_test_params),
                 (KNeighborsRegressorModel, {}),  # no weights support
             ]
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
             + (
                 [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
-                if cb_available
+                if CB_AVAILABLE
                 else []
             )
-            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else []),
             [True, False],
         ),
     )
@@ -1977,15 +2003,15 @@ class TestSKLearnModels:
             [
                 (LinearRegressionModel, {}),
                 (RandomForestModel, {"bootstrap": False}),
-                (XGBModel, xgb_test_params),
                 (KNeighborsRegressorModel, {}),  # no weights support
             ]
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
             + (
                 [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
-                if cb_available
+                if CB_AVAILABLE
                 else []
             )
-            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else []),
             [True, False],
         ),
     )
@@ -2017,15 +2043,15 @@ class TestSKLearnModels:
         [
             (LinearRegressionModel, {}),
             (RandomForestModel, {"bootstrap": False}),
-            (XGBModel, xgb_test_params),
             (KNeighborsRegressorModel, {}),  # no weights support
         ]
+        + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
         + (
             [(CatBoostModel, dict({"allow_const_label": True}, **cb_test_params))]
-            if cb_available
+            if CB_AVAILABLE
             else []
         )
-        + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+        + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else []),
     )
     def test_weights_multi_horizon(self, config):
         (model_cls, model_kwargs) = config
@@ -2162,12 +2188,15 @@ class TestSKLearnModels:
                 future_covariates=future_covariates[: -26 + req_future_offset],
             )
 
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "config",
         product(
-            [(XGBModel, xgb_test_params)]
-            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
-            + ([(CatBoostModel, cb_test_params)] if cb_available else []),
+            [
+                (XGBModel, xgb_test_params),
+                (LightGBMModel, lgbm_test_params),
+                (CatBoostModel, cb_test_params),
+            ],
             [True, False],
         ),
     )
@@ -2190,6 +2219,7 @@ class TestSKLearnModels:
         )
         _ = model.predict(1, series=series)
 
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "config",
         product(
@@ -2199,32 +2229,20 @@ class TestSKLearnModels:
                     xgb_test_params,
                     "xgboost.xgb.XGBRegressor",
                     "xgboost.XGBRegressor",
-                )
-            ]
-            + (
-                [
-                    (
-                        LightGBMModel,
-                        lgbm_test_params,
-                        "lgbm.lgb.LGBMRegressor",
-                        "lightgbm.LGBMRegressor",
-                    )
-                ]
-                if lgbm_available
-                else []
-            )
-            + (
-                [
-                    (
-                        CatBoostModel,
-                        cb_test_params,
-                        "catboost_model.CatBoostRegressor",
-                        "catboost.CatBoostRegressor",
-                    )
-                ]
-                if cb_available
-                else []
-            ),
+                ),
+                (
+                    LightGBMModel,
+                    lgbm_test_params,
+                    "lgbm.lgb.LGBMRegressor",
+                    "lightgbm.LGBMRegressor",
+                ),
+                (
+                    CatBoostModel,
+                    cb_test_params,
+                    "catboost_model.CatBoostRegressor",
+                    "catboost.CatBoostRegressor",
+                ),
+            ],
             [False, True],
             [1, 3],
         ),
@@ -2355,7 +2373,7 @@ class TestSKLearnModels:
         eval_set = eval_set[0]
 
         weight = None
-        if cb_available and isinstance(model, CatBoostModel):
+        if CB_AVAILABLE and isinstance(model, CatBoostModel):
             # CatBoost requires eval set as `Pool`
             from catboost import Pool
 
@@ -3068,9 +3086,9 @@ class TestSKLearnModels:
             [
                 (SKLearnModel, {}),
                 (LinearRegressionModel, {}),
-                (XGBModel, xgb_test_params),
             ]
-            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+            + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else []),
             [True, False],
             [1, 2],
         ),
@@ -3431,15 +3449,13 @@ class TestSKLearnModels:
             assert len(model.encoders.future_encoders) == 1
             assert isinstance(model.encoders.future_encoders[0], FutureCyclicEncoder)
 
-    @pytest.mark.skipif(
-        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_config",
-        (
-            ([(LightGBMModel, {"verbose": -1})] if lgbm_available else [])
-            + ([(CatBoostModel, {"verbose": False})] if cb_available else [])
-        ),
+        [
+            (LightGBMModel, {"verbose": -1}),
+            (CatBoostModel, {"verbose": False}),
+        ],
     )
     def test_quality_forecast_with_categorical_covariates(self, model_config):
         """Test case: two time series, a full sine wave series and a sine wave series
@@ -3512,15 +3528,10 @@ class TestSKLearnModels:
             for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
         ])
 
-    @pytest.mark.skipif(
-        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_config",
-        (
-            ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
-            + ([(CatBoostModel, cb_test_params)] if cb_available else [])
-        ),
+        [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
     )
     def test_fit_with_categorical_features_and_encoders(self, model_config):
         model_cls, kwargs = model_config
@@ -3549,15 +3560,10 @@ class TestSKLearnModels:
             "model creation are not present"
         )
 
-    @pytest.mark.skipif(
-        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_config",
-        (
-            ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
-            + ([(CatBoostModel, cb_test_params)] if cb_available else [])
-        ),
+        [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
     )
     def test_fit_with_categorical_features_raises_error(self, model_config):
         model_cls, kwargs = model_config
@@ -3675,14 +3681,11 @@ class TestSKLearnModels:
             "Categorical features must be integer-encoded, decimal values found instead."
         )
 
-    @pytest.mark.skipif(
-        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "config",
         product(
-            ([(CatBoostModel, cb_test_params)] if cb_available else [])
-            + ([(LightGBMModel, lgbm_test_params)] if lgbm_available else []),
+            [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
             [
                 (
                     1,
@@ -3758,13 +3761,10 @@ class TestSKLearnModels:
         assert indices == indices_expected
         assert column_names == f_names_expected
 
-    @pytest.mark.skipif(
-        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_cls_and_module",
-        ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
-        + ([(CatBoostModel, cb_test_params)] if cb_available else []),
+        [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
     )
     def test_categorical_features_passed_to_fit_correctly(self, model_cls_and_module):
         """Test whether the categorical features are passed to fit correctly"""
@@ -3977,29 +3977,32 @@ class TestProbabilisticSKLearnModels:
             },
             0.6,
         ),
-        (
-            XGBModel,
-            {
-                "lags": 2,
-                "likelihood": "poisson",
-                "multi_models": True,
-                **xgb_test_params,
-            },
-            0.6,
-        ),
-        (
-            XGBModel,
-            {
-                "lags": 2,
-                "likelihood": "quantile",
-                "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
-                "multi_models": True,
-                **xgb_test_params,
-            },
-            0.4,
-        ),
     ]
-    if lgbm_available:
+    if XGB_AVAILABLE:
+        models_cls_kwargs_errs += [
+            (
+                XGBModel,
+                {
+                    "lags": 2,
+                    "likelihood": "poisson",
+                    "multi_models": True,
+                    **xgb_test_params,
+                },
+                0.6,
+            ),
+            (
+                XGBModel,
+                {
+                    "lags": 2,
+                    "likelihood": "quantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "multi_models": True,
+                    **xgb_test_params,
+                },
+                0.4,
+            ),
+        ]
+    if LGBM_AVAILABLE:
         models_cls_kwargs_errs += [
             (
                 LightGBMModel,
@@ -4033,7 +4036,7 @@ class TestProbabilisticSKLearnModels:
                 0.6,
             ),
         ]
-    if cb_available:
+    if CB_AVAILABLE:
         models_cls_kwargs_errs += [
             (
                 CatBoostModel,
@@ -4217,14 +4220,11 @@ class TestProbabilisticSKLearnModels:
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
-    @pytest.mark.skipif(
-        not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_config",
         product(
-            ([(LightGBMModel, lgbm_test_params)] if lgbm_available else [])
-            + ([(CatBoostModel, cb_test_params)] if cb_available else []),
+            [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
             ["quantile", "poisson", "gaussian"],
         ),
     )
