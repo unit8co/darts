@@ -1501,9 +1501,9 @@ class SKLearnModel(GlobalForecastingModel):
 
     def _optimized_historical_forecasts(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
@@ -1516,7 +1516,7 @@ class SKLearnModel(GlobalForecastingModel):
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
         **kwargs,
-    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+    ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
         For SKLearnModels we create the lagged prediction data once per series using a moving window.
         With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
@@ -1525,15 +1525,13 @@ class SKLearnModel(GlobalForecastingModel):
 
         TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
-        series, past_covariates, future_covariates, series_seq_type = (
-            _process_historical_forecast_input(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                forecast_horizon=forecast_horizon,
-                allow_autoregression=False,
-            )
+        series, past_covariates, future_covariates = _process_historical_forecast_input(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+            allow_autoregression=False,
         )
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?
@@ -1573,7 +1571,7 @@ class SKLearnModel(GlobalForecastingModel):
                 random_state=random_state,
                 **kwargs,
             )
-        return series2seq(hfc, seq_type_out=series_seq_type)
+        return hfc
 
     @property
     def _supports_native_multioutput(self) -> bool:

@@ -1278,11 +1278,6 @@ def _check_optimizable_historical_forecasts_global_models(
         return True
 
     if show_warnings:
-        if not retrain_off:
-            logger.warning(
-                "`enable_optimization=True` is ignored because `retrain` is not `False` or `0`. "
-                "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
-            )
         if is_autoregressive:
             logger.warning(
                 "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`. "
@@ -1294,16 +1289,15 @@ def _check_optimizable_historical_forecasts_global_models(
 
 def _process_historical_forecast_input(
     model,
-    series: Union[TimeSeries, Sequence[TimeSeries]],
-    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    series: Sequence[TimeSeries],
+    past_covariates: Optional[Sequence[TimeSeries]] = None,
+    future_covariates: Optional[Sequence[TimeSeries]] = None,
     forecast_horizon: int = 1,
     allow_autoregression: bool = False,
 ) -> Union[
     Sequence[TimeSeries],
     Optional[Sequence[TimeSeries]],
     Optional[Sequence[TimeSeries]],
-    int,
 ]:
     if not model._fit_called:
         raise_log(
@@ -1319,10 +1313,6 @@ def _process_historical_forecast_input(
             ),
             logger,
         )
-    series_seq_type = get_series_seq_type(series)
-    series = series2seq(series)
-    past_covariates = series2seq(past_covariates)
-    future_covariates = series2seq(future_covariates)
 
     # manage covariates, usually handled by SKLearnModel.predict()
     if past_covariates is None and model.past_covariate_series is not None:
@@ -1340,7 +1330,7 @@ def _process_historical_forecast_input(
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-    return series, past_covariates, future_covariates, series_seq_type
+    return series, past_covariates, future_covariates
 
 
 def _process_predict_start_points_bounds(

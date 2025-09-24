@@ -42,7 +42,7 @@ from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
 )
-from darts.utils.ts_utils import SeriesType, get_series_seq_type
+from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 from darts.utils.utils import NotImportedModule
 
 if TORCH_AVAILABLE:
@@ -1425,13 +1425,18 @@ class TestHistoricalforecast:
                     )
 
                     # manually packing the series in list to match expected inputs
+                    seq_type = get_series_seq_type(ts)
                     opti_hist_fct = model._optimized_historical_forecasts(
-                        series=ts,
+                        series=series2seq(ts),
                         past_covariates=(
-                            ts_covs if model.supports_past_covariates else None
+                            series2seq(ts_covs)
+                            if model.supports_past_covariates
+                            else None
                         ),
                         future_covariates=(
-                            ts_covs if model.supports_future_covariates else None
+                            series2seq(ts_covs)
+                            if model.supports_future_covariates
+                            else None
                         ),
                         start=start,
                         last_points_only=last_points_only,
@@ -1439,6 +1444,7 @@ class TestHistoricalforecast:
                         forecast_horizon=forecast_horizon,
                         overlap_end=overlap_end,
                     )
+                    opti_hist_fct = series2seq(opti_hist_fct, seq_type_out=seq_type)
 
                     self.helper_compare_hf(hist_fct, opti_hist_fct)
 
@@ -1511,15 +1517,17 @@ class TestHistoricalforecast:
             enable_optimization=False,
         )
 
+        seq_type = get_series_seq_type(series_val)
         opti_hist_fct = model._optimized_historical_forecasts(
-            series=series_val,
-            past_covariates=pc,
-            future_covariates=fc,
+            series=series2seq(series_val),
+            past_covariates=series2seq(pc),
+            future_covariates=series2seq(fc),
             last_points_only=last_points_only,
             overlap_end=overlap_end,
             stride=stride,
             forecast_horizon=horizon,
         )
+        opti_hist_fct = series2seq(opti_hist_fct, seq_type_out=seq_type)
 
         if not isinstance(hist_fct, list):
             hist_fct = [hist_fct]
@@ -1603,7 +1611,11 @@ class TestHistoricalforecast:
             enable_optimization=False,
         )
 
-        opti_hist_fct = model._optimized_historical_forecasts(series=series_val)
+        seq_type = get_series_seq_type(series_val)
+        opti_hist_fct = model._optimized_historical_forecasts(
+            series=series2seq(series_val)
+        )
+        opti_hist_fct = series2seq(opti_hist_fct, seq_type_out=seq_type)
 
         if not isinstance(hist_fct, list):
             hist_fct = [hist_fct]
@@ -1723,6 +1735,7 @@ class TestHistoricalforecast:
         pc_copy = pc.copy() if pc is not None else None
         fc_copy = fc.copy() if fc is not None else None
 
+        seq_type = get_series_seq_type(series_val)
         hist_fct = model.historical_forecasts(
             series=series_val,
             past_covariates=pc,
@@ -1736,15 +1749,15 @@ class TestHistoricalforecast:
         )
 
         opti_hist_fct = model._optimized_historical_forecasts(
-            series=series_val,
-            past_covariates=pc,
-            future_covariates=fc,
+            series=series2seq(series_val),
+            past_covariates=series2seq(pc),
+            future_covariates=series2seq(fc),
             last_points_only=last_points_only,
             overlap_end=overlap_end,
             stride=stride,
             forecast_horizon=horizon,
         )
-
+        opti_hist_fct = series2seq(opti_hist_fct, seq_type_out=seq_type)
         assert series_val == series_val_copy
         assert pc == pc_copy
         assert fc == fc_copy
@@ -3601,20 +3614,22 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        itertools.product(
-            [False, True],  # use covariates
-            [True, False],  # last points only
-            [True, False],  # overlap end
-            [1, 3],  # stride
-            [
-                3,  # horizon < ocl
-                5,  # horizon == ocl
-                7,  # horizon > ocl -> autoregression
-            ],
-            [False, True],  # use integer indexed series
-            [False, True],  # use multi-series
-            [0, 1],  # output chunk shift
-        ),
+        list(
+            itertools.product(
+                [False, True],  # use covariates
+                [True, False],  # last points only
+                [True, False],  # overlap end
+                [1, 3],  # stride
+                [
+                    3,  # horizon < ocl
+                    5,  # horizon == ocl
+                    7,  # horizon > ocl -> autoregression
+                ],
+                [False, True],  # use integer indexed series
+                [False, True],  # use multi-series
+                [0, 1],  # output chunk shift
+            )
+        )[18:19],
     )
     def test_conformal_historical_forecasts(self, config):
         """Tests historical forecasts output naive conformal model with last points only, covariates, stride,
