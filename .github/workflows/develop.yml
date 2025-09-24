@@ -33,7 +33,7 @@ jobs:
       matrix:
         os: [macos-14, ubuntu-latest]
         python-version: ['3.10']
-        flavour: ['all', 'core']
+        flavour: ['all']
 
     steps:
       - name: "Clone repository"
