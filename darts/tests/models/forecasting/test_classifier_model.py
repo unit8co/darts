@@ -220,13 +220,12 @@ class TestClassifierModel:
         assert set(np.unique(self.sine_univariate1_cat.values())) == {0, 1, 2}
         assert (model.class_labels[0] == [0, 1, 2]).all()
 
-    @pytest.mark.skipif(not XGB_AVAILABLE, reason="XGB required")
     @pytest.mark.parametrize("clf_params", process_model_list(classifiers))
     def test_multiclass_class_labels(self, clf_params):
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
 
-        if issubclass(clf, XGBClassifierModel):
+        if XGB_AVAILABLE and issubclass(clf, XGBClassifierModel):
             # XGB requires class labels to be consecutive from 0
             multivariate_cat_diff_labels = self.sine_univariate1_cat.stack(
                 self.sine_univariate1_cat

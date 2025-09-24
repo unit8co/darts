@@ -1,5 +1,5 @@
 prophet>=1.1.1
 catboost>=1.0.6
 lightgbm>=3.2.0
-xgboost>=2.1.4
 statsforecast>=1.4
+xgboost>=2.1.4

@@ -2191,9 +2191,11 @@ class TestSKLearnModels:
     @pytest.mark.parametrize(
         "config",
         product(
-            ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
-            + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
-            + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else []),
+            [
+                (XGBModel, xgb_test_params),
+                (LightGBMModel, lgbm_test_params),
+                (CatBoostModel, cb_test_params),
+            ],
             [True, False],
         ),
     )
@@ -2220,42 +2222,26 @@ class TestSKLearnModels:
     @pytest.mark.parametrize(
         "config",
         product(
-            (
-                [
-                    (
-                        XGBModel,
-                        xgb_test_params,
-                        "xgboost.xgb.XGBRegressor",
-                        "xgboost.XGBRegressor",
-                    )
-                ]
-                if XGB_AVAILABLE
-                else []
-            )
-            + (
-                [
-                    (
-                        LightGBMModel,
-                        lgbm_test_params,
-                        "lgbm.lgb.LGBMRegressor",
-                        "lightgbm.LGBMRegressor",
-                    )
-                ]
-                if LGBM_AVAILABLE
-                else []
-            )
-            + (
-                [
-                    (
-                        CatBoostModel,
-                        cb_test_params,
-                        "catboost_model.CatBoostRegressor",
-                        "catboost.CatBoostRegressor",
-                    )
-                ]
-                if CB_AVAILABLE
-                else []
-            ),
+            [
+                (
+                    XGBModel,
+                    xgb_test_params,
+                    "xgboost.xgb.XGBRegressor",
+                    "xgboost.XGBRegressor",
+                ),
+                (
+                    LightGBMModel,
+                    lgbm_test_params,
+                    "lgbm.lgb.LGBMRegressor",
+                    "lightgbm.LGBMRegressor",
+                ),
+                (
+                    CatBoostModel,
+                    cb_test_params,
+                    "catboost_model.CatBoostRegressor",
+                    "catboost.CatBoostRegressor",
+                ),
+            ],
             [False, True],
             [1, 3],
         ),
@@ -3462,15 +3448,13 @@ class TestSKLearnModels:
             assert len(model.encoders.future_encoders) == 1
             assert isinstance(model.encoders.future_encoders[0], FutureCyclicEncoder)
 
-    @pytest.mark.skipif(
-        not LGBM_AVAILABLE and not CB_AVAILABLE, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_config",
-        (
-            ([(LightGBMModel, {"verbose": -1})] if LGBM_AVAILABLE else [])
-            + ([(CatBoostModel, {"verbose": False})] if CB_AVAILABLE else [])
-        ),
+        [
+            (LightGBMModel, {"verbose": -1}),
+            (CatBoostModel, {"verbose": False}),
+        ],
     )
     def test_quality_forecast_with_categorical_covariates(self, model_config):
         """Test case: two time series, a full sine wave series and a sine wave series
@@ -3543,15 +3527,10 @@ class TestSKLearnModels:
             for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
         ])
 
-    @pytest.mark.skipif(
-        not LGBM_AVAILABLE and not CB_AVAILABLE, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_config",
-        (
-            ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
-            + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
-        ),
+        [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
     )
     def test_fit_with_categorical_features_and_encoders(self, model_config):
         model_cls, kwargs = model_config
@@ -3580,15 +3559,10 @@ class TestSKLearnModels:
             "model creation are not present"
         )
 
-    @pytest.mark.skipif(
-        not LGBM_AVAILABLE and not CB_AVAILABLE, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_config",
-        (
-            ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
-            + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
-        ),
+        [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
     )
     def test_fit_with_categorical_features_raises_error(self, model_config):
         model_cls, kwargs = model_config
@@ -3706,14 +3680,11 @@ class TestSKLearnModels:
             "Categorical features must be integer-encoded, decimal values found instead."
         )
 
-    @pytest.mark.skipif(
-        not LGBM_AVAILABLE and not CB_AVAILABLE, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "config",
         product(
-            ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
-            + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else []),
+            [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
             [
                 (
                     1,
@@ -3789,13 +3760,10 @@ class TestSKLearnModels:
         assert indices == indices_expected
         assert column_names == f_names_expected
 
-    @pytest.mark.skipif(
-        not LGBM_AVAILABLE and not CB_AVAILABLE, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_cls_and_module",
-        ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
-        + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else []),
+        [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
     )
     def test_categorical_features_passed_to_fit_correctly(self, model_cls_and_module):
         """Test whether the categorical features are passed to fit correctly"""
@@ -4251,14 +4219,11 @@ class TestProbabilisticSKLearnModels:
             assert mae_err < new_mae + 0.1
             mae_err = new_mae
 
-    @pytest.mark.skipif(
-        not LGBM_AVAILABLE and not CB_AVAILABLE, reason="requires lightgbm or catboost"
-    )
+    @pytest.mark.skipif(not GBM_AVAILABLE, reason="gradient boosting model required")
     @pytest.mark.parametrize(
         "model_config",
         product(
-            ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
-            + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else []),
+            [(LightGBMModel, lgbm_test_params), (CatBoostModel, cb_test_params)],
             ["quantile", "poisson", "gaussian"],
         ),
     )
