@@ -490,8 +490,8 @@ def _historical_forecasts_sanitize_kwargs(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Convert kwargs to dictionary, check that their content is compatible with called methods."""
     hfc_args = set(inspect.signature(model.historical_forecasts).parameters)
-    # replace `forecast_horizon` with `n`
-    hfc_args = hfc_args - {"forecast_horizon"}
+    # replace `forecast_horizon` with `n` and allow some duplicate parameters
+    hfc_args = hfc_args - {"forecast_horizon", "verbose"}
     hfc_args = hfc_args.union({"n"})
 
     if fit_kwargs is None:

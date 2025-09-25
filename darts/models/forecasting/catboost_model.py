@@ -288,7 +288,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
-        verbose: Optional[Union[int, bool]] = 0,
+        verbose: Optional[Union[int, bool]] = None,
         **kwargs,
     ):
         """
@@ -335,6 +335,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         **kwargs
             Additional kwargs passed to `catboost.CatboostRegressor.fit()`
         """
+        verbose = verbose if verbose is not None else 0
         likelihood = self.likelihood
         if isinstance(likelihood, QuantileRegression):
             # empty model container in case of multiple calls to fit, e.g. when backtesting

@@ -226,8 +226,13 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 # Use 0 as default value
                 self._floor = 0
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
 
@@ -309,7 +314,12 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     ) -> TimeSeries:
         _ = self._check_seasonality_conditions(future_covariates=future_covariates)
 
-        super()._predict(n, future_covariates, num_samples)
+        super()._predict(
+            n=n,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
+        )
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 
@@ -463,14 +473,17 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         return forecast["yhat"]
 
     def predict_raw(
-        self, n: int, future_covariates: Optional[TimeSeries] = None
+        self,
+        n: int,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
     ) -> pd.DataFrame:
         """Returns the output of the base Facebook Prophet model in form of a pandas DataFrame. Note however,
         that the output of this method is not supported for further processing with the Darts API.
 
         Methods of the base Prophet model can be accessed with self.model.method() (i.e. self.model.plot_components())
         """
-        super().predict(n, future_covariates, num_samples=1)
+        super().predict(n, future_covariates, num_samples=1, verbose=verbose)
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 

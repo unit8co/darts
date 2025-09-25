@@ -401,8 +401,8 @@ class TestGlobalForecastingModels:
             **kwargs,
         )
         series_copy = self.ts_pass_train.copy()
-        model.fit(self.ts_pass_train)
-        pred = model.predict(n=36)
+        model.fit(self.ts_pass_train, verbose=False)
+        pred = model.predict(n=36, verbose=False)
         mape_err = mape(self.ts_pass_val, pred)
         assert mape_err < err, (
             f"Model {model_cls} produces errors too high (one time "

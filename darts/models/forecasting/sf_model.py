@@ -135,8 +135,13 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         self._linreg: Optional[LinearRegressionModel] = None
         super().__init__(add_encoders=add_encoders)
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
 
@@ -148,7 +153,9 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
                 lags_future_covariates=[0],
                 use_static_covariates=False,
             )
-            self._linreg.fit(series, future_covariates=future_covariates)
+            self._linreg.fit(
+                series, future_covariates=future_covariates, verbose=verbose
+            )
             target = self._get_target_residuals(series, future_covariates)
 
         self.model.fit(
@@ -175,7 +182,12 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         random_state: Optional[int] = None,
     ) -> TimeSeries:
         super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
         )
 
         if series is not None and not self._supports_native_transferable_series:

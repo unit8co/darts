@@ -709,10 +709,21 @@ class TestClassifierModel:
         intercepted_args = {}
         original_fit = model.model.fit
 
-        def intercept_fit_args(*args, **kwargs):
-            intercepted_args["args"] = args
-            intercepted_args["kwargs"] = kwargs
-            return original_fit(*args, **kwargs)
+        # catboost requires passing a verbose parameter;
+        # Darts wrapper requires `verbose` to be in the fit signature for it to be passed to the underlying model
+        if CB_AVAILABLE and isinstance(model, CatBoostClassifierModel):
+
+            def intercept_fit_args(*args, verbose=False, **kwargs):
+                intercepted_args["args"] = args
+                intercepted_args["kwargs"] = kwargs
+                return original_fit(*args, verbose=verbose, **kwargs)
+
+        else:
+            # other models do not require the verbose parameter
+            def intercept_fit_args(*args, **kwargs):
+                intercepted_args["args"] = args
+                intercepted_args["kwargs"] = kwargs
+                return original_fit(*args, **kwargs)
 
         # target is categorical by default for classifiers supporting it
         expected_cat_indices = [0, 1]

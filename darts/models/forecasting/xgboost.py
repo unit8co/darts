@@ -262,6 +262,7 @@ class XGBModel(SKLearnModel):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
+        verbose: Optional[Union[int, bool]] = None,
         **kwargs,
     ):
         """
@@ -303,6 +304,8 @@ class XGBModel(SKLearnModel):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
         **kwargs
             Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
@@ -326,6 +329,7 @@ class XGBModel(SKLearnModel):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    verbose=verbose,
                     **kwargs,
                 )
                 # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
@@ -343,6 +347,7 @@ class XGBModel(SKLearnModel):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            verbose=verbose,
             **kwargs,
         )
         return self
