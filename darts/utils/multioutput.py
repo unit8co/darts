@@ -1,3 +1,4 @@
+import inspect
 from typing import Optional
 
 from sklearn.base import is_classifier
@@ -97,6 +98,12 @@ class MultiOutputMixin:
                 ValueError("Underlying estimator does not support sample weights."),
                 logger=logger,
             )
+
+        if (
+            fit_params.get("verbose") is not None
+            and "verbose" not in inspect.signature(self.estimator.fit).parameters
+        ):
+            fit_params.pop("verbose")
 
         fit_params_validated = _check_method_params(X, fit_params)
         eval_set = fit_params_validated.pop(self.eval_set_name, None)

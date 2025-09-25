@@ -195,6 +195,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        verbose: Optional[bool] = None,
         **kwargs,
     ) -> "ConformalModel":
         """Fit/train the underlying forecasting model on (potentially multiple) series.
@@ -224,6 +225,8 @@ class ConformalModel(GlobalForecastingModel, ABC):
             be used by some models as an input. The covariate(s) may or may not be multivariate, but if multiple
             covariates are provided they must have the same number of components. If `future_covariates` is provided,
             it must contain the same number of series as `series`.
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
         **kwargs
             Optional keyword arguments that will passed to the underlying forecasting model's `fit()` method.
 
@@ -237,6 +240,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
+            verbose=verbose,
             **kwargs,
         )
         return self

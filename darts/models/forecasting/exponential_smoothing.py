@@ -119,7 +119,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.fit_kwargs = fit_kwargs
         self.model = None
 
-    def fit(self, series: TimeSeries, verbose: bool = False):
+    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
         super().fit(series)
         self._assert_univariate(series)
         series = self.training_series

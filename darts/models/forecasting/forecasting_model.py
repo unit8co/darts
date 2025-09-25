@@ -165,7 +165,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self.encoders = self.initialize_encoders(default=True)
 
     @abstractmethod
-    def fit(self, series: TimeSeries, verbose=False) -> "ForecastingModel":
+    def fit(
+        self, series: TimeSeries, verbose: Optional[bool] = None
+    ) -> "ForecastingModel":
         """Fit/train the model on the provided series.
 
         Parameters
@@ -2847,7 +2849,9 @@ class LocalForecastingModel(ForecastingModel, ABC):
         return None, None, False, False, None, None
 
     @abstractmethod
-    def fit(self, series: TimeSeries, verbose: bool = False) -> "LocalForecastingModel":
+    def fit(
+        self, series: TimeSeries, verbose: Optional[bool] = None
+    ) -> "LocalForecastingModel":
         super().fit(series)
         series._assert_deterministic()
 
@@ -2917,7 +2921,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
     ) -> "GlobalForecastingModel":
         """Fit/train the model on (potentially multiple) series.
 
@@ -3150,7 +3154,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         self,
         series: TimeSeries,
         future_covariates: Optional[TimeSeries] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
     ):
         """Fit/train the model on the (single) provided series.
 

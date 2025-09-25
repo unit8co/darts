@@ -99,7 +99,7 @@ class Theta(LocalForecastingModel):
         if self.theta == 0:
             raise_log(ValueError("The parameter theta cannot be equal to 0."), logger)
 
-    def fit(self, series: TimeSeries, verbose: bool = False):
+    def fit(self, series: TimeSeries, verbose: Optional[bool] = False):
         super().fit(series)
         self._assert_univariate(series)
         ts = self.training_series
@@ -308,7 +308,7 @@ class FourTheta(LocalForecastingModel):
             logger,
         )
 
-    def fit(self, series, verbose: bool = False):
+    def fit(self, series, verbose: Optional[bool] = False):
         super().fit(series)
 
         self.length = len(series)

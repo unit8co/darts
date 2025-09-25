@@ -262,7 +262,7 @@ class XGBModel(SKLearnModel):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
-        verbose: bool = False,
+        verbose: Optional[Union[int, bool]] = None,
         **kwargs,
     ):
         """

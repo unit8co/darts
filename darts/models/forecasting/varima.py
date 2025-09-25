@@ -129,7 +129,7 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self,
         series: TimeSeries,
         future_covariates: Optional[TimeSeries] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = False,
     ):
         # for VARIMA we need to process target `series` before calling
         # TransferableFutureCovariatesLocalForecastingModel's fit() method

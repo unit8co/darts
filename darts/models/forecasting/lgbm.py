@@ -259,7 +259,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         """
@@ -306,6 +306,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
          **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
+        verbose = None
         likelihood = self.likelihood
         if isinstance(likelihood, QuantileRegression):
             # empty model container in case of multiple calls to fit, e.g. when backtesting

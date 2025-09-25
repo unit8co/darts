@@ -287,7 +287,7 @@ class RegressionEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
     ):
         """
         Fits the forecasting models with the entire series except the last `regression_train_n_points` values, which
@@ -385,6 +385,7 @@ class RegressionEnsembleModel(EnsembleModel):
             series=regression_target,
             future_covariates=predictions,
             sample_weight=sample_weight,
+            verbose=verbose,
         )
 
         # prepare the forecasting models for further predicting by fitting them with the entire data

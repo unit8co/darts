@@ -840,7 +840,7 @@ class SKLearnModel(GlobalForecastingModel):
         val_past_covariates: Optional[Sequence[TimeSeries]] = None,
         val_future_covariates: Optional[Sequence[TimeSeries]] = None,
         val_sample_weight: Optional[Union[Sequence[TimeSeries], str]] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         """
@@ -879,8 +879,12 @@ class SKLearnModel(GlobalForecastingModel):
                     "`fit()` method does not support it."
                 )
 
-        # only pass "verbose" to the underlying model if it supports it
-        if "verbose" in inspect.signature(self.model.fit).parameters:
+        # only pass `verbose` if provided and the underlying model supports it;
+        # we always pass it to MultiOutputMixin as it will handle it there
+        if verbose is not None and (
+            isinstance(self.model, MultiOutputMixin)
+            or "verbose" in inspect.signature(self.model.fit).parameters
+        ):
             kwargs["verbose"] = verbose
 
         self.model.fit(
@@ -914,7 +918,7 @@ class SKLearnModel(GlobalForecastingModel):
         n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         stride: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         """
@@ -1865,7 +1869,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         future_covariates,
         max_samples_per_ts,
         sample_weight,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         """
@@ -2099,11 +2103,25 @@ class _ClassifierMixin:
 
     def fit(
         self,
-        *args,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        max_samples_per_ts: Optional[int] = None,
+        n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        stride: int = 1,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         super().fit(
-            *args,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
+            n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+            sample_weight=sample_weight,
+            stride=stride,
+            verbose=verbose,
             **kwargs,
         )
 

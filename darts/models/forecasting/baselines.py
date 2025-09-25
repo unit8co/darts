@@ -51,7 +51,7 @@ class NaiveMean(LocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return True
 
-    def fit(self, series: TimeSeries, verbose: bool = False):
+    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
         super().fit(series)
 
         self.mean_val = np.mean(series.values(copy=False), axis=0)
@@ -112,7 +112,7 @@ class NaiveSeasonal(LocalForecastingModel):
     def _target_window_lengths(self):
         return max(self.K, 3), 0
 
-    def fit(self, series: TimeSeries, verbose: bool = False):
+    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
         super().fit(series)
 
         raise_if_not(
@@ -167,11 +167,9 @@ class NaiveDrift(LocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return True
 
-    def fit(self, series: TimeSeries, verbose: bool = False):
+    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
         super().fit(series)
         assert series.n_samples == 1, "This model expects deterministic time series"
-
-        series = self.training_series
         return self
 
     def predict(
@@ -235,7 +233,7 @@ class NaiveMovingAverage(LocalForecastingModel):
     def __str__(self):
         return f"NaiveMovingAverage({self.input_chunk_length})"
 
-    def fit(self, series: TimeSeries, verbose: bool = False):
+    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
         super().fit(series)
         raise_if_not(
             series.is_deterministic,
@@ -334,7 +332,7 @@ class NaiveEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
     ):
         super().fit(
             series=series,

@@ -247,7 +247,7 @@ class EnsembleModel(GlobalForecastingModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
     ):
         """
         Fits the model on the provided series.
