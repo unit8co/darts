@@ -41,6 +41,7 @@ def _optimized_historical_forecasts_last_points_only(
 
     The data_transformers are applied in historical_forecasts (input and predictions)
     """
+    predict_kwargs = predict_kwargs or {}
     forecasts_list = []
     iterator = _build_tqdm_iterator(
         series, verbose, total=len(series), desc="historical forecasts"
@@ -215,6 +216,7 @@ def _optimized_historical_forecasts_all_points(
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
+    predict_kwargs = predict_kwargs or {}
     forecasts_list = []
     iterator = _build_tqdm_iterator(
         series, verbose, total=len(series), desc="historical forecasts"
