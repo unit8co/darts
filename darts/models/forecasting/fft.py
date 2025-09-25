@@ -305,7 +305,7 @@ class FFT(LocalForecastingModel):
 
     def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
         series = fill_missing_values(series)
-        super().fit(series)
+        super().fit(series, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
 
@@ -371,11 +371,11 @@ class FFT(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
     ):
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
         trend_forecast = np.array([
             self.trend_function(i + len(self.training_series)) for i in range(n)
         ])

@@ -347,7 +347,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
     ) -> TimeSeries:
@@ -2852,7 +2852,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
     def fit(
         self, series: TimeSeries, verbose: Optional[bool] = None
     ) -> "LocalForecastingModel":
-        super().fit(series)
+        super().fit(series, verbose=verbose)
         series._assert_deterministic()
 
     @property
@@ -2999,7 +2999,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
@@ -3035,7 +3035,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
         verbose
-            Whether to print the progress.
+            Optionally, set the prediction verbosity. Not effective for all models.
         predict_likelihood_parameters
             If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
@@ -3055,7 +3055,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        super().predict(n, num_samples, random_state=random_state)
+        super().predict(n, num_samples, verbose=verbose, random_state=random_state)
         if predict_likelihood_parameters:
             self._sanity_check_predict_likelihood_parameters(
                 n, self.output_chunk_length, num_samples
@@ -3202,11 +3202,16 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
             self.future_covariate_series = future_covariates_copy
             self._uses_future_covariates = True
 
-        super().fit(series)
-        return self._fit(series, future_covariates=future_covariates)
+        super().fit(series, verbose=verbose)
+        return self._fit(series, future_covariates=future_covariates, verbose=verbose)
 
     @abstractmethod
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
+    ):
         """Fits/trains the model on the provided series.
         DualCovariatesModels must implement the fit logic in this method.
         """
@@ -3217,7 +3222,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
         **kwargs,
@@ -3251,7 +3256,7 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
-        super().predict(n, num_samples, random_state=random_state)
+        super().predict(n, num_samples, verbose=verbose, random_state=random_state)
         if predict_likelihood_parameters:
             self._sanity_check_predict_likelihood_parameters(
                 n, self.output_chunk_length, num_samples
@@ -3288,11 +3293,12 @@ class FutureCovariatesLocalForecastingModel(LocalForecastingModel, ABC):
                 )
 
         return self._predict(
-            n,
+            n=n,
             future_covariates=future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
+            verbose=verbose,
             **kwargs,
         )
 
@@ -3407,7 +3413,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
         **kwargs,
@@ -3491,6 +3497,7 @@ class TransferableFutureCovariatesLocalForecastingModel(
             future_covariates=future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            verbose=verbose,
             random_state=random_state,
             **kwargs,
         )

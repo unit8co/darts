@@ -120,7 +120,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.model = None
 
     def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
-        super().fit(series)
+        super().fit(series, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
 
@@ -159,11 +159,11 @@ class ExponentialSmoothing(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
     ):
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
 
         if num_samples == 1:
             forecast = self.model.forecast(n)

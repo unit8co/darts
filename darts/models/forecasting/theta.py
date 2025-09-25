@@ -100,7 +100,7 @@ class Theta(LocalForecastingModel):
             raise_log(ValueError("The parameter theta cannot be equal to 0."), logger)
 
     def fit(self, series: TimeSeries, verbose: Optional[bool] = False):
-        super().fit(series)
+        super().fit(series, verbose=verbose)
         self._assert_univariate(series)
         ts = self.training_series
 
@@ -156,11 +156,11 @@ class Theta(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
     ) -> "TimeSeries":
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
@@ -309,7 +309,7 @@ class FourTheta(LocalForecastingModel):
         )
 
     def fit(self, series, verbose: Optional[bool] = False):
-        super().fit(series)
+        super().fit(series, verbose=verbose)
 
         self.length = len(series)
         # normalization of data
@@ -408,7 +408,7 @@ class FourTheta(LocalForecastingModel):
         show_warnings: bool = True,
         random_state: Optional[int] = None,
     ) -> "TimeSeries":
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)

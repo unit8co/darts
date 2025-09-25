@@ -941,6 +941,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             series=seq2series(series),
             past_covariates=seq2series(past_covariates),
             future_covariates=seq2series(future_covariates),
+            verbose=verbose,
         )
         return self.fit_from_dataset(*params)
 
@@ -1669,6 +1670,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            verbose=verbose,
             show_warnings=show_warnings,
         )
 

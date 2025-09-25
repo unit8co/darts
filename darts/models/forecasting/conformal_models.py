@@ -252,7 +252,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
@@ -307,7 +307,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             interpolation in-between the quantiles. For larger values, the sample distribution approximates the
             calibrated quantile predictions.
         verbose
-            Whether to print the progress.
+            Optionally, set the prediction verbosity. Not effective for all models.
         predict_likelihood_parameters
             If set to `True`, generates the quantile predictions directly. Only supported with `num_samples = 1`.
         show_warnings

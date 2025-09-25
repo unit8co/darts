@@ -302,7 +302,7 @@ class EnsembleModel(GlobalForecastingModel):
                 logger,
             )
 
-        super().fit(series, past_covariates, future_covariates)
+        super().fit(series, past_covariates, future_covariates, verbose=verbose)
         return self
 
     def _stack_ts_seq(self, predictions):
@@ -328,6 +328,7 @@ class EnsembleModel(GlobalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
+        verbose: Optional[bool] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         is_single_series = isinstance(series, TimeSeries) or series is None
         # maximize covariate usage
@@ -346,6 +347,7 @@ class EnsembleModel(GlobalForecastingModel):
                 ),
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
+                verbose=verbose,
             )
             for model in self.forecasting_models
         ]
@@ -369,7 +371,7 @@ class EnsembleModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
@@ -414,6 +416,7 @@ class EnsembleModel(GlobalForecastingModel):
             num_samples=pred_num_samples,
             predict_likelihood_parameters=forecast_models_pred_likelihood_params,
             random_state=random_state,
+            verbose=verbose,
         )
 
         return self.ensemble(
@@ -422,6 +425,7 @@ class EnsembleModel(GlobalForecastingModel):
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
+            verbose=verbose,
         )
 
     @abstractmethod
@@ -432,6 +436,7 @@ class EnsembleModel(GlobalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
+        verbose: Optional[bool] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.
@@ -443,8 +448,16 @@ class EnsembleModel(GlobalForecastingModel):
         series
             Sequence of timeseries to predict on. Optional, since it only makes sense for sequences of timeseries -
             local models retain timeseries for prediction.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
         random_state
             Controls the randomness of probabilistic predictions.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
 
         Returns
         -------

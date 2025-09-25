@@ -175,6 +175,7 @@ class RegressionEnsembleModel(EnsembleModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
+        verbose: Optional[bool] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For GlobalForecastingModel, when predicting n > output_chunk_length, `historical_forecasts()` generally
@@ -185,6 +186,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
         train_n_points are generated, starting from the end of the series.
         """
+        verbose = verbose or False
         is_single_series = isinstance(series, TimeSeries)
         series = series2seq(series)
         direct_predictions = series2seq(direct_predictions)
@@ -236,6 +238,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 last_points_only=False,
                 show_warnings=self.show_warnings,
                 predict_likelihood_parameters=False,
+                verbose=verbose,
             )
             # concatenate the stridden predictions of output_chunk_length values each
             tmp_pred = [concatenate(sub_pred, axis=0) for sub_pred in tmp_pred]
@@ -320,7 +323,10 @@ class RegressionEnsembleModel(EnsembleModel):
             Optionally, set the fit verbosity. Not effective for all models.
         """
         super().fit(
-            series, past_covariates=past_covariates, future_covariates=future_covariates
+            series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            verbose=verbose,
         )
 
         # at this point, we know that all target series all long enough
@@ -368,6 +374,7 @@ class RegressionEnsembleModel(EnsembleModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=self.train_num_samples,
+            verbose=verbose,
         )
 
         if self.train_using_historical_forecasts:
@@ -378,6 +385,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
                 num_samples=self.train_num_samples,
+                verbose=verbose,
             )
 
         # train the regression model on the individual models' predictions
@@ -417,6 +425,7 @@ class RegressionEnsembleModel(EnsembleModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
+        verbose: Optional[bool] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         is_single_series = isinstance(series, TimeSeries) or series is None
         predictions = series2seq(predictions)
@@ -430,6 +439,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 num_samples=num_samples,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
+                verbose=verbose,
             )
             for serie, prediction in zip(series, predictions)
         ]

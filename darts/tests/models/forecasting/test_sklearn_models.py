@@ -1092,7 +1092,7 @@ class TestSKLearnModels:
             prediction = model_instance.predict(n=len(test_y) + 2)
 
         # while it should work with n = 1
-        prediction = model_instance.predict(n=1)
+        prediction = model_instance.predict(n=1, verbose=False)
         assert len(prediction) == 1
 
         # check that fit predict did not mutate input series

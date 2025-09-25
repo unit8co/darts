@@ -239,7 +239,8 @@ class TestLocalForecastingModels:
         if not isinstance(model, SKLearnModel):
             assert isinstance(model, LocalForecastingModel)
         prediction = model.fit(self.ts_gaussian, verbose=False).predict(
-            self.forecasting_horizon
+            self.forecasting_horizon,
+            verbose=False,
         )
         assert len(prediction) == self.forecasting_horizon
         # check that the input series was not mutated

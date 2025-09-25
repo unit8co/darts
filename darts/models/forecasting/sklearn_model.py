@@ -1064,6 +1064,7 @@ class SKLearnModel(GlobalForecastingModel):
             series=seq2series(series),
             past_covariates=seq2series(past_covariates),
             future_covariates=seq2series(future_covariates),
+            verbose=verbose,
         )
         variate2arg = {
             "target": "lags",
@@ -1141,7 +1142,7 @@ class SKLearnModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
@@ -1167,7 +1168,7 @@ class SKLearnModel(GlobalForecastingModel):
             Number of times a prediction is sampled from a probabilistic model. Should be set to 1
             for deterministic models.
         verbose
-            Whether to print the progress.
+            Optionally, set the prediction verbosity. Not effective for all models.
         predict_likelihood_parameters
             If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
@@ -1218,14 +1219,14 @@ class SKLearnModel(GlobalForecastingModel):
                 future_covariates=future_covariates,
             )
         super().predict(
-            n,
-            series,
-            past_covariates,
-            future_covariates,
-            num_samples,
-            verbose,
-            predict_likelihood_parameters,
-            show_warnings,
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            show_warnings=show_warnings,
         )
 
         # check that the input sizes of the target series and covariates match
@@ -1365,9 +1366,9 @@ class SKLearnModel(GlobalForecastingModel):
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict(
-                X,
-                num_samples,
-                predict_likelihood_parameters,
+                x=X,
+                num_samples=num_samples,
+                predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
                 **kwargs,
             )
