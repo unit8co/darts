@@ -2497,7 +2497,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
-        **kwargs,
+        predict_kwargs: Optional[dict[str, Any]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
         For TorchForecastingModels we use a strided inference dataset to avoid having to recreate trainers and
@@ -2529,7 +2529,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
-            **kwargs,
+            predict_kwargs=predict_kwargs,
         )
         return series2seq(forecasts_list, seq_type_out=series_seq_type)
 

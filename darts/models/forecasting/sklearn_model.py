@@ -1411,6 +1411,7 @@ class SKLearnModel(GlobalForecastingModel):
         num_samples: int,
         predict_likelihood_parameters: bool,
         random_state: Optional[int] = None,
+        verbose: Optional[bool] = None,
         **kwargs,
     ) -> np.ndarray:
         """Generate predictions.
@@ -1534,7 +1535,7 @@ class SKLearnModel(GlobalForecastingModel):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
-        **kwargs,
+        predict_kwargs: Optional[dict[str, Any]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
         For SKLearnModels we create the lagged prediction data once per series using a moving window.
@@ -1572,7 +1573,7 @@ class SKLearnModel(GlobalForecastingModel):
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
-                **kwargs,
+                predict_kwargs=predict_kwargs,
             )
         else:
             hfc = _optimized_historical_forecasts_all_points(
@@ -1590,7 +1591,7 @@ class SKLearnModel(GlobalForecastingModel):
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
-                **kwargs,
+                predict_kwargs=predict_kwargs,
             )
         return series2seq(hfc, seq_type_out=series_seq_type)
 

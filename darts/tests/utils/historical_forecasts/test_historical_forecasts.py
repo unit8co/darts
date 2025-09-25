@@ -681,7 +681,14 @@ class TestHistoricalforecast:
         model = NaiveSeasonal()
         assert model.min_train_series_length == 3
         series = tg.sine_timeseries(length=4)
-        res = model.historical_forecasts(series, retrain=True, forecast_horizon=1)
+        res = model.historical_forecasts(
+            series,
+            retrain=True,
+            forecast_horizon=1,
+            verbose=False,
+            fit_kwargs={"verbose": False},
+            predict_kwargs={"verbose": False},
+        )
         # NaiveSeasonal has a minimum train length of 3, with horizon=1, we expect one forecast at last point
         # (series has length 4)
         assert len(res) == 1
@@ -1429,6 +1436,9 @@ class TestHistoricalforecast:
                         forecast_horizon=forecast_horizon,
                         overlap_end=overlap_end,
                         enable_optimization=False,
+                        verbose=False,
+                        fit_kwargs={"verbose": False},
+                        predict_kwargs={"verbose": False},
                     )
 
                     # manually packing the series in list to match expected inputs
@@ -1445,6 +1455,8 @@ class TestHistoricalforecast:
                         stride=stride,
                         forecast_horizon=forecast_horizon,
                         overlap_end=overlap_end,
+                        verbose=False,
+                        predict_kwargs={"verbose": False},
                     )
 
                     self.helper_compare_hf(hist_fct, opti_hist_fct)
@@ -2064,6 +2076,9 @@ class TestHistoricalforecast:
             stride=1,
             retrain=retrain,
             overlap_end=False,
+            verbose=False,
+            fit_kwargs={"verbose": False},
+            predict_kwargs={"verbose": False},
         )
         assert len(forecasts) == 2, (
             f"Model {model_cls} did not return a list of historical forecasts"

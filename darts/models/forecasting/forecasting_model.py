@@ -928,7 +928,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 show_warnings=show_warnings,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
-                **predict_kwargs,
+                predict_kwargs=predict_kwargs,
             )
 
             return _apply_inverse_data_transformers(
@@ -1096,7 +1096,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         future_covariates=future_covariates_,
                         sample_weight=sample_weight_,
                         val_series=val_series_,
-                        verbose=verbose,
                         **fit_kwargs,
                     )
 
@@ -1120,7 +1119,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     past_covariates=past_covariates_,
                     future_covariates=future_covariates_,
                     num_samples=num_samples,
-                    verbose=verbose,
                     predict_likelihood_parameters=predict_likelihood_parameters,
                     show_warnings=show_predict_warnings,
                     random_state=random_state,
@@ -2778,9 +2776,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose: bool = False,
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
-        data_transformers: Optional[dict[str, BaseDataTransformer]] = None,
         random_state: Optional[int] = None,
-        **kwargs,
+        predict_kwargs: Optional[dict[str, Any]] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         logger.warning(
             "`optimized historical forecasts is not available for this model, use `historical_forecasts` instead."
