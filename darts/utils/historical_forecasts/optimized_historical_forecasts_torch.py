@@ -42,6 +42,8 @@ def _optimized_historical_forecasts(
     The data_transformers are applied in historical_forecasts (input and predictions)
     """
     predict_kwargs = predict_kwargs or {}
+    if "verbose" not in predict_kwargs:
+        predict_kwargs["verbose"] = verbose
     bounds = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
