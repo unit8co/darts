@@ -1079,6 +1079,7 @@ class TestSKLearnModels:
         model_instance.fit(
             series=train_y,
             past_covariates=past_cov,
+            verbose=False,
         )
 
         assert model_instance.input_dim == {
@@ -1091,7 +1092,7 @@ class TestSKLearnModels:
             prediction = model_instance.predict(n=len(test_y) + 2)
 
         # while it should work with n = 1
-        prediction = model_instance.predict(n=1)
+        prediction = model_instance.predict(n=1, verbose=False)
         assert len(prediction) == 1
 
         # check that fit predict did not mutate input series
@@ -3794,10 +3795,21 @@ class TestSKLearnModels:
         original_fit = model.model.fit
         intercepted_args = {}
 
-        def intercept_fit_args(*args, **kwargs):
-            intercepted_args["args"] = args
-            intercepted_args["kwargs"] = kwargs
-            return original_fit(*args, **kwargs)
+        # catboost requires passing a verbose parameter;
+        # Darts wrapper requires `verbose` to be in the fit signature for it to be passed to the underlying model
+        if isinstance(model, CatBoostModel):
+
+            def intercept_fit_args(*args, verbose=False, **kwargs):
+                intercepted_args["args"] = args
+                intercepted_args["kwargs"] = kwargs
+                return original_fit(*args, verbose=verbose, **kwargs)
+
+        else:
+            # lgbm does not support the verbose parameter;
+            def intercept_fit_args(*args, **kwargs):
+                intercepted_args["args"] = args
+                intercepted_args["kwargs"] = kwargs
+                return original_fit(*args, **kwargs)
 
         with patch.object(
             model.model.__class__,
