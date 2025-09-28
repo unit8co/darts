@@ -1407,7 +1407,10 @@ def _apply_data_transformers(
     """
     transformed_ts = []
     is_multi_series = get_series_seq_type(series) == SeriesType.SEQ
-    series_end = get_single_series(series).end_time()
+
+    series_0 = get_single_series(series)
+    freq = series_0.freq
+    series_end = series_0.end_time()
     for ts_type, apply_fit, ts in zip(
         ["series", "series", "past_covariates", "future_covariates"],
         [True, False, True, True],
@@ -1433,9 +1436,7 @@ def _apply_data_transformers(
             elif ts_type == "future_covariates":
                 # information is known until `max_future_cov_lag` steps after the end of the target series
                 tmp_ts = [
-                    ts_.drop_after(
-                        series_end + max(0, max_future_cov_lag + 1) * series.freq
-                    )
+                    ts_.drop_after(series_end + max(0, max_future_cov_lag + 1) * freq)
                     for ts_ in ts
                 ]
             else:  # "series" and "pred_series"

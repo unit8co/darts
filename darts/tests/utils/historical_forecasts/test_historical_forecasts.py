@@ -3636,22 +3636,20 @@ class TestHistoricalforecast:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [False, True],  # use covariates
-                [True, False],  # last points only
-                [True, False],  # overlap end
-                [1, 3],  # stride
-                [
-                    3,  # horizon < ocl
-                    5,  # horizon == ocl
-                    7,  # horizon > ocl -> autoregression
-                ],
-                [False, True],  # use integer indexed series
-                [False, True],  # use multi-series
-                [0, 1],  # output chunk shift
-            )
-        )[18:19],
+        itertools.product(
+            [False, True],  # use covariates
+            [True, False],  # last points only
+            [True, False],  # overlap end
+            [1, 3],  # stride
+            [
+                3,  # horizon < ocl
+                5,  # horizon == ocl
+                7,  # horizon > ocl -> autoregression
+            ],
+            [False, True],  # use integer indexed series
+            [False, True],  # use multi-series
+            [0, 1],  # output chunk shift
+        ),
     )
     def test_conformal_historical_forecasts(self, config):
         """Tests historical forecasts output naive conformal model with last points only, covariates, stride,

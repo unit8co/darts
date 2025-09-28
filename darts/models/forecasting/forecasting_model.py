@@ -976,9 +976,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         forecasts_list = [[] for _ in range(len(series))]
 
-        if apply_globally:
+        if apply_globally or len(series) == 1:
             series = [series]
-            past_covariates = [future_covariates] if past_covariates else None
+            past_covariates = [past_covariates] if past_covariates else None
             future_covariates = [future_covariates] if future_covariates else None
             if isinstance(sample_weight, str):
                 sample_weight = sample_weight
@@ -986,11 +986,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 sample_weight = [sample_weight] if sample_weight else None
 
             outer_iterator = series
-        elif len(series) == 1:
+        else:
+            series = [[s] for s in series]
+            past_covariates = (
+                [[s] for s in past_covariates] if past_covariates else None
+            )
+            future_covariates = (
+                [[s] for s in future_covariates] if future_covariates else None
+            )
+            if isinstance(sample_weight, str):
+                sample_weight = sample_weight
+            else:
+                sample_weight = [[s] for s in sample_weight] if sample_weight else None
+
             # Use tqdm on the outer loop only if there's more than one series to iterate over
             # (otherwise use tqdm on the inner loop).
-            outer_iterator = series
-        else:
             outer_iterator = _build_tqdm_iterator(
                 series, verbose, total=len(series), desc="historical forecasts"
             )
@@ -1033,9 +1043,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
             # series time frame might have changed, slice all series accordingly
-            if not apply_globally:
-                series_ = [series_adjusted]
-            elif not get_single_series(series_).has_same_time_as(series_adjusted):
+            if not get_single_series(series_).has_same_time_as(series_adjusted):
                 series_ = [s.slice_intersect(series_adjusted) for s in series_]
             series_0 = get_single_series(series_)
 
@@ -1114,10 +1122,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 # when `retrain=False`, transformers were already applied to all the series at the beginning
                 if data_transformers and retrain:
                     (
-                        train_series_,
-                        pred_series_,
-                        past_covariates_,
-                        future_covariates_,
+                        train_series_tf,
+                        pred_series_tf,
+                        past_covariates_tf,
+                        future_covariates_tf,
                     ) = _apply_data_transformers(
                         series=train_series_,
                         pred_series=pred_series_,
@@ -1127,38 +1135,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         max_future_cov_lag=model.extreme_lags[5],
                         fit_transformers=apply_retrain,
                     )
-                if apply_retrain:
-                    # get current validation input from transformed series;
-                    if val_length_:
-                        # include one model input window to allow direct evaluation after the training set
-                        input_length = model._target_window_lengths[0]
-                        val_series_ = [
-                            s[-(val_length_ + input_length) :] for s in pred_series_
-                        ]
-                    else:
-                        val_series_ = None
+                else:
+                    train_series_tf = train_series_
+                    pred_series_tf = pred_series_
+                    past_covariates_tf = past_covariates_
+                    future_covariates_tf = future_covariates_
 
-                    if not apply_globally:
-                        # single series for local models
-                        train_series_ = get_single_series(train_series_)
-                        val_series_ = get_single_series(val_series_)
-
-                    # fit a new instance of the model
-                    model = model.untrained_model()
-                    model._fit_wrapper(
-                        series=train_series_,
-                        past_covariates=past_covariates_,
-                        future_covariates=future_covariates_,
-                        sample_weight=sample_weight_,
-                        val_series=val_series_,
-                        **fit_kwargs,
-                    )
+                # get current validation input from transformed series;
+                if apply_retrain and val_length_:
+                    # include one model input window to allow direct evaluation after the training set
+                    input_length = model._target_window_lengths[0]
+                    val_series_tf = [
+                        s[-(val_length_ + input_length) :] for s in pred_series_tf
+                    ]
+                else:
+                    val_series_tf = None
 
                 # for regression models with lags=None, lags_past_covariates=None and min(lags_future_covariates)>=0,
                 # the first predictable timestamp is the first timestamp of the series, a dummy ts must be created
                 # to support `predict()`
                 if len(pred_series_0) == 0:
-                    pred_series_ = [
+                    pred_series_tf = [
                         ps.with_times_and_values(
                             times=generate_index(
                                 start=pred_time - 1 * s.freq,
@@ -1168,18 +1165,38 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                             ),
                             values=np.array([np.nan]),
                         )
-                        for s, ps in zip(series_, pred_series_)
+                        for s, ps in zip(series_, pred_series_tf)
                     ]
 
                 if not apply_globally:
                     # single series for local models
-                    pred_series_ = get_single_series(pred_series_)
+                    pred_series_tf = get_single_series(pred_series_tf)
+                    train_series_tf = get_single_series(train_series_tf)
+                    val_series_tf = get_single_series(val_series_tf)
+                    past_covariates_tf = get_single_series(past_covariates_tf)
+                    future_covariates_tf = get_single_series(future_covariates_tf)
+                    if isinstance(sample_weight_, str):
+                        sample_weight_ = sample_weight_
+                    else:
+                        sample_weight_ = get_single_series(sample_weight_)
 
-                forecast = model._predict_wrapper(
+                if apply_retrain:
+                    # fit a new instance of the model
+                    model = model.untrained_model()
+                    model._fit_wrapper(
+                        series=train_series_tf,
+                        past_covariates=past_covariates_tf,
+                        future_covariates=future_covariates_tf,
+                        sample_weight=sample_weight_,
+                        val_series=val_series_tf,
+                        **fit_kwargs,
+                    )
+
+                forecast_tf = model._predict_wrapper(
                     n=forecast_horizon,
-                    series=pred_series_,
-                    past_covariates=past_covariates_,
-                    future_covariates=future_covariates_,
+                    series=pred_series_tf,
+                    past_covariates=past_covariates_tf,
+                    future_covariates=future_covariates_tf,
                     num_samples=num_samples,
                     predict_likelihood_parameters=predict_likelihood_parameters,
                     show_warnings=show_predict_warnings,
@@ -1193,8 +1210,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     series_idx = None
 
                 forecast = _apply_inverse_data_transformers(
-                    series=pred_series_,
-                    forecasts=forecast,
+                    series=pred_series_tf,
+                    forecasts=forecast_tf,
                     data_transformers=data_transformers,
                     series_idx=series_idx,
                 )
@@ -1212,8 +1229,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             for fc_series in forecasts_list:
                 fc_series_0 = get_single_series(fc_series)
                 time_index = generate_index(
-                    start=forecasts_list[0][0].end_time(),
-                    length=len(forecasts_list[0]),
+                    start=fc_series_0.end_time(),
+                    length=len(fc_series),
                     freq=fc_series_0.freq * stride,
                     name=fc_series_0._time_index.name,
                 )
