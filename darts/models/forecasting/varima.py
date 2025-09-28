@@ -125,7 +125,12 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
             )
         return series
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = False,
+    ):
         # for VARIMA we need to process target `series` before calling
         # TransferableFutureCovariatesLocalForecastingModel's fit() method
         self._last_values = (
@@ -134,14 +139,17 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
 
         series = self._differentiate_series(series)
 
-        super().fit(series, future_covariates)
+        super().fit(series, future_covariates, verbose=verbose)
 
         return self
 
     def _fit(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ) -> None:
-        super()._fit(series, future_covariates)
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
 
         self._assert_multivariate(series)
 
@@ -179,7 +187,12 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         self._last_num_samples = num_samples
 
         super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
         )
 
         if series is not None:

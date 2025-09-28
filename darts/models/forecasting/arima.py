@@ -142,8 +142,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return False
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
 
         self._assert_univariate(series)
 
@@ -181,12 +186,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             )
 
         super()._predict(
-            n,
-            series,
-            historic_future_covariates,
-            future_covariates,
-            num_samples,
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
             random_state=random_state,
+            verbose=verbose,
         )
 
         # updating statsmodels results object state with the new ts and covariates
