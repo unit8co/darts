@@ -1,5 +1,5 @@
 import inspect
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from types import SimpleNamespace
 from typing import Any, Callable, Literal, Optional, Union
 
@@ -7,20 +7,20 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
-from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
 from darts.logging import get_logger, raise_log
+from darts.timeseries import TimeSeries, slice_intersect
 from darts.utils.ts_utils import (
     SeriesType,
     get_series_seq_type,
     get_single_series,
     series2seq,
 )
-from darts.utils.utils import n_steps_between
+from darts.utils.utils import _build_tqdm_iterator, n_steps_between
 
 logger = get_logger(__name__)
 
@@ -1476,6 +1476,74 @@ def _apply_inverse_data_transformers(
         return forecasts[0] if called_with_single_series else forecasts
     else:
         return forecasts
+
+
+def _slice_intersect_series(
+    series: Sequence[TimeSeries],
+    past_covariates: Optional[Sequence[TimeSeries]],
+    future_covariates: Optional[Sequence[TimeSeries]],
+    sample_weight: Optional[Union[str, Sequence[TimeSeries]]],
+) -> tuple[
+    Sequence[TimeSeries],
+    Optional[Sequence[TimeSeries]],
+    Optional[Sequence[TimeSeries]],
+    Optional[Union[str, Sequence[TimeSeries]]],
+]:
+    """Computes the slice intersection of all series sequences."""
+    series = slice_intersect(series)
+    past_covariates = (
+        slice_intersect(past_covariates) if past_covariates is not None else None
+    )
+    future_covariates = (
+        slice_intersect(future_covariates) if future_covariates is not None else None
+    )
+    if not isinstance(sample_weight, str):
+        sample_weight = (
+            slice_intersect(sample_weight) if sample_weight is not None else None
+        )
+    return series, past_covariates, future_covariates, sample_weight
+
+
+def _setup_hfc_outer_iterator(
+    series: Sequence[TimeSeries],
+    past_covariates: Optional[Sequence[TimeSeries]],
+    future_covariates: Optional[Sequence[TimeSeries]],
+    sample_weight: Optional[Union[str, Sequence[TimeSeries]]],
+    apply_globally: bool,
+    verbose: bool,
+) -> tuple[
+    Sequence[Sequence[TimeSeries]],
+    Optional[Sequence[Sequence[TimeSeries]]],
+    Optional[Sequence[Sequence[TimeSeries]]],
+    Optional[Union[str, Sequence[Sequence[TimeSeries]]]],
+    Iterable[Sequence[TimeSeries]],
+]:
+    """Sets up the outer iterator and series sequences for historical forecasts."""
+    if apply_globally or len(series) == 1:
+        # for global hfc or only a single series, the progress bar will be on the inner loop
+        series = [series]
+        past_covariates = [past_covariates] if past_covariates else None
+        future_covariates = [future_covariates] if future_covariates else None
+        if isinstance(sample_weight, str):
+            sample_weight = sample_weight
+        else:
+            sample_weight = [sample_weight] if sample_weight else None
+        outer_iterator = series
+    else:
+        # for multiple series and local hfc, the progress bar will be on the outer loop
+        series = [[s] for s in series]
+        past_covariates = [[s] for s in past_covariates] if past_covariates else None
+        future_covariates = (
+            [[s] for s in future_covariates] if future_covariates else None
+        )
+        if isinstance(sample_weight, str):
+            sample_weight = sample_weight
+        else:
+            sample_weight = [[s] for s in sample_weight] if sample_weight else None
+        outer_iterator = _build_tqdm_iterator(
+            series, verbose, total=len(series), desc="historical forecasts"
+        )
+    return series, past_covariates, future_covariates, sample_weight, outer_iterator
 
 
 def _process_historical_forecast_for_backtest(
