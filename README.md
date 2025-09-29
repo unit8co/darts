@@ -5,7 +5,7 @@
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/darts)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg)](https://anaconda.org/conda-forge/u8darts-all)
-![Supported versions](https://img.shields.io/badge/python-3.9+-blue.svg)
+![Supported versions](https://img.shields.io/badge/python-3.10+-blue.svg)
 [![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)](https://hub.docker.com/r/unit8/darts)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master)
@@ -50,7 +50,7 @@ fledged anomaly detection models.
 
 ## Quick Install
 
-We recommend to first setup a clean Python environment for your project with Python 3.9+ using your favorite tool
+We recommend to first setup a clean Python environment for your project with Python 3.10+ using your favorite tool
 ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"),
 [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with
 or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
