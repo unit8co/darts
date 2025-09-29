@@ -1199,7 +1199,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-        trainer, model, datamodule = self._setup_for_train(
+        trainer, model, datamodule, load_best = self._setup_for_train(
             train_dataset=train_dataset,
             val_dataset=val_dataset,
             trainer=trainer,
@@ -1208,7 +1208,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             dataloader_kwargs=dataloader_kwargs,
             load_best=load_best,
         )
-        self._train(trainer, model, datamodule)
+        self._train(trainer, model, datamodule, load_best)
         return self
 
     def _setup_for_train(
@@ -1383,7 +1383,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ckpt_activated = ckpt_callback is not None and hasattr(
                 ckpt_callback, "best_model_path"
             )
-            if not ckpt_activated or val_loader is None:
+            if not ckpt_activated or len(datamodule.val_dataloader()) == 0:
                 logger.warning(
                     "Loading the best model will be skipped (`load_best` is ignored), as it requires "
                     "active checkpointing and a validation set to be provided to the current fit method."
@@ -1689,7 +1689,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
         )
-        trainer, model, datamodule = self._setup_for_train(*params)
+        trainer, model, datamodule, _ = self._setup_for_train(*params)
         batch_size = Tuner(trainer).scale_batch_size(
             model=model,
             datamodule=datamodule,
