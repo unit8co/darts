@@ -4423,128 +4423,191 @@ class TestHistoricalforecast:
                 )
         caplog.clear()
 
-    @pytest.mark.parametrize(
-        "model",
+    models_test_global_hfc = [
+        (NaiveSeasonal, {"K": 3}),
+        (LinearRegressionModel, {"lags": 3}),  # global model target only
+        (
+            LinearRegressionModel,
+            {"lags": 3, "lags_past_covariates": 3},
+        ),  # global model with pc
+        (
+            LinearRegressionModel,
+            {"lags": 3, "lags_future_covariates": (3, 1)},
+        ),  # global model with fc
+        (
+            LinearRegressionModel,
+            {"lags": 3, "lags_past_covariates": 3, "lags_future_covariates": (3, 1)},
+        ),  # global model with all covs
+    ] + (
         [
-            NaiveSeasonal(K=3),
-            LinearRegressionModel(lags=3),  # global model target only
-            LinearRegressionModel(
-                lags=3,
-                lags_past_covariates=3,
-            ),  # global model with pc
-            LinearRegressionModel(
-                lags=3,
-                lags_future_covariates=(3, 1),
-            ),  # global model with fc
-            LinearRegressionModel(
-                lags=3,
-                lags_past_covariates=3,
-                lags_future_covariates=(3, 1),
-            ),  # global model with all covs,
-        ]
-        + ([BlockRNNModel(3, 1, n_epochs=1, **tfm_kwargs)] if TORCH_AVAILABLE else []),
-    )
-    def test_global_historical_forecasts_fit(self, model):
-        """Tests historical forecasts on a global model."""
-        fitted_model, hfc_kwargs = self.helper_prepare_global_hfc_input(model)
-
-        intercepted_args = {}
-
-        def intercept_args(*args, **kwargs):
-            for k, v in kwargs.items():
-                if k not in intercepted_args:
-                    intercepted_args[k] = [v] if isinstance(v, TimeSeries) else v
-                else:
-                    intercepted_args[k].append(v)
-            return fitted_model
-
-        # intercept fit calls to check arguments and return fitted model
-        with patch.object(
-            model.__class__,
-            "fit",
-            side_effect=intercept_args,
-        ):
-            # historical forecasts on one series
-            preds = model.historical_forecasts(
-                retrain=True, apply_globally=True, overlap_end=True, **hfc_kwargs
+            (
+                BlockRNNModel,
+                {
+                    "input_chunk_length": 3,
+                    "output_chunk_length": 1,
+                    "n_epochs": 1,
+                    "random_state": 42,
+                    **tfm_kwargs,
+                },
             )
-            for k, series_expected in hfc_kwargs.items():
-                assert intercepted_args[k] == slice_intersect(series_expected)
-            for p, s in zip(preds, slice_intersect(hfc_kwargs["series"])):
-                assert len(p) == 1
-                assert p.start_time() == s.end_time() + s.freq
-
-    @pytest.mark.parametrize(
-        "model",
-        [
-            NaiveSeasonal(K=3),
-            LinearRegressionModel(lags=3),  # global model target only
-            LinearRegressionModel(
-                lags=3,
-                lags_past_covariates=3,
-            ),  # global model with pc
-            LinearRegressionModel(
-                lags=3,
-                lags_future_covariates=(3, 1),
-            ),  # global model with fc
-            LinearRegressionModel(
-                lags=3,
-                lags_past_covariates=3,
-                lags_future_covariates=(3, 1),
-            ),  # global model with all covs,
         ]
-        + ([BlockRNNModel(3, 1, n_epochs=1, **tfm_kwargs)] if TORCH_AVAILABLE else []),
+        if TORCH_AVAILABLE
+        else []
     )
-    def test_global_historical_forecasts_predict(self, model):
-        """Tests historical forecasts on a global model."""
-        fitted_model, hfc_kwargs = self.helper_prepare_global_hfc_input(model)
 
-        forecasts = [
-            tg.linear_timeseries(start=s_.end_time() + s_.freq, length=1)
-            for s_ in slice_intersect(hfc_kwargs["series"])
-        ]
-        intercepted_args = {}
-        counter = 0
+    @pytest.mark.parametrize("config", models_test_global_hfc)
+    def test_global_historical_forecasts_fit_predict(self, config):
+        """Tests globally applied historical forecasts for model fit and predict."""
+        model_cls, model_kwargs = config
 
-        # intercept prediction calls to check arguments and return prepared forecasts
-        def intercept_args(*args, **kwargs):
-            nonlocal counter
-            for k in hfc_kwargs:
-                if k not in kwargs:
-                    continue
-                v = kwargs[k]
-                if k not in intercepted_args:
-                    intercepted_args[k] = [v] if isinstance(v, TimeSeries) else v
-                else:
-                    intercepted_args[k].append(v)
+        # Create a custom model that tracks fit and predict arguments
+        class TrackingModel(model_cls):
+            fit_args = {}
+            predict_args = {}
+
+            def fit(self, *args, **kwargs):
+                for k, v in kwargs.items():
+                    if k not in self.fit_args:
+                        self.fit_args[k] = [v] if isinstance(v, TimeSeries) else v
+                    else:
+                        self.fit_args[k].append(v)
+                return super().fit(*args, **kwargs)
+
+            def predict(self, *args, **kwargs):
+                for k in hfc_kwargs:
+                    if k not in kwargs:
+                        continue
+                    v = kwargs[k]
+                    if k not in self.predict_args:
+                        self.predict_args[k] = [v] if isinstance(v, TimeSeries) else v
+                    else:
+                        self.predict_args[k].append(v)
+                return super().predict(*args, **kwargs)
+
+        model = TrackingModel(**model_kwargs)
+        hfc_kwargs = self.helper_prepare_global_hfc_input(model)
+
+        # generate historical forecasts applied globally
+        preds = model.historical_forecasts(
+            retrain=True, apply_globally=True, overlap_end=True, **hfc_kwargs
+        )
+
+        for k, series_expected in hfc_kwargs.items():
+            # check fit input
+            assert model.fit_args[k] == slice_intersect(series_expected)
+
+            # check predict input (sample weight not part of prediction)
+            if k == "sample_weight":
+                continue
             if isinstance(model, GlobalForecastingModel):
-                out = forecasts
+                assert model.predict_args[k] == slice_intersect(series_expected)
             else:
-                out = forecasts[counter]
+                # local models do not accept series as input for prediction
+                assert "series" not in model.predict_args
 
-            counter += 1
-            return out
+        # check predictions
+        if isinstance(model, GlobalForecastingModel):
+            fit_input = {k: slice_intersect(v) for k, v in hfc_kwargs.items()}
+            pred_input = {k: v for k, v in fit_input.items() if k != "sample_weight"}
+            preds_expected = model.fit(**fit_input).predict(n=1, **pred_input)
+        else:
+            preds_expected = []
+            for idx in range(2):
+                fit_input = {k: slice_intersect(v)[idx] for k, v in hfc_kwargs.items()}
+                pred_input = {
+                    k: v
+                    for k, v in fit_input.items()
+                    if k not in ["series", "sample_weight"]
+                }
+                preds_expected.append(model.fit(**fit_input).predict(n=1, **pred_input))
+        assert preds == preds_expected
 
-        # intercept fit calls to check arguments
-        with patch.object(
-            model.__class__,
-            "predict",
-            side_effect=intercept_args,
-        ):
-            # historical forecasts on one series
-            preds = model.historical_forecasts(
-                retrain=True, apply_globally=True, overlap_end=True, **hfc_kwargs
+    @pytest.mark.parametrize("config", models_test_global_hfc)
+    def test_global_historical_forecasts_data_transformer(self, config):
+        """Tests historical forecasts on a global model with data transformers."""
+        model_cls, model_kwargs = config
+        model = model_cls(**model_kwargs)
+        hfc_kwargs = self.helper_prepare_global_hfc_input(model)
+
+        # Create a custom Pipeline subclass that tracks fit, transform, and inverse_transform arguments
+        class TrackingPipeline(Pipeline):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.fit_calls = []
+                self.transform_calls = []
+                self.inverse_transform_calls = []
+
+            def fit(self, data, *args, **kwargs):
+                self.fit_calls.append({"series": data})
+                return super().fit(data, *args, **kwargs)
+
+            def transform(self, data, *args, **kwargs):
+                self.transform_calls.append({"series": data})
+                return super().transform(data, *args, **kwargs)
+
+            def inverse_transform(self, data, *args, **kwargs):
+                self.inverse_transform_calls.append({"series": data})
+                return super().inverse_transform(data, *args, **kwargs)
+
+        # Create transformers for each data type using our tracking pipeline
+        transformers = {}
+        for name in ["series", "past_covariates", "future_covariates"]:
+            if name in hfc_kwargs:
+                transformers[name] = TrackingPipeline([Scaler(global_fit=True)])
+
+        hfc_kwargs["data_transformers"] = transformers
+
+        # Run historical forecasts
+        preds = model.historical_forecasts(
+            retrain=True, apply_globally=True, overlap_end=True, **hfc_kwargs
+        )
+
+        # Verify that predictions are generated correctly
+        for p, s in zip(preds, slice_intersect(hfc_kwargs["series"])):
+            assert len(p) == 1
+            assert p.start_time() == s.end_time() + s.freq
+
+        # Verify that transformers were fitted with correct arguments
+        is_global = isinstance(model, GlobalForecastingModel)
+        for name, transformer in transformers.items():
+            # The behavior depends on the model type:
+            # - global hfc fits once on all series
+            # - local hfc fits once on each series
+            expected_num_series = 2 if is_global else 1
+            expected_fit_calls = 1 if is_global else 2
+            assert len(transformer.fit_calls) == expected_fit_calls
+            assert all(
+                isinstance(call["series"], list) for call in transformer.fit_calls
             )
-            for k, series_expected in hfc_kwargs.items():
-                if k == "sample_weight":
-                    continue
-                if isinstance(model, GlobalForecastingModel):
-                    assert intercepted_args[k] == slice_intersect(series_expected)
-                else:
-                    assert "series" not in intercepted_args
-            for p, s in zip(preds, slice_intersect(hfc_kwargs["series"])):
-                assert len(p) == 1
-                assert p.start_time() == s.end_time() + s.freq
+            assert all(
+                len(call["series"]) == expected_num_series
+                for call in transformer.fit_calls
+            )
+
+            # series transformer transforms the training and prediction input (2*)
+            expected_tr_calls = (
+                2 * expected_fit_calls if name == "series" else expected_fit_calls
+            )
+            assert len(transformer.transform_calls) == expected_tr_calls
+            assert all(
+                isinstance(call["series"], list) for call in transformer.transform_calls
+            )
+            assert all(
+                len(call["series"]) == expected_num_series
+                for call in transformer.transform_calls
+            )
+
+            # only target forecasts are inverse transformed
+            expected_inv_tr_calls = expected_fit_calls if name == "series" else 0
+            assert len(transformer.inverse_transform_calls) == expected_inv_tr_calls
+            assert all(
+                isinstance(call["series"], list)
+                for call in transformer.inverse_transform_calls
+            )
+            assert all(
+                len(call["series"]) == expected_num_series
+                for call in transformer.inverse_transform_calls
+            )
 
     def helper_prepare_global_hfc_input(self, model):
         # global model
@@ -4575,6 +4638,4 @@ class TestHistoricalforecast:
         if not isinstance(model, GlobalForecastingModel):
             # single series for local models
             fit_kwargs = {k: v[0] for k, v in fit_kwargs.items()}
-
-        fitted_model = model.untrained_model().fit(**fit_kwargs)
-        return fitted_model, kwargs
+        return kwargs

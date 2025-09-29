@@ -1,7 +1,7 @@
 import inspect
-from collections.abc import Iterable, Sequence
+from collections.abc import Sequence
 from types import SimpleNamespace
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, TypeVar, Union
 
 import numpy as np
 import pandas as pd
@@ -20,7 +20,7 @@ from darts.utils.ts_utils import (
     get_single_series,
     series2seq,
 )
-from darts.utils.utils import _build_tqdm_iterator, n_steps_between
+from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
@@ -30,6 +30,8 @@ TimeIndex = Union[
     tuple[int, int],
     tuple[pd.Timestamp, pd.Timestamp],
 ]
+
+T = TypeVar("T")
 
 
 def _historical_forecasts_general_checks(
@@ -278,7 +280,12 @@ def _historical_forecasts_general_checks(
 
         if n.retrain:
             # if more than one series is passed and the pipelines are retrained, they cannot be global
-            if n.show_warnings and len(series) > 1 and len(global_fit_pipelines) > 0:
+            if (
+                n.show_warnings
+                and len(series) > 1
+                and len(global_fit_pipelines) > 0
+                and not n.apply_globally
+            ):
                 logger.warning(
                     "When `retrain=True` and multiple series are provided, the fittable `data_transformers` "
                     "are trained on each series independently (`global_fit=True` will be ignored)."
@@ -1384,29 +1391,28 @@ def _convert_data_transformers(
 
 
 def _apply_data_transformers(
-    series: Union[TimeSeries, list[TimeSeries]],
-    pred_series: Optional[Union[TimeSeries, list[TimeSeries]]],
-    past_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
-    future_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
+    series: Sequence[TimeSeries],
+    pred_series: Optional[Sequence[TimeSeries]],
+    past_covariates: Optional[Sequence[TimeSeries]],
+    future_covariates: Optional[Sequence[TimeSeries]],
     data_transformers: dict[str, Pipeline],
     max_future_cov_lag: int,
     fit_transformers: bool,
 ) -> tuple[
-    Optional[Union[TimeSeries, list[TimeSeries]]],
-    Optional[Union[TimeSeries, list[TimeSeries]]],
-    Optional[Union[TimeSeries, list[TimeSeries]]],
-    Optional[Union[TimeSeries, list[TimeSeries]]],
+    Sequence[TimeSeries],
+    Optional[Sequence[TimeSeries]],
+    Optional[Sequence[TimeSeries]],
+    Optional[Sequence[TimeSeries]],
 ]:
     """Transform each series using the corresponding Pipeline.
 
-    If the Pipeline is fittable and `fit_transformers=True`, the series are sliced to correspond
-    to the information available at model training time.
+    If the Pipeline is fittable and `fit_transformers=True`, the series are sliced to correspond to the information
+    available at model training time.
 
-    If `series` is a list of `TimeSeries` (multi series) and `fit_transformers=True`, the series are expected to have
-    the same time index (e.g. when running historical forecasts with `apply_globally=True`).
+    If the sequences contain more than one series, the series are expected to have the same time index (e.g. when
+    running global historical forecasts with `apply_globally=True`). With this, we can avoid any look-ahead bias.
     """
     transformed_ts = []
-    is_multi_series = get_series_seq_type(series) == SeriesType.SEQ
 
     series_0 = get_single_series(series)
     freq = series_0.freq
@@ -1423,34 +1429,28 @@ def _apply_data_transformers(
     ):
         if ts is None or data_transformers.get(ts_type) is None:
             transformed_ts.append(ts)
-            continue
+        else:
+            if fit_transformers and data_transformers[ts_type].fittable:
+                # must slice the ts to distinguish accessible information from future information
+                if ts_type == "past_covariates":
+                    # information is known until the end of the target series
+                    tmp_ts = [ts_.drop_after(series_end) for ts_ in ts]
+                elif ts_type == "future_covariates":
+                    # information is known until `max_future_cov_lag` steps after the end of the target series
+                    tmp_ts = [
+                        ts_.drop_after(
+                            series_end + max(0, max_future_cov_lag + 1) * freq
+                        )
+                        for ts_ in ts
+                    ]
+                else:  # "series" and "pred_series"
+                    # nothing to do, the target series is already sliced appropriately
+                    tmp_ts = ts
 
-        if fit_transformers and data_transformers[ts_type].fittable:
-            if not is_multi_series:
-                ts = [ts]
-
-            # must slice the ts to distinguish accessible information from future information
-            if ts_type == "past_covariates":
-                # information is known until the end of the target series
-                tmp_ts = [ts_.drop_after(series_end) for ts_ in ts]
-            elif ts_type == "future_covariates":
-                # information is known until `max_future_cov_lag` steps after the end of the target series
-                tmp_ts = [
-                    ts_.drop_after(series_end + max(0, max_future_cov_lag + 1) * freq)
-                    for ts_ in ts
-                ]
-            else:  # "series" and "pred_series"
-                # nothing to do, the target series is already sliced appropriately
-                tmp_ts = ts
-
-            if not is_multi_series:
-                ts = get_single_series(ts)
-                tmp_ts = get_single_series(tmp_ts)
-
-            if apply_fit:
-                data_transformers[ts_type].fit(tmp_ts)
-        # transforming the series
-        transformed_ts.append(data_transformers[ts_type].transform(ts))
+                if apply_fit:
+                    data_transformers[ts_type].fit(tmp_ts)
+            # transforming the series
+            transformed_ts.append(data_transformers[ts_type].transform(ts))
     return tuple(transformed_ts)
 
 
@@ -1520,46 +1520,23 @@ def _slice_intersect_series(
     return series, past_covariates, future_covariates, sample_weight
 
 
-def _setup_hfc_outer_iterator(
-    series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]],
-    future_covariates: Optional[Sequence[TimeSeries]],
-    sample_weight: Optional[Union[str, Sequence[TimeSeries]]],
-    apply_globally: bool,
-    verbose: bool,
+def _pack_series_in_list(
+    series: T, past_covariates: T, future_covariates: T, sample_weight: T
 ) -> tuple[
-    Sequence[Sequence[TimeSeries]],
-    Optional[Sequence[Sequence[TimeSeries]]],
-    Optional[Sequence[Sequence[TimeSeries]]],
-    Optional[Union[str, Sequence[Sequence[TimeSeries]]]],
-    Iterable[Sequence[TimeSeries]],
+    Union[T, list[T]],
+    Union[T, list[T]],
+    Union[T, list[T]],
+    Union[T, list[T]],
 ]:
-    """Sets up the outer iterator and series sequences for historical forecasts."""
-    if apply_globally or len(series) == 1:
-        # for global hfc or only a single series, the progress bar will be on the inner loop
-        series = [series]
-        past_covariates = [past_covariates] if past_covariates else None
-        future_covariates = [future_covariates] if future_covariates else None
-        if isinstance(sample_weight, str):
-            sample_weight = sample_weight
-        else:
-            sample_weight = [sample_weight] if sample_weight else None
-        outer_iterator = series
+    """Packs each provided input into a list (or str in case of sample weight)."""
+    series = [series]
+    past_covariates = [past_covariates] if past_covariates else None
+    future_covariates = [future_covariates] if future_covariates else None
+    if isinstance(sample_weight, str):
+        sample_weight = sample_weight
     else:
-        # for multiple series and local hfc, the progress bar will be on the outer loop
-        series = [[s] for s in series]
-        past_covariates = [[s] for s in past_covariates] if past_covariates else None
-        future_covariates = (
-            [[s] for s in future_covariates] if future_covariates else None
-        )
-        if isinstance(sample_weight, str):
-            sample_weight = sample_weight
-        else:
-            sample_weight = [[s] for s in sample_weight] if sample_weight else None
-        outer_iterator = _build_tqdm_iterator(
-            series, verbose, total=len(series), desc="historical forecasts"
-        )
-    return series, past_covariates, future_covariates, sample_weight, outer_iterator
+        sample_weight = [sample_weight] if sample_weight else None
+    return series, past_covariates, future_covariates, sample_weight
 
 
 def _process_historical_forecast_for_backtest(

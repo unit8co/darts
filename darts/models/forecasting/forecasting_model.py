@@ -58,8 +58,8 @@ from darts.utils.historical_forecasts.utils import (
     _extend_series_for_overlap_end,
     _get_historical_forecasts_setup,
     _historical_forecasts_general_checks,
+    _pack_series_in_list,
     _process_historical_forecast_for_backtest,
-    _setup_hfc_outer_iterator,
     _slice_intersect_series,
 )
 from darts.utils.timeseries_generation import (
@@ -897,6 +897,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         else:
             retrain_func = retrain
 
+        sequence_type_in = get_series_seq_type(series)
+        series = series2seq(series)
+        past_covariates = series2seq(past_covariates)
+        future_covariates = series2seq(future_covariates)
+        sample_weight = (
+            sample_weight
+            if isinstance(sample_weight, str)
+            else series2seq(sample_weight)
+        )
+
         data_transformers = _convert_data_transformers(
             data_transformers=data_transformers, copy=True
         )
@@ -914,16 +924,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 max_future_cov_lag=model.extreme_lags[5],
                 fit_transformers=False,
             )
-
-        sequence_type_in = get_series_seq_type(series)
-        series = series2seq(series)
-        past_covariates = series2seq(past_covariates)
-        future_covariates = series2seq(future_covariates)
-        sample_weight = (
-            sample_weight
-            if isinstance(sample_weight, str)
-            else series2seq(sample_weight)
-        )
 
         if apply_globally:
             series, past_covariates, future_covariates, sample_weight = (
@@ -963,6 +963,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 random_state=random_state,
                 predict_kwargs=predict_kwargs,
             )
+
             return _apply_inverse_data_transformers(
                 series=series2seq(series, seq_type_out=sequence_type_in),
                 forecasts=series2seq(forecasts, seq_type_out=sequence_type_in),
@@ -971,30 +972,46 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         forecasts_list = [[] for _ in range(len(series))]
 
-        # get iterator and convert input to Sequence[Sequence[TimeSeries]]
-        series, past_covariates, future_covariates, sample_weight, outer_iterator = (
-            _setup_hfc_outer_iterator(
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                sample_weight=sample_weight,
-                apply_globally=apply_globally,
-                verbose=verbose,
+        if apply_globally:
+            # for global hfc, we wrap the input in a list to run the inner loop on all series at once;
+            # the progress bar will be on the inner loop
+            series, past_covariates, future_covariates, sample_weight = (
+                _pack_series_in_list(
+                    series, past_covariates, future_covariates, sample_weight
+                )
             )
-        )
+            outer_iterator = series
+        elif len(series) == 1:
+            # the progress bar will be on the inner loop
+            outer_iterator = series
+        else:
+            # for multiple series and local hfc, the progress bar will be on the outer loop
+            outer_iterator = _build_tqdm_iterator(
+                series, verbose, total=len(series), desc="historical forecasts"
+            )
 
         # deactivate the warning after displaying it once if show_warnings is True
         show_predict_warnings = show_warnings
         for idx, series_ in enumerate(outer_iterator):
             # get input as Sequence[TimeSeries]:
-            # - for local hfc: contains only a single TimeSeries
-            # - for global hfc: contains a list of all TimeSeries
+            # - local hfc: sequence will contain only a single TimeSeries
+            # - global hfc: sequence will contain a list of all TimeSeries with identical time index
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
             if isinstance(sample_weight, str):
                 sample_weight_ = sample_weight
             else:
                 sample_weight_ = sample_weight[idx] if sample_weight else None
+
+            if not apply_globally:
+                series_, past_covariates_, future_covariates_, sample_weight_ = (
+                    _pack_series_in_list(
+                        series_,
+                        past_covariates_,
+                        future_covariates_,
+                        sample_weight_,
+                    )
+                )
 
             # get a single TimeSeries to compute the hfc bounds;
             # for global hfc, the series are slice intersected and share the same time index
