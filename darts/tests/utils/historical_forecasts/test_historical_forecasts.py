@@ -35,7 +35,15 @@ from darts.models import (
 from darts.models.forecasting.forecasting_model import (
     LocalForecastingModel,
 )
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import (
+    CB_AVAILABLE,
+    LGBM_AVAILABLE,
+    PROPHET_AVAILABLE,
+    SF_AVAILABLE,
+    TORCH_AVAILABLE,
+    XGB_AVAILABLE,
+    tfm_kwargs,
+)
 from darts.utils import n_steps_between
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import (
@@ -43,7 +51,6 @@ from darts.utils.likelihood_models.base import (
     quantile_names,
 )
 from darts.utils.ts_utils import SeriesType, get_series_seq_type
-from darts.utils.utils import NotImportedModule
 
 if TORCH_AVAILABLE:
     import torch
@@ -84,14 +91,14 @@ models_reg_no_cov_cls_kwargs = [
     (LinearRegressionModel, {"lags": [-5]}, {}, (5, 1)),
     (LinearRegressionModel, {"lags": [-5], "output_chunk_shift": 1}, {}, (5, 2)),
 ]
-if not isinstance(CatBoostModel, NotImportedModule):
+if CB_AVAILABLE:
     models_reg_no_cov_cls_kwargs.append((
         CatBoostModel,
         {"lags": 6},
         {"iterations": 1},
         (6, 1),
     ))
-if not isinstance(LightGBMModel, NotImportedModule):
+if LGBM_AVAILABLE:
     models_reg_no_cov_cls_kwargs.append((
         LightGBMModel,
         {"lags": 4},
@@ -335,7 +342,6 @@ if TORCH_AVAILABLE:
 else:
     models_torch_cls_kwargs = []
 
-PROPHET_AVAILABLE = not isinstance(Prophet, NotImportedModule)
 xgb_test_params = {
     "n_estimators": 1,
     "max_depth": 1,
@@ -675,7 +681,14 @@ class TestHistoricalforecast:
         model = NaiveSeasonal()
         assert model.min_train_series_length == 3
         series = tg.sine_timeseries(length=4)
-        res = model.historical_forecasts(series, retrain=True, forecast_horizon=1)
+        res = model.historical_forecasts(
+            series,
+            retrain=True,
+            forecast_horizon=1,
+            verbose=False,
+            fit_kwargs={"verbose": False},
+            predict_kwargs={"verbose": False},
+        )
         # NaiveSeasonal has a minimum train length of 3, with horizon=1, we expect one forecast at last point
         # (series has length 4)
         assert len(res) == 1
@@ -772,6 +785,7 @@ class TestHistoricalforecast:
             val_length=0,
             retrain=True,
             overlap_end=False,
+            verbose=False,
         )
 
         # time index with minimum train length
@@ -1422,6 +1436,9 @@ class TestHistoricalforecast:
                         forecast_horizon=forecast_horizon,
                         overlap_end=overlap_end,
                         enable_optimization=False,
+                        verbose=False,
+                        fit_kwargs={"verbose": False},
+                        predict_kwargs={"verbose": False},
                     )
 
                     # manually packing the series in list to match expected inputs
@@ -1438,6 +1455,8 @@ class TestHistoricalforecast:
                         stride=stride,
                         forecast_horizon=forecast_horizon,
                         overlap_end=overlap_end,
+                        verbose=False,
+                        predict_kwargs={"verbose": False},
                     )
 
                     self.helper_compare_hf(hist_fct, opti_hist_fct)
@@ -2057,6 +2076,9 @@ class TestHistoricalforecast:
             stride=1,
             retrain=retrain,
             overlap_end=False,
+            verbose=False,
+            fit_kwargs={"verbose": False},
+            predict_kwargs={"verbose": False},
         )
         assert len(forecasts) == 2, (
             f"Model {model_cls} did not return a list of historical forecasts"
@@ -4055,35 +4077,49 @@ class TestHistoricalforecast:
             [
                 # doesn't support val set, and no transferable series for prediction
                 (NaiveSeasonal, {"K": 3}),
-                # doesn't support val set, supports transferable series for prediction
-                (AutoARIMA, {}),
                 # doesn't support val set, global model (multi series)
                 (LinearRegressionModel, {"lags": 3, "output_chunk_length": 2}),
                 # supports val set, global model (multi series)
-                (
-                    XGBModel,
-                    {
-                        "lags": 3,
-                        "output_chunk_length": 2,
-                        "output_chunk_shift": 1,
-                        **xgb_test_params,
-                    },
-                ),
             ]
-            + [
-                # supports val set, global model (multi series)
-                (
-                    NLinearModel,
-                    {
-                        "input_chunk_length": 3,
-                        "output_chunk_length": 2,
-                        "n_epochs": 1,
-                        **tfm_kwargs,
-                    },
-                ),
-            ]
-            if TORCH_AVAILABLE
-            else [],
+            + (
+                [
+                    # doesn't support val set, supports transferable series for prediction
+                    (AutoARIMA, {}),
+                ]
+                if SF_AVAILABLE
+                else []
+            )
+            + (
+                [
+                    # supports val set, global model (multi series)
+                    (
+                        NLinearModel,
+                        {
+                            "input_chunk_length": 3,
+                            "output_chunk_length": 2,
+                            "n_epochs": 1,
+                            **tfm_kwargs,
+                        },
+                    ),
+                ]
+                if TORCH_AVAILABLE
+                else []
+            )
+            + (
+                [
+                    (
+                        XGBModel,
+                        {
+                            "lags": 3,
+                            "output_chunk_length": 2,
+                            "output_chunk_shift": 1,
+                            **xgb_test_params,
+                        },
+                    ),
+                ]
+                if XGB_AVAILABLE
+                else []
+            ),
             [False, True],  # use covariates
         ),
     )

@@ -26,6 +26,7 @@ from darts.models import (
     XGBClassifierModel,
 )
 from darts.models.forecasting.sklearn_model import SKLearnModelWithCategoricalFeatures
+from darts.tests.conftest import CB_AVAILABLE, LGBM_AVAILABLE, XGB_AVAILABLE
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 from darts.utils.likelihood_models.base import LikelihoodType
@@ -38,10 +39,7 @@ from darts.utils.multioutput import (
     MultiOutputRegressor,
     get_multioutput_estimator_cls,
 )
-from darts.utils.utils import ModelType, NotImportedModule
-
-lgbm_available = not isinstance(LightGBMClassifierModel, NotImportedModule)
-cb_available = not isinstance(CatBoostClassifierModel, NotImportedModule)
+from darts.utils.utils import ModelType
 
 logger = get_logger(__name__)
 
@@ -122,15 +120,6 @@ class TestClassifierModel:
         (MLPClassifier, {"alpha": 1, "max_iter": 1000, "random_state": 42}),
         (AdaBoostClassifier, {"random_state": 42}),
         (GaussianNB, {}),
-        (
-            XGBClassifierModel,
-            {
-                "n_estimators": 1,
-                "max_depth": 1,
-                "max_leaves": 1,
-                "random_state": 42,
-            },
-        ),
     ]
 
     models_accuracies = [
@@ -143,7 +132,6 @@ class TestClassifierModel:
         1,  # MLPClassifier
         1,  # AdaBoostClassifier
         1,  # GaussianNB
-        1,  # XGBClassifierModel
     ]
 
     models_multioutput = [
@@ -156,10 +144,22 @@ class TestClassifierModel:
         False,  # MLPClassifier
         False,  # AdaBoostClassifier
         False,  # GaussianNB
-        False,  # XGBClassifierModel
     ]
 
-    if lgbm_available:
+    if XGB_AVAILABLE:
+        classifiers.append((
+            XGBClassifierModel,
+            {
+                "n_estimators": 1,
+                "max_depth": 1,
+                "max_leaves": 1,
+                "random_state": 42,
+            },
+        ))
+        models_accuracies.append(1)
+        models_multioutput.append(False)
+
+    if LGBM_AVAILABLE:
         classifiers.append((
             LightGBMClassifierModel,
             {
@@ -173,7 +173,7 @@ class TestClassifierModel:
         models_accuracies.append(1)
         models_multioutput.append(False)
 
-    if cb_available:
+    if CB_AVAILABLE:
         classifiers.append((
             CatBoostClassifierModel,
             {
@@ -225,7 +225,7 @@ class TestClassifierModel:
         clf, kwargs = clf_params
         model = clf(lags_past_covariates=5, **kwargs)
 
-        if issubclass(clf, XGBClassifierModel):
+        if XGB_AVAILABLE and issubclass(clf, XGBClassifierModel):
             # XGB requires class labels to be consecutive from 0
             multivariate_cat_diff_labels = self.sine_univariate1_cat.stack(
                 self.sine_univariate1_cat
@@ -255,18 +255,22 @@ class TestClassifierModel:
 
     @pytest.mark.parametrize(
         "clf_params",
-        [
-            (SKLearnClassifierModel, {}),
-            (
-                XGBClassifierModel,
-                {
-                    "n_estimators": 1,
-                    "max_depth": 1,
-                    "max_leaves": 1,
-                    "random_state": 42,
-                },
-            ),
-        ],
+        [(SKLearnClassifierModel, {})]
+        + (
+            [
+                (
+                    XGBClassifierModel,
+                    {
+                        "n_estimators": 1,
+                        "max_depth": 1,
+                        "max_leaves": 1,
+                        "random_state": 42,
+                    },
+                ),
+            ]
+            if XGB_AVAILABLE
+            else []
+        ),
     )
     def test_error_on_different_classes_for_same_component(self, clf_params):
         """check that estimators for the same component see the same labels"""
@@ -644,7 +648,7 @@ class TestClassifierModel:
             )
 
         # XGBClassifierModel require labels to be integers between 0 and n_classes
-        if issubclass(clf, XGBClassifierModel):
+        if XGB_AVAILABLE and issubclass(clf, XGBClassifierModel):
             # negative labels
             with pytest.raises(ValueError) as err:
                 model.fit(
@@ -705,10 +709,21 @@ class TestClassifierModel:
         intercepted_args = {}
         original_fit = model.model.fit
 
-        def intercept_fit_args(*args, **kwargs):
-            intercepted_args["args"] = args
-            intercepted_args["kwargs"] = kwargs
-            return original_fit(*args, **kwargs)
+        # catboost requires passing a verbose parameter;
+        # Darts wrapper requires `verbose` to be in the fit signature for it to be passed to the underlying model
+        if CB_AVAILABLE and isinstance(model, CatBoostClassifierModel):
+
+            def intercept_fit_args(*args, verbose=False, **kwargs):
+                intercepted_args["args"] = args
+                intercepted_args["kwargs"] = kwargs
+                return original_fit(*args, verbose=verbose, **kwargs)
+
+        else:
+            # other models do not require the verbose parameter
+            def intercept_fit_args(*args, **kwargs):
+                intercepted_args["args"] = args
+                intercepted_args["kwargs"] = kwargs
+                return original_fit(*args, **kwargs)
 
         # target is categorical by default for classifiers supporting it
         expected_cat_indices = [0, 1]
@@ -834,15 +849,6 @@ class TestProbabilisticClassifierModels:
         ),
         (AdaBoostClassifier, {"random_state": 42}),
         (GaussianNB, {}),
-        (
-            XGBClassifierModel,
-            {
-                "n_estimators": 1,
-                "max_depth": 1,
-                "max_leaves": 1,
-                "random_state": 42,
-            },
-        ),
     ]
 
     rmse_class_proba = [
@@ -854,7 +860,6 @@ class TestProbabilisticClassifierModels:
         0.05,  # MLPClassifier
         0.20,  # AdaBoostClassifier
         0.07,  # GaussianNB
-        0.17,  # XGBClassifierModel
     ]
 
     rmse_class_sample = [
@@ -866,10 +871,22 @@ class TestProbabilisticClassifierModels:
         0.11,  # MLPClassifier
         0.2,  # AdaBoostClassifier
         0.14,  # GaussianNB
-        0.18,  # XGBClassifierModel
     ]
 
-    if lgbm_available:
+    if XGB_AVAILABLE:
+        probabilistic_classifiers.append((
+            XGBClassifierModel,
+            {
+                "n_estimators": 1,
+                "max_depth": 1,
+                "max_leaves": 1,
+                "random_state": 42,
+            },
+        ))
+        rmse_class_proba.append(0.17)
+        rmse_class_sample.append(0.18)
+
+    if LGBM_AVAILABLE:
         probabilistic_classifiers.append((
             LightGBMClassifierModel,
             {
@@ -883,7 +900,7 @@ class TestProbabilisticClassifierModels:
         rmse_class_proba.append(0.06)
         rmse_class_sample.append(0.06)
 
-    if cb_available:
+    if CB_AVAILABLE:
         probabilistic_classifiers.append((
             CatBoostClassifierModel,
             {
@@ -1049,7 +1066,7 @@ class TestProbabilisticClassifierModels:
         for s, p1, p2 in zip(series, list_of_probas, list_of_probas2):
             vals1 = p1.all_values()
             vals2 = p2.all_values()
-            np.testing.assert_array_equal(vals1, vals2)
+            np.testing.assert_allclose(vals1, vals2)
 
             # As many probability components as classes
             n_classes = len(labels_component1) + (

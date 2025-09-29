@@ -18,6 +18,58 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 try:
+    import catboost
+    import lightgbm
+    import xgboost  # noqa: F401
+
+    GBM_AVAILABLE = True
+except ImportError:
+    logger.warning(
+        "Gradient Boosting Models not installed - Some tests will be skipped."
+    )
+    GBM_AVAILABLE = False
+
+try:
+    import xgboost  # noqa: F401
+
+    XGB_AVAILABLE = True
+except ImportError:
+    logger.warning("XGBoost not installed - Some tests will be skipped.")
+    XGB_AVAILABLE = False
+
+try:
+    import lightgbm  # noqa: F401
+
+    LGBM_AVAILABLE = True
+except ImportError:
+    logger.warning("LightGBM not installed - Some tests will be skipped.")
+    LGBM_AVAILABLE = False
+
+try:
+    import catboost  # noqa: F401
+
+    CB_AVAILABLE = True
+except ImportError:
+    logger.warning("CatBoost not installed - Some tests will be skipped.")
+    CB_AVAILABLE = False
+
+try:
+    import prophet  # noqa: F401
+
+    PROPHET_AVAILABLE = True
+except ImportError:
+    logger.warning("Prophet not installed - Some tests will be skipped.")
+    PROPHET_AVAILABLE = False
+
+try:
+    import statsforecast  # noqa: F401
+
+    SF_AVAILABLE = True
+except ImportError:
+    logger.warning("StatsForecast not installed - Some tests will be skipped.")
+    SF_AVAILABLE = False
+
+try:
     import onnx  # noqa: F401
     import onnxruntime  # noqa: F401
 
