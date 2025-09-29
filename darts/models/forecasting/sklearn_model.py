@@ -62,6 +62,7 @@ from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
+from numpy.lib.stride_tricks import sliding_window_view
 from sklearn.base import is_classifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import has_fit_parameter
@@ -75,9 +76,11 @@ from darts.logging import (
     raise_log,
 )
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
     create_lagged_component_names,
+    create_lagged_prediction_data,
     create_lagged_training_data,
 )
 from darts.utils.historical_forecasts import (
@@ -86,6 +89,7 @@ from darts.utils.historical_forecasts import (
     _optimized_historical_forecasts_last_points_only,
     _process_historical_forecast_input,
 )
+from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
@@ -94,7 +98,7 @@ from darts.utils.likelihood_models.sklearn import (
 )
 from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
-from darts.utils.utils import ModelType, random_method
+from darts.utils.utils import ModelType, generate_index, random_method
 
 logger = get_logger(__name__)
 
@@ -1506,9 +1510,8 @@ class SKLearnModel(GlobalForecastingModel):
             allow_autoregression=True,
         )
 
-    def _optimized_historical_forecasts_new(
+    def _optimized_historical_forecasts_autoregression(
         self,
-        model: GlobalForecastingModel,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -1525,14 +1528,6 @@ class SKLearnModel(GlobalForecastingModel):
         random_state: Optional[int] = None,
         **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
-        from numpy.lib.stride_tricks import sliding_window_view
-
-        from darts.utils import _build_tqdm_iterator
-        from darts.utils.data.tabularization import create_lagged_prediction_data
-        from darts.utils.historical_forecasts.utils import (
-            _get_historical_forecast_boundaries,
-        )
-        from darts.utils.utils import generate_index
 
         forecasts_list = []
         iterator = _build_tqdm_iterator(
@@ -1547,7 +1542,7 @@ class SKLearnModel(GlobalForecastingModel):
             )
             freq = series_.freq
             forecast_components = (
-                model.likelihood.component_names(series=series_)
+                self.likelihood.component_names(series=series_)
                 if predict_likelihood_parameters
                 else series_.columns
             )
@@ -1563,7 +1558,7 @@ class SKLearnModel(GlobalForecastingModel):
                 hist_fct_fc_start,
                 hist_fct_fc_end,
             ) = _get_historical_forecast_boundaries(
-                model=model,
+                model=self,
                 series=series_,
                 series_idx=idx,
                 past_covariates=past_covariates_,
@@ -1579,12 +1574,12 @@ class SKLearnModel(GlobalForecastingModel):
 
             # Additional shift, to account for the model output_chunk_length
             shift_start = 0
-            if model.output_chunk_length > 1:
+            if self.output_chunk_length > 1:
                 # used to convert the shift into the appropriate unit
                 unit = freq if series_.has_datetime_index else 1
 
-                if not model.multi_models:
-                    shift_start = model.output_chunk_length - 1
+                if not self.multi_models:
+                    shift_start = self.output_chunk_length - 1
 
                     hist_fct_tgt_start -= shift_start * unit
                     hist_fct_pc_start -= (
@@ -1601,8 +1596,8 @@ class SKLearnModel(GlobalForecastingModel):
             X, _ = create_lagged_prediction_data(
                 target_series=(
                     None
-                    if model._get_lags("target") is None
-                    and not model.uses_static_covariates
+                    if self._get_lags("target") is None
+                    and not self.uses_static_covariates
                     else series_[hist_fct_tgt_start:hist_fct_tgt_end]
                 ),
                 past_covariates=(
@@ -1615,11 +1610,11 @@ class SKLearnModel(GlobalForecastingModel):
                     if future_covariates_ is None
                     else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
                 ),
-                lags=model._get_lags("target"),
-                lags_past_covariates=model._get_lags("past"),
-                lags_future_covariates=model._get_lags("future"),
-                uses_static_covariates=model.uses_static_covariates,
-                last_static_covariates_shape=model._static_covariates_shape,
+                lags=self._get_lags("target"),
+                lags_past_covariates=self._get_lags("past"),
+                lags_future_covariates=self._get_lags("future"),
+                uses_static_covariates=self.uses_static_covariates,
+                last_static_covariates_shape=self._static_covariates_shape,
                 max_samples_per_ts=None,
                 check_inputs=True,
                 use_moving_windows=True,
@@ -1640,7 +1635,7 @@ class SKLearnModel(GlobalForecastingModel):
             # However, forecast_horizon might be longer than model.output_chunk_length,
             # in which case we need to do auto-regression.
             # Perform a loop until we reach forecast_horizon.
-            step = model.output_chunk_length
+            step = self.output_chunk_length
             last_step_shift = 0
             forecasts = []
             for t_pred in range(0, forecast_horizon, step):
@@ -1651,10 +1646,10 @@ class SKLearnModel(GlobalForecastingModel):
                     last_step_shift = t_pred - (forecast_horizon - step)
                     t_pred = forecast_horizon - step
 
-                X = X[:, [lag - last_step_shift for lag in model._get_lags("target")]]
+                X = X[:, [lag - last_step_shift for lag in self._get_lags("target")]]
 
                 # repeat rows for probabilistic forecast
-                forecast = model._predict(
+                forecast = self._predict(
                     x=X,
                     num_samples=num_samples,
                     predict_likelihood_parameters=predict_likelihood_parameters,
@@ -1664,7 +1659,7 @@ class SKLearnModel(GlobalForecastingModel):
 
                 # TODO: check num_components here
                 forecast = forecast.reshape(forecast.shape[0], forecast.shape[1])
-                if model.multi_models:
+                if self.multi_models:
                     # concatenate previous iteration forecasts
                     X = np.concatenate([X, forecast[::stride, :]], axis=1)
                 else:
@@ -1686,14 +1681,14 @@ class SKLearnModel(GlobalForecastingModel):
                 forecast.reshape(
                     num_forecast_indexes,
                     num_samples,
-                    forecast_horizon if model.multi_models else 1,
+                    forecast_horizon if self.multi_models else 1,
                     -1,
                 ),
                 1,
                 -1,
             )
 
-            if model.multi_models:
+            if self.multi_models:
                 forecast = forecast[::stride, :forecast_horizon]
             else:
                 # entire forecast horizon is given by multiple (previous) forecasts -> apply sliding window
@@ -1703,7 +1698,7 @@ class SKLearnModel(GlobalForecastingModel):
                 )
 
                 # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values
-                if forecast_horizon != model.output_chunk_length:
+                if forecast_horizon != self.output_chunk_length:
                     forecast = forecast[
                         : -shift_start + forecast_horizon - 1 : stride,
                         0,
@@ -1718,7 +1713,7 @@ class SKLearnModel(GlobalForecastingModel):
 
             # TODO: check if faster to create in the loop
             new_times = generate_index(
-                start=hist_fct_start + model.output_chunk_shift * series_.freq,
+                start=hist_fct_start + self.output_chunk_shift * series_.freq,
                 length=forecast_horizon + (forecast.shape[0] - 1) * stride,
                 freq=freq,
                 name=series_._time_index.name,
@@ -1769,7 +1764,6 @@ class SKLearnModel(GlobalForecastingModel):
         forecastable index and series.
         Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.
 
-        TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
         series, past_covariates, future_covariates, series_seq_type = (
             _process_historical_forecast_input(
@@ -1781,8 +1775,7 @@ class SKLearnModel(GlobalForecastingModel):
                 allow_autoregression=True,
             )
         )
-        hfc = self._optimized_historical_forecasts_new(
-            model=self,
+        hfc = self._optimized_historical_forecasts_autoregression(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,

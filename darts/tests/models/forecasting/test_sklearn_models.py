@@ -214,12 +214,14 @@ class TestSKLearnModels:
         model=KNeighborsRegressor(n_neighbors=1),
     )
     # targets for poisson regression must be positive, so we exclude them for some tests
-    models.extend([
-        QuantileLinearRegressionModel,
-        PoissonLinearRegressionModel,
-        PoissonXGBModel,
-        QuantileXGBModel,
-    ])
+    models.extend(
+        [
+            QuantileLinearRegressionModel,
+            PoissonLinearRegressionModel,
+            PoissonXGBModel,
+            QuantileXGBModel,
+        ]
+    )
 
     univariate_accuracies = [
         0.03,  # RandomForestModel
@@ -399,16 +401,20 @@ class TestSKLearnModels:
         # fut_cov_promo_mechanism and target_qty are encoded as integers
         date_range = pd.date_range(start="2020-01-01", end="2023-01-01", freq="D")
         df = (
-            pd.DataFrame({
-                "date": date_range,
-                "baseline": np.random.normal(100, 10, len(date_range)),
-                "fut_cov_promo_mechanism": np.random.randint(0, 11, len(date_range)),
-                "fut_cov_dummy": np.random.normal(10, 2, len(date_range)),
-                "past_cov_dummy": np.random.normal(10, 2, len(date_range)),
-                "past_cov_cat_dummy": np.array([
-                    np.random.randint(0, 10) for _ in range(len(date_range))
-                ]),
-            })
+            pd.DataFrame(
+                {
+                    "date": date_range,
+                    "baseline": np.random.normal(100, 10, len(date_range)),
+                    "fut_cov_promo_mechanism": np.random.randint(
+                        0, 11, len(date_range)
+                    ),
+                    "fut_cov_dummy": np.random.normal(10, 2, len(date_range)),
+                    "past_cov_dummy": np.random.normal(10, 2, len(date_range)),
+                    "past_cov_cat_dummy": np.array(
+                        [np.random.randint(0, 10) for _ in range(len(date_range))]
+                    ),
+                }
+            )
             .assign(
                 target_qty=lambda _df: _df.baseline
                 + _df.fut_cov_promo_mechanism.apply(_apply_promo_mechanism)
@@ -729,10 +735,12 @@ class TestSKLearnModels:
 
         series_matrix = None
         if "target" in self.lags_1:
-            series_matrix = np.stack([
-                ts.values(copy=False)[self.lags_1["target"][0] - shift :, :]
-                for ts in series
-            ])
+            series_matrix = np.stack(
+                [
+                    ts.values(copy=False)[self.lags_1["target"][0] - shift :, :]
+                    for ts in series
+                ]
+            )
         # prediction preprocessing end
         assert all([lag >= 0 for lags in relative_cov_lags.values() for lag in lags])
 
@@ -889,10 +897,12 @@ class TestSKLearnModels:
         # with `use_static_covariates=True`, all static covs must have same shape
         model = model_cls(lags=4, use_static_covariates=True)
         with pytest.raises(ValueError):
-            model.fit([
-                series,
-                series.with_static_covariates(pd.DataFrame({"a": [1], "b": [2]})),
-            ])
+            model.fit(
+                [
+                    series,
+                    series.with_static_covariates(pd.DataFrame({"a": [1], "b": [2]})),
+                ]
+            )
 
         # with `use_static_covariates=False`, static covariates are ignored and prediction works
         model = model_cls(lags=4, use_static_covariates=False)
@@ -1541,10 +1551,12 @@ class TestSKLearnModels:
         # multivariate, one sub-model per position, per component
         ocl = 2
         ts = TimeSeries.from_values(
-            np.array([
-                [0, 0, 0, 0, 2],
-                [0, 0, 0, 1, 3],
-            ]).T
+            np.array(
+                [
+                    [0, 0, 0, 0, 2],
+                    [0, 0, 0, 1, 3],
+                ]
+            ).T
         )
         # estimators_[0] labels : [0]
         # estimators_[1] labels : [1]
@@ -1562,9 +1574,7 @@ class TestSKLearnModels:
                 ]
                 + [(LightGBMModel, lgbm_test_params)]
                 if lgbm_available
-                else [] + [(CatBoostModel, cb_test_params)]
-                if cb_available
-                else []
+                else [] + [(CatBoostModel, cb_test_params)] if cb_available else []
             ),
             [True, False],  # multi_models
             [True, False],  # multi components
@@ -1628,9 +1638,7 @@ class TestSKLearnModels:
                 ]
                 + [(LightGBMModel, lgbm_test_params)]
                 if lgbm_available
-                else [] + [(CatBoostModel, cb_test_params)]
-                if cb_available
-                else []
+                else [] + [(CatBoostModel, cb_test_params)] if cb_available else []
             ),
             [True, False],  # multi_models
             [True, False],  # multi components
@@ -1698,10 +1706,12 @@ class TestSKLearnModels:
     def test_get_estimator_exceptions(self, caplog):
         """Check that all the corner-cases are properly covered by the method"""
         ts = TimeSeries.from_values(
-            values=np.array([
-                [0, 0, 0, 0, 1],
-                [0, 0, 0, 0, 2],
-            ]).T,
+            values=np.array(
+                [
+                    [0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 2],
+                ]
+            ).T,
             columns=["a", "b"],
         )
         m = LinearRegressionModel(
@@ -3368,51 +3378,69 @@ class TestSKLearnModels:
         if train_past is None:
             assert infer_past is None and refer_past is None
         else:
-            assert all([
-                isinstance(el, list) for el in [train_past, infer_past, refer_past]
-            ])
+            assert all(
+                [isinstance(el, list) for el in [train_past, infer_past, refer_past]]
+            )
             assert len(train_past) == len(infer_past) == len(refer_past)
-            assert all([
-                t_p.start_time() == tp_s
-                for t_p, tp_s in zip(train_past, t_train["pc_start"])
-            ])
-            assert all([
-                t_p.end_time() == tp_e
-                for t_p, tp_e in zip(train_past, t_train["pc_end"])
-            ])
-            assert all([
-                i_p.start_time() == ip_s
-                for i_p, ip_s in zip(infer_past, t_infer["pc_start"])
-            ])
-            assert all([
-                i_p.end_time() == ip_e
-                for i_p, ip_e in zip(infer_past, t_infer["pc_end"])
-            ])
+            assert all(
+                [
+                    t_p.start_time() == tp_s
+                    for t_p, tp_s in zip(train_past, t_train["pc_start"])
+                ]
+            )
+            assert all(
+                [
+                    t_p.end_time() == tp_e
+                    for t_p, tp_e in zip(train_past, t_train["pc_end"])
+                ]
+            )
+            assert all(
+                [
+                    i_p.start_time() == ip_s
+                    for i_p, ip_s in zip(infer_past, t_infer["pc_start"])
+                ]
+            )
+            assert all(
+                [
+                    i_p.end_time() == ip_e
+                    for i_p, ip_e in zip(infer_past, t_infer["pc_end"])
+                ]
+            )
 
         if train_future is None:
             assert infer_future is None and refer_future is None
         else:
-            assert all([
-                isinstance(el, list)
-                for el in [train_future, infer_future, refer_future]
-            ])
+            assert all(
+                [
+                    isinstance(el, list)
+                    for el in [train_future, infer_future, refer_future]
+                ]
+            )
             assert len(train_future) == len(infer_future) == len(refer_future)
-            assert all([
-                t_f.start_time() == tf_s
-                for t_f, tf_s in zip(train_future, t_train["fc_start"])
-            ])
-            assert all([
-                t_f.end_time() == tf_e
-                for t_f, tf_e in zip(train_future, t_train["fc_end"])
-            ])
-            assert all([
-                i_f.start_time() == if_s
-                for i_f, if_s in zip(infer_future, t_infer["fc_start"])
-            ])
-            assert all([
-                i_f.end_time() == if_e
-                for i_f, if_e in zip(infer_future, t_infer["fc_end"])
-            ])
+            assert all(
+                [
+                    t_f.start_time() == tf_s
+                    for t_f, tf_s in zip(train_future, t_train["fc_start"])
+                ]
+            )
+            assert all(
+                [
+                    t_f.end_time() == tf_e
+                    for t_f, tf_e in zip(train_future, t_train["fc_end"])
+                ]
+            )
+            assert all(
+                [
+                    i_f.start_time() == if_s
+                    for i_f, if_s in zip(infer_future, t_infer["fc_start"])
+                ]
+            )
+            assert all(
+                [
+                    i_f.end_time() == if_e
+                    for i_f, if_e in zip(infer_future, t_infer["fc_end"])
+                ]
+            )
 
     @staticmethod
     def helper_test_encoders_settings(model, example: str):
@@ -3516,10 +3544,12 @@ class TestSKLearnModels:
         # categorical covariates make model aware of the underlying curve type -> improves rmse
         rmses_no_cat = rmse(train_series_cat, preds_no_cat)
         rmses_cat = rmse(train_series_cat, preds_cat)
-        assert all([
-            rmse_no_cat > rmse_cat
-            for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
-        ])
+        assert all(
+            [
+                rmse_no_cat > rmse_cat
+                for rmse_no_cat, rmse_cat in zip(rmses_no_cat, rmses_cat)
+            ]
+        )
 
     @pytest.mark.skipif(
         not lgbm_available and not cb_available, reason="requires lightgbm or catboost"
@@ -3839,9 +3869,9 @@ class TestSKLearnModels:
                     pool.get_cat_feature_indices()
                     for pool in intercepted_args["kwargs"][eval_set_param_name]
                 ]
-                assert np.array([
-                    indices == model_cat_indices for indices in eval_set_indices
-                ]).all()
+                assert np.array(
+                    [indices == model_cat_indices for indices in eval_set_indices]
+                ).all()
 
                 # catboost requires pd.DataFrame with categorical features
                 X, y = intercepted_args["args"]
@@ -4276,3 +4306,77 @@ class TestProbabilisticSKLearnModels:
         _ = model.predict(n=ocl, num_samples=1, predict_likelihood_parameters=True)
         # sampled
         _ = model.predict(n=ocl, num_samples=10, predict_likelihood_parameters=False)
+
+    @pytest.mark.parametrize(
+        "config", product(models_cls_kwargs_errs, [True, False], [True, False])
+    )
+    def test_optimized_historical_forecasts_legacy(self, config):
+        """This tests checks that the new optimized historical forecast method gives the same results as the `optimized_historical_forecasts_all_points` and `_optimized_historical_forecasts_last_points_only` methods when not using auto-regression."""
+        from darts.datasets import AirPassengersDataset
+        from darts.models import LinearRegressionModel, XGBModel
+        from darts.utils.historical_forecasts import (
+            _optimized_historical_forecasts_all_points,
+            _optimized_historical_forecasts_last_points_only,
+            _process_historical_forecast_input,
+        )
+
+        (model_cls, model_kwargs, _), mode, last_point_only = config
+        forecast_horizon = 6
+        model_kwargs["multi_models"] = mode
+        model_kwargs["output_chunk_length"] = forecast_horizon
+        model = model_cls(**model_kwargs)
+
+        series = AirPassengersDataset().load()
+
+        model.fit(series=series)
+
+        series, past_covariates, future_covariates, series_seq_type = (
+            _process_historical_forecast_input(
+                model=model,
+                series=series,
+                forecast_horizon=forecast_horizon,
+                allow_autoregression=True,
+            )
+        )
+        if last_point_only:
+            hfc_slow = _optimized_historical_forecasts_last_points_only(
+                model=model,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                forecast_horizon=forecast_horizon,
+                num_samples=10,
+                random_state=42,
+            )
+        else:
+            hfc_slow = _optimized_historical_forecasts_all_points(
+                model=model,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                forecast_horizon=forecast_horizon,
+                num_samples=10,
+                random_state=42,
+            )
+        hfc_fast = model._optimized_historical_forecasts_autoregression(
+            series=series,
+            forecast_horizon=forecast_horizon,
+            num_samples=10,
+            random_state=42,
+            last_points_only=last_point_only,
+        )
+
+        # check that the two historical forecasts are identical
+        assert all(
+            [
+                np.isclose(hfc_fast[0][i].values(), hfc_slow[0][i].values()).all()
+                for i in range(len(hfc_slow[0]))
+            ]
+        ), "Optimized historical forecasts are not identical to non-optimized ones"
+
+        assert all(
+            [
+                all(hfc_fast[0][i].time_index == hfc_slow[0][i].time_index)
+                for i in range(len(hfc_slow[0]))
+            ]
+        )
