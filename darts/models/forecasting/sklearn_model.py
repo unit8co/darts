@@ -1640,9 +1640,19 @@ class SKLearnModel(GlobalForecastingModel):
             # However, forecast_horizon might be longer than model.output_chunk_length,
             # in which case we need to do auto-regression.
             # Perform a loop until we reach forecast_horizon.
-            predicted_horizon = 0
+            step = model.output_chunk_length
+            last_step_shift = 0
             forecasts = []
-            while predicted_horizon < forecast_horizon:
+            for t_pred in range(0, forecast_horizon, step):
+
+                # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
+                # we have to step back `step` from `n` in the last iteration
+                if 0 < forecast_horizon - t_pred < step and t_pred > 0:
+                    last_step_shift = t_pred - (forecast_horizon - step)
+                    t_pred = forecast_horizon - step
+
+                X = X[:, [lag - last_step_shift for lag in model._get_lags("target")]]
+
                 # repeat rows for probabilistic forecast
                 forecast = model._predict(
                     x=X,
@@ -1652,18 +1662,16 @@ class SKLearnModel(GlobalForecastingModel):
                     **kwargs,
                 )
 
-                predicted_horizon += forecast.shape[1]
                 # TODO: check num_components here
                 forecast = forecast.reshape(forecast.shape[0], forecast.shape[1])
-                if predicted_horizon < forecast_horizon:
-                    if model.multi_models:
-                        # concatenate previous iteration forecasts
-                        X = np.concatenate([X, forecast[::stride, :]], axis=1)
-                    else:
-                        # concatenate previous iteration forecasts
-                        X = np.concatenate([X, forecast[:, :]], axis=1)
-                    X = X[:, model._get_lags("target")]
-                forecasts.append(forecast)
+                if model.multi_models:
+                    # concatenate previous iteration forecasts
+                    X = np.concatenate([X, forecast[::stride, :]], axis=1)
+                else:
+                    # concatenate previous iteration forecasts
+                    X = np.concatenate([X, forecast[:, :]], axis=1)
+
+                forecasts.append(forecast[:, last_step_shift:])
 
             forecast = np.concatenate(forecasts, axis=1)
             # keep only up to forecast_horizon
