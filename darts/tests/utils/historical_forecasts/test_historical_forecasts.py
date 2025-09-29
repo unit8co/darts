@@ -12,7 +12,7 @@ import pytest
 from sklearn.preprocessing import MaxAbsScaler
 
 import darts
-from darts import TimeSeries, concatenate
+from darts import TimeSeries, concatenate, slice_intersect
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
     FittableDataTransformer,
@@ -33,6 +33,7 @@ from darts.models import (
     XGBModel,
 )
 from darts.models.forecasting.forecasting_model import (
+    GlobalForecastingModel,
     LocalForecastingModel,
 )
 from darts.tests.conftest import (
@@ -4421,3 +4422,159 @@ class TestHistoricalforecast:
                     == series.start_time() + adjust_start * series.freq
                 )
         caplog.clear()
+
+    @pytest.mark.parametrize(
+        "model",
+        [
+            NaiveSeasonal(K=3),
+            LinearRegressionModel(lags=3),  # global model target only
+            LinearRegressionModel(
+                lags=3,
+                lags_past_covariates=3,
+            ),  # global model with pc
+            LinearRegressionModel(
+                lags=3,
+                lags_future_covariates=(3, 1),
+            ),  # global model with fc
+            LinearRegressionModel(
+                lags=3,
+                lags_past_covariates=3,
+                lags_future_covariates=(3, 1),
+            ),  # global model with all covs,
+        ]
+        + ([BlockRNNModel(3, 1, n_epochs=1, **tfm_kwargs)] if TORCH_AVAILABLE else []),
+    )
+    def test_global_historical_forecasts_fit(self, model):
+        """Tests historical forecasts on a global model."""
+        fitted_model, hfc_kwargs = self.helper_prepare_global_hfc_input(model)
+
+        intercepted_args = {}
+
+        def intercept_args(*args, **kwargs):
+            for k, v in kwargs.items():
+                if k not in intercepted_args:
+                    intercepted_args[k] = [v] if isinstance(v, TimeSeries) else v
+                else:
+                    intercepted_args[k].append(v)
+            return fitted_model
+
+        # intercept fit calls to check arguments and return fitted model
+        with patch.object(
+            model.__class__,
+            "fit",
+            side_effect=intercept_args,
+        ):
+            # historical forecasts on one series
+            preds = model.historical_forecasts(
+                retrain=True, apply_globally=True, overlap_end=True, **hfc_kwargs
+            )
+            for k, series_expected in hfc_kwargs.items():
+                assert intercepted_args[k] == slice_intersect(series_expected)
+            for p, s in zip(preds, slice_intersect(hfc_kwargs["series"])):
+                assert len(p) == 1
+                assert p.start_time() == s.end_time() + s.freq
+
+    @pytest.mark.parametrize(
+        "model",
+        [
+            NaiveSeasonal(K=3),
+            LinearRegressionModel(lags=3),  # global model target only
+            LinearRegressionModel(
+                lags=3,
+                lags_past_covariates=3,
+            ),  # global model with pc
+            LinearRegressionModel(
+                lags=3,
+                lags_future_covariates=(3, 1),
+            ),  # global model with fc
+            LinearRegressionModel(
+                lags=3,
+                lags_past_covariates=3,
+                lags_future_covariates=(3, 1),
+            ),  # global model with all covs,
+        ]
+        + ([BlockRNNModel(3, 1, n_epochs=1, **tfm_kwargs)] if TORCH_AVAILABLE else []),
+    )
+    def test_global_historical_forecasts_predict(self, model):
+        """Tests historical forecasts on a global model."""
+        fitted_model, hfc_kwargs = self.helper_prepare_global_hfc_input(model)
+
+        forecasts = [
+            tg.linear_timeseries(start=s_.end_time() + s_.freq, length=1)
+            for s_ in slice_intersect(hfc_kwargs["series"])
+        ]
+        intercepted_args = {}
+        counter = 0
+
+        # intercept prediction calls to check arguments and return prepared forecasts
+        def intercept_args(*args, **kwargs):
+            nonlocal counter
+            for k in hfc_kwargs:
+                if k not in kwargs:
+                    continue
+                v = kwargs[k]
+                if k not in intercepted_args:
+                    intercepted_args[k] = [v] if isinstance(v, TimeSeries) else v
+                else:
+                    intercepted_args[k].append(v)
+            if isinstance(model, GlobalForecastingModel):
+                out = forecasts
+            else:
+                out = forecasts[counter]
+
+            counter += 1
+            return out
+
+        # intercept fit calls to check arguments
+        with patch.object(
+            model.__class__,
+            "predict",
+            side_effect=intercept_args,
+        ):
+            # historical forecasts on one series
+            preds = model.historical_forecasts(
+                retrain=True, apply_globally=True, overlap_end=True, **hfc_kwargs
+            )
+            for k, series_expected in hfc_kwargs.items():
+                if k == "sample_weight":
+                    continue
+                if isinstance(model, GlobalForecastingModel):
+                    assert intercepted_args[k] == slice_intersect(series_expected)
+                else:
+                    assert "series" not in intercepted_args
+            for p, s in zip(preds, slice_intersect(hfc_kwargs["series"])):
+                assert len(p) == 1
+                assert p.start_time() == s.end_time() + s.freq
+
+    def helper_prepare_global_hfc_input(self, model):
+        # global model
+        s1 = tg.linear_timeseries(length=model.min_train_series_length + 10)
+        s2 = s1[1 : model.min_train_series_length + 1] + 1.0
+
+        series = [s1, s2]
+        pc = [s2 + 5.0, s1 + 5.0]
+        fc = [
+            s1.append_values(np.array([1.0])) + 15.0,
+            s2.append_values(np.array([1.0])) + 15.0,
+        ]  # fc must be one longer than target due to lags_future_covariates
+        sw = [s1, s1.slice_intersect(s2)]
+
+        # covariates only for models that support it
+        use_pc = model.supports_past_covariates
+        use_fc = model.supports_future_covariates
+        use_sw = model.supports_sample_weight
+        kwargs = {"series": series}
+        if use_pc:
+            kwargs["past_covariates"] = pc
+        if use_fc:
+            kwargs["future_covariates"] = fc
+        if use_sw:
+            kwargs["sample_weight"] = sw
+
+        fit_kwargs = {k: slice_intersect(v) for k, v in kwargs.items()}
+        if not isinstance(model, GlobalForecastingModel):
+            # single series for local models
+            fit_kwargs = {k: v[0] for k, v in fit_kwargs.items()}
+
+        fitted_model = model.untrained_model().fit(**fit_kwargs)
+        return fitted_model, kwargs

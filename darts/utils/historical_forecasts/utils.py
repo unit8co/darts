@@ -1489,7 +1489,10 @@ def _slice_intersect_series(
     Optional[Sequence[TimeSeries]],
     Optional[Union[str, Sequence[TimeSeries]]],
 ]:
-    """Computes the slice intersection of all series sequences."""
+    """Computes the slice intersection of all series sequences.
+
+    Raises an error if the intersection is empty for any of the sequences.
+    """
     series = slice_intersect(series)
     past_covariates = (
         slice_intersect(past_covariates) if past_covariates is not None else None
@@ -1501,6 +1504,19 @@ def _slice_intersect_series(
         sample_weight = (
             slice_intersect(sample_weight) if sample_weight is not None else None
         )
+
+    for s_, name in zip(
+        [series, past_covariates, future_covariates, sample_weight],
+        ["series", "past_covariates", "future_covariates", "sample_weight"],
+    ):
+        if s_ is not None and not isinstance(s_, str) and len(s_[0]) == 0:
+            raise_log(
+                ValueError(
+                    f"The slice intersection of the `{name}` is empty. "
+                    f"Cannot apply historical forecasts globally."
+                ),
+                logger=logger,
+            )
     return series, past_covariates, future_covariates, sample_weight
 
 

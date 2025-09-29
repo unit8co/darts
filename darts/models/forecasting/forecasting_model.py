@@ -203,6 +203,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if series.has_range_index:
             self._supports_range_index
 
+        return self
+
     @property
     def _supports_range_index(self) -> bool:
         """Checks if the forecasting model supports a range index.
@@ -433,7 +435,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     ValueError(f"Model cannot be fit/trained with `{series_name}`."),
                     logger,
                 )
-        self.fit(series=series, **add_kwargs, **kwargs)
+        return self.fit(series=series, **add_kwargs, **kwargs)
 
     def _predict_wrapper(
         self,
@@ -1165,7 +1167,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if apply_retrain:
                     # fit a new instance of the model
                     model = model.untrained_model()
-                    model._fit_wrapper(
+                    model = model._fit_wrapper(
                         series=train_series_tf,
                         past_covariates=past_covariates_tf,
                         future_covariates=future_covariates_tf,
@@ -2921,6 +2923,7 @@ class LocalForecastingModel(ForecastingModel, ABC):
     ) -> "LocalForecastingModel":
         super().fit(series, verbose=verbose)
         series._assert_deterministic()
+        return self
 
     @property
     def extreme_lags(
@@ -3057,6 +3060,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         ):
             self._uses_static_covariates = True
         self._fit_called = True
+        return self
 
     @abstractmethod
     def predict(
