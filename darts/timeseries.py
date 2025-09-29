@@ -3722,9 +3722,6 @@ class TimeSeries:
         else:
             raise_log(ValueError("fn must have either one or two arguments"), logger)
 
-        if not isinstance(values, np.ndarray):
-            raise_log(TypeError("fn must return a np.ndarray"), logger)
-
         return self.__class__(
             times=self._time_index,
             values=values,

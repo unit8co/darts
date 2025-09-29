@@ -1692,6 +1692,20 @@ class TestTimeSeries:
         with pytest.raises(ValueError):
             series.map(ufunc_add)
 
+    def test_map_fn_not_callable(self):
+        series = linear_timeseries(
+            start_value=1,
+            length=12,
+            freq="MS",
+            start=pd.Timestamp("2000-01-01"),
+            end_value=12,
+        )  # noqa: E501
+
+        add = 1
+
+        with pytest.raises(TypeError):
+            series.map(add)
+
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
         times2 = pd.date_range("20120101", "20210301", freq=freqs["QE"])
