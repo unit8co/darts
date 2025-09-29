@@ -23,6 +23,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - 🔴 Renamed the `RegressionEnsembleModel` ensemble model attribute from `regression_model` to `ensemble_model` to make it more clear that this model is used to combine the predictions of the base models. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
 - Added parameter `verbose` to `ForecastingModel.fit()` and `predict()` that allows to control the verbosity for model fitting and prediction. Ignored if the underlying model does not support it. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon) and [Dennis Bader](https://github.com/dennisbader).
 - It is now possible to control the fit and predict verbosity in `ForecastingModel.historical_forecasts()` by passing `verbose` in parameters `fit_kwargs` and `predict_kwargs`. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon) and [Dennis Bader](https://github.com/dennisbader).
+- 🔴 Improved the performance of the `TimeSeries.map()` method. For functions that take two arguments, users must now reshape the TimeSeries index explicitly within their function definition. See more information in the `TimeSeries.map()` method documentation.
 
 **Fixed**
 

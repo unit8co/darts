@@ -3643,16 +3643,16 @@ class TimeSeries:
     def map(
         self,
         fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[Union[pd.Timestamp, int], np.number], np.number],
+            Callable[[np.ndarray], np.ndarray],
+            Callable[[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray], np.ndarray],
         ],
     ) -> Self:  # noqa: E501
         """Return a new series with the function `fn` applied to the values of this series.
 
         If `fn` takes 1 argument it is simply applied on the values array of shape `(time, n_components, n_samples)`.
-        If `fn` takes 2 arguments, it is applied repeatedly on the `(ts, value[ts])` tuples, where `ts` denotes a
-        timestamp value, and `value[ts]` denotes the array of values at this timestamp, of shape
-        `(n_components, n_samples)`.
+        If `fn` takes 2 arguments, it is applied on the `(ts, values)` tuple, where `ts` denotes the
+        timestamp index, and `values` denotes the series' array of values, of shape
+        `(n_timestamps, n_components, n_samples)`. Timestamp index's shape should be `(n, 1, 1)`;
 
         Parameters
         ----------
@@ -3668,6 +3668,25 @@ class TimeSeries:
         -------
         TimeSeries
             A new series with the function `fn` applied to the values.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> import numpy as np
+        >>> # create a simple TimeSeries
+        >>> data = {"vals": range(3), "time": generate_index("2020-01-01", length=3, freq="D")}
+        >>> df = pd.DataFrame(data)
+        >>> series = TimeSeries.from_dataframe(df, time_col="time")
+        >>> # define the function with reshaped time index values
+        >>> def fn(times: pd.DatetimeIndex, values: np.ndarray):
+        ...     return values / times.days_in_month.values.reshape(-1, 1, 1)
+        >>> result = series.map(fn)
+        >>> result.values()
+        [[0.        ]
+        [0.03225806]
+        [0.06451613]]
         """
         if not isinstance(fn, Callable):
             raise_log(TypeError("fn should be callable"), logger)
@@ -3697,30 +3716,14 @@ class TimeSeries:
 
         if num_args == 1:  # apply fn on values directly
             values = fn(self._values)
-        elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-            # go over shortest amount of iterations, either over time steps or components and samples
-            if self.n_timesteps <= self.n_components * self.n_samples:
-                new_vals = np.vstack([
-                    np.expand_dims(
-                        fn(self.time_index[i], self._values[i, :, :]), axis=0
-                    )
-                    for i in range(self.n_timesteps)
-                ])
-            else:
-                new_vals = np.stack(
-                    [
-                        np.column_stack([
-                            fn(self.time_index, self._values[:, i, j])
-                            for j in range(self.n_samples)
-                        ])
-                        for i in range(self.n_components)
-                    ],
-                    axis=1,
-                )
-            values = new_vals
-
+        elif num_args == 2:
+            # apply function to (times, values) - assumes the user provides the reshaped time index
+            values = fn(self._time_index, self._values)
         else:
             raise_log(ValueError("fn must have either one or two arguments"), logger)
+
+        if not isinstance(values, np.ndarray):
+            raise_log(TypeError("fn must return a np.ndarray"), logger)
 
         return self.__class__(
             times=self._time_index,

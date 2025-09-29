@@ -1667,7 +1667,7 @@ class TestTimeSeries:
         zeroes = zeroes.with_columns_renamed("constant", "linear")
 
         def function(ts, x):
-            return x - ts.month
+            return x - ts.month.values.reshape(-1, 1, 1)
 
         new_series = series.map(function)
         assert new_series == zeroes
