@@ -34,7 +34,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 - We raised the minimum pytorch-lightning version to `pytorch-lightning>=2.0.0`. [#2888](https://github.com/unit8co/darts/pull/2888) by [Dennis Bader](https://github.com/dennisbader).
 - We made the Darts core and `torch` packages lighter by removing XGBoost and StatsForecast from the dependencies. All our forecasting models wrapping around these libraries will still be supported. To use them simply install the packages manually or via `u8darts[notorch]` and `u8darts[all]`. [#2906](https://github.com/unit8co/darts/pull/2906) by [Jakub Chłapek](https://github.com/jakubchlapek)
-- 🔴 Removed support for Python 3.9. The new minimum Python version is 3.10.
+- 🔴 Removed support for Python 3.9. The new minimum Python version is 3.10. [#2913](https://github.com/unit8co/darts/pull/2913) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
 ### For developers of the library:
 
