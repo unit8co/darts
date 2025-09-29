@@ -1728,18 +1728,20 @@ class SKLearnModel(GlobalForecastingModel):
             for idx_ftc, step_fct in enumerate(
                 range(0, forecast.shape[0] * stride, stride)
             ):
-                forecasts_.append(
-                    TimeSeries(
-                        times=new_times[step_fct : step_fct + forecast_horizon],
-                        values=forecast[idx_ftc],
-                        components=forecast_components,
-                        static_covariates=series_.static_covariates,
-                        hierarchy=series_.hierarchy,
-                        metadata=series_.metadata,
-                        copy=False,
-                    )
+                ts = TimeSeries(
+                    times=new_times[step_fct : step_fct + forecast_horizon],
+                    values=forecast[idx_ftc],
+                    components=forecast_components,
+                    static_covariates=series_.static_covariates,
+                    hierarchy=series_.hierarchy,
+                    metadata=series_.metadata,
+                    copy=False,
                 )
-                # TODO handle when last_points_only = True
+
+                if last_points_only:
+                    ts = ts[-1]
+
+                forecasts_.append(ts)
             forecasts_list.append(forecasts_)
         return forecasts_list
 
