@@ -530,19 +530,23 @@ class SKLearnModel(GlobalForecastingModel):
 
             # create the feature list (in order of increasing lag)
             lags_sorted = sorted(component_lags.keys())
-            feature_list.append([
-                (feature_type, component, lag)
-                for lag in lags_sorted
-                for component in component_lags[lag]
-            ])
+            feature_list.append(
+                [
+                    (feature_type, component, lag)
+                    for lag in lags_sorted
+                    for component in component_lags[lag]
+                ]
+            )
 
         # add static covariates at the end
         target_ts = get_single_series(series)
         if target_ts.has_static_covariates:
-            feature_list.append([
-                ("static_cov", component, 0)
-                for component in list(target_ts.static_covariates.columns)
-            ])
+            feature_list.append(
+                [
+                    ("static_cov", component, 0)
+                    for component in list(target_ts.static_covariates.columns)
+                ]
+            )
         else:
             feature_list.append([])
         return feature_list
@@ -1291,10 +1295,12 @@ class SKLearnModel(GlobalForecastingModel):
 
         series_matrix = None
         if "target" in self.lags:
-            series_matrix = np.stack([
-                ts.values(copy=False)[self.lags["target"][0] - shift :, :]
-                for ts in series
-            ])
+            series_matrix = np.stack(
+                [
+                    ts.values(copy=False)[self.lags["target"][0] - shift :, :]
+                    for ts in series
+                ]
+            )
 
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
         # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
@@ -1624,17 +1630,22 @@ class SKLearnModel(GlobalForecastingModel):
             # stride must be applied post-hoc to avoid missing values
             X = X[0][:, :, 0]
 
+            # X has shape (n_forecast_indexes, n_lags, we have to repeat for num_samples)
+            # Previously, we repeated it just before calling predict, but in case of auto-regression,
+            # we need to repeat it here, so that the concatenation of previous forecasts works correctly
+            num_forecast_indexes = X.shape[0]
+            X = np.repeat(X, num_samples, axis=0)
+
             # With X we predict y, where y is of size model.output_chunk_length.
             # However, forecast_horizon might be longer than model.output_chunk_length,
             # in which case we need to do auto-regression.
             # Perform a loop until we reach forecast_horizon.
-
             predicted_horizon = 0
             forecasts = []
             while predicted_horizon < forecast_horizon:
                 # repeat rows for probabilistic forecast
                 forecast = model._predict(
-                    x=np.repeat(X, num_samples, axis=0),
+                    x=X,
                     num_samples=num_samples,
                     predict_likelihood_parameters=predict_likelihood_parameters,
                     random_state=random_state,
@@ -1642,6 +1653,7 @@ class SKLearnModel(GlobalForecastingModel):
                 )
 
                 predicted_horizon += forecast.shape[1]
+                # TODO: check num_components here
                 forecast = forecast.reshape(forecast.shape[0], forecast.shape[1])
                 if predicted_horizon < forecast_horizon:
                     if model.multi_models:
@@ -1656,13 +1668,15 @@ class SKLearnModel(GlobalForecastingModel):
             forecast = np.concatenate(forecasts, axis=1)
             # keep only up to forecast_horizon
             forecast = forecast[:, :forecast_horizon]
+            # TODO: check num_components here:
             forecast = np.expand_dims(forecast, axis=-1)
-            # # forecast has shape (n_forecast_indexes * n_samples, k, n_component)
-            # # where k = output_chunk length if multi_models, 1 otherwise
-            # # reshape into (forecasted indexes, output_chunk_length, n_components, n_samples)
+
+            # forecast has shape (n_forecast_indexes * n_samples, k, n_component)
+            # where k = output_chunk length if multi_models, 1 otherwise
+            # reshape into (forecasted indexes, output_chunk_length, n_components, n_samples)
             forecast = np.moveaxis(
                 forecast.reshape(
-                    X.shape[0],
+                    num_forecast_indexes,
                     num_samples,
                     forecast_horizon if model.multi_models else 1,
                     -1,
@@ -1757,62 +1771,62 @@ class SKLearnModel(GlobalForecastingModel):
                 allow_autoregression=True,
             )
         )
-        # hfc = self._optimized_historical_forecasts_new(
-        #     model=self,
-        #     series=series,
-        #     past_covariates=past_covariates,
-        #     future_covariates=future_covariates,
-        #     num_samples=num_samples,
-        #     start=start,
-        #     start_format=start_format,
-        #     forecast_horizon=forecast_horizon,
-        #     stride=stride,
-        #     overlap_end=overlap_end,
-        #     last_points_only=last_points_only,
-        #     show_warnings=show_warnings,
-        #     verbose=verbose,
-        #     predict_likelihood_parameters=predict_likelihood_parameters,
-        #     random_state=random_state,
-        #     **kwargs,
-        # )
+        hfc = self._optimized_historical_forecasts_new(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            overlap_end=overlap_end,
+            last_points_only=last_points_only,
+            show_warnings=show_warnings,
+            verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
+            **kwargs,
+        )
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?
-        if last_points_only:
-            hfc = _optimized_historical_forecasts_last_points_only(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                start=start,
-                start_format=start_format,
-                forecast_horizon=forecast_horizon,
-                stride=stride,
-                overlap_end=overlap_end,
-                show_warnings=show_warnings,
-                verbose=verbose,
-                predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
-                **kwargs,
-            )
-        else:
-            hfc = _optimized_historical_forecasts_all_points(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                start=start,
-                start_format=start_format,
-                forecast_horizon=forecast_horizon,
-                stride=stride,
-                overlap_end=overlap_end,
-                show_warnings=show_warnings,
-                verbose=verbose,
-                predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
-                **kwargs,
-            )
+        # if last_points_only:
+        #     hfc = _optimized_historical_forecasts_last_points_only(
+        #         model=self,
+        #         series=series,
+        #         past_covariates=past_covariates,
+        #         future_covariates=future_covariates,
+        #         num_samples=num_samples,
+        #         start=start,
+        #         start_format=start_format,
+        #         forecast_horizon=forecast_horizon,
+        #         stride=stride,
+        #         overlap_end=overlap_end,
+        #         show_warnings=show_warnings,
+        #         verbose=verbose,
+        #         predict_likelihood_parameters=predict_likelihood_parameters,
+        #         random_state=random_state,
+        #         **kwargs,
+        #     )
+        # else:
+        #     hfc = _optimized_historical_forecasts_all_points(
+        #         model=self,
+        #         series=series,
+        #         past_covariates=past_covariates,
+        #         future_covariates=future_covariates,
+        #         num_samples=num_samples,
+        #         start=start,
+        #         start_format=start_format,
+        #         forecast_horizon=forecast_horizon,
+        #         stride=stride,
+        #         overlap_end=overlap_end,
+        #         show_warnings=show_warnings,
+        #         verbose=verbose,
+        #         predict_likelihood_parameters=predict_likelihood_parameters,
+        #         random_state=random_state,
+        #         **kwargs,
+        #     )
         return series2seq(hfc, seq_type_out=series_seq_type)
 
     @property
