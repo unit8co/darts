@@ -707,8 +707,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         There are two main modes for this method:
 
         - Re-training Mode (Default, `retrain=True`): The model is re-trained at each step of the simulation, and
-          generates a forecast using the updated model. In case of multiple series, the model is re-trained on each
-          series independently (global training is not yet supported).
+          generates a forecast using the updated model. In case of multiple series, the model can be either re-trained
+          on each series independently with `apply_globally=False`, or on all series jointly with `apply_globally=True`
+          (only effective for global models). If `apply_globally=True`, historical forecasts are computed only on the
+          time intersection of all series.
         - Pre-trained Mode (`retrain=False`): The forecasts are generated at each step of the simulation without
           re-training. It is only supported for pre-trained global forecasting models. This mode is significantly
           faster as it skips the re-training step.
