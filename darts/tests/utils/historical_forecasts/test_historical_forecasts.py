@@ -4429,6 +4429,7 @@ class TestHistoricalforecast:
             {
                 "quantiles": [0.1, 0.5, 0.9],
                 "model": LinearRegressionModel(lags=3).fit(ts_passengers),
+                "random_state": 42,
             },
         ),
         (NaiveSeasonal, {"K": 3}),
@@ -4461,6 +4462,51 @@ class TestHistoricalforecast:
         if TORCH_AVAILABLE
         else []
     )
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            models_test_global_hfc,
+            [1, 2],  # number of generated forecasts
+            [True, False],  # last points only,
+            [1, 5],  # horizon
+        ),
+    )
+    def test_global_historical_forecasts_single_series(self, config):
+        """Tests that globally applied historical forecasts on a single series is the same as 'local' forecast."""
+        (model_cls, model_kwargs), n_fc, lpo, horizon = config
+
+        model = model_cls(**model_kwargs)
+        fit_kwargs = self.helper_prepare_global_hfc_input(
+            model, n_fc=n_fc, horizon=horizon
+        )
+        fit_kwargs = {name: series[0] for name, series in fit_kwargs.items()}
+        hfc_kwargs = {
+            "retrain": True,
+            "overlap_end": True,
+            "last_points_only": lpo,
+            "forecast_horizon": horizon,
+            "random_state": 42,
+            **fit_kwargs,
+        }
+        # generate historical forecasts applied globally
+        preds_global = model.historical_forecasts(apply_globally=True, **hfc_kwargs)
+        preds_local = model.historical_forecasts(apply_globally=False, **hfc_kwargs)
+        assert preds_global == preds_local
+
+        if not isinstance(model, GlobalForecastingModel):
+            return
+
+        # pre-trained historical forecasts
+        fit_kwargs = {
+            name: tg.linear_timeseries(length=model.min_train_series_length + 5)
+            for name in fit_kwargs
+        }
+        model.fit(**fit_kwargs)
+        hfc_kwargs["retrain"] = False
+        preds_global = model.historical_forecasts(apply_globally=True, **hfc_kwargs)
+        preds_local = model.historical_forecasts(apply_globally=False, **hfc_kwargs)
+        assert preds_global == preds_local
 
     @pytest.mark.parametrize(
         "config",
@@ -4584,6 +4630,10 @@ class TestHistoricalforecast:
     def test_global_historical_forecasts_data_transformer(self, config):
         """Tests historical forecasts on a global model with data transformers."""
         (model_cls, model_kwargs), n_fc = config
+        if issubclass(model_cls, ConformalNaiveModel):
+            # conformal model has a dedicated logic (retrain=False, e.g. different transformer logic)
+            return
+
         model = model_cls(**model_kwargs)
         hfc_kwargs = self.helper_prepare_global_hfc_input(model, n_fc=n_fc)
 
@@ -4698,6 +4748,7 @@ class TestHistoricalforecast:
                     assert len(inv_call) == len(s_expected)
 
     def test_global_historical_forecasts_no_intersection(self):
+        """Tests that the series intersection must not be empty."""
         model = LinearRegressionModel(
             lags=3,
             lags_past_covariates=3,
@@ -4733,10 +4784,10 @@ class TestHistoricalforecast:
                     "`sample_weight` at series index 1 must contain at least"
                 )
 
-    def helper_prepare_global_hfc_input(self, model, n_fc: int):
+    def helper_prepare_global_hfc_input(self, model, n_fc: int, horizon: int = 1):
         # global model
         s1 = tg.linear_timeseries(length=model.min_train_series_length + 10)
-        s2 = s1[1 : model.min_train_series_length + (n_fc - 1) + 1] + 1.0
+        s2 = s1[1 : model.min_train_series_length + (n_fc - 1) + horizon] + 1.0
 
         series = [s1, s2]
         pc = [s2 + 5.0, s1 + 5.0]

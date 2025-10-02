@@ -971,7 +971,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
         forecasts_list = [[] for _ in range(len(series))]
-
         if apply_globally:
             # for global hfc, we wrap the input in a list to run the inner loop on all series at once;
             # the progress bar will be on the inner loop
@@ -995,7 +994,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         for idx, series_ in enumerate(outer_iterator):
             # get input as Sequence[TimeSeries]:
             # - local hfc: sequence will contain only a single TimeSeries
-            # - global hfc: sequence will contain a list of all TimeSeries with identical time index
+            # - global hfc: sequence will contain all TimeSeries with identical time index
             past_covariates_ = past_covariates[idx] if past_covariates else None
             future_covariates_ = future_covariates[idx] if future_covariates else None
             if isinstance(sample_weight, str):
@@ -1004,6 +1003,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 sample_weight_ = sample_weight[idx] if sample_weight else None
 
             if not apply_globally:
+                # pack in list to apply downstream functions on same input type
                 series_, past_covariates_, future_covariates_, sample_weight_ = (
                     _pack_series_in_list(
                         series_,
@@ -1014,7 +1014,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
 
             # get a single TimeSeries to compute the hfc bounds;
-            # for global hfc, the series are slice intersected and share the same time index
+            # for global hfc, the series were intersected and share the same time index
             series_0 = get_single_series(series_)
             past_covariates_0 = get_single_series(past_covariates_)
             future_covariates_0 = get_single_series(future_covariates_)
@@ -1186,7 +1186,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 if apply_retrain:
                     # fit a new instance of the model
                     model = model.untrained_model()
-                    model = model._fit_wrapper(
+                    model._fit_wrapper(
                         series=train_series_tf,
                         past_covariates=past_covariates_tf,
                         future_covariates=future_covariates_tf,
