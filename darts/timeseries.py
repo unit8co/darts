@@ -2434,7 +2434,7 @@ class TimeSeries:
     def drop_after(
         self,
         split_point: Union[pd.Timestamp, float, int],
-        include: bool = False,
+        keep_point: bool = False,
     ):
         """Return a new series where everything after (and in-/excluding) the provided time `split_point` was dropped.
 
@@ -2444,7 +2444,7 @@ class TimeSeries:
         ----------
         split_point
             The timestamp that indicates cut-off time.
-        include
+        keep_point
             Whether the provided `split_point` should be included in the returned series (if it exists in the series).
 
         Returns
@@ -2453,13 +2453,14 @@ class TimeSeries:
             A series that contains all entries until `split_point` (exclusive).
         """
         return self[
-            : self.get_index_at_point(split_point, after=not include) + int(include)
+            : self.get_index_at_point(split_point, after=not keep_point)
+            + int(keep_point)
         ]
 
     def drop_before(
         self,
         split_point: Union[pd.Timestamp, float, int],
-        include: bool = False,
+        keep_point: bool = False,
     ):
         """Return a new series where everything before (and in-/excluding) the provided time `split_point` was dropped.
 
@@ -2469,7 +2470,7 @@ class TimeSeries:
         ----------
         split_point
             The timestamp that indicates cut-off time.
-        include
+        keep_point
             Whether the provided `split_point` should be included in the returned series (if it exists in the series).
 
         Returns
@@ -2478,7 +2479,8 @@ class TimeSeries:
             A series that contains all entries starting after `split_point` (exclusive).
         """
         return self[
-            self.get_index_at_point(split_point, after=include) + int(not include) :
+            self.get_index_at_point(split_point, after=keep_point)
+            + int(not keep_point) :
         ]
 
     def slice(

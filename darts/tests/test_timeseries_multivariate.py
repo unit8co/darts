@@ -130,10 +130,10 @@ class TestTimeSeriesMultivariate:
         helper_test_split(self.series1)
 
     def test_drop(self):
-        helper_test_drop_after(self.series1, include=False)
-        helper_test_drop_after(self.series1, include=True)
-        helper_test_drop_before(self.series1, include=False)
-        helper_test_drop_before(self.series1, include=True)
+        helper_test_drop_after(self.series1, keep_point=False)
+        helper_test_drop_after(self.series1, keep_point=True)
+        helper_test_drop_before(self.series1, keep_point=False)
+        helper_test_drop_before(self.series1, keep_point=True)
 
     @pytest.mark.parametrize(
         "config", itertools.product(["D", "2D", 1, 2], [False, True])

@@ -1070,7 +1070,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             for _counter, pred_time in enumerate(iterator):
                 # get current prediction input; drop everything after `pred_time`
                 if pred_time <= series_0.end_time():
-                    pred_series_ = [s.drop_after(pred_time) for s in series_]
+                    pred_series_ = [
+                        s.drop_after(pred_time, keep_point=False) for s in series_
+                    ]
                 else:
                     pred_series_ = series_
                 pred_series_0 = get_single_series(pred_series_)

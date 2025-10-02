@@ -804,7 +804,7 @@ def _get_historical_forecasts_setup(
     # adjust the start of the series depending on whether we train (at some point), or predict only
     # must be performed after the operation on historical_forecasts_time_index
     if min_timestamp_series > series.start_time():
-        series = series.drop_before(min_timestamp_series - 1 * series.freq)
+        series = series.drop_before(min_timestamp_series, keep_point=True)
 
     return historical_forecasts_time_index, series, train_length, val_length
 
@@ -1434,13 +1434,13 @@ def _apply_data_transformers(
                 # must slice the ts to distinguish accessible information from future information
                 if ts_type == "past_covariates":
                     # information is known until the end of the target series
-                    tmp_ts = [ts_.drop_after(series_end, include=True) for ts_ in ts]
+                    tmp_ts = [ts_.drop_after(series_end, keep_point=True) for ts_ in ts]
                 elif ts_type == "future_covariates":
                     # information is known until `max_future_cov_lag` steps after the end of the target series
                     tmp_ts = [
                         ts_.drop_after(
                             series_end + max(0, max_future_cov_lag + 1) * freq,
-                            include=True,
+                            keep_point=True,
                         )
                         for ts_ in ts
                     ]

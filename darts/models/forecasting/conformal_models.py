@@ -41,6 +41,7 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.utils import _build_tqdm_iterator, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
+    _slice_intersect_series,
 )
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
@@ -568,6 +569,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
         series = series2seq(series)
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
+
+        if apply_globally:
+            # for global hfc, we have to slice intersect already here to compute the correct start points
+            series, past_covariates, future_covariates, _ = _slice_intersect_series(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                sample_weight=None,
+            )
 
         # generate only the required forecasts (if `start` is given, we have to start earlier to satisfy the
         # calibration set requirements)

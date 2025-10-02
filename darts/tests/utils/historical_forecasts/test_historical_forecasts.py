@@ -4424,6 +4424,13 @@ class TestHistoricalforecast:
         caplog.clear()
 
     models_test_global_hfc = [
+        (
+            ConformalNaiveModel,
+            {
+                "quantiles": [0.1, 0.5, 0.9],
+                "model": LinearRegressionModel(lags=3).fit(ts_passengers),
+            },
+        ),
         (NaiveSeasonal, {"K": 3}),
         (LinearRegressionModel, {"lags": 3}),  # global model target only
         (
@@ -4527,6 +4534,13 @@ class TestHistoricalforecast:
                         ] * 2
 
             # check fit input
+            if isinstance(model, ConformalNaiveModel):
+                # conformal model has a dedicated logic (no underlying model fit/predict, only historical forecasts)
+                # we simply check that the predictions are made correctly
+                assert len(model.fit_calls) == 0
+                assert len(model.pred_calls) == 0
+                continue
+
             assert len(model.fit_calls) == len(series_expected)
             for fit_call, s_expected in zip(model.fit_calls, series_expected):
                 assert fit_call[name] == s_expected
@@ -4682,6 +4696,42 @@ class TestHistoricalforecast:
                 ):
                     assert isinstance(inv_call, list)
                     assert len(inv_call) == len(s_expected)
+
+    def test_global_historical_forecasts_no_intersection(self):
+        model = LinearRegressionModel(
+            lags=3,
+            lags_past_covariates=3,
+            lags_future_covariates=(3, 1),
+        )
+        series = [
+            tg.linear_timeseries(
+                start="2000-01-01", length=model.min_train_series_length
+            ),
+            tg.linear_timeseries(
+                start="2020-01-01", length=model.min_train_series_length
+            ),
+        ]
+        with pytest.raises(ValueError) as exc:
+            model.historical_forecasts(series=series, apply_globally=True)
+        assert str(exc.value) == (
+            "The slice intersection of the `series` is empty. Cannot apply historical forecasts globally."
+        )
+
+        valid_series = [series[0]] * 2
+        for name in ["past_covariates", "future_covariates", "sample_weight"]:
+            with pytest.raises(ValueError) as exc:
+                hfc_kwargs = {name: series}
+                model.historical_forecasts(
+                    series=valid_series, apply_globally=True, **hfc_kwargs
+                )
+            if name != "sample_weight":
+                assert str(exc.value) == (
+                    f"The slice intersection of the `{name}` is empty. Cannot apply historical forecasts globally."
+                )
+            else:
+                assert str(exc.value).startswith(
+                    "`sample_weight` at series index 1 must contain at least"
+                )
 
     def helper_prepare_global_hfc_input(self, model, n_fc: int):
         # global model
