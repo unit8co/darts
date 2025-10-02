@@ -2436,7 +2436,7 @@ class TimeSeries:
         split_point: Union[pd.Timestamp, float, int],
         include: bool = False,
     ):
-        """Return a new series where everything after (in-/excluding) the provided time `split_point` was dropped.
+        """Return a new series where everything after (and in-/excluding) the provided time `split_point` was dropped.
 
         The timestamp may not be in the series. If it is, the timestamp will be dropped.
 
@@ -2461,7 +2461,7 @@ class TimeSeries:
         split_point: Union[pd.Timestamp, float, int],
         include: bool = False,
     ):
-        """Return a new series where everything before and including the provided time `split_point` was dropped.
+        """Return a new series where everything before (and in-/excluding) the provided time `split_point` was dropped.
 
         The timestamp may not be in the series. If it is, the timestamp will be dropped.
 
