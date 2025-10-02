@@ -2431,8 +2431,12 @@ class TimeSeries:
         """
         return self._split_at(split_point, after=False)
 
-    def drop_after(self, split_point: Union[pd.Timestamp, float, int]):
-        """Return a new series where everything after and including the provided time `split_point` was dropped.
+    def drop_after(
+        self,
+        split_point: Union[pd.Timestamp, float, int],
+        include: bool = False,
+    ):
+        """Return a new series where everything after (in-/excluding) the provided time `split_point` was dropped.
 
         The timestamp may not be in the series. If it is, the timestamp will be dropped.
 
@@ -2440,15 +2444,23 @@ class TimeSeries:
         ----------
         split_point
             The timestamp that indicates cut-off time.
+        include
+            Whether the provided `split_point` should be included in the returned series (if it exists in the series).
 
         Returns
         -------
         TimeSeries
             A series that contains all entries until `split_point` (exclusive).
         """
-        return self[: self.get_index_at_point(split_point, after=True)]
+        return self[
+            : self.get_index_at_point(split_point, after=not include) + int(include)
+        ]
 
-    def drop_before(self, split_point: Union[pd.Timestamp, float, int]):
+    def drop_before(
+        self,
+        split_point: Union[pd.Timestamp, float, int],
+        include: bool = False,
+    ):
         """Return a new series where everything before and including the provided time `split_point` was dropped.
 
         The timestamp may not be in the series. If it is, the timestamp will be dropped.
@@ -2457,13 +2469,17 @@ class TimeSeries:
         ----------
         split_point
             The timestamp that indicates cut-off time.
+        include
+            Whether the provided `split_point` should be included in the returned series (if it exists in the series).
 
         Returns
         -------
         TimeSeries
             A series that contains all entries starting after `split_point` (exclusive).
         """
-        return self[self.get_index_at_point(split_point, after=False) + 1 :]
+        return self[
+            self.get_index_at_point(split_point, after=include) + int(not include) :
+        ]
 
     def slice(
         self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]
