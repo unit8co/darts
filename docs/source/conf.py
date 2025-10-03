@@ -40,6 +40,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
+    "sphinx_copybutton",
     "nbsphinx",
     "m2r2",
     "numpydoc",
@@ -121,6 +122,9 @@ html_static_path = ["static"]
 
 
 # -- Extension configuration -------------------------------------------------
+
+# ignore outputs code blocks when copying (see https://sphinx-copybutton.readthedocs.io/en/latest/use.html#strip-and-configure-input-prompts-for-code-cells)
+copybutton_prompt_text = ">>> "
 
 # -- Options for todo extension ----------------------------------------------
 
