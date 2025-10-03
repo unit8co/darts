@@ -21,6 +21,7 @@ import pandas as pd
 import pytest
 import pytorch_lightning as pl
 import torch
+from pytorch_lightning import LightningDataModule
 from pytorch_lightning.callbacks import Callback, ModelCheckpoint
 from pytorch_lightning.loggers.logger import DummyLogger
 from pytorch_lightning.tuner.lr_finder import _LRFinder
@@ -1658,6 +1659,65 @@ class TestTorchForecastingModel:
             )
         assert scores["worst"] > scores["suggested"]
 
+    @pytest.mark.slow
+    def test_scale_batch_size(self):
+        def create_series(length: int) -> TimeSeries:
+            return TimeSeries.from_times_and_values(
+                times=pd.date_range("20130101", periods=length, freq="s"),
+                values=np.cos(
+                    np.linspace(0, np.pi * 10, length, dtype=np.float32)
+                ).reshape(-1, 1),
+            )
+
+        series = create_series(10_000)
+        train_series, val_series = series.split_after(0.8)
+
+        model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
+        # find the largest batch size
+        res = model.scale_batch_size(series=train_series, val_series=val_series)
+
+        # verify results and that batch size is set
+        assert isinstance(res, int)
+        assert res == model.batch_size
+
+        # verify that batch size finder bypasses the `fit` logic
+        assert model.model is None
+        assert not model._fit_called
+        # cannot predict with an untrained model
+        with pytest.raises(ValueError):
+            model.predict(n=3, series=self.series)
+
+        # check that batch size could indeed fit in the memory
+        model.fit(train_series, val_series=val_series, epochs=1)
+        assert model.batch_size == res
+        assert model.epochs_trained == 1
+
+        # check that results are reproducible
+        model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
+        res2 = model.scale_batch_size(series=train_series, val_series=val_series)
+        assert res == res2
+
+    @pytest.mark.slow
+    def test_scale_batch_size_no_updates(self):
+        model = RNNModel(12, "RNN", 10, 10, **tfm_kwargs)
+
+        # train for 1 epoch with default batch size
+        model.fit(self.series, epochs=1)
+        assert model.epochs_trained == 1
+        # store the predictions after 1 epoch
+        preds = model.predict(n=3, series=self.series)
+
+        # find the largest batch size, should not change the model weights
+        res = model.scale_batch_size(series=self.series)
+        # verify that batch size is set
+        assert isinstance(res, int)
+        assert res == model.batch_size
+
+        # verify that weights have not changed after batch size scaling
+        preds_after = model.predict(n=3, series=self.series)
+        assert isinstance(preds, TimeSeries) and isinstance(preds_after, TimeSeries)
+        assert np.isclose(preds.values(), preds_after.values()).all()
+
     def test_encoders(self, tmpdir_fn):
         series = tg.linear_timeseries(length=10)
         pc = tg.linear_timeseries(length=12)
@@ -1736,12 +1796,12 @@ class TestTorchForecastingModel:
 
         with patch("pytorch_lightning.Trainer.fit") as fit_patch:
             model.fit(train_series, val_series=val_series)
-            assert "train_dataloaders" in fit_patch.call_args.kwargs
-            assert "val_dataloaders" in fit_patch.call_args.kwargs
 
-            train_dl = fit_patch.call_args.kwargs["train_dataloaders"]
+            datamodule = fit_patch.call_args.kwargs["datamodule"]
+            assert isinstance(datamodule, LightningDataModule)
+            train_dl = datamodule.train_dataloader()
             assert isinstance(train_dl, DataLoader)
-            val_dl = fit_patch.call_args.kwargs["val_dataloaders"]
+            val_dl = datamodule.val_dataloader()
             assert isinstance(val_dl, DataLoader)
 
             dl_defaults = {
@@ -1761,8 +1821,10 @@ class TestTorchForecastingModel:
             # check that overwriting the dataloader kwargs works
             dl_custom = dict(dl_defaults, **{"batch_size": 50, "drop_last": True})
             model.fit(train_series, val_series=val_series, dataloader_kwargs=dl_custom)
-            train_dl = fit_patch.call_args.kwargs["train_dataloaders"]
-            val_dl = fit_patch.call_args.kwargs["val_dataloaders"]
+
+            datamodule = fit_patch.call_args.kwargs["datamodule"]
+            train_dl = datamodule.train_dataloader()
+            val_dl = datamodule.val_dataloader()
             assert all([getattr(train_dl, k) == v for k, v in dl_custom.items()])
             assert all([getattr(val_dl, k) == v for k, v in dl_custom.items()])
 
@@ -1883,8 +1945,11 @@ class TestTorchForecastingModel:
         # fit called only once
         assert fit_patch.call_count == 1
 
-        train_ds = fit_patch.call_args[1]["train_dataloaders"].dataset
-        val_dl = fit_patch.call_args[1]["val_dataloaders"]
+        datamodule = fit_patch.call_args.kwargs["datamodule"]
+        assert isinstance(datamodule, LightningDataModule)
+
+        train_ds = datamodule.train_dataloader().dataset
+        val_dl = datamodule.val_dataloader()
         assert val_dl is not None
         val_ds = val_dl.dataset
 
