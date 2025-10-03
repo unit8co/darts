@@ -5,49 +5,61 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.37.1...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.38.0...master)
 
 ### For users of the library:
 
 **Improved**
 
-- Historical Forecasting, backtest and residuals:
-  - 🚀🚀 Added support for applying historical forecast, backtest and residuals globally on all series with parameter `apply_globally: bool`. If `True`, computes the output only the time intersection of all series. Additionally, with `retrain=True`, activates global model- and data transformer fitting (for global forecasting models). If `False` (default), computes the output on the entire extent of each individual series and performs local fitting. [#2916](https://github.com/unit8co/darts/pull/2916) by [Dennis Bader](https://github.com/dennisbader).
-  - 🚀 Added parameter `val_length` to `ForecastingModel.historical_forecasts()`, `backtest()` and `residuals()` which will extract a validation set of length `val_length` after the end of each training set when `retrain=True`. The validation set is then used to fit the underlying forecasting model if it supports it. This is especially useful for early stopping mechanisms to reduce overfitting and / or training times. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
-  - It is now possible to control the fit and predict verbosity in `ForecastingModel.historical_forecasts()`, `backtest()` and `residuals()` by passing `verbose` in parameters `fit_kwargs` and `predict_kwargs`. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon) and [Dennis Bader](https://github.com/dennisbader).
-
-- TorchForecastingModel:
-  - 🚀 Added mixed precision and 16-bit precision support to `TorchForecastingModel`. Simply specify `{"precision": "bf16-mixed" }` for `pl_trainer_kwargs` to enable mixed precision training. Alternatively, declare a custom `pytorch_lightning.Trainer` with a `"precision"` parameter and pass the trainer to `fit()`. Other precision options such as `"64-true"` and `"16-mixed"` supported by `pytorch_lightning` are also allowed. [#2883](https://github.com/unit8co/darts/pull/2883) by [Zhihao Dai](https://github.com/daidahao).
-  - 🚀 Added parameter `load_best` to `TorchForecastingModel.fit()` and `fit_from_dataset()` which, when `True`, will automatically load (and use) the best model on the validation set at the end of the training process. [#2903](https://github.com/unit8co/darts/pull/2903) by [He Weilin](https://github.com/cnhwl).
-  - 🔴 Added future and static covariates support to `BlockRNNModel`. This improvement required changes to the underlying model architecture which means that saved model instances from older Darts versions cannot be loaded any longer. [#2845](https://github.com/unit8co/darts/pull/2845) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
-  - Added hyperparameter `skip_interpolation` to `TFTModel` that will replace 1D interpolation on feature embeddings with linear projection. When `True`, it can greatly increase training and inference efficiency while predictive accuracy remains largely unaffected. [#2898](https://github.com/unit8co/darts/pull/2898) by [Zhihao Dai](https://github.com/daidahao).
-
-- TimeSeries:
-  - 🚀 `TimeSeries.from_group_dataframe()` now supports creating `TimeSeries` from **additional DataFrame backends** (Polars, PyArrow, ...). We leverage `narwhals` as the compatibility layer between DataFrame libraries. See their [documentation](https://narwhals-dev.github.io/narwhals/) for all supported backends. [#2766](https://github.com/unit8co/darts/pull/2766) by [He Weilin](https://github.com/cnhwl).
-  - `TimeSeries.drop_before()` and `drop_after()` now support keeping the split point in the returned series by passing parameter `keep=True`. [#2916](https://github.com/unit8co/darts/pull/2916) by [Dennis Bader](https://github.com/dennisbader).
-
-- ForecastingModel
-  - Added `add_regressor_configs` parameter to the `Prophet` model, enabling component-specific control over `prior_scale`, `mode`, and `standardize` for the future covariates. [#2882](https://github.com/unit8co/darts/issues/2882) by [Ramsay Davis](https://github.com/RamsayDavisWL).
-  - Added model creation parameters `random_errors` and `error` to `ExponentialSmoothing` that give control over how probabilistic forecasts are generated. [#2904](https://github.com/unit8co/darts/pull/2904) by [Jakub Chłapek](https://github.com/jakubchlapek)
-  - Added parameter `verbose` to `ForecastingModel.fit()` and `predict()` that allows to control the verbosity for model fitting and prediction. Ignored if the underlying model does not support it. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon) and [Dennis Bader](https://github.com/dennisbader).
-  - 🔴 Increased the decimal places for quantile component names from 2 to 3 for more precise quantiles. (e.g. `component_name_q0.500` for quantile 0.5). This affects quantile forecasts as well as quantiles computed with `TimeSeries.quantile()`. [#2887](https://github.com/unit8co/darts/pull/2786) by [He Weilin](https://github.com/cnhwl).
-  - 🔴 Renamed the `RegressionEnsembleModel` ensemble model attribute from `regression_model` to `ensemble_model` to make it more clear that this model is used to combine the predictions of the base models. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
-
-- Documentation:
-  - Added support for copying all example code blocks from the documentation to the clipboard. [#2918](https://github.com/unit8co/darts/pull/2918) by [Dennis Bader](https://github.com/dennisbader).
-
 **Fixed**
-
-- Fixed a bug causing crashes when running `TFTModel` on MPS devices (macOS with GPUs). [#2898](https://github.com/unit8co/darts/pull/2898) by [Zhihao Dai](https://github.com/daidahao).
-- Fixed a bug when saving a `GlobalNaiveModel` directly after fitting it (without performing prediction). [#2895](https://github.com/unit8co/darts/pull/2895), by [Alain Gysi](https://github.com/Kurokabe)
-- Fixed a bug when using an `EnsembleModel` with `train_forecasting_models=False` and at least one torch model in `forecasting_models`, where calling `historical_forecasts()` with `retrain=True` raised an exception due to the torch models being unintentionally reset. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 
-- 🔴 Removed support for Python 3.9. The new minimum Python version is 3.10. [#2913](https://github.com/unit8co/darts/pull/2913) by [Jakub Chłapek](https://github.com/jakubchlapek)
-- We made the Darts core and `torch` packages lighter by removing XGBoost and StatsForecast from the dependencies. All our forecasting models wrapping around these libraries will still be supported. To use them simply install the packages manually or via `u8darts[notorch]` and `u8darts[all]`. [#2906](https://github.com/unit8co/darts/pull/2906) by [Jakub Chłapek](https://github.com/jakubchlapek)
-- We raised the minimum pytorch-lightning version to `pytorch-lightning>=2.0.0`. [#2888](https://github.com/unit8co/darts/pull/2888) by [Dennis Bader](https://github.com/dennisbader).
-- Bumped the Python version of the Darts Docker image from 3.9 to 3.12. [#2913](https://github.com/unit8co/darts/pull/2913) by [Jakub Chłapek](https://github.com/jakubchlapek)
+### For developers of the library:
+
+## [0.38.0](https://github.com/unit8co/darts/tree/0.38.0) (2025-10-03)
+
+### For users of the library:
+
+**Improved**
+
+- Improvements to `historical_forecasts()`, `backtest()` and `residuals()` : Added support for **global simulation mode**, **moving validation sets** for early stopping, and improved verbosity control for better model training workflows.
+  - 🚀🚀 Added support for global simulation mode with parameter `apply_globally: bool`. If `True`, computes the output only on the time intersection of all series. With `retrain=True`, activates global model- and data transformer fitting (e.g. fits global models on all series jointly). If `False` (default), computes the output on the entire extent of each individual series and performs local fitting. [#2916](https://github.com/unit8co/darts/pull/2916) by [Dennis Bader](https://github.com/dennisbader).
+  - 🚀 Added parameter `val_length` which will extract a validation set of length `val_length` after the end of each training set when `retrain=True`. The validation set is passed to the fit method of the underlying forecasting model if it supports it. This is especially useful for early stopping mechanisms to reduce overfitting and / or training times. Also check out the new `load_best` fit parameter for our torch models (described further below) to automatically load the best model on the validation set. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
+  - It is now possible to control the fit and predict verbosity by passing `verbose` in parameters `fit_kwargs` and `predict_kwargs`. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon) and [Dennis Bader](https://github.com/dennisbader).
+
+- Improvements to `TorchForecastingModel` : Added support for mixed- and 16-bit precision, automatic loading of the best model on the validation set after training, and other model-specific improvements.
+  - 🚀 Added mixed precision and 16-bit precision support. Simply specify `{"precision": "bf16-mixed" }` for `pl_trainer_kwargs` to enable mixed precision training. Alternatively, declare a custom `pytorch_lightning.Trainer` with a `"precision"` parameter and pass the trainer to `fit()`. Other precision options such as `"64-true"` and `"16-mixed"` supported by `pytorch_lightning` are also allowed. [#2883](https://github.com/unit8co/darts/pull/2883) by [Zhihao Dai](https://github.com/daidahao).
+  - 🚀 Added parameter `load_best` to `fit()` and `fit_from_dataset()` which, when `True`, will automatically load (and use) the best model on the validation set at the end of the training process. [#2903](https://github.com/unit8co/darts/pull/2903) by [He Weilin](https://github.com/cnhwl).
+  - 🔴 Added future and static covariates support to `BlockRNNModel` (might introduce breaking changes for saved models). [#2845](https://github.com/unit8co/darts/pull/2845) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+  - Added hyperparameter `skip_interpolation` to `TFTModel` that will replace 1D interpolation on feature embeddings with linear projection. When `True`, it can greatly increase training and inference efficiency while predictive accuracy remains largely unaffected. [#2898](https://github.com/unit8co/darts/pull/2898) by [Zhihao Dai](https://github.com/daidahao).
+
+- Improvements to `TimeSeries` : Enhanced DataFrame compatibility and improved time series manipulation operations.
+  - 🚀 Extended `from_group_dataframe()` to support additional DataFrame backends (Polars, PyArrow) via `narwhals` compatibility layer. [#2766](https://github.com/unit8co/darts/pull/2766) by [He Weilin](https://github.com/cnhwl).
+  - Added parameter `keep_point` to `drop_before()` and `drop_after()` to preserve the split points in the returned series. [#2916](https://github.com/unit8co/darts/pull/2916) by [Dennis Bader](https://github.com/dennisbader).
+
+- Other forecasting model improvements:
+  - Added parameter `add_regressor_configs` to `Prophet` for component-specific control over `prior_scale`, `mode`, and `standardize` of the future covariates. [#2882](https://github.com/unit8co/darts/issues/2882) by [Ramsay Davis](https://github.com/RamsayDavisWL).
+  - Added parameters `random_errors` and `error` to `ExponentialSmoothing` for giving control over how probabilistic forecasts are generated. [#2904](https://github.com/unit8co/darts/pull/2904) by [Jakub Chłapek](https://github.com/jakubchlapek).
+  - Added parameter `verbose` to `fit()` and `predict()` for verbosity control. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon) and [Dennis Bader](https://github.com/dennisbader).
+  - 🔴 Increased quantile component name precision from 2 to 3 decimal places (e.g., `component_name_q0.500` for quantile 0.5). This affects quantile forecasts as well as quantiles computed with `TimeSeries.quantile()`. [#2887](https://github.com/unit8co/darts/pull/2786) by [He Weilin](https://github.com/cnhwl).
+  - 🔴 Renamed `RegressionEnsembleModel.regression_model` to `ensemble_model` for clarity. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
+
+- Improvements to the Documentation:
+  - Added copy-to-clipboard functionality for all documentation code blocks. [#2918](https://github.com/unit8co/darts/pull/2918) by [Dennis Bader](https://github.com/dennisbader).
+
+**Fixed**
+
+- Fixed `TFTModel` crashes on MPS devices (macOS with GPUs). [#2898](https://github.com/unit8co/darts/pull/2898) by [Zhihao Dai](https://github.com/daidahao).
+- Fixed `GlobalNaiveModel` saving issue when called directly after fitting without prediction. [#2895](https://github.com/unit8co/darts/pull/2895) by [Alain Gysi](https://github.com/Kurokabe).
+- Fixed `EnsembleModel` with `train_forecasting_models=False` causing exceptions in `historical_forecasts()` with `retrain=True`. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
+
+**Dependencies**
+
+- 🔴 Python version update: Removed support for Python 3.9. The new minimum Python version is 3.10. [#2913](https://github.com/unit8co/darts/pull/2913) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- 🔴 More lightweight Darts core and `torch` packages: Removed XGBoost and StatsForecast from the core dependencies to reduce package size. All our forecasting models wrapping around these libraries will still be supported. To use them, simply install the packages manually or via `u8darts[notorch]` and `u8darts[all]`. [#2906](https://github.com/unit8co/darts/pull/2906) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- Raised the minimum pytorch-lightning version to `pytorch-lightning>=2.0.0`. [#2888](https://github.com/unit8co/darts/pull/2888) by [Dennis Bader](https://github.com/dennisbader).
+- Updated the Docker image Python version from 3.9 to 3.12. [#2913](https://github.com/unit8co/darts/pull/2913) by [Jakub Chłapek](https://github.com/jakubchlapek).
 
 ### For developers of the library:
 
