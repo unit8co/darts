@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -369,13 +372,13 @@
 <span class="sd">        &gt;&gt;&gt; )</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov, future_covariates=future_cov)</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
-<span class="sd">        &gt;&gt;&gt; pred.values()</span>
-<span class="sd">        array([[1006.4153701 ],</span>
-<span class="sd">               [1006.41907237],</span>
-<span class="sd">               [1006.30872957],</span>
-<span class="sd">               [1006.28614154],</span>
-<span class="sd">               [1006.22355514],</span>
-<span class="sd">               [1006.21607546]])</span>
+<span class="sd">        &gt;&gt;&gt; print(pred.values())</span>
+<span class="sd">        [[1006.4153701 ]</span>
+<span class="sd">         [1006.41907237]</span>
+<span class="sd">         [1006.30872957]</span>
+<span class="sd">         [1006.28614154]</span>
+<span class="sd">         [1006.22355514]</span>
+<span class="sd">         [1006.21607546]]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">random_state</span>  <span class="c1"># seed for tree learner</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
@@ -463,7 +466,7 @@
         <span class="n">val_sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
             <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span>
         <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
@@ -510,6 +513,7 @@
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional kwargs passed to `catboost.CatboostRegressor.fit()`</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span> <span class="k">if</span> <span class="n">verbose</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
         <span class="n">likelihood</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">):</span>
             <span class="c1"># empty model container in case of multiple calls to fit, e.g. when backtesting</span>
@@ -591,25 +595,12 @@
         <span class="k">return</span> <span class="n">kwargs</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">supports_val_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_supports_val_series</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="k">return</span> <span class="kc">True</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">val_set_params</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
         <span class="k">return</span> <span class="s2">&quot;eval_set&quot;</span><span class="p">,</span> <span class="s2">&quot;eval_sample_weight&quot;</span>
-
-    <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="c1"># Catboost requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than</span>
-        <span class="c1"># for other regression models</span>
-        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
-            <span class="mi">3</span><span class="p">,</span>
-            <span class="p">(</span>
-                <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="mi">1</span>
-                <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span>
-                <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
-            <span class="p">),</span>
-        <span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_supports_native_multioutput</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -789,13 +780,13 @@
 <span class="sd">        &gt;&gt;&gt; )</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov, future_covariates=future_cov)</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
-<span class="sd">        &gt;&gt;&gt; pred.values()</span>
-<span class="sd">        array([[0.],</span>
-<span class="sd">               [0.],</span>
-<span class="sd">               [0.],</span>
-<span class="sd">               [1.],</span>
-<span class="sd">               [1.],</span>
-<span class="sd">               [1.]])</span>
+<span class="sd">        &gt;&gt;&gt; print(pred.values())</span>
+<span class="sd">        [[0.]</span>
+<span class="sd">         [0.]</span>
+<span class="sd">         [0.]</span>
+<span class="sd">         [1.]</span>
+<span class="sd">         [1.]</span>
+<span class="sd">         [1.]]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># likelihood always set to ClassProbability as it&#39;s the only supported classification likelihood</span>
         <span class="c1"># this allow users to predict class probabilities,</span>

@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -177,12 +180,14 @@
 <span class="sd">Ensemble Model Base Class</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">copy</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">BinaryIO</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.sklearn_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">SKLearnModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LikelihoodType</span>
 
 <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">version_info</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
@@ -201,9 +206,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">TORCH_AVAILABLE</span>
 
 <span class="k">if</span> <span class="n">TORCH_AVAILABLE</span><span class="p">:</span>
-    <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorchForecastingModel</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+        <span class="n">TFM_ATTRS_NO_PICKLE</span><span class="p">,</span>
+        <span class="n">TorchForecastingModel</span><span class="p">,</span>
+    <span class="p">)</span>
 <span class="k">else</span><span class="p">:</span>
-    <span class="n">TorchForecastingModel</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">TorchForecastingModel</span><span class="p">,</span> <span class="n">TFM_ATTRS_NO_PICKLE</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -235,6 +243,10 @@
 <span class="sd">    train_forecasting_models</span>
 <span class="sd">        If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported</span>
 <span class="sd">        if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.</span>
+<span class="sd">    train_n_points</span>
+<span class="sd">        The number of points per series to use to train the ensemble model. Can be set to `-1` to use the</span>
+<span class="sd">        entire series to train the regressor if `forecasting_models` are already fitted and</span>
+<span class="sd">        `train_forecasting_models=False`.</span>
 <span class="sd">    show_warnings</span>
 <span class="sd">        Whether to show warnings related to models covariates support.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -242,11 +254,15 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">forecasting_models</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">ForecastingModel</span><span class="p">],</span>
+        <span class="n">ensemble_model</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SKLearnModel</span><span class="p">],</span>
         <span class="n">train_num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">train_samples_reduction</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]],</span>
         <span class="n">train_forecasting_models</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">train_n_points</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="nb">isinstance</span><span class="p">(</span><span class="n">forecasting_models</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">and</span> <span class="n">forecasting_models</span><span class="p">,</span>
             <span class="s2">&quot;Cannot instantiate EnsembleModel with an empty list of `forecasting_models`&quot;</span><span class="p">,</span>
@@ -277,14 +293,24 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span> <span class="o">=</span> <span class="nb">all</span><span class="p">(</span><span class="n">model_fit_status</span><span class="p">)</span>
         <span class="n">some_trained</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">model_fit_status</span><span class="p">)</span>
 
-        <span class="n">raise_if</span><span class="p">(</span>
-            <span class="p">(</span><span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="n">some_trained</span><span class="p">)</span>
-            <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">some_trained</span><span class="p">)),</span>
-            <span class="s2">&quot;Cannot instantiate EnsembleModel with a mixture of unfitted and fitted `forecasting_models`. &quot;</span>
-            <span class="s2">&quot;Consider resetting all models with `my_model.untrained_model()` or using only trained &quot;</span>
-            <span class="s2">&quot;GlobalForecastingModels together with `train_forecasting_models=False`.&quot;</span><span class="p">,</span>
-            <span class="n">logger</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="n">some_trained</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Some models in `forecasting_models` are already fitted. Using pre-trained models is &quot;</span>
+                    <span class="s2">&quot;only supported if all models are of type `GlobalForecastingModel`. &quot;</span>
+                    <span class="s2">&quot;Consider resetting all models with `my_model.untrained_model()`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_global_ensemble</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">some_trained</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;All `forecasting_models` are global but there is a mixture of fitted and unfitted models. &quot;</span>
+                    <span class="s2">&quot;Consider resetting all models with `my_model.untrained_model()` or using only trained &quot;</span>
+                    <span class="s2">&quot;`GlobalForecastingModel` together with `train_forecasting_models=False`.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">train_forecasting_models</span><span class="p">:</span>
             <span class="c1"># prevent issues with pytorch-lightning trainer during retraining</span>
@@ -341,12 +367,23 @@
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">raise_if</span><span class="p">(</span>
+            <span class="n">train_n_points</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">all_trained</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">train_forecasting_models</span><span class="p">)),</span>
+            <span class="s2">&quot;`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and &quot;</span>
+            <span class="s2">&quot;all `forecasting_models` are already fitted.&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># ensemble model checks</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span> <span class="o">=</span> <span class="n">forecasting_models</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ensemble_model</span> <span class="o">=</span> <span class="n">ensemble_model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_num_samples</span> <span class="o">=</span> <span class="n">train_num_samples</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_samples_reduction</span> <span class="o">=</span> <span class="n">train_samples_reduction</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">train_forecasting_models</span> <span class="o">=</span> <span class="n">train_forecasting_models</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">show_warnings</span> <span class="o">=</span> <span class="n">show_warnings</span>
+        <span class="c1"># converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="n">train_n_points</span>
 
         <span class="k">if</span> <span class="n">show_warnings</span><span class="p">:</span>
             <span class="k">if</span> <span class="p">(</span>
@@ -369,12 +406,26 @@
                     <span class="s2">&quot;To hide these warnings, set `show_warnings=False`.&quot;</span>
                 <span class="p">)</span>
 
+<div class="viewcode-block" id="EnsembleModel.untrained_model"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.ensemble_model.html#darts.models.forecasting.ensemble_model.EnsembleModel.untrained_model">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">**</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_forecasting_models</span><span class="p">:</span>
+            <span class="c1"># torch models drop the underlying network when calling `untrained_model()`;</span>
+            <span class="c1"># add them back in case the models are not retrained</span>
+            <span class="k">for</span> <span class="n">sub_model</span><span class="p">,</span> <span class="n">sub_model_orig</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
+            <span class="p">):</span>
+                <span class="k">if</span> <span class="n">TORCH_AVAILABLE</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sub_model</span><span class="p">,</span> <span class="n">TorchForecastingModel</span><span class="p">):</span>
+                    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">TFM_ATTRS_NO_PICKLE</span><span class="p">:</span>
+                        <span class="nb">setattr</span><span class="p">(</span><span class="n">sub_model</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sub_model_orig</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">model</span></div>
+
 <div class="viewcode-block" id="EnsembleModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.ensemble_model.html#darts.models.forecasting.ensemble_model.EnsembleModel.fit">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">fit</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Fits the model on the provided series.</span>
@@ -411,7 +462,25 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_verify_past_future_covariates</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
+
+        <span class="c1"># the minimum train series length includes the training requirements from `forecasting_models` as</span>
+        <span class="c1"># well as the ones from the ensemble model</span>
+        <span class="n">min_train_series_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_train_series_length</span>
+        <span class="k">if</span> <span class="n">is_single_series</span><span class="p">:</span>
+            <span class="n">series_too_short</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_train_series_length</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">series_too_short</span> <span class="o">=</span> <span class="nb">any</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_train_series_length</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">series</span><span class="p">])</span>
+
+        <span class="k">if</span> <span class="n">series_too_short</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;All time series in &#39;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">is_single_series</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="si">}</span><span class="s2">`series` must have &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;a minimum length of `</span><span class="si">{</span><span class="n">min_train_series_length</span><span class="si">}</span><span class="s2">` to fit the model.&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_stack_ts_seq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">predictions</span><span class="p">):</span>
@@ -437,6 +506,7 @@
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
         <span class="n">is_single_series</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="ow">or</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span>
         <span class="c1"># maximize covariate usage</span>
@@ -455,6 +525,7 @@
                 <span class="p">),</span>
                 <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
                 <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span>
         <span class="p">]</span>
@@ -478,7 +549,7 @@
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -523,6 +594,7 @@
             <span class="n">num_samples</span><span class="o">=</span><span class="n">pred_num_samples</span><span class="p">,</span>
             <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">forecast_models_pred_likelihood_params</span><span class="p">,</span>
             <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ensemble</span><span class="p">(</span>
@@ -531,6 +603,7 @@
             <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
             <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
             <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
         <span class="p">)</span></div>
 
 <div class="viewcode-block" id="EnsembleModel.ensemble"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.ensemble_model.html#darts.models.forecasting.ensemble_model.EnsembleModel.ensemble">[docs]</a>    <span class="nd">@abstractmethod</span>
@@ -541,6 +614,7 @@
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Defines how to ensemble the individual models&#39; predictions to produce a single prediction.</span>
@@ -552,8 +626,16 @@
 <span class="sd">        series</span>
 <span class="sd">            Sequence of timeseries to predict on. Optional, since it only makes sense for sequences of timeseries -</span>
 <span class="sd">            local models retain timeseries for prediction.</span>
+<span class="sd">        num_samples</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.</span>
+<span class="sd">        predict_likelihood_parameters</span>
+<span class="sd">            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only</span>
+<span class="sd">            supported for probabilistic models with a likelihood, `num_samples = 1` and `n&lt;=output_chunk_length`.</span>
+<span class="sd">            Default: ``False``</span>
 <span class="sd">        random_state</span>
 <span class="sd">            Controls the randomness of probabilistic predictions.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Optionally, set the prediction verbosity. Not effective for all models.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -682,12 +764,32 @@
         <span class="k">return</span> <span class="n">model</span></div>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_series_length</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">train_n_points</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">train_n_points</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_forecasting_models</span><span class="p">:</span>
+            <span class="c1"># if base models are re-trained, it is the max of the sub-models&#39; min samples + train_n_points</span>
+            <span class="n">min_train_samples</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">max</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_samples</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">)</span>
+                <span class="o">+</span> <span class="n">train_n_points</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># if base models not re-trained, we might already have some training points within the base model&#39;s</span>
+            <span class="c1"># first output chunk; if we need more, we add them as additional required samples</span>
+            <span class="n">base_ocl</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">extreme_lags</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+            <span class="n">min_train_samples</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">train_n_points</span> <span class="o">-</span> <span class="n">base_ocl</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">min_train_samples</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">min_train_samples</span> <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_target_window_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="c1"># for ensemble, it is the max of each of the sub-models&#39; target sample lengths</span>
+        <span class="n">lengths_max</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecasting_models</span><span class="p">:</span>
+            <span class="n">input_length</span><span class="p">,</span> <span class="n">output_length</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_target_window_lengths</span>
+            <span class="k">if</span> <span class="n">input_length</span> <span class="o">&gt;</span> <span class="n">lengths_max</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+                <span class="n">lengths_max</span> <span class="o">=</span> <span class="p">(</span><span class="n">input_length</span><span class="p">,</span> <span class="n">lengths_max</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">output_length</span> <span class="o">&gt;</span> <span class="n">lengths_max</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">lengths_max</span> <span class="o">=</span> <span class="p">(</span><span class="n">lengths_max</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">output_length</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">lengths_max</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">extreme_lags</span><span class="p">(</span>
@@ -700,7 +802,6 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="nb">int</span><span class="p">,</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">]:</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">find_max_lag_or_none</span><span class="p">(</span><span class="n">lag_id</span><span class="p">,</span> <span class="n">aggregator</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
             <span class="n">max_lag</span> <span class="o">=</span> <span class="kc">None</span>
@@ -712,7 +813,8 @@
                     <span class="n">max_lag</span> <span class="o">=</span> <span class="n">aggregator</span><span class="p">(</span><span class="n">max_lag</span><span class="p">,</span> <span class="n">curr_lag</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">max_lag</span>
 
-        <span class="n">lag_aggregators</span> <span class="o">=</span> <span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">max</span><span class="p">)</span>
+        <span class="c1"># extreme lags is given by the min or max of the extreme lags of the sub-models</span>
+        <span class="n">lag_aggregators</span> <span class="o">=</span> <span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="nb">max</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
             <span class="n">find_max_lag_or_none</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">agg</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">agg</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lag_aggregators</span><span class="p">)</span>
         <span class="p">)</span>

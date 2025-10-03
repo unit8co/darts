@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -256,17 +259,17 @@
 
 <span class="sd">        Examples</span>
 <span class="sd">        --------</span>
-<span class="sd">        &gt;&gt;&gt; from darts.datasets import AirPassengersDataset</span>
 <span class="sd">        &gt;&gt;&gt; from sklearn.preprocessing import MinMaxScaler</span>
+<span class="sd">        &gt;&gt;&gt; from darts import TimeSeries</span>
 <span class="sd">        &gt;&gt;&gt; from darts.dataprocessing.transformers import Scaler</span>
-<span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
+<span class="sd">        &gt;&gt;&gt; series = TimeSeries.from_values([-2, 0, 2])</span>
 <span class="sd">        &gt;&gt;&gt; scaler = MinMaxScaler(feature_range=(-1, 1))</span>
 <span class="sd">        &gt;&gt;&gt; transformer = Scaler(scaler)</span>
 <span class="sd">        &gt;&gt;&gt; series_transformed = transformer.fit_transform(series)</span>
-<span class="sd">        &gt;&gt;&gt; print(min(series_transformed.values()))</span>
-<span class="sd">        [-1.]</span>
-<span class="sd">        &gt;&gt;&gt; print(max(series_transformed.values()))</span>
-<span class="sd">        [2.]</span>
+<span class="sd">        &gt;&gt;&gt; print(series_transformed.values())</span>
+<span class="sd">        [[-1.]</span>
+<span class="sd">         [ 0.]</span>
+<span class="sd">         [ 1.]]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">scaler</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>

@@ -26,6 +26,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -34,6 +35,8 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
@@ -920,15 +923,15 @@ Pandas’ functions can be found in the
 <a class="reference external" href="https://pandas.pydata.org/docs/reference/window.html">documentation</a>.</p>
 </dd>
 <dt class="field-even"><code class="docutils literal notranslate"><span class="pre">&quot;mode&quot;</span></code></dt>
-<dd class="field-even"><p>Optional. The name of the pandas windowing mode on which the <code class="docutils literal notranslate"><span class="pre">&quot;function&quot;</span></code> is going to be
-applied. The options are “rolling”, “expanding” and “ewm”.
+<dd class="field-even"><p>Optional. The name of the pandas windowing mode on which the <code class="docutils literal notranslate"><span class="pre">&quot;function&quot;</span></code> is
+going to be applied. The options are “rolling”, “expanding” and “ewm”.
 If not provided, Darts defaults to “expanding”.
 User defined functions can use either “rolling” or “expanding” modes.
 More information on pandas windowing operations can be found in the <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html">documentation</a>.</p>
 </dd>
 <dt class="field-odd"><code class="docutils literal notranslate"><span class="pre">&quot;components&quot;</span></code></dt>
-<dd class="field-odd"><p>Optional. A string or list of strings specifying the TimeSeries components on which the
-transformation should be applied. If not specified, the transformation will be
+<dd class="field-odd"><p>Optional. A string or list of strings specifying the TimeSeries components on which
+the transformation should be applied. If not specified, the transformation will be
 applied on all components.</p>
 </dd>
 <dt class="field-even"><code class="docutils literal notranslate"><span class="pre">&quot;function_name&quot;</span></code></dt>
@@ -947,46 +950,32 @@ in that mode (i.e., <code class="docutils literal notranslate"><span class="pre"
 <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame.ewm.mean/std/sum</span></code>).
 This allows for more flexibility in configuring the transformation, by providing for
 example:</p>
-<ul>
-<li><dl class="field-list simple">
+<dl class="field-list simple">
 <dt class="field-odd"><code class="docutils literal notranslate"><span class="pre">&quot;window&quot;</span></code></dt>
 <dd class="field-odd"><p>Size of the moving window for the “rolling” mode.
 If an integer, the fixed number of observations used for each window.
 If an offset, the time period of each window with data type <code class="xref py py-class docutils literal notranslate"><span class="pre">pandas.Timedelta</span></code>
 representing a fixed duration.</p>
 </dd>
-</dl>
-</li>
-<li><dl class="field-list simple">
-<dt class="field-odd"><code class="docutils literal notranslate"><span class="pre">&quot;min_periods&quot;</span></code></dt>
-<dd class="field-odd"><p>The minimum number of observations in the window required to have a value (otherwise
-NaN). Darts reuses pandas defaults of 1 for “rolling” and “expanding” modes and of 0 for “ewm” mode.</p>
+<dt class="field-even"><code class="docutils literal notranslate"><span class="pre">&quot;min_periods&quot;</span></code></dt>
+<dd class="field-even"><p>The minimum number of observations in the window required to have a value (otherwise
+NaN). Darts reuses pandas defaults of 1 for “rolling” and “expanding” modes and of 0
+for “ewm” mode.</p>
 </dd>
-</dl>
-</li>
-<li><dl class="field-list simple">
 <dt class="field-odd"><code class="docutils literal notranslate"><span class="pre">&quot;win_type&quot;</span></code></dt>
 <dd class="field-odd"><p>The type of weigthing to apply to the window elements.
 If provided, it should be one of <a class="reference external" href="https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows">scipy.signal.windows</a>.</p>
 </dd>
-</dl>
-</li>
-<li><dl class="field-list simple">
-<dt class="field-odd"><code class="docutils literal notranslate"><span class="pre">&quot;center&quot;</span></code></dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code>/<code class="docutils literal notranslate"><span class="pre">False</span></code> to set the observation at the current timestep at the center of the
+<dt class="field-even"><code class="docutils literal notranslate"><span class="pre">&quot;center&quot;</span></code></dt>
+<dd class="field-even"><p><code class="docutils literal notranslate"><span class="pre">True</span></code>/<code class="docutils literal notranslate"><span class="pre">False</span></code> to set the observation at the current timestep at the center of the
 window (when <code class="docutils literal notranslate"><span class="pre">forecasting_safe</span></code> is <cite>True</cite>, Darts enforces <code class="docutils literal notranslate"><span class="pre">&quot;center&quot;</span></code> to <code class="docutils literal notranslate"><span class="pre">False</span></code>).</p>
 </dd>
-</dl>
-</li>
-<li><dl class="field-list simple">
 <dt class="field-odd"><code class="docutils literal notranslate"><span class="pre">&quot;closed&quot;</span></code></dt>
 <dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">&quot;right&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">&quot;left&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">&quot;both&quot;</span></code>/<code class="docutils literal notranslate"><span class="pre">&quot;neither&quot;</span></code> to specify whether the right,
 left or both ends of the window are included in the window, or neither of them.
 Darts defaults to <code class="docutils literal notranslate"><span class="pre">&quot;both&quot;</span></code>.</p>
 </dd>
 </dl>
-</li>
-</ul>
 <p>More information on the available functions and their parameters can be found in the
 <a class="reference external" href="https://pandas.pydata.org/docs/reference/window.html">Pandas documentation</a>.</p>
 <p>For user-provided functions, extra keyword arguments in the transformation dictionary are passed to the
@@ -1045,6 +1034,21 @@ passed as input to a method, parallelising operations regarding different <code 
 </ul>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">WindowTransformer</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">transformer</span> <span class="o">=</span> <span class="n">WindowTransformer</span><span class="p">(</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">transforms</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;function&quot;</span><span class="p">:</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;rolling&quot;</span><span class="p">,</span> <span class="s2">&quot;window&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">series_transformed</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<span class="go">[[1. ]</span>
+<span class="go"> [1.5]</span>
+<span class="go"> [2.5]</span>
+<span class="go"> [3.5]]</span>
+</pre></div>
+</div>
 <p class="rubric">Attributes</p>
 <table class="autosummary longtable table autosummary">
 <colgroup>

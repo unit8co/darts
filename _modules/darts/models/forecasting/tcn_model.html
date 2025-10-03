@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -643,13 +646,13 @@
 <span class="sd">        &gt;&gt;&gt; )</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov)</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
-<span class="sd">        &gt;&gt;&gt; pred.values()</span>
-<span class="sd">        array([[-80.48476824],</span>
-<span class="sd">               [-80.47896667],</span>
-<span class="sd">               [-41.77135603],</span>
-<span class="sd">               [-41.76158729],</span>
-<span class="sd">               [-41.76854107],</span>
-<span class="sd">               [-41.78166819]])</span>
+<span class="sd">        &gt;&gt;&gt; print(pred.values())</span>
+<span class="sd">        [[-80.48476824]</span>
+<span class="sd">         [-80.47896667]</span>
+<span class="sd">         [-41.77135603]</span>
+<span class="sd">         [-41.76158729]</span>
+<span class="sd">         [-41.76854107]</span>
+<span class="sd">         [-41.78166819]]</span>
 
 <span class="sd">        .. note::</span>
 <span class="sd">            `DeepTCN example notebook &lt;https://unit8co.github.io/darts/examples/09-DeepTCN-examples.html&gt;`_ presents</span>

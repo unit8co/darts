@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
     
   <link rel="preload" as="script" href="_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="_static/underscore.js"></script>
     <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/clipboard.min.js"></script>
+    <script src="_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="_static/docs-favicon.ico"/>
@@ -289,6 +292,8 @@
         <li><a href="generated_api/darts.utils.torch.html#darts.utils.torch.MonteCarloDropout.add_module">(darts.utils.torch.MonteCarloDropout method)</a>
 </li>
       </ul></li>
+      <li><a href="generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException.add_note">add_note() (darts.datasets.dataset_loaders.DatasetLoadingException method)</a>
+</li>
       <li><a href="generated_api/darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.CRWindow.add_range">add_range() (darts.dataprocessing.dtw.window.CRWindow method)</a>
 
       <ul>
@@ -2391,6 +2396,8 @@
 </li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.data_array">data_array() (darts.timeseries.TimeSeries method)</a>
 </li>
+      <li><a href="generated_api/darts.utils.utils.html#darts.utils.utils.dataframe_col_to_time_index">dataframe_col_to_time_index() (in module darts.utils.utils)</a>
+</li>
       <li><a href="generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoader">DatasetLoader (class in darts.datasets.dataset_loaders)</a>
 </li>
       <li><a href="generated_api/darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV">DatasetLoaderCSV (class in darts.datasets.dataset_loaders)</a>
@@ -3113,12 +3120,6 @@
 </li>
       <li><a href="generated_api/darts.models.filtering.filtering_model.html#darts.models.filtering.filtering_model.FilteringModel">FilteringModel (class in darts.models.filtering.filtering_model)</a>
 </li>
-      <li><a href="generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel.first_prediction_index">first_prediction_index (darts.models.forecasting.block_rnn_model.BlockRNNModel property)</a>
-
-      <ul>
-        <li><a href="generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel.first_prediction_index">(darts.models.forecasting.rnn_model.RNNModel property)</a>
-</li>
-      </ul></li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.first_value">first_value() (darts.timeseries.TimeSeries method)</a>
 </li>
       <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.first_values">first_values() (darts.timeseries.TimeSeries method)</a>
@@ -4483,20 +4484,8 @@
 </li>
       <li><a href="generated_api/darts.datasets.html#darts.datasets.HeartRateDataset">HeartRateDataset (class in darts.datasets)</a>
 </li>
-      <li><a href="generated_api/darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer.hierarchy">hierarchy (darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer attribute)</a>, <a href="generated_api/darts.dataprocessing.transformers.base_data_transformer.html#id0">[1]</a>
-
-      <ul>
-        <li><a href="generated_api/darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer.hierarchy">(darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer attribute)</a>, <a href="generated_api/darts.dataprocessing.transformers.fittable_data_transformer.html#id0">[1]</a>
+      <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.hierarchy">hierarchy (darts.timeseries.TimeSeries property)</a>
 </li>
-        <li><a href="generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer.hierarchy">(darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer attribute)</a>, <a href="generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#id0">[1]</a>, <a href="generated_api/darts.dataprocessing.transformers.invertible_data_transformer.html#id1">[2]</a>
-</li>
-        <li><a href="generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.hierarchy">(darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator attribute)</a>, <a href="generated_api/darts.dataprocessing.transformers.reconciliation.html#id0">[1]</a>
-</li>
-        <li><a href="generated_api/darts.dataprocessing.transformers.reconciliation.html#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.hierarchy">(darts.dataprocessing.transformers.reconciliation.TopDownReconciliator attribute)</a>, <a href="generated_api/darts.dataprocessing.transformers.reconciliation.html#id8">[1]</a>
-</li>
-        <li><a href="generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.hierarchy">(darts.timeseries.TimeSeries property)</a>
-</li>
-      </ul></li>
       <li><a href="generated_api/darts.ad.detectors.iqr_detector.html#darts.ad.detectors.iqr_detector.IQRDetector.high_threshold">high_threshold (darts.ad.detectors.iqr_detector.IQRDetector property)</a>
 
       <ul>
@@ -10128,34 +10117,6 @@
         <li><a href="generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel.supports_transferable_series_prediction">(darts.models.forecasting.xgboost.XGBModel property)</a>
 </li>
       </ul></li>
-      <li><a href="generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostClassifierModel.supports_val_set">supports_val_set (darts.models.forecasting.catboost_model.CatBoostClassifierModel property)</a>
-
-      <ul>
-        <li><a href="generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel.supports_val_set">(darts.models.forecasting.catboost_model.CatBoostModel property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMClassifierModel.supports_val_set">(darts.models.forecasting.lgbm.LightGBMClassifierModel property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel.supports_val_set">(darts.models.forecasting.lgbm.LightGBMModel property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.supports_val_set">(darts.models.forecasting.linear_regression_model.LinearRegressionModel property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest.supports_val_set">(darts.models.forecasting.random_forest.RandomForest property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel.supports_val_set">(darts.models.forecasting.random_forest.RandomForestModel property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.RegressionModel.supports_val_set">(darts.models.forecasting.sklearn_model.RegressionModel property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnClassifierModel.supports_val_set">(darts.models.forecasting.sklearn_model.SKLearnClassifierModel property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel.supports_val_set">(darts.models.forecasting.sklearn_model.SKLearnModel property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModelWithCategoricalFeatures.supports_val_set">(darts.models.forecasting.sklearn_model.SKLearnModelWithCategoricalFeatures property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBClassifierModel.supports_val_set">(darts.models.forecasting.xgboost.XGBClassifierModel property)</a>
-</li>
-        <li><a href="generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel.supports_val_set">(darts.models.forecasting.xgboost.XGBModel property)</a>
-</li>
-      </ul></li>
       <li><a href="generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes">swapaxes() (darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix method)</a>
 </li>
       <li><a href="generated_api/darts.models.components.glu_variants.html#darts.models.components.glu_variants.SwiGLU">SwiGLU (class in darts.models.components.glu_variants)</a>
@@ -10454,8 +10415,6 @@
 </li>
       <li><a href="generated_api/darts.utils.data.torch_datasets.training_dataset.html#darts.utils.data.torch_datasets.training_dataset.TorchTrainingDataset">TorchTrainingDataset (class in darts.utils.data.torch_datasets.training_dataset)</a>
 </li>
-      <li><a href="generated_api/darts.dataprocessing.dtw.cost_matrix.html#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring">tostring() (darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix method)</a>
-</li>
       <li><a href="generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.total_predict_batches_current_dataloader">total_predict_batches_current_dataloader (darts.utils.callbacks.TFMProgressBar property)</a>
 </li>
       <li><a href="generated_api/darts.utils.callbacks.html#darts.utils.callbacks.TFMProgressBar.total_test_batches_current_dataloader">total_test_batches_current_dataloader (darts.utils.callbacks.TFMProgressBar property)</a>
@@ -10470,10 +10429,10 @@
 </li>
       <li><a href="generated_api/darts.models.forecasting.tsmixer_model.html#darts.models.forecasting.tsmixer_model.TimeBatchNorm2d.track_running_stats">track_running_stats (darts.models.forecasting.tsmixer_model.TimeBatchNorm2d attribute)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated_api/darts.datasets.html#darts.datasets.TrafficDataset">TrafficDataset (class in darts.datasets)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="generated_api/darts.models.components.feed_forward.html#darts.models.components.feed_forward.FeedForward.train">train() (darts.models.components.feed_forward.FeedForward method)</a>
 
       <ul>

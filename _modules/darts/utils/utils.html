@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../_static/underscore.js"></script>
     <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
@@ -178,15 +181,18 @@
 <span class="sd">-------------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">wraps</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">inspect</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parameter</span><span class="p">,</span> <span class="n">getcallargs</span><span class="p">,</span> <span class="n">signature</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Union</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">narwhals</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nw</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">joblib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Parallel</span><span class="p">,</span> <span class="n">delayed</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">narwhals</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFrame</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pandas._libs.tslibs.offsets</span><span class="w"> </span><span class="kn">import</span> <span class="n">BusinessMixin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_random_state</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">tqdm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tqdm</span>
@@ -904,6 +910,71 @@
 <div class="viewcode-block" id="ModelType"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.ModelType">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">ModelType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
     <span class="n">FORECASTING_REGRESSOR</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">FORECASTING_CLASSIFIER</span> <span class="o">=</span> <span class="mi">1</span></div>
+
+
+<div class="viewcode-block" id="dataframe_col_to_time_index"><a class="viewcode-back" href="../../../generated_api/darts.utils.utils.html#darts.utils.utils.dataframe_col_to_time_index">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">dataframe_col_to_time_index</span><span class="p">(</span>
+    <span class="n">df</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span>
+    <span class="n">time_col</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a dataframe column to a pandas Index or DatetimeIndex.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df</span>
+<span class="sd">        The dataframe containing the time column.</span>
+<span class="sd">    time_col</span>
+<span class="sd">        The name of the time column.</span>
+<span class="sd">    skip_uniqueness_check</span>
+<span class="sd">        Whether to skip uniqueness checks in case of an integer index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">time_col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span><span class="ne">AttributeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;time_col=&#39;</span><span class="si">{</span><span class="n">time_col</span><span class="si">}</span><span class="s2">&#39; is not present.&quot;</span><span class="p">))</span>
+
+    <span class="n">time_col_vals</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">get_column</span><span class="p">(</span><span class="n">time_col</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">time_col_vals</span><span class="o">.</span><span class="n">dtype</span> <span class="o">==</span> <span class="n">nw</span><span class="o">.</span><span class="n">String</span><span class="p">:</span>
+        <span class="c1"># Try to convert to integers if needed</span>
+        <span class="k">with</span> <span class="n">contextlib</span><span class="o">.</span><span class="n">suppress</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+            <span class="n">time_col_vals</span> <span class="o">=</span> <span class="n">time_col_vals</span><span class="o">.</span><span class="n">cast</span><span class="p">(</span><span class="n">nw</span><span class="o">.</span><span class="n">Int64</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">time_col_vals</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">is_integer</span><span class="p">():</span>
+        <span class="c1"># Temporarily use an integer `pd.Index` to sort the values; later replaced with</span>
+        <span class="c1"># a `pd.RangeIndex` in `__init__()`</span>
+        <span class="n">time_index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Index</span><span class="p">(</span><span class="n">time_col_vals</span><span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_col_vals</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">nw</span><span class="o">.</span><span class="n">String</span><span class="p">):</span>
+        <span class="c1"># The integer conversion failed; try datetimes</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">time_index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">time_col_vals</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">AttributeError</span><span class="p">(</span>
+                    <span class="s2">&quot;&#39;time_col&#39; is of &#39;String&#39; dtype but doesn&#39;t contain valid timestamps&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">time_col_vals</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">nw</span><span class="o">.</span><span class="n">Datetime</span><span class="p">):</span>
+        <span class="c1"># force time index to be timezone naive, as polars converts to UTC</span>
+        <span class="n">time_zone</span> <span class="o">=</span> <span class="n">time_col_vals</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">time_zone</span>
+        <span class="k">if</span> <span class="n">time_zone</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                <span class="s2">&quot;The provided DatetimeIndex was associated with a timezone (tz), which is currently not &quot;</span>
+                <span class="s2">&quot;supported. To avoid unexpected behaviour, the tz information was removed. Consider calling &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;`ts.time_index.tz_localize(</span><span class="si">{</span><span class="n">time_zone</span><span class="si">}</span><span class="s2">)` when exporting the results.&quot;</span>
+                <span class="s2">&quot;To plot the series with the right time steps, consider setting the matplotlib.pyplot &quot;</span>
+                <span class="s2">&quot;`rcParams[&#39;timezone&#39;]` parameter to automatically convert the time axis back to the &quot;</span>
+                <span class="s2">&quot;original timezone.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">time_col_vals</span> <span class="o">=</span> <span class="n">time_col_vals</span><span class="o">.</span><span class="n">dt</span><span class="o">.</span><span class="n">replace_time_zone</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">time_index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">time_col_vals</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span>
+            <span class="ne">AttributeError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid type of `time_col`: it needs to be of either &#39;String&#39;, &#39;Datetime&#39; or &#39;Int&#39; dtype.&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
+        <span class="n">time_index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">time_col</span>
+    <span class="k">return</span> <span class="n">time_index</span></div>
 </pre></div>
 
               </div>

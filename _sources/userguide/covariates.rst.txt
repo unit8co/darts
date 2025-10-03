@@ -249,8 +249,8 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - 
    * - `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ (f)
      - ✅
-     - 
-     - 
+     - ✅
+     - ✅
    * - `NBEATSModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel>`_
      - ✅
      - 

@@ -26,6 +26,7 @@
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -34,6 +35,8 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
@@ -1164,11 +1167,11 @@ object.</p></li>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.diff" title="darts.timeseries.TimeSeries.diff"><code class="xref py py-obj docutils literal notranslate"><span class="pre">diff</span></code></a>([n, periods, dropna])</p></td>
 <td><p>Return a new series with differenced values.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.drop_after" title="darts.timeseries.TimeSeries.drop_after"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_after</span></code></a>(split_point)</p></td>
-<td><p>Return a new series where everything after and including the provided time <cite>split_point</cite> was dropped.</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.drop_after" title="darts.timeseries.TimeSeries.drop_after"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_after</span></code></a>(split_point[, keep_point])</p></td>
+<td><p>Return a new series where everything after (and in-/excluding) the provided time <cite>split_point</cite> was dropped.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.drop_before" title="darts.timeseries.TimeSeries.drop_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_before</span></code></a>(split_point)</p></td>
-<td><p>Return a new series where everything before and including the provided time <cite>split_point</cite> was dropped.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.drop_before" title="darts.timeseries.TimeSeries.drop_before"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_before</span></code></a>(split_point[, keep_point])</p></td>
+<td><p>Return a new series where everything before (and in-/excluding) the provided time <cite>split_point</cite> was dropped.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.timeseries.TimeSeries.drop_columns" title="darts.timeseries.TimeSeries.drop_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">drop_columns</span></code></a>(col_names)</p></td>
 <td><p>Return a new series with dropped components (columns).</p></td>
@@ -1422,8 +1425,8 @@ Alternative to one_hot encoding, enable only one of the two.
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>country_code</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The country ISO code</p></li>
-<li><p><strong>prov</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The province</p></li>
-<li><p><strong>state</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The state</p></li>
+<li><p><strong>prov</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The province</p></li>
+<li><p><strong>state</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The state</p></li>
 <li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
@@ -1535,7 +1538,7 @@ Leave it to True unless you know what you are doing.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.bottom_level_series">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bottom_level_series</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">typing_extensions.Self</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.bottom_level_series" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bottom_level_series</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">Self</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.timeseries.TimeSeries.bottom_level_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>The series containing the bottom-level components of this series in the same order as they appear in the
 series, or <cite>None</cite> if the series has no hierarchy.</p>
 <dl class="field-list simple">
@@ -1680,12 +1683,15 @@ first <cite>periods</cite> time steps will be filled with NaNs.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.drop_after">
-<span class="sig-name descname"><span class="pre">drop_after</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_point</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.drop_after"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.drop_after" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a new series where everything after and including the provided time <cite>split_point</cite> was dropped.</p>
+<span class="sig-name descname"><span class="pre">drop_after</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_point</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.drop_after"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.drop_after" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new series where everything after (and in-/excluding) the provided time <cite>split_point</cite> was dropped.</p>
 <p>The timestamp may not be in the series. If it is, the timestamp will be dropped.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>split_point</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The timestamp that indicates cut-off time.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split_point</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The timestamp that indicates cut-off time.</p></li>
+<li><p><strong>keep_point</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the provided <cite>split_point</cite> should be included in the returned series (if it exists in the series).</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A series that contains all entries until <cite>split_point</cite> (exclusive).</p>
@@ -1698,12 +1704,15 @@ first <cite>periods</cite> time steps will be filled with NaNs.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.drop_before">
-<span class="sig-name descname"><span class="pre">drop_before</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_point</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.drop_before"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.drop_before" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return a new series where everything before and including the provided time <cite>split_point</cite> was dropped.</p>
+<span class="sig-name descname"><span class="pre">drop_before</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">split_point</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_point</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.drop_before"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.drop_before" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new series where everything before (and in-/excluding) the provided time <cite>split_point</cite> was dropped.</p>
 <p>The timestamp may not be in the series. If it is, the timestamp will be dropped.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>split_point</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The timestamp that indicates cut-off time.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>split_point</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The timestamp that indicates cut-off time.</p></li>
+<li><p><strong>keep_point</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the provided <cite>split_point</cite> should be included in the returned series (if it exists in the series).</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A series that contains all entries starting after <cite>split_point</cite> (exclusive).</p>
@@ -1894,7 +1903,7 @@ represent the values for this time series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>df</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ForwardRef</span></code>]) – The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
+<li><p><strong>df</strong> (<em>NativeDataFrame</em>) – The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
 polars.DataFrame, …). See the <a class="reference external" href="https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native">narwhals documentation</a> for more
 information.</p></li>
 <li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
@@ -1993,7 +2002,10 @@ groups.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>df</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">DataFrame</span></code>) – The DataFrame</p></li>
+<li><p><strong>df</strong> (<em>NativeDataFrame</em>) – <p>The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
+polars.DataFrame, …). See the <a class="reference external" href="https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native">narwhals documentation</a> for more
+information.</p>
+</p></li>
 <li><p><strong>group_cols</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – A string or list of strings representing the columns from the DataFrame by which to extract the
 individual TimeSeries groups.</p></li>
 <li><p><strong>time_col</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
@@ -3544,10 +3556,10 @@ series is returned.</p>
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.to_csv">
 <span class="sig-name descname"><span class="pre">to_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.to_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.to_csv" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write the deterministic series to a CSV file.</p>
-<p>For a list of parameters, refer to the documentation of <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.DataFrame.to_csv()</span></code> <a class="reference internal" href="#r27685d4f6729-1" id="id15">[1]</a>.</p>
+<p>For a list of parameters, refer to the documentation of <code class="xref py py-func docutils literal notranslate"><span class="pre">pandas.DataFrame.to_csv()</span></code> <a class="reference internal" href="#r27685d4f6729-1" id="id16">[1]</a>.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r27685d4f6729-1"><span class="brackets"><a class="fn-backref" href="#id15">1</a></span></dt>
+<dt class="label" id="r27685d4f6729-1"><span class="brackets"><a class="fn-backref" href="#id16">1</a></span></dt>
 <dd><p><a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv</a></p>
 </dd>
 </dl>

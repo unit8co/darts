@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -190,7 +193,9 @@
     <span class="n">PLForecastingModule</span><span class="p">,</span>
     <span class="n">io_processor</span><span class="p">,</span>
 <span class="p">)</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts.models.forecasting.torch_forecasting_model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MixedCovariatesTorchModel</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.data.torch_datasets.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">PLModuleInput</span><span class="p">,</span> <span class="n">TorchTrainingSample</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
@@ -201,6 +206,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">future_cov_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">target_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -229,6 +235,8 @@
 <span class="sd">            The dimensionality of the input time series.</span>
 <span class="sd">        hidden_dim</span>
 <span class="sd">            The number of features in the hidden state `h` of the RNN module.</span>
+<span class="sd">        future_cov_dim</span>
+<span class="sd">            Number of future covariates.</span>
 <span class="sd">        num_layers</span>
 <span class="sd">            The number of recurrent layers.</span>
 <span class="sd">        target_size</span>
@@ -251,13 +259,13 @@
         <span class="c1"># Defining parameters</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span> <span class="o">=</span> <span class="n">input_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">=</span> <span class="n">hidden_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">=</span> <span class="n">future_cov_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">=</span> <span class="n">target_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_layers_out_fc</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">num_layers_out_fc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">num_layers_out_fc</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">out_len</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
 
 <div class="viewcode-block" id="CustomBlockRNNModule.forward"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.CustomBlockRNNModule.forward">[docs]</a>    <span class="nd">@io_processor</span>
     <span class="nd">@abstractmethod</span>
@@ -335,12 +343,25 @@
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="c1"># Fully connected layer to map the output for each timestep in the input sequence (out) to the output chunk</span>
+        <span class="c1"># length</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">up_sampler</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">up_sampler</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_cov_dim</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
+
         <span class="c1"># The RNN module is followed by a fully connected layer, which maps the last hidden layer</span>
         <span class="c1"># to the output of desired length</span>
-        <span class="n">last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span>
         <span class="n">feats</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">feature</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">num_layers_out_fc</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">out_len</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_layers_out_fc</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span><span class="p">]</span>
         <span class="p">):</span>
             <span class="n">feats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">feature</span><span class="p">))</span>
 
@@ -353,27 +374,65 @@
 
     <span class="nd">@io_processor</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">PLModuleInput</span><span class="p">):</span>
-        <span class="n">x</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x_in</span>
-        <span class="c1"># data is of size (batch_size, input_chunk_length, input_size)</span>
-        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="c1"># B: batch size</span>
+        <span class="c1"># L: input chunk length</span>
+        <span class="c1"># T: output chunk length</span>
+        <span class="c1"># C: target components</span>
+        <span class="c1"># P: past cov features</span>
+        <span class="c1"># F: future cov features</span>
+        <span class="c1"># S: static cov features</span>
+        <span class="c1"># H = C + P + F: historic features</span>
+        <span class="c1"># H_D: hidden dim</span>
+        <span class="c1"># N_P: likelihood parameters</span>
 
-        <span class="n">out</span><span class="p">,</span> <span class="n">hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="c1"># `x_past`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1 = C1, S)</span>
+        <span class="n">x_past</span><span class="p">,</span> <span class="n">x_future</span><span class="p">,</span> <span class="n">x_static</span> <span class="o">=</span> <span class="n">x_in</span>
 
-<span class="w">        </span><span class="sd">&quot;&quot;&quot; Here, we apply the FC network only on the last output point (at the last time step)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;LSTM&quot;</span><span class="p">:</span>
-            <span class="n">hidden</span> <span class="o">=</span> <span class="n">hidden</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">predictions</span> <span class="o">=</span> <span class="n">hidden</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
-        <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x_past</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># concatenate static covariates if given</span>
+        <span class="k">if</span> <span class="n">x_static</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># -&gt; (B, 1, C1 * S)</span>
+            <span class="n">x_static</span> <span class="o">=</span> <span class="n">x_static</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># -&gt; (B, L, C1 * S)</span>
+            <span class="n">x_static</span> <span class="o">=</span> <span class="n">x_static</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># -&gt; (B, L, H + C1 * S)</span>
+            <span class="n">x_past</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">x_past</span><span class="p">,</span> <span class="n">x_static</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># -&gt; (B, L, H_D)</span>
+        <span class="n">out</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn</span><span class="p">(</span><span class="n">x_past</span><span class="p">)</span>
+
+        <span class="c1"># use the RNN output of length `T` as input for the FC</span>
+        <span class="c1"># -&gt; (B, T, H_D)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:</span>
+            <span class="c1"># up-sample to `T` if history is too short</span>
+            <span class="c1"># -&gt; (B, H_D, L)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="c1"># -&gt; (B, H_D, T)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">up_sampler</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+            <span class="c1"># -&gt; (B, T, H_D)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="o">.</span><span class="n">permute</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># otherwise, take `T` last predictions</span>
+            <span class="c1"># -&gt; (B, T, H_D)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="p">:,</span> <span class="p">:]</span>
+
+        <span class="c1"># concatenate future covariates if given</span>
+        <span class="k">if</span> <span class="n">x_future</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># -&gt; (B, T, H_D + F)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">out</span><span class="p">,</span> <span class="n">x_future</span><span class="p">],</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># predict using the FC</span>
+        <span class="c1"># -&gt; (B, T, C * N_P)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+        <span class="c1"># -&gt; (B, T, C, N_P)</span>
         <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictions</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
-            <span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
+            <span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
         <span class="p">)</span>
-
-        <span class="c1"># predictions is of size (batch_size, output_chunk_length, 1)</span>
         <span class="k">return</span> <span class="n">predictions</span>
 
 
-<div class="viewcode-block" id="BlockRNNModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">BlockRNNModel</span><span class="p">(</span><span class="n">PastCovariatesTorchModel</span><span class="p">):</span>
+<div class="viewcode-block" id="BlockRNNModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">BlockRNNModel</span><span class="p">(</span><span class="n">MixedCovariatesTorchModel</span><span class="p">):</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -385,6 +444,7 @@
         <span class="n">hidden_fc_sizes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
         <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ReLU&quot;</span><span class="p">,</span>
+        <span class="n">use_static_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Block Recurrent Neural Network Model (RNNs).</span>
@@ -436,6 +496,10 @@
 <span class="sd">        activation</span>
 <span class="sd">            The name of a torch.nn activation function to be applied between the layers of the fully connected network.</span>
 <span class="sd">            Default: &quot;ReLU&quot;.</span>
+<span class="sd">        use_static_covariates</span>
+<span class="sd">            Whether the model should use static covariate information in case the input `series` passed to ``fit()``</span>
+<span class="sd">            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce</span>
+<span class="sd">            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
 <span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
@@ -591,13 +655,13 @@
 <span class="sd">        &gt;&gt;&gt; )</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(target, past_covariates=past_cov)</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
-<span class="sd">        &gt;&gt;&gt; pred.values()</span>
-<span class="sd">        array([[4.97979827],</span>
-<span class="sd">               [3.9707572 ],</span>
-<span class="sd">               [5.27869295],</span>
-<span class="sd">               [5.19697244],</span>
-<span class="sd">               [5.28424783],</span>
-<span class="sd">               [5.22497681]])</span>
+<span class="sd">        &gt;&gt;&gt; print(pred.values())</span>
+<span class="sd">        [[4.97979827]</span>
+<span class="sd">         [3.9707572 ]</span>
+<span class="sd">         [5.27869295]</span>
+<span class="sd">         [5.19697244]</span>
+<span class="sd">         [5.28424783]</span>
+<span class="sd">         [5.22497681]]</span>
 
 <span class="sd">        .. note::</span>
 <span class="sd">            `RNN example notebook &lt;https://unit8co.github.io/darts/examples/04-RNN-examples.html&gt;`_ presents techniques</span>
@@ -628,17 +692,29 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_considers_static_covariates</span> <span class="o">=</span> <span class="n">use_static_covariates</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">TorchTrainingSample</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
         <span class="c1"># samples are made of (past target, past cov, historic future cov, future cov, static cov, future_target)</span>
-        <span class="p">(</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="n">train_sample</span>
-        <span class="n">input_dim</span> <span class="o">=</span> <span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span>
-            <span class="n">past_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="p">(</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">train_sample</span>
+        <span class="p">)</span>
+        <span class="n">past_cov_dim</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">future_cov_dim</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">future_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="p">)</span>
+        <span class="n">static_cov_dim</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">static_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">static_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="mi">0</span>
+        <span class="p">)</span>
+        <span class="n">input_dim</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">past_cov_dim</span> <span class="o">+</span> <span class="n">future_cov_dim</span> <span class="o">+</span> <span class="n">static_cov_dim</span>
         <span class="p">)</span>
         <span class="n">output_dim</span> <span class="o">=</span> <span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">nr_params</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
 
         <span class="n">hidden_fc_sizes</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span>
-
         <span class="n">kwargs</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="n">model_cls</span> <span class="o">=</span> <span class="n">_BlockRNNModule</span>
@@ -650,6 +726,7 @@
             <span class="n">target_size</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
             <span class="n">nr_params</span><span class="o">=</span><span class="n">nr_params</span><span class="p">,</span>
             <span class="n">hidden_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span><span class="p">,</span>
+            <span class="n">future_cov_dim</span><span class="o">=</span><span class="n">future_cov_dim</span><span class="p">,</span>
             <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span><span class="p">,</span>
             <span class="n">num_layers_out_fc</span><span class="o">=</span><span class="n">hidden_fc_sizes</span><span class="p">,</span>
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
@@ -664,7 +741,11 @@
         <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">new_params</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">param</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tfm_save</span><span class="o">.</span><span class="n">model_params</span><span class="p">:</span>
                 <span class="n">tfm_save</span><span class="o">.</span><span class="n">model_params</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;ReLU&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_check_ckpt_parameters</span><span class="p">(</span><span class="n">tfm_save</span><span class="p">)</span></div>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_check_ckpt_parameters</span><span class="p">(</span><span class="n">tfm_save</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports_static_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
 </pre></div>
 
               </div>

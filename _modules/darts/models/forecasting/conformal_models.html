@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -216,6 +219,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">_build_tqdm_iterator</span><span class="p">,</span> <span class="n">_with_sanity_checks</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.historical_forecasts.utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_adjust_historical_forecasts_time_index</span><span class="p">,</span>
+    <span class="n">_slice_intersect_series</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">_build_forecast_series</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.ts_utils</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -370,6 +374,7 @@
         <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ConformalModel&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Fit/train the underlying forecasting model on (potentially multiple) series.</span>
@@ -399,6 +404,8 @@
 <span class="sd">            be used by some models as an input. The covariate(s) may or may not be multivariate, but if multiple</span>
 <span class="sd">            covariates are provided they must have the same number of components. If `future_covariates` is provided,</span>
 <span class="sd">            it must contain the same number of series as `series`.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Optionally, set the fit verbosity. Not effective for all models.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optional keyword arguments that will passed to the underlying forecasting model&#39;s `fit()` method.</span>
 
@@ -412,6 +419,7 @@
             <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
             <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
             <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span></div>
@@ -423,7 +431,7 @@
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">predict_likelihood_parameters</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -478,7 +486,7 @@
 <span class="sd">            interpolation in-between the quantiles. For larger values, the sample distribution approximates the</span>
 <span class="sd">            calibrated quantile predictions.</span>
 <span class="sd">        verbose</span>
-<span class="sd">            Whether to print the progress.</span>
+<span class="sd">            Optionally, set the prediction verbosity. Not effective for all models.</span>
 <span class="sd">        predict_likelihood_parameters</span>
 <span class="sd">            If set to `True`, generates the quantile predictions directly. Only supported with `num_samples = 1`.</span>
 <span class="sd">        show_warnings</span>
@@ -576,10 +584,12 @@
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">train_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">val_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">start_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span>
         <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">retrain</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">apply_globally</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">overlap_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -640,6 +650,8 @@
 <span class="sd">            calibrated quantile predictions.</span>
 <span class="sd">        train_length</span>
 <span class="sd">            Currently ignored by conformal models.</span>
+<span class="sd">        val_length</span>
+<span class="sd">            Currently ignored by conformal models.</span>
 <span class="sd">        start</span>
 <span class="sd">            Optionally, the first point in time at which a prediction is computed. This parameter supports:</span>
 <span class="sd">            ``int``, ``pandas.Timestamp``, and ``None``.</span>
@@ -671,6 +683,12 @@
 <span class="sd">            (set at model creation) and `&gt;=cal_stride`.</span>
 <span class="sd">        retrain</span>
 <span class="sd">            Currently ignored by conformal models.</span>
+<span class="sd">        apply_globally</span>
+<span class="sd">            Whether to apply historical forecasts globally on the time intersection all series, or independently on</span>
+<span class="sd">            each series. This includes global model- and data transformer fitting. Only really effective for global</span>
+<span class="sd">            forecasting models, but can also be used with local models to generate forecasts on the same time frame. If</span>
+<span class="sd">            `True`, considers only the time intersection of all series for historical forecasting. If `False`,</span>
+<span class="sd">            considers the entire extent of each individual series for historical forecasting.</span>
 <span class="sd">        overlap_end</span>
 <span class="sd">            Whether the returned forecasts can go beyond the series&#39; end or not.</span>
 <span class="sd">        last_points_only</span>
@@ -730,6 +748,15 @@
         <span class="n">past_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">past_covariates</span><span class="p">)</span>
         <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">series2seq</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">)</span>
 
+        <span class="k">if</span> <span class="n">apply_globally</span><span class="p">:</span>
+            <span class="c1"># for global hfc, we have to slice intersect already here to compute the correct start points</span>
+            <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_slice_intersect_series</span><span class="p">(</span>
+                <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="c1"># generate only the required forecasts (if `start` is given, we have to start earlier to satisfy the</span>
         <span class="c1"># calibration set requirements)</span>
         <span class="n">cal_start</span><span class="p">,</span> <span class="n">cal_start_format</span> <span class="o">=</span> <span class="n">_get_calibration_hfc_start</span><span class="p">(</span>
@@ -751,6 +778,7 @@
             <span class="n">start_format</span><span class="o">=</span><span class="n">cal_start_format</span><span class="p">,</span>
             <span class="n">stride</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">cal_stride</span><span class="p">,</span>
             <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">apply_globally</span><span class="o">=</span><span class="n">apply_globally</span><span class="p">,</span>
             <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
             <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
             <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
@@ -794,10 +822,12 @@
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">train_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">val_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">start_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span>
         <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">retrain</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">apply_globally</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">overlap_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">METRIC_TYPE</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">METRIC_TYPE</span><span class="p">]]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mape</span><span class="p">,</span>
@@ -866,6 +896,8 @@
 <span class="sd">            calibrated quantile predictions.</span>
 <span class="sd">        train_length</span>
 <span class="sd">            Currently ignored by conformal models.</span>
+<span class="sd">        val_length</span>
+<span class="sd">            Currently ignored by conformal models.</span>
 <span class="sd">        start</span>
 <span class="sd">            Optionally, the first point in time at which a prediction is computed. This parameter supports:</span>
 <span class="sd">            ``int``, ``pandas.Timestamp``, and ``None``.</span>
@@ -896,6 +928,12 @@
 <span class="sd">            The number of time steps between two consecutive predictions.</span>
 <span class="sd">        retrain</span>
 <span class="sd">            Currently ignored by conformal models.</span>
+<span class="sd">        apply_globally</span>
+<span class="sd">            Whether to apply historical forecasts globally on the time intersection all series, or independently on</span>
+<span class="sd">            each series. This includes global model- and data transformer fitting. Only really effective for global</span>
+<span class="sd">            forecasting models, but can also be used with local models to generate forecasts on the same time frame. If</span>
+<span class="sd">            `True`, considers only the time intersection of all series for historical forecasting. If `False`,</span>
+<span class="sd">            considers the entire extent of each individual series for historical forecasting.</span>
 <span class="sd">        overlap_end</span>
 <span class="sd">            Whether the returned forecasts can go beyond the series&#39; end or not.</span>
 <span class="sd">        last_points_only</span>
@@ -981,10 +1019,12 @@
             <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
             <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
             <span class="n">train_length</span><span class="o">=</span><span class="n">train_length</span><span class="p">,</span>
+            <span class="n">val_length</span><span class="o">=</span><span class="n">val_length</span><span class="p">,</span>
             <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
             <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
             <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
             <span class="n">retrain</span><span class="o">=</span><span class="n">retrain</span><span class="p">,</span>
+            <span class="n">apply_globally</span><span class="o">=</span><span class="n">apply_globally</span><span class="p">,</span>
             <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
             <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
             <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
@@ -1012,10 +1052,12 @@
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">train_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">val_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">start_format</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;position&quot;</span><span class="p">,</span> <span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;value&quot;</span><span class="p">,</span>
         <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">retrain</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">apply_globally</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">overlap_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
         <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="n">metric</span><span class="p">:</span> <span class="n">METRIC_TYPE</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">err</span><span class="p">,</span>
@@ -1094,6 +1136,8 @@
 <span class="sd">            calibrated quantile predictions.</span>
 <span class="sd">        train_length</span>
 <span class="sd">            Currently ignored by conformal models.</span>
+<span class="sd">        val_length</span>
+<span class="sd">            Currently ignored by conformal models.</span>
 <span class="sd">        start</span>
 <span class="sd">            Optionally, the first point in time at which a prediction is computed. This parameter supports:</span>
 <span class="sd">            ``int``, ``pandas.Timestamp``, and ``None``.</span>
@@ -1124,6 +1168,12 @@
 <span class="sd">            The number of time steps between two consecutive predictions.</span>
 <span class="sd">        retrain</span>
 <span class="sd">            Currently ignored by conformal models.</span>
+<span class="sd">        apply_globally</span>
+<span class="sd">            Whether to apply historical forecasts globally on the time intersection all series, or independently on</span>
+<span class="sd">            each series. This includes global model- and data transformer fitting. Only really effective for global</span>
+<span class="sd">            forecasting models, but can also be used with local models to generate forecasts on the same time frame. If</span>
+<span class="sd">            `True`, considers only the time intersection of all series for historical forecasting. If `False`,</span>
+<span class="sd">            considers the entire extent of each individual series for historical forecasting.</span>
 <span class="sd">        overlap_end</span>
 <span class="sd">            Whether the returned forecasts can go beyond the series&#39; end or not.</span>
 <span class="sd">        last_points_only</span>
@@ -1195,10 +1245,12 @@
             <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
             <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
             <span class="n">train_length</span><span class="o">=</span><span class="n">train_length</span><span class="p">,</span>
+            <span class="n">val_length</span><span class="o">=</span><span class="n">val_length</span><span class="p">,</span>
             <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
             <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
             <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
             <span class="n">retrain</span><span class="o">=</span><span class="n">retrain</span><span class="p">,</span>
+            <span class="n">apply_globally</span><span class="o">=</span><span class="n">apply_globally</span><span class="p">,</span>
             <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
             <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
             <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
@@ -1656,17 +1708,16 @@
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="nb">int</span><span class="p">,</span>
-        <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
     <span class="p">]:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;not supported by `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">extreme_lags</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;not supported by `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_target_window_lengths</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">_target_window_lengths</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">min_train_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;not supported by `</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal_length</span> <span class="ow">or</span> <span class="mi">1</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">supports_multivariate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>

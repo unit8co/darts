@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -214,29 +217,29 @@
 
 <span class="sd">            The dictionaries can contain the following keys:</span>
 
-<span class="sd">            :``&quot;function&quot;``: Mandatory. The name of one of the pandas builtin transformation functions,</span>
-<span class="sd">                            or a callable function that can be applied to the input series.</span>
-<span class="sd">                            Pandas&#39; functions can be found in the</span>
-<span class="sd">                            `documentation &lt;https://pandas.pydata.org/docs/reference/window.html&gt;`_.</span>
+<span class="sd">            :``&quot;function&quot;``:        Mandatory. The name of one of the pandas builtin transformation functions,</span>
+<span class="sd">                                    or a callable function that can be applied to the input series.</span>
+<span class="sd">                                    Pandas&#39; functions can be found in the</span>
+<span class="sd">                                    `documentation &lt;https://pandas.pydata.org/docs/reference/window.html&gt;`_.</span>
 
-<span class="sd">            :``&quot;mode&quot;``: Optional. The name of the pandas windowing mode on which the ``&quot;function&quot;`` is going to be</span>
-<span class="sd">                        applied. The options are &quot;rolling&quot;, &quot;expanding&quot; and &quot;ewm&quot;.</span>
-<span class="sd">                        If not provided, Darts defaults to &quot;expanding&quot;.</span>
-<span class="sd">                        User defined functions can use either &quot;rolling&quot; or &quot;expanding&quot; modes.</span>
-<span class="sd">                        More information on pandas windowing operations can be found in the `documentation</span>
-<span class="sd">                        &lt;https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html&gt;`_.</span>
+<span class="sd">            :``&quot;mode&quot;``:            Optional. The name of the pandas windowing mode on which the ``&quot;function&quot;`` is</span>
+<span class="sd">                                    going to be applied. The options are &quot;rolling&quot;, &quot;expanding&quot; and &quot;ewm&quot;.</span>
+<span class="sd">                                    If not provided, Darts defaults to &quot;expanding&quot;.</span>
+<span class="sd">                                    User defined functions can use either &quot;rolling&quot; or &quot;expanding&quot; modes.</span>
+<span class="sd">                                    More information on pandas windowing operations can be found in the `documentation</span>
+<span class="sd">                                    &lt;https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html&gt;`_.</span>
 
-<span class="sd">            :``&quot;components&quot;``: Optional. A string or list of strings specifying the TimeSeries components on which the</span>
-<span class="sd">                               transformation should be applied. If not specified, the transformation will be</span>
-<span class="sd">                               applied on all components.</span>
+<span class="sd">            :``&quot;components&quot;``:      Optional. A string or list of strings specifying the TimeSeries components on which</span>
+<span class="sd">                                    the transformation should be applied. If not specified, the transformation will be</span>
+<span class="sd">                                    applied on all components.</span>
 
-<span class="sd">            :``&quot;function_name&quot;``: Optional. A string specifying the function name referenced as part of</span>
-<span class="sd">                                  the transformation output name. For example, given a user-provided function</span>
-<span class="sd">                                  transformation on rolling window size of 5 on the component &quot;comp&quot;, the</span>
-<span class="sd">                                  default transformation output name is &quot;rolling_udf_5_comp&quot; whereby &quot;udf&quot;</span>
-<span class="sd">                                  refers to &quot;user defined function&quot;. If specified, the ``&quot;function_name&quot;`` will</span>
-<span class="sd">                                  replace the default name &quot;udf&quot;. Similarly, the ``&quot;function_name&quot;`` will replace</span>
-<span class="sd">                                  the name of the pandas builtin transformation function name in the output name.</span>
+<span class="sd">            :``&quot;function_name&quot;``:   Optional. A string specifying the function name referenced as part of</span>
+<span class="sd">                                    the transformation output name. For example, given a user-provided function</span>
+<span class="sd">                                    transformation on rolling window size of 5 on the component &quot;comp&quot;, the</span>
+<span class="sd">                                    default transformation output name is &quot;rolling_udf_5_comp&quot; whereby &quot;udf&quot;</span>
+<span class="sd">                                    refers to &quot;user defined function&quot;. If specified, the ``&quot;function_name&quot;`` will</span>
+<span class="sd">                                    replace the default name &quot;udf&quot;. Similarly, the ``&quot;function_name&quot;`` will replace</span>
+<span class="sd">                                    the name of the pandas builtin transformation function name in the output name.</span>
 
 <span class="sd">            All other dictionary items provided will be treated as keyword arguments for the windowing mode</span>
 <span class="sd">            (i.e., ``rolling/ewm/expanding``) or for the specific function</span>
@@ -245,20 +248,26 @@
 <span class="sd">            This allows for more flexibility in configuring the transformation, by providing for</span>
 <span class="sd">            example:</span>
 
-<span class="sd">            * :``&quot;window&quot;``: Size of the moving window for the &quot;rolling&quot; mode.</span>
-<span class="sd">                            If an integer, the fixed number of observations used for each window.</span>
-<span class="sd">                            If an offset, the time period of each window with data type :class:`pandas.Timedelta`</span>
-<span class="sd">                            representing a fixed duration.</span>
-<span class="sd">            * :``&quot;min_periods&quot;``: The minimum number of observations in the window required to have a value (otherwise</span>
-<span class="sd">                NaN). Darts reuses pandas defaults of 1 for &quot;rolling&quot; and &quot;expanding&quot; modes and of 0 for &quot;ewm&quot; mode.</span>
-<span class="sd">            * :``&quot;win_type&quot;``: The type of weigthing to apply to the window elements.</span>
-<span class="sd">                If provided, it should be one of `scipy.signal.windows</span>
-<span class="sd">                &lt;https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows&gt;`_.</span>
-<span class="sd">            * :``&quot;center&quot;``: ``True``/``False`` to set the observation at the current timestep at the center of the</span>
-<span class="sd">                window (when ``forecasting_safe`` is `True`, Darts enforces ``&quot;center&quot;`` to ``False``).</span>
-<span class="sd">            * :``&quot;closed&quot;``: ``&quot;right&quot;``/``&quot;left&quot;``/``&quot;both&quot;``/``&quot;neither&quot;`` to specify whether the right,</span>
-<span class="sd">                left or both ends of the window are included in the window, or neither of them.</span>
-<span class="sd">                Darts defaults to ``&quot;both&quot;``.</span>
+<span class="sd">            :``&quot;window&quot;``:      Size of the moving window for the &quot;rolling&quot; mode.</span>
+<span class="sd">                                If an integer, the fixed number of observations used for each window.</span>
+<span class="sd">                                If an offset, the time period of each window with data type :class:`pandas.Timedelta`</span>
+<span class="sd">                                representing a fixed duration.</span>
+
+<span class="sd">            :``&quot;min_periods&quot;``: The minimum number of observations in the window required to have a value (otherwise</span>
+<span class="sd">                                NaN). Darts reuses pandas defaults of 1 for &quot;rolling&quot; and &quot;expanding&quot; modes and of 0</span>
+<span class="sd">                                for &quot;ewm&quot; mode.</span>
+
+<span class="sd">            :``&quot;win_type&quot;``:    The type of weigthing to apply to the window elements.</span>
+<span class="sd">                                If provided, it should be one of `scipy.signal.windows</span>
+<span class="sd">                                &lt;https://docs.scipy.org/doc/scipy/reference/signal.windows.html</span>
+<span class="sd">                                #module-scipy.signal.windows&gt;`_.</span>
+
+<span class="sd">            :``&quot;center&quot;``:      ``True``/``False`` to set the observation at the current timestep at the center of the</span>
+<span class="sd">                                window (when ``forecasting_safe`` is `True`, Darts enforces ``&quot;center&quot;`` to ``False``).</span>
+
+<span class="sd">            :``&quot;closed&quot;``:      ``&quot;right&quot;``/``&quot;left&quot;``/``&quot;both&quot;``/``&quot;neither&quot;`` to specify whether the right,</span>
+<span class="sd">                                left or both ends of the window are included in the window, or neither of them.</span>
+<span class="sd">                                Darts defaults to ``&quot;both&quot;``.</span>
 
 <span class="sd">            More information on the available functions and their parameters can be found in the</span>
 <span class="sd">            `Pandas documentation &lt;https://pandas.pydata.org/docs/reference/window.html&gt;`_.</span>
@@ -273,7 +282,6 @@
 <span class="sd">            &lt;https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html&gt;`_</span>
 <span class="sd">            and `pandas.DataFrame.expanding().apply() documentation</span>
 <span class="sd">            &lt;https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html&gt;`_.</span>
-
 <span class="sd">        treat_na</span>
 <span class="sd">            Specifies how to treat missing values that were added by the window transformations</span>
 <span class="sd">            at the beginning of the resulting TimeSeries. By default, Darts will leave NaNs in the resulting TimeSeries.</span>
@@ -290,34 +298,42 @@
 
 <span class="sd">            * :an integer or float: in which case NaNs will be filled with this value.</span>
 <span class="sd">                All columns will be filled with the same provided value.</span>
-
 <span class="sd">        forecasting_safe</span>
 <span class="sd">            If True, Darts enforces that the resulting TimeSeries is safe to be used in forecasting models as target</span>
 <span class="sd">            or as feature. The window transformation will not allow future values to be included in the computations</span>
 <span class="sd">            at their corresponding current timestep. Default is ``True``.</span>
 <span class="sd">            &quot;ewm&quot; and &quot;expanding&quot; modes are forecasting safe by default.</span>
 <span class="sd">            &quot;rolling&quot; mode is forecasting safe if ``&quot;center&quot;: False`` is guaranteed.</span>
-
 <span class="sd">        keep_non_transformed</span>
 <span class="sd">            ``False`` to return the transformed components only, ``True`` to return all original components along</span>
 <span class="sd">            the transformed ones. Default is ``False``. If the series has a hierarchy, must be set to ``False``.</span>
-
 <span class="sd">        include_current</span>
 <span class="sd">            ``True`` to include the current time step in the window, ``False`` to exclude it. Default is ``True``.</span>
-
 <span class="sd">        keep_names</span>
 <span class="sd">            Whether the transformed components should keep the original component names or. Must be set to ``False``</span>
 <span class="sd">            if `keep_non_transformed = True` or the number of transformation is greater than 1.</span>
-
 <span class="sd">        name</span>
 <span class="sd">            A specific name for the transformer.</span>
-
 <span class="sd">        n_jobs</span>
 <span class="sd">            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is</span>
 <span class="sd">            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`.</span>
-
 <span class="sd">        verbose</span>
 <span class="sd">            Whether to print operations progress.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        &gt;&gt;&gt; from darts import TimeSeries</span>
+<span class="sd">        &gt;&gt;&gt; from darts.dataprocessing.transformers import WindowTransformer</span>
+<span class="sd">        &gt;&gt;&gt; series = TimeSeries.from_values([1, 2, 3, 4])</span>
+<span class="sd">        &gt;&gt;&gt; transformer = WindowTransformer(</span>
+<span class="sd">        &gt;&gt;&gt;     transforms={&quot;function&quot;: &quot;mean&quot;, &quot;mode&quot;: &quot;rolling&quot;, &quot;window&quot;: 2}</span>
+<span class="sd">        &gt;&gt;&gt; )</span>
+<span class="sd">        &gt;&gt;&gt; series_transformed = transformer.transform(series)</span>
+<span class="sd">        &gt;&gt;&gt; print(series_transformed.values())</span>
+<span class="sd">        [[1. ]</span>
+<span class="sd">         [1.5]</span>
+<span class="sd">         [2.5]</span>
+<span class="sd">         [3.5]]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="c1"># dictionary checks are implemented in TimeSeries.window_transform()</span>

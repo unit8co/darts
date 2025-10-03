@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -181,7 +184,7 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Sequence</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
@@ -203,9 +206,8 @@
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">add_seasonalities</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">add_regressor_configs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">country_holidays</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">suppress_stdout_stderror</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-        <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">cap</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span>
             <span class="n">Union</span><span class="p">[</span>
                 <span class="nb">float</span><span class="p">,</span>
@@ -218,7 +220,9 @@
                 <span class="n">Callable</span><span class="p">[[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]],</span> <span class="n">Sequence</span><span class="p">[</span><span class="nb">float</span><span class="p">]],</span>
             <span class="p">]</span>
         <span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">suppress_stdout_stderror</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">prophet_kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Facebook Prophet</span>
@@ -254,6 +258,21 @@
 <span class="sd">            `add_seasonality()` method.</span>
 <span class="sd">            Alternatively, you can add seasonalities after model creation and before fitting with</span>
 <span class="sd">            :meth:`add_seasonality() &lt;Prophet.add_seasonality()&gt;`.</span>
+<span class="sd">        add_regressor_configs</span>
+<span class="sd">            Optionally, a dictionary of configuration dictionaries for custom regressors / components of</span>
+<span class="sd">            `future_covariates`. Each key is a regressor name, and the value is a dictionary of parameters for</span>
+<span class="sd">            Prophet&#39;s `add_regressor()` method. Supported parameters are `prior_scale`, `standardize`, and `mode`.</span>
+<span class="sd">            For example:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                add_regressor_configs={</span>
+<span class="sd">                    &#39;temperature&#39;: {&#39;prior_scale&#39;: 5.0, &#39;standardize&#39;: True, &#39;mode&#39;: &#39;additive&#39;},</span>
+<span class="sd">                    &#39;humidity&#39;: {&#39;prior_scale&#39;: 2.0, &#39;standardize&#39;: &#39;auto&#39;, &#39;mode&#39;: &#39;multiplicative&#39;},</span>
+<span class="sd">                    &#39;pressure&#39;: {&#39;prior_scale&#39;: 15.0}  # uses defaults for other params</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
 <span class="sd">        country_holidays</span>
 <span class="sd">            An optional country code, for which holidays can be taken into account by Prophet.</span>
 
@@ -263,8 +282,26 @@
 <span class="sd">            countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),</span>
 <span class="sd">            Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),</span>
 <span class="sd">            Egypt (EG), China (CN), and Russia (RU).</span>
-<span class="sd">        suppress_stdout_stderror</span>
-<span class="sd">            Optionally suppress the log output produced by Prophet during training.</span>
+<span class="sd">        cap</span>
+<span class="sd">            Parameter specifying the maximum carrying capacity when predicting with logistic growth.</span>
+<span class="sd">            Mandatory when `growth = &#39;logistic&#39;`, otherwise ignored.</span>
+<span class="sd">            See &lt;https://facebook.github.io/prophet/docs/saturating_forecasts.html&gt; for more information</span>
+<span class="sd">            on logistic forecasts.</span>
+<span class="sd">            Can be either</span>
+
+<span class="sd">            - a number, for constant carrying capacities</span>
+<span class="sd">            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,</span>
+<span class="sd">            where each number indicates the carrying capacity at this index.</span>
+<span class="sd">        floor</span>
+<span class="sd">            Parameter specifying the minimum carrying capacity when predicting logistic growth.</span>
+<span class="sd">            Optional when `growth = &#39;logistic&#39;` (defaults to 0), otherwise ignored.</span>
+<span class="sd">            See &lt;https://facebook.github.io/prophet/docs/saturating_forecasts.html&gt; for more information</span>
+<span class="sd">            on logistic forecasts.</span>
+<span class="sd">            Can be either</span>
+
+<span class="sd">            - a number, for constant carrying capacities</span>
+<span class="sd">            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,</span>
+<span class="sd">            where each number indicates the carrying capacity at this index.</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -289,28 +326,10 @@
 <span class="sd">                    &#39;tz&#39;: &#39;CET&#39;</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
-<span class="sd">        cap</span>
-<span class="sd">            Parameter specifying the maximum carrying capacity when predicting with logistic growth.</span>
-<span class="sd">            Mandatory when `growth = &#39;logistic&#39;`, otherwise ignored.</span>
-<span class="sd">            See &lt;https://facebook.github.io/prophet/docs/saturating_forecasts.html&gt; for more information</span>
-<span class="sd">            on logistic forecasts.</span>
-<span class="sd">            Can be either</span>
-
-<span class="sd">            - a number, for constant carrying capacities</span>
-<span class="sd">            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,</span>
-<span class="sd">            where each number indicates the carrying capacity at this index.</span>
-<span class="sd">        floor</span>
-<span class="sd">            Parameter specifying the minimum carrying capacity when predicting logistic growth.</span>
-<span class="sd">            Optional when `growth = &#39;logistic&#39;` (defaults to 0), otherwise ignored.</span>
-<span class="sd">            See &lt;https://facebook.github.io/prophet/docs/saturating_forecasts.html&gt; for more information</span>
-<span class="sd">            on logistic forecasts.</span>
-<span class="sd">            Can be either</span>
-
-<span class="sd">            - a number, for constant carrying capacities</span>
-<span class="sd">            - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,</span>
-<span class="sd">            where each number indicates the carrying capacity at this index.</span>
 <span class="sd">        random_state</span>
 <span class="sd">            Controls the randomness for reproducible forecasting.</span>
+<span class="sd">        suppress_stdout_stderror</span>
+<span class="sd">            Optionally suppress the log output produced by Prophet during training.</span>
 <span class="sd">        prophet_kwargs</span>
 <span class="sd">            Some optional keyword arguments for Prophet.</span>
 <span class="sd">            For information about the parameters see:</span>
@@ -334,18 +353,19 @@
 <span class="sd">        &gt;&gt;&gt; )</span>
 <span class="sd">        &gt;&gt;&gt; model.fit(series, future_covariates=future_cov)</span>
 <span class="sd">        &gt;&gt;&gt; pred = model.predict(6)</span>
-<span class="sd">        &gt;&gt;&gt; pred.values()</span>
-<span class="sd">        array([[472.26891239],</span>
-<span class="sd">               [467.56955721],</span>
-<span class="sd">               [494.47230467],</span>
-<span class="sd">               [493.10568429],</span>
-<span class="sd">               [497.54686113],</span>
-<span class="sd">               [539.11716811]])</span>
+<span class="sd">        &gt;&gt;&gt; print(pred.values())</span>
+<span class="sd">        [[472.26891239]</span>
+<span class="sd">         [467.56955721]</span>
+<span class="sd">         [494.47230467]</span>
+<span class="sd">         [493.10568429]</span>
+<span class="sd">         [497.54686113]</span>
+<span class="sd">         [539.11716811]]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_auto_seasonalities</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_auto_seasonality</span><span class="p">(</span><span class="n">prophet_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_regressor_configs</span> <span class="o">=</span> <span class="n">add_regressor_configs</span> <span class="ow">or</span> <span class="p">{}</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_add_seasonalities</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="n">add_seasonality_calls</span> <span class="o">=</span> <span class="p">(</span>
@@ -384,8 +404,13 @@
                 <span class="c1"># Use 0 as default value</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_floor</span> <span class="o">=</span> <span class="mi">0</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
 
@@ -414,6 +439,20 @@
 
         <span class="c1"># add covariates as additional regressors</span>
         <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_regressor_configs</span><span class="p">:</span>
+                <span class="c1"># check that all configured regressors are actually present in the future_covariates</span>
+                <span class="n">comps_config</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_add_regressor_configs</span><span class="p">)</span>
+                <span class="n">comps_actual</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">components</span><span class="p">)</span>
+                <span class="n">comps_invalid</span> <span class="o">=</span> <span class="n">comps_config</span> <span class="o">-</span> <span class="n">comps_actual</span>
+                <span class="k">if</span> <span class="n">comps_invalid</span><span class="p">:</span>
+                    <span class="n">raise_log</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;The following components have been configured in `add_regressor_configs` &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;but are not present in the `future_covariates`: `</span><span class="si">{</span><span class="n">comps_invalid</span><span class="si">}</span><span class="s2">`.&quot;</span>
+                        <span class="p">),</span>
+                        <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
+
             <span class="n">fit_df</span> <span class="o">=</span> <span class="n">fit_df</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span>
                 <span class="n">future_covariates</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(),</span>
                 <span class="n">left_on</span><span class="o">=</span><span class="s2">&quot;ds&quot;</span><span class="p">,</span>
@@ -422,7 +461,10 @@
             <span class="p">)</span>
             <span class="k">for</span> <span class="n">covariate</span> <span class="ow">in</span> <span class="n">future_covariates</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">covariate</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">conditional_seasonality_covariates</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">add_regressor</span><span class="p">(</span><span class="n">covariate</span><span class="p">)</span>
+                    <span class="c1"># Get the config dict for the current regressor, or an empty dict if not found</span>
+                    <span class="n">config</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_regressor_configs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">covariate</span><span class="p">,</span> <span class="p">{})</span>
+                    <span class="c1"># Unpack the config dictionary into keyword arguments</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">add_regressor</span><span class="p">(</span><span class="n">covariate</span><span class="p">,</span> <span class="o">**</span><span class="n">config</span><span class="p">)</span>
 
         <span class="c1"># add built-in country holidays</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">country_holidays</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
@@ -450,7 +492,12 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_seasonality_conditions</span><span class="p">(</span><span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
 
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">_predict</span><span class="p">(</span>
+            <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="n">predict_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_predict_df</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
 
@@ -604,14 +651,17 @@
         <span class="k">return</span> <span class="n">forecast</span><span class="p">[</span><span class="s2">&quot;yhat&quot;</span><span class="p">]</span>
 
 <div class="viewcode-block" id="Prophet.predict_raw"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet.predict_raw">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_raw</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the output of the base Facebook Prophet model in form of a pandas DataFrame. Note however,</span>
 <span class="sd">        that the output of this method is not supported for further processing with the Darts API.</span>
 
 <span class="sd">        Methods of the base Prophet model can be accessed with self.model.method() (i.e. self.model.plot_components())</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
 
         <span class="n">predict_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_predict_df</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
 

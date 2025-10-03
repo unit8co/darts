@@ -24,8 +24,8 @@ Time Series Made Easy in Python
    :alt: Conda Version
 
 
-.. image:: https://img.shields.io/badge/python-3.9+-blue.svg
-   :target: https://img.shields.io/badge/python-3.9+-blue.svg
+.. image:: https://img.shields.io/badge/python-3.10+-blue.svg
+   :target: https://img.shields.io/badge/python-3.10+-blue.svg
    :alt: Supported versions
 
 
@@ -113,7 +113,7 @@ Articles on Selected Topics
 Quick Install
 -------------
 
-We recommend to first setup a clean Python environment for your project with Python 3.9+ using your favorite tool
+We recommend to first setup a clean Python environment for your project with Python 3.10+ using your favorite tool
 (\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ ,
 `venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with
 or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_\ ).
@@ -419,7 +419,7 @@ Here's a breakdown of the forecasting models currently implemented in Darts. Our
      - 🔴 ✅ 🔴
      - ✅ ✅
      - 🔴
-   * - `Croston <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.croston.html#darts.models.forecasting.croston.Croston>`_ method
+   * - `Croston <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_croston.html#darts.models.forecasting.sf_croston.Croston>`_ method
      - 
      - ✅ 🔴
      - 🔴 ✅ 🔴
@@ -548,7 +548,7 @@ Here's a breakdown of the forecasting models currently implemented in Darts. Our
    * - `BlockRNNModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel>`_ (incl. LSTM and GRU)
      - 
      - ✅ ✅
-     - ✅ 🔴 🔴
+     - ✅ ✅ ✅
      - ✅ ✅
      - ✅
    * - `NBEATSModel <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel>`_

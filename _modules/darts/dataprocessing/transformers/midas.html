@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -248,28 +251,34 @@
 <span class="sd">        &gt;&gt;&gt; from darts.dataprocessing.transformers import MIDAS</span>
 <span class="sd">        &gt;&gt;&gt; monthly_series = AirPassengersDataset().load()</span>
 <span class="sd">        &gt;&gt;&gt; print(monthly_series.time_index[:4])</span>
-<span class="sd">        DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-02-01&#39;, &#39;1949-03-01&#39;, &#39;1949-04-01&#39;], dtype=&#39;datetime64[ns]&#39;,</span>
-<span class="sd">        name=&#39;Month&#39;, freq=&#39;MS&#39;)</span>
+<span class="sd">        DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-02-01&#39;, &#39;1949-03-01&#39;, &#39;1949-04-01&#39;], dtype=&#39;datetime64[ns]&#39;, name=&#39;Month&#39;, freq=&#39;MS&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; print(monthly_series.values()[:4])</span>
-<span class="sd">        [[112.], [118.], [132.], [129.]]</span>
+<span class="sd">        [[112.]</span>
+<span class="sd">         [118.]</span>
+<span class="sd">         [132.]</span>
+<span class="sd">         [129.]]</span>
 <span class="sd">        &gt;&gt;&gt; midas = MIDAS(low_freq=&quot;QS&quot;)</span>
 <span class="sd">        &gt;&gt;&gt; quarterly_series = midas.fit_transform(monthly_series)</span>
 <span class="sd">        &gt;&gt;&gt; print(quarterly_series.time_index[:3])</span>
 <span class="sd">        DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-04-01&#39;, &#39;1949-07-01&#39;], dtype=&#39;datetime64[ns]&#39;, name=&#39;Month&#39;, freq=&#39;QS-JAN&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; print(quarterly_series.values()[:3])</span>
-<span class="sd">        [[112. 118. 132.], [129. 121. 135.], [148. 148. 136.]]</span>
+<span class="sd">        [[112. 118. 132.]</span>
+<span class="sd">         [129. 121. 135.]</span>
+<span class="sd">         [148. 148. 136.]]</span>
 <span class="sd">        &gt;&gt;&gt; inversed_quaterly = midas.inverse_transform(quarterly_series)</span>
 <span class="sd">        &gt;&gt;&gt; print(inversed_quaterly.time_index[:4])</span>
-<span class="sd">        DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-02-01&#39;, &#39;1949-03-01&#39;, &#39;1949-04-01&#39;], dtype=&#39;datetime64[ns]&#39;,</span>
-<span class="sd">        name=&#39;time&#39;, freq=&#39;MS&#39;)</span>
+<span class="sd">        DatetimeIndex([&#39;1949-01-01&#39;, &#39;1949-02-01&#39;, &#39;1949-03-01&#39;, &#39;1949-04-01&#39;], dtype=&#39;datetime64[ns]&#39;, name=&#39;Month&#39;, freq=&#39;MS&#39;)</span>
 <span class="sd">        &gt;&gt;&gt; print(inversed_quaterly.values()[:4])</span>
-<span class="sd">        [[112.], [118.], [132.], [129.]]</span>
+<span class="sd">        [[112.]</span>
+<span class="sd">         [118.]</span>
+<span class="sd">         [132.]</span>
+<span class="sd">         [129.]]</span>
 
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
 <span class="sd">        .. [1] https://en.wikipedia.org/wiki/Mixed-data_sampling</span>
 <span class="sd">        .. [2] https://pandas.pydata.org/docs/user_guide/timeseries.html#dateoffset-objects</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>  <span class="c1"># noqa: E501</span>
         <span class="k">if</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">frequencies</span><span class="o">.</span><span class="n">get_period_alias</span><span class="p">(</span><span class="n">low_freq</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>

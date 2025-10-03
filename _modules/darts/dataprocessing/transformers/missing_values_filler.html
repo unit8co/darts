@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -220,27 +223,16 @@
 <span class="sd">        &gt;&gt;&gt; import numpy as np</span>
 <span class="sd">        &gt;&gt;&gt; from darts import TimeSeries</span>
 <span class="sd">        &gt;&gt;&gt; from darts.dataprocessing.transformers import MissingValuesFiller</span>
-<span class="sd">        &gt;&gt;&gt; values = np.arange(start=0, stop=1, step=0.1)</span>
-<span class="sd">        &gt;&gt;&gt; values[5:8] = np.nan</span>
+<span class="sd">        &gt;&gt;&gt; values = np.arange(start=0, stop=1, step=0.25)</span>
+<span class="sd">        &gt;&gt;&gt; values[1:3] = np.nan</span>
 <span class="sd">        &gt;&gt;&gt; series = TimeSeries.from_values(values)</span>
 <span class="sd">        &gt;&gt;&gt; transformer = MissingValuesFiller()</span>
 <span class="sd">        &gt;&gt;&gt; series_filled = transformer.transform(series)</span>
-<span class="sd">        &gt;&gt;&gt; print(series_filled)</span>
-<span class="sd">        &lt;TimeSeries (DataArray) (time: 10, component: 1, sample: 1)&gt;</span>
-<span class="sd">        array([[[0. ]],</span>
-<span class="sd">            [[0.1]],</span>
-<span class="sd">            [[0.2]],</span>
-<span class="sd">            [[0.3]],</span>
-<span class="sd">            [[0.4]],</span>
-<span class="sd">            [[0.5]],</span>
-<span class="sd">            [[0.6]],</span>
-<span class="sd">            [[0.7]],</span>
-<span class="sd">            [[0.8]],</span>
-<span class="sd">            [[0.9]]])</span>
-<span class="sd">        Coordinates:</span>
-<span class="sd">        * time       (time) int64 0 1 2 3 4 5 6 7 8 9</span>
-<span class="sd">        * component  (component) object &#39;0&#39;</span>
-<span class="sd">        Dimensions without coordinates: sample</span>
+<span class="sd">        &gt;&gt;&gt; print(series_filled.values())</span>
+<span class="sd">        [[0.  ]</span>
+<span class="sd">         [0.25]</span>
+<span class="sd">         [0.5 ]</span>
+<span class="sd">         [0.75]]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span>

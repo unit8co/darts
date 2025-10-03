@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
     
   <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
@@ -33,6 +34,8 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
@@ -256,27 +259,20 @@
 <span class="sd">        &gt;&gt;&gt; from darts.dataprocessing.transformers import Diff</span>
 <span class="sd">        &gt;&gt;&gt; series = AirPassengersDataset().load()</span>
 <span class="sd">        &gt;&gt;&gt; first_order_diff = Diff(lags=1, dropna=True).fit_transform(series)</span>
-<span class="sd">        &gt;&gt;&gt; print(first_order_diff.head())</span>
-<span class="sd">        &lt;TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)&gt;</span>
-<span class="sd">        array([[[ 6.]],</span>
-<span class="sd">            [[14.]],</span>
-<span class="sd">            [[-3.]],</span>
-<span class="sd">            [[-8.]],</span>
-<span class="sd">            [[14.]]])</span>
-<span class="sd">        Coordinates:</span>
-<span class="sd">        * Month      (Month) datetime64[ns] 1949-02-01 1949-03-01 ... 1949-06-01</span>
-<span class="sd">        * component  (component) object &#39;#Passengers&#39;</span>
+<span class="sd">        &gt;&gt;&gt; print(first_order_diff.values()[:5])</span>
+<span class="sd">        [[ 6.]</span>
+<span class="sd">         [14.]</span>
+<span class="sd">         [-3.]</span>
+<span class="sd">         [-8.]</span>
+<span class="sd">         [14.]]</span>
 <span class="sd">        &gt;&gt;&gt; second_order_diff = Diff(lags=[1, 2], dropna=False).fit_transform(series)</span>
-<span class="sd">        &gt;&gt;&gt; print(second_order_diff.head())</span>
-<span class="sd">        &lt;TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)&gt;</span>
-<span class="sd">        array([[[ nan]],</span>
-<span class="sd">            [[ nan]],</span>
-<span class="sd">            [[ nan]],</span>
-<span class="sd">            [[ -9.]],</span>
-<span class="sd">            [[-22.]]])</span>
-<span class="sd">        Coordinates:</span>
-<span class="sd">        * Month      (Month) datetime64[ns] 1949-01-01 1949-02-01 ... 1949-05-01</span>
-<span class="sd">        * component  (component) object &#39;#Passengers&#39;</span>
+<span class="sd">        &gt;&gt;&gt; print(second_order_diff.values()[:5])</span>
+<span class="sd">        [[ nan]</span>
+<span class="sd">         [ nan]</span>
+<span class="sd">         [ nan]</span>
+<span class="sd">         [ -9.]</span>
+<span class="sd">         [-22.]]</span>
+
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
 <span class="sd">        .. [1] https://otexts.com/fpp2/stationarity.html</span>
