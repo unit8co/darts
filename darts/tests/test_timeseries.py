@@ -519,7 +519,10 @@ class TestTimeSeries:
         helper_test_split(self.series1)
 
     def test_drop(self):
-        helper_test_drop(self.series1)
+        helper_test_drop_after(self.series1, keep_point=False)
+        helper_test_drop_after(self.series1, keep_point=True)
+        helper_test_drop_before(self.series1, keep_point=False)
+        helper_test_drop_before(self.series1, keep_point=True)
 
     @pytest.mark.parametrize(
         "config", itertools.product(["D", "2D", 1, 2], [False, True])
@@ -2128,17 +2131,54 @@ def helper_test_split(test_series: TimeSeries):
     assert seriesP.start_time() > split_date
 
 
-def helper_test_drop(test_series: TimeSeries):
-    seriesA = test_series.drop_after(pd.Timestamp("20130105"))
-    assert seriesA.end_time() == pd.Timestamp("20130105") - test_series.freq
-    assert np.all(seriesA.time_index < pd.Timestamp("20130105"))
+def helper_test_drop_after(test_series: TimeSeries, keep_point: bool):
+    # drop step is part of index
+    series = test_series.drop_after(pd.Timestamp("20130105"), keep_point=keep_point)
+    expected_end = (
+        pd.Timestamp("20130105") - (1 if not keep_point else 0) * test_series.freq
+    )
+    assert series.end_time() == expected_end
+    assert np.all(series.time_index <= expected_end)
+    assert series.freq == test_series.freq
 
-    seriesB = test_series.drop_before(pd.Timestamp("20130105"))
-    assert seriesB.start_time() == pd.Timestamp("20130105") + test_series.freq
-    assert np.all(seriesB.time_index > pd.Timestamp("20130105"))
+    # drop step is not part of index and before "20130105";
+    series = test_series.drop_after(
+        pd.Timestamp("20130104 12:00:00"), keep_point=keep_point
+    )
+    assert series.end_time() == pd.Timestamp("20130105") - test_series.freq
+    assert np.all(series.time_index < pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
 
-    assert test_series.freq_str == seriesA.freq_str
-    assert test_series.freq_str == seriesB.freq_str
+    # drop step is not part of index and after "20130105"
+    series = test_series.drop_after(
+        pd.Timestamp("20130105 12:00:00"), keep_point=keep_point
+    )
+    assert series.end_time() == pd.Timestamp("20130105")
+    assert np.all(series.time_index <= pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
+
+
+def helper_test_drop_before(test_series: TimeSeries, keep_point: bool):
+    # drop step is part of index
+    series = test_series.drop_before(pd.Timestamp("20130105"), keep_point=keep_point)
+    expected_end = (
+        pd.Timestamp("20130105") + (1 if not keep_point else 0) * test_series.freq
+    )
+    assert series.start_time() == expected_end
+    assert np.all(series.time_index >= expected_end)
+    assert series.freq == test_series.freq
+
+    # drop step is not part of index and after "20130105"
+    series = test_series.drop_before(pd.Timestamp("20130105 12:00:00"), keep_point=True)
+    assert series.start_time() == pd.Timestamp("20130105") + test_series.freq
+    assert np.all(series.time_index > pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
+
+    # drop step is not part of index and before "20130105"
+    series = test_series.drop_before(pd.Timestamp("20130104 12:00:00"), keep_point=True)
+    assert series.start_time() == pd.Timestamp("20130105")
+    assert np.all(series.time_index >= pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
 
 
 def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):

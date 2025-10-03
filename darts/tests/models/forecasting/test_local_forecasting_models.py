@@ -1,9 +1,10 @@
 import copy
 import itertools
+import math
 import os
 import pathlib
 from typing import Callable
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -523,17 +524,43 @@ class TestLocalForecastingModels:
         [  # tuple of (model class, retrain-able, multivariate, retrain parameter, model type, uni/multivariate args)
             (
                 ExponentialSmoothing,
+                {"seasonal_periods": 12},
                 False,
                 False,
                 "hello",
                 "LocalForecastingModel",
                 None,
             ),
-            (ExponentialSmoothing, False, False, True, "LocalForecastingModel", None),
-            (ExponentialSmoothing, False, False, -2, "LocalForecastingModel", None),
-            (ExponentialSmoothing, False, False, 2, "LocalForecastingModel", None),
             (
                 ExponentialSmoothing,
+                {"seasonal_periods": 12},
+                False,
+                False,
+                True,
+                "LocalForecastingModel",
+                None,
+            ),
+            (
+                ExponentialSmoothing,
+                {"seasonal_periods": 12},
+                False,
+                False,
+                -2,
+                "LocalForecastingModel",
+                None,
+            ),
+            (
+                ExponentialSmoothing,
+                {"seasonal_periods": 12},
+                False,
+                False,
+                2,
+                "LocalForecastingModel",
+                None,
+            ),
+            (
+                ExponentialSmoothing,
+                {"seasonal_periods": 12},
                 False,
                 False,
                 "patch_retrain_func",
@@ -542,6 +569,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 False,
                 True,
@@ -550,6 +578,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 False,
                 2,
@@ -558,6 +587,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 False,
                 "patch_retrain_func",
@@ -566,6 +596,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 True,
                 True,
@@ -574,6 +605,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 True,
                 2,
@@ -582,6 +614,7 @@ class TestLocalForecastingModels:
             ),
             (
                 LinearRegressionModel,
+                {},
                 True,
                 True,
                 "patch_retrain_func",
@@ -594,23 +627,51 @@ class TestLocalForecastingModels:
         """
         Test backtest method with different retrain arguments
         """
-        model_cls, retrainable, multivariate, retrain, model_type, variate_args = params
+        (
+            model_cls,
+            model_kwargs,
+            retrainable,
+            multivariate,
+            retrain,
+            model_type,
+            variate_args,
+        ) = params
         if variate_args is not None:
             if variate_args == "lr_univ_args":
-                model_args = {"lags": [-1, -2, -3]}
+                model_kwargs = {"lags": [-1, -2, -3], **model_kwargs}
             else:  # "lr_multiv_args"
-                model_args = {
+                model_kwargs = {
                     "lags": [-1, -2, -3],
                     "lags_past_covariates": [-1, -2, -3],
+                    **model_kwargs,
                 }
-        else:
-            model_args = dict()
-        model = model_cls(**model_args)
 
+        # Create a custom model that tracks fit and predict arguments
+        class TrackingModel(model_cls):
+            fit_calls = []
+            pred_calls = []
+
+            def fit(self, *args, **kwargs):
+                self.fit_calls.append(kwargs)
+                return super().fit(*args, **kwargs)
+
+            def predict(self, *args, **kwargs):
+                self.pred_calls.append(kwargs)
+                return super().predict(*args, **kwargs)
+
+        model = TrackingModel(**model_kwargs)
+        n_fc_expected = 3
+        series = self.ts_pass_train[: model.min_train_series_length + n_fc_expected]
+
+        retrain_patched = False
         if str(retrain) == "patch_retrain_func":
             retrain = patch_retrain_func
-
-        series = self.ts_pass_train
+            retrain.call_count = 0
+            # first call is from sanity check, afterwards it's called at each forecast iteration
+            retrain.side_effect = [True] + [
+                bool((idx + 1) % 2) for idx in range(n_fc_expected)
+            ]
+            retrain_patched = True
 
         if (
             not isinstance(retrain, (int, bool, Callable))
@@ -620,38 +681,24 @@ class TestLocalForecastingModels:
         ):
             with pytest.raises(ValueError):
                 _ = model.historical_forecasts(series, retrain=retrain)
+            return
 
-        else:
-            if isinstance(retrain, Mock):
-                # resets patch_retrain_func call_count to 0
-                retrain.call_count = 0
-                retrain.side_effect = [True, False] * (len(series) // 2)
+        # run backtest
+        _ = model.historical_forecasts(
+            series,
+            past_covariates=series if multivariate else None,
+            retrain=retrain,
+        )
 
-            fit_method_to_patch = (
-                f"darts.models.forecasting.forecasting_model.{model_type}._fit_wrapper"
-            )
-            predict_method_to_patch = f"darts.models.forecasting.forecasting_model.{model_type}._predict_wrapper"
+        expected_fit_calls = (
+            n_fc_expected if retrain is True else math.ceil(n_fc_expected / 2)
+        )
+        assert len(model.fit_calls) == expected_fit_calls
+        assert len(model.pred_calls) == n_fc_expected
 
-            with patch(fit_method_to_patch) as patch_fit_method:
-                with patch(
-                    predict_method_to_patch, side_effect=series
-                ) as patch_predict_method:
-                    # Set _fit_called attribute to True, otherwise retrain function is never called
-                    model._fit_called = True
-
-                    # run backtest
-                    _ = model.historical_forecasts(
-                        series,
-                        past_covariates=series if multivariate else None,
-                        retrain=retrain,
-                    )
-
-                    assert patch_predict_method.call_count > 1
-                    assert patch_fit_method.call_count > 1
-
-                    if isinstance(retrain, Mock):
-                        # check that patch_retrain_func has been called at each iteration
-                        assert retrain.call_count > 1
+        if retrain_patched:
+            # check that patch_retrain_func has been called at each iteration (+1 for initial sanity check)
+            assert retrain.call_count == n_fc_expected + 1
 
     @pytest.mark.parametrize(
         "config",
