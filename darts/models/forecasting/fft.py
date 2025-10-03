@@ -267,13 +267,13 @@ class FFT(LocalForecastingModel):
         >>> )
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[471.79323146],
-               [494.6381425 ],
-               [504.5659999 ],
-               [515.82463265],
-               [520.59404623],
-               [547.26720705]])
+        >>> print(pred.values())
+        [[471.79323146]
+         [494.6381425 ]
+         [504.5659999 ]
+         [515.82463265]
+         [520.59404623]
+         [547.26720705]]
 
         .. note::
             `FFT example notebook <https://unit8co.github.io/darts/examples/03-FFT-examples.html>`_ presents techniques

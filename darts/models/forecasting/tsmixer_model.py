@@ -745,13 +745,13 @@ class TSMixerModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[3.92519848],
-            [4.05650312],
-            [4.21781987],
-            [4.29394973],
-            [4.4122863 ],
-            [4.42762751]])
+        >>> print(pred.values())
+        [[3.92519848]
+         [4.05650312]
+         [4.21781987]
+         [4.29394973]
+         [4.4122863 ]
+         [4.42762751]]
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}
         super().__init__(**self._extract_torch_model_params(**model_kwargs))

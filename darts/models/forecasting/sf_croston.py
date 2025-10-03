@@ -131,13 +131,13 @@ class Croston(StatsForecastModel):
         >>> model = Croston(version="optimized")
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[419.84565922],
-               [424.06484452],
-               [440.05509455],
-               [463.53183473],
-               [488.20449148],
-               [507.46204636]])
+        >>> print(pred.values())
+        [[419.84565922]
+         [424.06484452]
+         [440.05509455]
+         [463.53183473]
+         [488.20449148]
+         [507.46204636]]
         """
         if version.lower() not in ["classic", "optimized", "sba", "tsb"]:
             raise_log(

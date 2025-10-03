@@ -102,13 +102,13 @@ class AutoTheta(StatsForecastModel):
         >>> model = AutoTheta(season_length=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[438.05257224],
-               [428.93751019],
-               [465.20881177],
-               [461.73768912],
-               [467.59232404],
-               [509.82574683]])
+        >>> print(pred.values())
+        [[438.05257224]
+         [428.93751019]
+         [465.20881177]
+         [461.73768912]
+         [467.59232404]
+         [509.82574683]]
         """
         super().__init__(
             model=SFAutoTheta(*args, **kwargs),

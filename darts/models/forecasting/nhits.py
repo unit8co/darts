@@ -705,13 +705,13 @@ class NHiTSModel(PastCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[958.2354389 ],
-               [939.23201079],
-               [987.51425784],
-               [919.41209025],
-               [925.09583093],
-               [938.95625528]])
+        >>> print(pred.values())
+        [[958.2354389 ]
+         [939.23201079]
+         [987.51425784]
+         [919.41209025]
+         [925.09583093]
+         [938.95625528]]
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

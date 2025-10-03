@@ -404,13 +404,13 @@ class NLinearModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[429.56117169],
-               [428.93264096],
-               [428.35210616],
-               [428.13154426],
-               [427.98781641],
-               [428.00325481]])
+        >>> print(pred.values())
+        [[429.56117169]
+         [428.93264096]
+         [428.35210616]
+         [428.13154426]
+         [427.98781641]
+         [428.00325481]]
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

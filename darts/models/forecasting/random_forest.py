@@ -160,13 +160,13 @@ class RandomForestModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.29805],
-               [1006.23675],
-               [1006.17325],
-               [1006.10295],
-               [1006.06505],
-               [1006.05465]])
+        >>> print(pred.values())
+        [[1006.29805]
+         [1006.23675]
+         [1006.17325]
+         [1006.10295]
+         [1006.06505]
+         [1006.05465]]
         """
         self.n_estimators = n_estimators
         self.max_depth = max_depth
@@ -323,13 +323,13 @@ class RandomForest(RandomForestModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.29805],
-               [1006.23675],
-               [1006.17325],
-               [1006.10295],
-               [1006.06505],
-               [1006.05465]])
+        >>> print(pred.values())
+        [[1006.29805]
+         [1006.23675]
+         [1006.17325]
+         [1006.10295]
+         [1006.06505]
+         [1006.05465]]
         """
 
         raise_deprecation_warning(

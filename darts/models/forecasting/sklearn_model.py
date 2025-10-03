@@ -234,13 +234,13 @@ class SKLearnModel(GlobalForecastingModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.73340676],
-               [1005.71159051],
-               [1005.7322616 ],
-               [1005.76314504],
-               [1005.82204348],
-               [1005.89100967]])
+        >>> print(pred.values())
+        [[1005.73340676]
+         [1005.71159051]
+         [1005.7322616 ]
+         [1005.76314504]
+         [1005.82204348]
+         [1005.89100967]]
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -2063,13 +2063,13 @@ class RegressionModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.73340676],
-                [1005.71159051],
-                [1005.7322616 ],
-                [1005.76314504],
-                [1005.82204348],
-                [1005.89100967]])
+        >>> print(pred.values())
+        [[1005.73340676]
+         [1005.71159051]
+         [1005.7322616 ]
+         [1005.76314504]
+         [1005.82204348]
+         [1005.89100967]]
         """
         raise_deprecation_warning(
             "`RegressionModel` is deprecated and will be removed in a future version. "
@@ -2326,13 +2326,13 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [1.],
-               [1.],
-               [1.],
-               [0.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [1.]
+         [1.]
+         [1.]
+         [0.]]
         """
 
         model = model if model is not None else LogisticRegression(n_jobs=-1)

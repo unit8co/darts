@@ -45,27 +45,16 @@ class MissingValuesFiller(BaseDataTransformer):
         >>> import numpy as np
         >>> from darts import TimeSeries
         >>> from darts.dataprocessing.transformers import MissingValuesFiller
-        >>> values = np.arange(start=0, stop=1, step=0.1)
-        >>> values[5:8] = np.nan
+        >>> values = np.arange(start=0, stop=1, step=0.25)
+        >>> values[1:3] = np.nan
         >>> series = TimeSeries.from_values(values)
         >>> transformer = MissingValuesFiller()
         >>> series_filled = transformer.transform(series)
-        >>> print(series_filled)
-        <TimeSeries (DataArray) (time: 10, component: 1, sample: 1)>
-        array([[[0. ]],
-            [[0.1]],
-            [[0.2]],
-            [[0.3]],
-            [[0.4]],
-            [[0.5]],
-            [[0.6]],
-            [[0.7]],
-            [[0.8]],
-            [[0.9]]])
-        Coordinates:
-        * time       (time) int64 0 1 2 3 4 5 6 7 8 9
-        * component  (component) object '0'
-        Dimensions without coordinates: sample
+        >>> print(series_filled.values())
+        [[0.  ]
+         [0.25]
+         [0.5 ]
+         [0.75]]
         """
         raise_if_not(
             isinstance(fill, str) or isinstance(fill, float),

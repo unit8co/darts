@@ -120,13 +120,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         >>> model = ARIMA(p=12, d=1, q=2)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[451.36489334],
-               [416.88972829],
-               [443.10520391],
-               [481.07892911],
-               [502.11286509],
-               [555.50153984]])
+        >>> print(pred.values())
+        [[451.36482652]
+         [416.8895219 ]
+         [443.10517554]
+         [481.07884246]
+         [502.11278494]
+         [555.5014505 ]]
 
         References
         ----------
