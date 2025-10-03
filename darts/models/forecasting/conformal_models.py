@@ -41,6 +41,7 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.utils import _build_tqdm_iterator, _with_sanity_checks
 from darts.utils.historical_forecasts.utils import (
     _adjust_historical_forecasts_time_index,
+    _slice_intersect_series,
 )
 from darts.utils.timeseries_generation import _build_forecast_series
 from darts.utils.ts_utils import (
@@ -410,6 +411,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
+        apply_globally: bool = False,
         overlap_end: bool = False,
         last_points_only: bool = True,
         verbose: bool = False,
@@ -503,6 +505,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
             (set at model creation) and `>=cal_stride`.
         retrain
             Currently ignored by conformal models.
+        apply_globally
+            Whether to apply historical forecasts globally on the time intersection all series, or independently on
+            each series. This includes global model- and data transformer fitting. Only really effective for global
+            forecasting models, but can also be used with local models to generate forecasts on the same time frame. If
+            `True`, considers only the time intersection of all series for historical forecasting. If `False`,
+            considers the entire extent of each individual series for historical forecasting.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
@@ -562,6 +570,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
         past_covariates = series2seq(past_covariates)
         future_covariates = series2seq(future_covariates)
 
+        if apply_globally:
+            # for global hfc, we have to slice intersect already here to compute the correct start points
+            series, past_covariates, future_covariates, _ = _slice_intersect_series(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                sample_weight=None,
+            )
+
         # generate only the required forecasts (if `start` is given, we have to start earlier to satisfy the
         # calibration set requirements)
         cal_start, cal_start_format = _get_calibration_hfc_start(
@@ -583,6 +600,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             start_format=cal_start_format,
             stride=self.cal_stride,
             retrain=False,
+            apply_globally=apply_globally,
             overlap_end=overlap_end,
             last_points_only=last_points_only,
             verbose=verbose,
@@ -631,6 +649,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
+        apply_globally: bool = False,
         overlap_end: bool = False,
         last_points_only: bool = False,
         metric: Union[METRIC_TYPE, list[METRIC_TYPE]] = metrics.mape,
@@ -731,6 +750,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
             The number of time steps between two consecutive predictions.
         retrain
             Currently ignored by conformal models.
+        apply_globally
+            Whether to apply historical forecasts globally on the time intersection all series, or independently on
+            each series. This includes global model- and data transformer fitting. Only really effective for global
+            forecasting models, but can also be used with local models to generate forecasts on the same time frame. If
+            `True`, considers only the time intersection of all series for historical forecasting. If `False`,
+            considers the entire extent of each individual series for historical forecasting.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
@@ -821,6 +846,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             start_format=start_format,
             stride=stride,
             retrain=retrain,
+            apply_globally=apply_globally,
             overlap_end=overlap_end,
             last_points_only=last_points_only,
             metric=metric,
@@ -853,6 +879,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         start_format: Literal["position", "value"] = "value",
         stride: int = 1,
         retrain: Union[bool, int, Callable[..., bool]] = True,
+        apply_globally: bool = False,
         overlap_end: bool = False,
         last_points_only: bool = True,
         metric: METRIC_TYPE = metrics.err,
@@ -963,6 +990,12 @@ class ConformalModel(GlobalForecastingModel, ABC):
             The number of time steps between two consecutive predictions.
         retrain
             Currently ignored by conformal models.
+        apply_globally
+            Whether to apply historical forecasts globally on the time intersection all series, or independently on
+            each series. This includes global model- and data transformer fitting. Only really effective for global
+            forecasting models, but can also be used with local models to generate forecasts on the same time frame. If
+            `True`, considers only the time intersection of all series for historical forecasting. If `False`,
+            considers the entire extent of each individual series for historical forecasting.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not.
         last_points_only
@@ -1039,6 +1072,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             start_format=start_format,
             stride=stride,
             retrain=retrain,
+            apply_globally=apply_globally,
             overlap_end=overlap_end,
             last_points_only=last_points_only,
             metric=metric,
