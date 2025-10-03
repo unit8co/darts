@@ -12,7 +12,7 @@ import pytest
 from sklearn.preprocessing import MaxAbsScaler
 
 import darts
-from darts import TimeSeries, concatenate
+from darts import TimeSeries, concatenate, slice_intersect
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
     FittableDataTransformer,
@@ -33,6 +33,7 @@ from darts.models import (
     XGBModel,
 )
 from darts.models.forecasting.forecasting_model import (
+    GlobalForecastingModel,
     LocalForecastingModel,
 )
 from darts.tests.conftest import (
@@ -50,7 +51,7 @@ from darts.utils.likelihood_models.base import (
     likelihood_component_names,
     quantile_names,
 )
-from darts.utils.ts_utils import SeriesType, get_series_seq_type
+from darts.utils.ts_utils import SeriesType, get_series_seq_type, series2seq
 
 if TORCH_AVAILABLE:
     import torch
@@ -1442,13 +1443,18 @@ class TestHistoricalforecast:
                     )
 
                     # manually packing the series in list to match expected inputs
+                    seq_type = get_series_seq_type(ts)
                     opti_hist_fct = model._optimized_historical_forecasts(
-                        series=ts,
+                        series=series2seq(ts),
                         past_covariates=(
-                            ts_covs if model.supports_past_covariates else None
+                            series2seq(ts_covs)
+                            if model.supports_past_covariates
+                            else None
                         ),
                         future_covariates=(
-                            ts_covs if model.supports_future_covariates else None
+                            series2seq(ts_covs)
+                            if model.supports_future_covariates
+                            else None
                         ),
                         start=start,
                         last_points_only=last_points_only,
@@ -1458,6 +1464,7 @@ class TestHistoricalforecast:
                         verbose=False,
                         predict_kwargs={"verbose": False},
                     )
+                    opti_hist_fct = series2seq(opti_hist_fct, seq_type_out=seq_type)
 
                     self.helper_compare_hf(hist_fct, opti_hist_fct)
 
@@ -1530,15 +1537,17 @@ class TestHistoricalforecast:
             enable_optimization=False,
         )
 
+        seq_type = get_series_seq_type(series_val)
         opti_hist_fct = model._optimized_historical_forecasts(
-            series=series_val,
-            past_covariates=pc,
-            future_covariates=fc,
+            series=series2seq(series_val),
+            past_covariates=series2seq(pc),
+            future_covariates=series2seq(fc),
             last_points_only=last_points_only,
             overlap_end=overlap_end,
             stride=stride,
             forecast_horizon=horizon,
         )
+        opti_hist_fct = series2seq(opti_hist_fct, seq_type_out=seq_type)
 
         if not isinstance(hist_fct, list):
             hist_fct = [hist_fct]
@@ -1622,7 +1631,11 @@ class TestHistoricalforecast:
             enable_optimization=False,
         )
 
-        opti_hist_fct = model._optimized_historical_forecasts(series=series_val)
+        seq_type = get_series_seq_type(series_val)
+        opti_hist_fct = model._optimized_historical_forecasts(
+            series=series2seq(series_val)
+        )
+        opti_hist_fct = series2seq(opti_hist_fct, seq_type_out=seq_type)
 
         if not isinstance(hist_fct, list):
             hist_fct = [hist_fct]
@@ -1742,6 +1755,7 @@ class TestHistoricalforecast:
         pc_copy = pc.copy() if pc is not None else None
         fc_copy = fc.copy() if fc is not None else None
 
+        seq_type = get_series_seq_type(series_val)
         hist_fct = model.historical_forecasts(
             series=series_val,
             past_covariates=pc,
@@ -1755,15 +1769,15 @@ class TestHistoricalforecast:
         )
 
         opti_hist_fct = model._optimized_historical_forecasts(
-            series=series_val,
-            past_covariates=pc,
-            future_covariates=fc,
+            series=series2seq(series_val),
+            past_covariates=series2seq(pc),
+            future_covariates=series2seq(fc),
             last_points_only=last_points_only,
             overlap_end=overlap_end,
             stride=stride,
             forecast_horizon=horizon,
         )
-
+        opti_hist_fct = series2seq(opti_hist_fct, seq_type_out=seq_type)
         assert series_val == series_val_copy
         assert pc == pc_copy
         assert fc == fc_copy
@@ -4408,3 +4422,390 @@ class TestHistoricalforecast:
                     == series.start_time() + adjust_start * series.freq
                 )
         caplog.clear()
+
+    models_test_global_hfc = [
+        (
+            ConformalNaiveModel,
+            {
+                "quantiles": [0.1, 0.5, 0.9],
+                "model": LinearRegressionModel(lags=3).fit(ts_passengers),
+                "random_state": 42,
+            },
+        ),
+        (NaiveSeasonal, {"K": 3}),
+        (LinearRegressionModel, {"lags": 3}),  # global model target only
+        (
+            LinearRegressionModel,
+            {"lags": 3, "lags_past_covariates": 3},
+        ),  # global model with pc
+        (
+            LinearRegressionModel,
+            {"lags": 3, "lags_future_covariates": (3, 1)},
+        ),  # global model with fc
+        (
+            LinearRegressionModel,
+            {"lags": 3, "lags_past_covariates": 3, "lags_future_covariates": (3, 1)},
+        ),  # global model with all covs
+    ] + (
+        [
+            (
+                BlockRNNModel,
+                {
+                    "input_chunk_length": 3,
+                    "output_chunk_length": 1,
+                    "n_epochs": 1,
+                    "random_state": 42,
+                    **tfm_kwargs,
+                },
+            )
+        ]
+        if TORCH_AVAILABLE
+        else []
+    )
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            models_test_global_hfc,
+            [1, 2],  # number of generated forecasts
+            [True, False],  # last points only,
+            [1, 5],  # horizon
+        ),
+    )
+    def test_global_historical_forecasts_single_series(self, config):
+        """Tests that globally applied historical forecasts on a single series is the same as 'local' forecast."""
+        (model_cls, model_kwargs), n_fc, lpo, horizon = config
+
+        model = model_cls(**model_kwargs)
+        fit_kwargs = self.helper_prepare_global_hfc_input(
+            model, n_fc=n_fc, horizon=horizon
+        )
+        fit_kwargs = {name: series[0] for name, series in fit_kwargs.items()}
+        hfc_kwargs = {
+            "retrain": True,
+            "overlap_end": True,
+            "last_points_only": lpo,
+            "forecast_horizon": horizon,
+            "random_state": 42,
+            **fit_kwargs,
+        }
+        # generate historical forecasts applied globally
+        preds_global = model.historical_forecasts(apply_globally=True, **hfc_kwargs)
+        preds_local = model.historical_forecasts(apply_globally=False, **hfc_kwargs)
+        assert preds_global == preds_local
+
+        if not isinstance(model, GlobalForecastingModel):
+            return
+
+        # pre-trained historical forecasts
+        fit_kwargs = {
+            name: tg.linear_timeseries(length=model.min_train_series_length + 5)
+            for name in fit_kwargs
+        }
+        model.fit(**fit_kwargs)
+        hfc_kwargs["retrain"] = False
+        preds_global = model.historical_forecasts(apply_globally=True, **hfc_kwargs)
+        preds_local = model.historical_forecasts(apply_globally=False, **hfc_kwargs)
+        assert preds_global == preds_local
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            models_test_global_hfc,
+            [1, 2],  # number of generated forecasts
+            [True, False],  # last points only
+        ),
+    )
+    def test_global_historical_forecasts_fit_predict(self, config):
+        """Tests globally applied historical forecasts for model fit and predict."""
+        (model_cls, model_kwargs), n_fc, lpo = config
+        horizon = 1
+
+        # Create a custom model that tracks fit and predict arguments
+        class TrackingModel(model_cls):
+            fit_calls = []
+            pred_calls = []
+
+            def fit(self, *args, **kwargs):
+                self.fit_calls.append(kwargs)
+                return super().fit(*args, **kwargs)
+
+            def predict(self, *args, **kwargs):
+                self.pred_calls.append(kwargs)
+                return super().predict(*args, **kwargs)
+
+        model = TrackingModel(**model_kwargs)
+        is_global = isinstance(model, GlobalForecastingModel)
+        hfc_kwargs = self.helper_prepare_global_hfc_input(model, n_fc=n_fc)
+
+        # generate historical forecasts applied globally
+        preds = model.historical_forecasts(
+            retrain=True,
+            apply_globally=True,
+            overlap_end=True,
+            last_points_only=lpo,
+            forecast_horizon=horizon,
+            **hfc_kwargs,
+        )
+
+        for name, series_expected in hfc_kwargs.items():
+            # prepare expected series input
+            series_expected = slice_intersect(series_expected)
+            if n_fc == 1 and is_global:
+                series_expected = [series_expected]
+            elif n_fc == 2:
+                # we have two forecast iterations; they behave differently for global/local models
+                if name == "series":
+                    # target series is sliced for the given forecast iteration
+                    if is_global:
+                        # global model uses all series together in each forecast iteration
+                        series_expected = [[s_[:-1] for s_ in series_expected]] + [
+                            series_expected
+                        ]
+                    else:
+                        # local model must go through each series separately
+                        series_expected = [
+                            series_expected[0][:-1],
+                            series_expected[0],
+                            series_expected[1][:-1],
+                            series_expected[1],
+                        ]
+                else:
+                    # covariates and weights will be aligned to the target series inside the models
+                    if is_global:
+                        series_expected = [series_expected] * 2
+                    else:
+                        series_expected = [series_expected[0]] * 2 + [
+                            series_expected[1]
+                        ] * 2
+
+            # check fit input
+            if isinstance(model, ConformalNaiveModel):
+                # conformal model has a dedicated logic (no underlying model fit/predict, only historical forecasts)
+                # we simply check that the predictions are made correctly
+                assert len(model.fit_calls) == 0
+                assert len(model.pred_calls) == 0
+                continue
+
+            assert len(model.fit_calls) == len(series_expected)
+            for fit_call, s_expected in zip(model.fit_calls, series_expected):
+                assert fit_call[name] == s_expected
+
+            # check predict input
+            assert len(model.pred_calls) == len(series_expected)
+
+            # check predict input (sample weight not part of prediction)
+            if name == "sample_weight":
+                continue
+            # series is not passed to local model prediction
+            if name == "series" and not is_global:
+                assert "series" not in model.pred_calls
+                continue
+
+            for pred_call, s_expected in zip(model.pred_calls, series_expected):
+                assert pred_call[name] == s_expected
+
+        # check predictions
+        series = slice_intersect(hfc_kwargs["series"])
+        assert len(preds) == len(hfc_kwargs["series"])
+        for pred in preds:
+            # for n_fc == 1; start is one step after end of the target series
+            # for n_fc == 2; start is at the end of the target series
+            if lpo:
+                assert isinstance(pred, TimeSeries) and len(pred) == n_fc
+                assert (
+                    pred.start_time()
+                    == series[0].end_time() - (n_fc - 2) * series[0].freq
+                )
+            else:
+                assert isinstance(pred, list) and len(pred) == n_fc
+                for idx, pred_i in enumerate(pred):
+                    assert isinstance(pred_i, TimeSeries)
+                    assert (
+                        pred_i.start_time()
+                        == series[0].end_time() - (n_fc - idx - 2) * series[0].freq
+                    )
+
+    @pytest.mark.parametrize("config", product(models_test_global_hfc, [1, 2]))
+    def test_global_historical_forecasts_data_transformer(self, config):
+        """Tests historical forecasts on a global model with data transformers."""
+        (model_cls, model_kwargs), n_fc = config
+        if issubclass(model_cls, ConformalNaiveModel):
+            # conformal model has a dedicated logic (retrain=False, e.g. different transformer logic)
+            return
+
+        model = model_cls(**model_kwargs)
+        hfc_kwargs = self.helper_prepare_global_hfc_input(model, n_fc=n_fc)
+
+        # Create a custom Pipeline subclass that tracks fit, transform, and inverse_transform arguments
+        class TrackingPipeline(Pipeline):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.fit_calls = []
+                self.transform_calls = []
+                self.inverse_transform_calls = []
+
+            def fit(self, data, *args, **kwargs):
+                self.fit_calls.append(data)
+                return super().fit(data, *args, **kwargs)
+
+            def transform(self, data, *args, **kwargs):
+                self.transform_calls.append(data)
+                return super().transform(data, *args, **kwargs)
+
+            def inverse_transform(self, data, *args, **kwargs):
+                self.inverse_transform_calls.append(data)
+                return super().inverse_transform(data, *args, **kwargs)
+
+        # Create transformers for each data type using our tracking pipeline
+        transformers = {}
+        for name in ["series", "past_covariates", "future_covariates"]:
+            if name in hfc_kwargs:
+                transformers[name] = TrackingPipeline([Scaler(global_fit=True)])
+
+        hfc_kwargs["data_transformers"] = transformers
+
+        # Run historical forecasts
+        preds = model.historical_forecasts(
+            retrain=True, apply_globally=True, overlap_end=True, **hfc_kwargs
+        )
+
+        # Verify that predictions are generated correctly
+        series = slice_intersect(hfc_kwargs["series"])
+        assert len(preds) == len(hfc_kwargs["series"])
+        for pred in preds:
+            assert isinstance(pred, TimeSeries) and len(pred) == n_fc
+            assert (
+                pred.start_time() == series[0].end_time() - (n_fc - 2) * series[0].freq
+            )
+
+        # Verify that transformers were fitted with correct arguments
+        is_global = isinstance(model, GlobalForecastingModel)
+        for name, transformer in transformers.items():
+            # prepare expected series input
+            series_expected = slice_intersect(hfc_kwargs[name])
+            if n_fc == 1 and is_global:
+                series_expected = [series_expected]
+            elif n_fc == 2:
+                # we have two forecast iterations; they behave differently for global/local models
+                # target series is sliced for the given forecast iteration
+                if is_global:
+                    # global model uses all series together in each forecast iteration
+                    series_expected = [[s_[:-1] for s_ in series_expected]] + [
+                        series_expected
+                    ]
+                else:
+                    # local model must go through each series separately
+                    series_expected = [
+                        series_expected[0][:-1],
+                        series_expected[0],
+                        series_expected[1][:-1],
+                        series_expected[1],
+                    ]
+
+            if not is_global:
+                series_expected = [[s] for s in series_expected]
+
+            # The behavior depends on the model type:
+            # - global hfc fits once on all series per forecast iteration
+            # - local hfc fits separately on each series per forecast iteration
+            assert transformer.fit_calls == series_expected
+
+            # target transformer transforms the sliced series for training and prediction (* 2),
+            # covariates transformer only transforms the covariates once (on the entire time frame)
+            if name == "series":
+                series_expected_tr = []
+                for series in series_expected:
+                    series_expected_tr.extend([series] * 2)
+            else:
+                series_expected_tr = slice_intersect(hfc_kwargs[name])
+                if is_global:
+                    series_expected_tr = [slice_intersect(hfc_kwargs[name])] * n_fc
+                elif n_fc == 2:
+                    series_expected_tr = [
+                        series_expected_tr[0],
+                        series_expected_tr[0],
+                        series_expected_tr[1],
+                        series_expected_tr[1],
+                    ]
+                if not is_global:
+                    series_expected_tr = [[s] for s in series_expected_tr]
+            assert transformer.transform_calls == series_expected_tr
+
+            # only target forecasts are inverse transformed
+            if name != "series":
+                assert len(transformer.inverse_transform_calls) == 0
+            else:
+                assert (
+                    len(transformer.inverse_transform_calls) == len(series_expected)
+                    if name == "series"
+                    else 0
+                )
+                for inv_call, s_expected in zip(
+                    transformer.transform_calls, series_expected
+                ):
+                    assert isinstance(inv_call, list)
+                    assert len(inv_call) == len(s_expected)
+
+    def test_global_historical_forecasts_no_intersection(self):
+        """Tests that the series intersection must not be empty."""
+        model = LinearRegressionModel(
+            lags=3,
+            lags_past_covariates=3,
+            lags_future_covariates=(3, 1),
+        )
+        series = [
+            tg.linear_timeseries(
+                start="2000-01-01", length=model.min_train_series_length
+            ),
+            tg.linear_timeseries(
+                start="2020-01-01", length=model.min_train_series_length
+            ),
+        ]
+        with pytest.raises(ValueError) as exc:
+            model.historical_forecasts(series=series, apply_globally=True)
+        assert str(exc.value) == (
+            "The slice intersection of the `series` is empty. Cannot apply historical forecasts globally."
+        )
+
+        valid_series = [series[0]] * 2
+        for name in ["past_covariates", "future_covariates", "sample_weight"]:
+            with pytest.raises(ValueError) as exc:
+                hfc_kwargs = {name: series}
+                model.historical_forecasts(
+                    series=valid_series, apply_globally=True, **hfc_kwargs
+                )
+            if name != "sample_weight":
+                assert str(exc.value) == (
+                    f"The slice intersection of the `{name}` is empty. Cannot apply historical forecasts globally."
+                )
+            else:
+                assert str(exc.value).startswith(
+                    "`sample_weight` at series index 1 must contain at least"
+                )
+
+    def helper_prepare_global_hfc_input(self, model, n_fc: int, horizon: int = 1):
+        # global model
+        s1 = tg.linear_timeseries(length=model.min_train_series_length + 10)
+        s2 = s1[1 : model.min_train_series_length + (n_fc - 1) + horizon] + 1.0
+
+        series = [s1, s2]
+        pc = [s2 + 5.0, s1 + 5.0]
+        fc = [
+            s1.append_values(np.array([1.0])) + 15.0,
+            s2.append_values(np.array([1.0])) + 15.0,
+        ]  # fc must be one longer than target due to lags_future_covariates
+        sw = [s1, s1.slice_intersect(s2)]
+
+        # covariates only for models that support it
+        use_pc = model.supports_past_covariates
+        use_fc = model.supports_future_covariates
+        use_sw = model.supports_sample_weight
+        kwargs = {"series": series}
+        if use_pc:
+            kwargs["past_covariates"] = pc
+        if use_fc:
+            kwargs["future_covariates"] = fc
+        if use_sw:
+            kwargs["sample_weight"] = sw
+        return kwargs

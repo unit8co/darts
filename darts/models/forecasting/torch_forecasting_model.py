@@ -2483,9 +2483,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _optimized_historical_forecasts(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: Union[Sequence[TimeSeries]],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
@@ -2498,20 +2498,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
         predict_kwargs: Optional[dict[str, Any]] = None,
-    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+    ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
         For TorchForecastingModels we use a strided inference dataset to avoid having to recreate trainers and
         datasets for each forecastable index and series.
         """
-        series, past_covariates, future_covariates, series_seq_type = (
-            _process_historical_forecast_input(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                forecast_horizon=forecast_horizon,
-                allow_autoregression=True,
-            )
+        series, past_covariates, future_covariates = _process_historical_forecast_input(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+            allow_autoregression=True,
         )
         forecasts_list = _optimized_historical_forecasts(
             model=self,
@@ -2531,7 +2529,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             random_state=random_state,
             predict_kwargs=predict_kwargs,
         )
-        return series2seq(forecasts_list, seq_type_out=series_seq_type)
+        return forecasts_list
 
     @property
     def _model_encoder_settings(
