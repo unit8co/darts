@@ -335,9 +335,10 @@ class RNNModel(DualCovariatesTorchModel):
             Fraction of neurons affected by Dropout.
         training_length
             The length of both input (target and covariates) and output (target) time series used during
-            training. Must have a larger value than `input_chunk_length`, because otherwise during training
-            the RNN is never run for as many iterations as it will during inference. For more information on
-            this parameter, please see `darts.utils.data.ShiftedDataset`.
+            training. Must be `>input_chunk_length`, because otherwise during training the RNN is never run for as
+            many iterations as it will during inference. For training, a
+            :class:`~darts.utils.data.torch_datasets.training_dataset.ShiftedTorchTrainingDataset` is used with
+            parameters `input_chunk_length=output_chunk_length=training_length` and `shift=1`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
