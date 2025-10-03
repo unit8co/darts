@@ -3669,7 +3669,7 @@ class TimeSeries:
 
         If `fn` takes 1 argument it is simply applied on the values array of shape `(time, n_components, n_samples)`.
         If `fn` takes 2 arguments, it is applied on the `(ts, values)` tuple, where `ts` denotes the
-        timestamp index, and `values` denotes the series' array of values, of shape
+        series' time index, and `values` denotes the series' array of values, of shape
         `(n_timestamps, n_components, n_samples)`. Timestamp index's shape should be `(n, 1, 1)`;
 
         Parameters
@@ -3689,25 +3689,33 @@ class TimeSeries:
 
         Examples
         --------
-        >>> import pandas as pd
         >>> from darts import TimeSeries
         >>> from darts.utils.utils import generate_index
-        >>> import numpy as np
         >>> # create a simple TimeSeries
-        >>> data = {"vals": range(3), "time": generate_index("2020-01-01", length=3, freq="D")}
-        >>> df = pd.DataFrame(data)
-        >>> series = TimeSeries.from_dataframe(df, time_col="time")
-        >>> # define the function with reshaped time index values
-        >>> def fn(times: pd.DatetimeIndex, values: np.ndarray):
-        ...     return values / times.days_in_month.values.reshape(-1, 1, 1)
-        >>> result = series.map(fn)
-        >>> result.values()
-        [[0.        ]
-        [0.03225806]
-        [0.06451613]]
+        >>> series = TimeSeries.from_times_and_values(
+        >>>     times=generate_index("2020-01-01", length=3, freq="D"),
+        >>>     values=range(3),
+        >>> )
+        >>> # map function on values only
+        >>> def fn1(values):
+        >>>     return values / 3.
+        >>>
+        >>> series.map(fn1).values()
+        array([[0.        ],
+               [0.33333333],
+               [0.66666667]])
+        >>>
+        >>> # map function on time index and values
+        >>> def fn2(times, values):
+        >>>     return values / times.days_in_month.values.reshape(-1, 1, 1)
+        >>>
+        >>> series.map(fn2).values()
+        array([[0.        ],
+               [0.03225806],
+               [0.06451613]])
         """
         if not isinstance(fn, Callable):
-            raise_log(TypeError("fn should be callable"), logger)
+            raise_log(TypeError("fn must be a callable"), logger)
 
         if isinstance(fn, np.ufunc):
             if fn.nin == 1 and fn.nout == 1:
@@ -3739,6 +3747,13 @@ class TimeSeries:
             values = fn(self._time_index, self._values)
         else:
             raise_log(ValueError("fn must have either one or two arguments"), logger)
+
+        if values.shape != self.shape:
+            raise_log(
+                ValueError(
+                    f"fn must return an array of shape `{self.shape}`. Received shape `{values.shape}`"
+                )
+            )
 
         return self.__class__(
             times=self._time_index,

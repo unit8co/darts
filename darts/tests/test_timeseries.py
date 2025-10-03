@@ -1696,18 +1696,18 @@ class TestTimeSeries:
             series.map(ufunc_add)
 
     def test_map_fn_not_callable(self):
-        series = linear_timeseries(
-            start_value=1,
-            length=12,
-            freq="MS",
-            start=pd.Timestamp("2000-01-01"),
-            end_value=12,
-        )  # noqa: E501
+        series = linear_timeseries(length=3)
+        with pytest.raises(TypeError) as exc:
+            series.map(fn=1)
+        assert str(exc.value) == "fn must be a callable"
 
-        add = 1
-
-        with pytest.raises(TypeError):
-            series.map(add)
+    def test_map_fn_wrong_output_shape(self):
+        series = linear_timeseries(length=3)
+        with pytest.raises(ValueError) as exc:
+            series.map(fn=lambda x: np.concatenate([x] * 2, axis=1))
+        assert str(exc.value) == (
+            "fn must return an array of shape `(3, 1, 1)`. Received shape `(3, 2, 1)`"
+        )
 
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
