@@ -91,7 +91,7 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
         >>> print(min(series_transformed.values()))
         [-1.]
         >>> print(max(series_transformed.values()))
-        [2.]
+        [1.]
         """
 
         if scaler is None:

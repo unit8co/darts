@@ -127,59 +127,43 @@ class BaseDataTransformer(ABC):
 
         Example
         --------
-        >>> from darts.dataprocessing.transformers import BaseDataTransformer
-        >>> from darts.utils.timeseries_generation import linear_timeseries
-        >>>
-        >>> class SimpleTransform(BaseDataTransformer):
-        >>>
-        >>>         def __init__(self, a):
-        >>>             self._a = a
-        >>>             super().__init__()
-        >>>
-        >>>         @staticmethod
-        >>>         def ts_transform(series, params, **kwargs):
-        >>>             a = params['fixed']['_a']
-        >>>             b = kwargs.pop('b')
-        >>>             return a*series + b
-        >>>
-        >>> series = linear_timeseries(length=5)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[0.  ]],
+        .. code-block:: python
 
-            [[0.25]],
+            class SimpleTransform(BaseDataTransformer):
+                def __init__(self, a):
+                    self._a = a
+                    super().__init__()
 
-            [[0.5 ]],
+                @staticmethod
+                def ts_transform(series, params, **kwargs):
+                    a = params['fixed']['_a']
+                    b = kwargs.pop('b')
+                    return a * series + b
 
-            [[0.75]],
+            # Create and transform a time series
+            series = linear_timeseries(length=5)
+            series.values()
 
-            [[1.  ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
-        >>> series = SimpleTransform(a=2).transform(series, b=3)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[3. ]],
+        Output::
 
-            [[3.5]],
+            array([[0.  ],
+                   [0.25],
+                   [0.5 ],
+                   [0.75],
+                   [1.  ]])
 
-            [[4. ]],
+        .. code-block:: python
 
-            [[4.5]],
+            series = SimpleTransform(a=2).transform(series, b=3)
+            series.values()
 
-            [[5. ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        Output::
+
+            array([[3. ],
+                   [3.5],
+                   [4. ],
+                   [4.5],
+                   [5. ]])
         """
         # Assume `super().__init__` called at *very end* of
         # child-most class's `__init__`, so `vars(self)` contains

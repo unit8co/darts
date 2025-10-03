@@ -60,6 +60,19 @@ generate-api:
 	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../darts ../darts/logging.py ../darts/tests/*
 	@cp -r $(GENAPIDIR)/*.rst "$(SOURCEDIR)/generated_api/"
 
+generate-tf:
+	@pip install ../.
+	@echo "[Makefile] generating transformers API documentation..."
+	@mkdir -p "$(SOURCEDIR)/generated_api"
+	@mkdir -p "/tmp/darts_tf_docs/darts/dataprocessing"
+	@cp -r ../darts/__init__.py "/tmp/darts_tf_docs/darts/"
+	@cp -r ../darts/dataprocessing/__init__.py "/tmp/darts_tf_docs/darts/dataprocessing/"
+	@cp -r ../darts/dataprocessing/transformers "/tmp/darts_tf_docs/darts/dataprocessing/"
+	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" /tmp/darts_tf_docs/darts
+	@rm -rf "/tmp/darts_tf_docs"
+	@echo "[Makefile] copying generated API files..."
+	@cp -r $(GENAPIDIR)/*.rst "$(SOURCEDIR)/generated_api/" 2>/dev/null || true
+
 html:
 	# Note: this target has to be called "html" because its name is given as an argument to Sphinx
 	@echo "[Makefile] generating HTML pages using sphinx-build..."
@@ -67,6 +80,7 @@ html:
 
 build-all-docs: clean copy-examples copy-quickstart generate-readme generate-release_notes generate-userguide generate-api html
 build-api: clean generate-api html
+build-tf: clean generate-tf html
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).

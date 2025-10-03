@@ -124,7 +124,8 @@ html_static_path = ["static"]
 # -- Extension configuration -------------------------------------------------
 
 # ignore outputs code blocks when copying (see https://sphinx-copybutton.readthedocs.io/en/latest/use.html#strip-and-configure-input-prompts-for-code-cells)
-copybutton_prompt_text = ">>> "
+copybutton_prompt_text = r">>>\s?|\.\.\.\s?"
+copybutton_prompt_is_regexp = True
 
 # -- Options for todo extension ----------------------------------------------
 
