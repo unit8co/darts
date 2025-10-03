@@ -468,13 +468,13 @@ class TCNModel(PastCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[-80.48476824],
-               [-80.47896667],
-               [-41.77135603],
-               [-41.76158729],
-               [-41.76854107],
-               [-41.78166819]])
+        >>> print(pred.values())
+        [[-80.48476824]
+         [-80.47896667]
+         [-41.77135603]
+         [-41.76158729]
+         [-41.76854107]
+         [-41.78166819]]
 
         .. note::
             `DeepTCN example notebook <https://unit8co.github.io/darts/examples/09-DeepTCN-examples.html>`_ presents

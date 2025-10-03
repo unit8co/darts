@@ -485,13 +485,13 @@ class RNNModel(DualCovariatesTorchModel):
         >>> )
         >>> model.fit(target, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[ 3.18922903],
-               [ 1.17791019],
-               [ 0.39992814],
-               [ 0.13277921],
-               [ 0.02523252],
-               [-0.01829086]])
+        >>> print(pred.values())
+        [[ 3.18922903]
+         [ 1.17791019]
+         [ 0.39992814]
+         [ 0.13277921]
+         [ 0.02523252]
+         [-0.01829086]]
 
         .. note::
             `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques

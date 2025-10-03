@@ -194,13 +194,13 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.4153701 ],
-               [1006.41907237],
-               [1006.30872957],
-               [1006.28614154],
-               [1006.22355514],
-               [1006.21607546]])
+        >>> print(pred.values())
+        [[1006.4153701 ]
+         [1006.41907237]
+         [1006.30872957]
+         [1006.28614154]
+         [1006.22355514]
+         [1006.21607546]]
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
@@ -602,13 +602,13 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [0.],
-               [1.],
-               [1.],
-               [1.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [0.]
+         [1.]
+         [1.]
+         [1.]]
         """
         # likelihood always set to ClassProbability as it's the only supported classification likelihood
         # this allow users to predict class probabilities,

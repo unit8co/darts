@@ -97,13 +97,13 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         >>> model = KalmanForecaster(dim_x=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[474.40680728],
-               [440.51801726],
-               [461.94512461],
-               [494.42090089],
-               [528.6436328 ],
-               [590.30647185]])
+        >>> print(pred.values())
+        [[474.40680728]
+         [440.51801726]
+         [461.94512461]
+         [494.42090089]
+         [528.6436328 ]
+         [590.30647185]]
 
         .. note::
             `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`_

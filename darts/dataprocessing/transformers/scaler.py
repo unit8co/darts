@@ -81,17 +81,17 @@ class Scaler(FittableDataTransformer, InvertibleDataTransformer):
 
         Examples
         --------
-        >>> from darts.datasets import AirPassengersDataset
         >>> from sklearn.preprocessing import MinMaxScaler
+        >>> from darts import TimeSeries
         >>> from darts.dataprocessing.transformers import Scaler
-        >>> series = AirPassengersDataset().load()
+        >>> series = TimeSeries.from_values([-2, 0, 2])
         >>> scaler = MinMaxScaler(feature_range=(-1, 1))
         >>> transformer = Scaler(scaler)
         >>> series_transformed = transformer.fit_transform(series)
-        >>> print(min(series_transformed.values()))
-        [-1.]
-        >>> print(max(series_transformed.values()))
-        [1.]
+        >>> print(series_transformed.values())
+        [[-1.]
+         [ 0.]
+         [ 1.]]
         """
 
         if scaler is None:

@@ -127,43 +127,34 @@ class BaseDataTransformer(ABC):
 
         Example
         --------
-        .. code-block:: python
-
-            class SimpleTransform(BaseDataTransformer):
-                def __init__(self, a):
-                    self._a = a
-                    super().__init__()
-
-                @staticmethod
-                def ts_transform(series, params, **kwargs):
-                    a = params['fixed']['_a']
-                    b = kwargs.pop('b')
-                    return a * series + b
-
-            # Create and transform a time series
-            series = linear_timeseries(length=5)
-            series.values()
-
-        Output::
-
-            array([[0.  ],
-                   [0.25],
-                   [0.5 ],
-                   [0.75],
-                   [1.  ]])
-
-        .. code-block:: python
-
-            series = SimpleTransform(a=2).transform(series, b=3)
-            series.values()
-
-        Output::
-
-            array([[3. ],
-                   [3.5],
-                   [4. ],
-                   [4.5],
-                   [5. ]])
+        >>> from darts.dataprocessing.transformers import BaseDataTransformer
+        >>> from darts.utils.timeseries_generation import linear_timeseries
+        >>>
+        >>> class SimpleTransform(BaseDataTransformer):
+        >>>     def __init__(self, a):
+        >>>         self._a = a
+        >>>         super().__init__()
+        >>>
+        >>>     @staticmethod
+        >>>     def ts_transform(series, params, **kwargs):
+        >>>         a = params['fixed']['_a']
+        >>>         b = kwargs.pop('b')
+        >>>         return a*series + b
+        >>>
+        >>> series = linear_timeseries(length=5)
+        >>> print(series.values())
+        [[0.  ]
+         [0.25]
+         [0.5 ]
+         [0.75]
+         [1.  ]]
+        >>> series = SimpleTransform(a=2).transform(series, b=3)
+        >>> print(series.values())
+        [[3. ]
+         [3.5]
+         [4. ]
+         [4.5]
+         [5. ]]
         """
         # Assume `super().__init__` called at *very end* of
         # child-most class's `__init__`, so `vars(self)` contains

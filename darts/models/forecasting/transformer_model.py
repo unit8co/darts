@@ -568,13 +568,13 @@ class TransformerModel(PastCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[5.40498034],
-               [5.36561899],
-               [5.80616883],
-               [6.48695488],
-               [7.63158655],
-               [5.65417736]])
+        >>> print(pred.values())
+        [[5.40498034]
+         [5.36561899]
+         [5.80616883]
+         [6.48695488]
+         [7.63158655]
+         [5.65417736]]
 
         .. note::
             `Transformer example notebook <https://unit8co.github.io/darts/examples/06-Transformer-examples.html>`_

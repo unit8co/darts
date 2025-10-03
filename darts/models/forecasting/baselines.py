@@ -36,13 +36,13 @@ class NaiveMean(LocalForecastingModel):
         >>> model = NaiveMean()
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[280.29861111],
-              [280.29861111],
-              [280.29861111],
-              [280.29861111],
-              [280.29861111],
-              [280.29861111]])
+        >>> print(pred.values())
+        [[280.29861111]
+         [280.29861111]
+         [280.29861111]
+         [280.29861111]
+         [280.29861111]
+         [280.29861111]]
         """
         super().__init__()
         self.mean_val = None
@@ -92,13 +92,13 @@ class NaiveSeasonal(LocalForecastingModel):
         >>> model = NaiveSeasonal(K=12)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[417.],
-               [391.],
-               [419.],
-               [461.],
-               [472.],
-               [535.]])
+        >>> print(pred.values())
+        [[417.]
+         [391.]
+         [419.]
+         [461.]
+         [472.]
+         [535.]]
         """
         super().__init__()
         self.last_k_vals = None
@@ -153,13 +153,13 @@ class NaiveDrift(LocalForecastingModel):
         >>> model = NaiveDrift()
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[434.23776224],
-               [436.47552448],
-               [438.71328671],
-               [440.95104895],
-               [443.18881119],
-               [445.42657343]])
+        >>> print(pred.values())
+        [[434.23776224]
+         [436.47552448]
+         [438.71328671]
+         [440.95104895]
+         [443.18881119]
+         [445.42657343]]
         """
         super().__init__()
 
@@ -210,13 +210,13 @@ class NaiveMovingAverage(LocalForecastingModel):
         # using the average of the last 6 months
         >>> model = NaiveMovingAverage(input_chunk_length=6)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[503.16666667],
-               [483.36111111],
-               [462.9212963 ],
-               [455.40817901],
-               [454.47620885],
-               [465.22224366]])
+        >>> print(pred.values())
+        [[503.16666667]
+         [483.36111111]
+         [462.9212963 ]
+         [455.40817901]
+         [454.47620885]
+         [465.22224366]]
         """
         super().__init__()
         self.input_chunk_length = input_chunk_length
@@ -304,13 +304,13 @@ class NaiveEnsembleModel(EnsembleModel):
         >>> model = NaiveEnsembleModel([NaiveSeasonal(K=12), LinearRegressionModel(lags=4)])
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[439.23152974],
-               [431.41161602],
-               [439.72888401],
-               [453.70180806],
-               [454.96757177],
-               [485.16604194]])
+        >>> print(pred.values())
+        [[439.23152974]
+         [431.41161602]
+         [439.72888401]
+         [453.70180806]
+         [454.96757177]
+         [485.16604194]]
         """
         super().__init__(
             forecasting_models=forecasting_models,

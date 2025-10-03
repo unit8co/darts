@@ -186,13 +186,13 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.85376674],
-               [1006.83998586],
-               [1006.63884831],
-               [1006.57201255],
-               [1006.52290556],
-               [1006.39550065]])
+        >>> print(pred.values())
+        [[1006.85376674]
+         [1006.83998586]
+         [1006.63884831]
+         [1006.57201255]
+         [1006.52290556]
+         [1006.39550065]]
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
@@ -512,13 +512,13 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [0.],
-               [1.],
-               [1.],
-               [0.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [0.]
+         [1.]
+         [1.]
+         [0.]]
         """
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,

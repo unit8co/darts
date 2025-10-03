@@ -437,13 +437,13 @@ class DLinearModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[667.20957388],
-               [666.76986848],
-               [666.67733306],
-               [666.06625381],
-               [665.8529289 ],
-               [665.75320573]])
+        >>> print(pred.values())
+        [[667.20957388]
+         [666.76986848]
+         [666.67733306]
+         [666.06625381]
+         [665.8529289 ]
+         [665.75320573]]
 
         .. note::
             This simple usage example produces poor forecasts. In order to obtain better performance, user should

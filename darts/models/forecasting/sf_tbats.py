@@ -100,13 +100,13 @@ class TBATS(StatsForecastModel):
         >>> model = TBATS(season_length=12)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[450.79653684],
-               [472.09265790],
-               [497.76948306],
-               [510.74927369],
-               [520.92224557],
-               [570.33881522]])
+        >>> print(pred.values())
+        [[450.79653684]
+         [472.09265790]
+         [497.76948306]
+         [510.74927369]
+         [520.92224557]
+         [570.33881522]]
         """
         super().__init__(
             model=SF_TBATS(*args, **kwargs),

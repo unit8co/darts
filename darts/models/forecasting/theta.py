@@ -68,13 +68,13 @@ class Theta(LocalForecastingModel):
         >>> model = Theta(theta=2)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[442.7256909 ],
-               [433.74381763],
-               [494.54534585],
-               [480.36937856],
-               [481.06675142],
-               [545.80068173]])
+        >>> print(pred.values())
+        [[442.7256909 ]
+         [433.74381763]
+         [494.54534585]
+         [480.36937856]
+         [481.06675142]
+         [545.80068173]]
         """
 
         super().__init__()
@@ -264,13 +264,13 @@ class FourTheta(LocalForecastingModel):
         >>> model = FourTheta(theta=2)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[443.3949283 ],
-               [434.39769555],
-               [495.28886231],
-               [481.08962991],
-               [481.78610361],
-               [546.61463773]])
+        >>> print(pred.values())
+        [[443.3949283 ]
+         [434.39769555]
+         [495.28886231]
+         [481.08962991]
+         [481.78610361]
+         [546.61463773]]
         """
 
         super().__init__()

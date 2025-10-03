@@ -164,13 +164,13 @@ class LinearRegressionModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.72085839],
-               [1005.6548696 ],
-               [1005.65403772],
-               [1005.6846175 ],
-               [1005.75753605],
-               [1005.81830675]])
+        >>> print(pred.values())
+        [[1005.72085839]
+         [1005.6548696 ]
+         [1005.65403772]
+         [1005.6846175 ]
+         [1005.75753605]
+         [1005.81830675]]
         """
         self.kwargs = kwargs
 

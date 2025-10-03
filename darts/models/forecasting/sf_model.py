@@ -116,13 +116,13 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         >>> model = StatsForecastModel(model=AutoARIMA(season_length=12))
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[445.4276575 ],
-               [420.04912881],
-               [448.7142377 ],
-               [491.23406559],
-               [502.67834069],
-               [566.04774778]])
+        >>> print(pred.values())
+        [[445.4276575 ]
+         [420.04912881]
+         [448.7142377 ]
+         [491.23406559]
+         [502.67834069]
+         [566.04774778]]
         """
         if not isinstance(model, _TS):
             raise ValueError(

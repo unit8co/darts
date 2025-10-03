@@ -190,13 +190,13 @@ class XGBModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.9185 ],
-               [1005.8315 ],
-               [1005.7878 ],
-               [1005.72626],
-               [1005.7475 ],
-               [1005.76074]])
+        >>> print(pred.values())
+        [[1005.9185 ]
+         [1005.8315 ]
+         [1005.7878 ]
+         [1005.72626]
+         [1005.7475 ]
+         [1005.76074]]
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
@@ -496,13 +496,13 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [0.],
-               [1.],
-               [1.],
-               [1.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [0.]
+         [1.]
+         [1.]
+         [1.]]
         """
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,
