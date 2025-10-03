@@ -42,7 +42,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added parameter `add_regressor_configs` to `Prophet` for component-specific control over `prior_scale`, `mode`, and `standardize` of the future covariates. [#2882](https://github.com/unit8co/darts/issues/2882) by [Ramsay Davis](https://github.com/RamsayDavisWL).
   - Added parameters `random_errors` and `error` to `ExponentialSmoothing` for giving control over how probabilistic forecasts are generated. [#2904](https://github.com/unit8co/darts/pull/2904) by [Jakub Chłapek](https://github.com/jakubchlapek).
   - Added parameter `verbose` to `fit()` and `predict()` for verbosity control. [#2805](https://github.com/unit8co/darts/pull/2805) by [Timon Erhart](https://github.com/turbotimon) and [Dennis Bader](https://github.com/dennisbader).
-  - 🔴 Increased quantile component name precision from 2 to 3 decimal places (e.g., `component_name_q0.500` for quantile 0.5). This affects quantile forecasts as well as quantiles computed with `TimeSeries.quantile()`. [#2887](https://github.com/unit8co/darts/pull/2786) by [He Weilin](https://github.com/cnhwl).
+  - 🔴 Increased quantile component name precision from 2 to 3 decimal places (e.g., `component_name_q0.500` for quantile 0.5). This affects quantile forecasts as well as quantiles computed with `TimeSeries.quantile()`. [#2887](https://github.com/unit8co/darts/pull/2887) by [He Weilin](https://github.com/cnhwl).
   - 🔴 Renamed `RegressionEnsembleModel.regression_model` to `ensemble_model` for clarity. [#2894](https://github.com/unit8co/darts/pull/2894) by [Dennis Bader](https://github.com/dennisbader).
 
 - Improvements to the Documentation:
