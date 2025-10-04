@@ -2901,14 +2901,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
                 logger,
             )
-        if output_chunk_length is not None and n > output_chunk_length:
-            raise_log(
-                ValueError(
-                    "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
-                    "`output_chunk_length`."
-                ),
-                logger,
-            )
+        # TODO: disable this check for now.
+        # if output_chunk_length is not None and n > output_chunk_length:
+        #     raise_log(
+        #         ValueError(
+        #             "`predict_likelihood_parameters=True` is only supported for `n` smaller than or equal to "
+        #             "`output_chunk_length`."
+        #         ),
+        #         logger,
+        #     )
 
 
 class LocalForecastingModel(ForecastingModel, ABC):

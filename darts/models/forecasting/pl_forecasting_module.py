@@ -21,7 +21,7 @@ from darts.utils.data.torch_datasets.utils import (
     TorchInferenceBatch,
     TorchTrainingBatch,
 )
-from darts.utils.likelihood_models.torch import TorchLikelihood
+from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
 from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
@@ -623,6 +623,16 @@ class PLForecastingModule(pl.LightningModule, ABC):
         ]
 
         batch_prediction = [out[:, :roll_size, :]]
+
+        # TODO: replace this hack when autoregression with likelihood parameter prediction is supported
+        if (
+            isinstance(self.likelihood, QuantileRegression)
+            and self.predict_likelihood_parameters
+        ):
+            out = out[
+                :, :, self.likelihood._median_idx :: len(self.likelihood.quantiles)
+            ]
+
         prediction_length = roll_size
 
         # predict at least `output_chunk_length` points, so that we use the most recent target values
@@ -693,6 +703,16 @@ class PLForecastingModule(pl.LightningModule, ABC):
             )[:, self.first_prediction_index :, :]
 
             batch_prediction.append(out)
+
+            # TODO: replace this hack when autoregression with likelihood parameter prediction is supported
+            if (
+                isinstance(self.likelihood, QuantileRegression)
+                and self.predict_likelihood_parameters
+            ):
+                out = out[
+                    :, :, self.likelihood._median_idx :: len(self.likelihood.quantiles)
+                ]
+
             prediction_length += self.output_chunk_length
 
         # bring predictions into desired format and drop unnecessary values

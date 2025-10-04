@@ -1799,12 +1799,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 "`roll_size` must be an integer between 1 and `self.output_chunk_length`.",
             )
 
-        # prevent auto-regression when prediction the likelihood parameters
-        raise_if(
-            predict_likelihood_parameters and n > self.output_chunk_length,
-            "`n` must be smaller than or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
-            logger,
-        )
+        # TODO: disable this check for now.
+        # # prevent auto-regression when prediction the likelihood parameters
+        # raise_if(
+        #     predict_likelihood_parameters and n > self.output_chunk_length,
+        #     "`n` must be smaller than or equal to `output_chunk_length` when `predict_likelihood_parameters=True`.",
+        #     logger,
+        # )
 
         # check that `num_samples` is a positive integer
         raise_if_not(num_samples > 0, "`num_samples` must be a positive integer.")
