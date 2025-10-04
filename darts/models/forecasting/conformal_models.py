@@ -18,6 +18,7 @@ from darts.utils.likelihood_models.base import (
     LikelihoodType,
     quantile_names,
 )
+from darts.utils.likelihood_models.torch import QuantileRegression
 
 try:
     from typing import Literal
@@ -358,12 +359,31 @@ class ConformalModel(GlobalForecastingModel, ABC):
             start_format="position",
         )
 
+        # TODO: replace this hack when autoregression with likelihood parameter prediction is supported
+        cal_num_samples = self.cal_num_samples
+        cal_predict_likelihood_parameters = False
+
+        if (
+            isinstance(self.model.likelihood, QuantileRegression)
+            and num_samples == 1
+            and predict_likelihood_parameters
+            and all(self.quantiles == self.model.likelihood.quantiles)
+        ):
+            # if the underlying model is a QR model with the same quantiles as the conformal model,
+            # we can directly use the quantile predictions for calibration
+            logger.info(
+                "Since the underlying model is a Quantile Regression model with the same quantiles as the "
+                "conformal model, we directly use the quantile predictions for calibration."
+            )
+            cal_num_samples = 1
+            cal_predict_likelihood_parameters = True
+
         cal_hfcs = self.model.historical_forecasts(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=n,
-            num_samples=self.cal_num_samples,
+            num_samples=cal_num_samples,
             start=cal_start,
             start_format=cal_start_format,
             stride=self.cal_stride,
@@ -372,7 +392,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             last_points_only=False,
             verbose=verbose,
             show_warnings=False,
-            predict_likelihood_parameters=False,
+            predict_likelihood_parameters=cal_predict_likelihood_parameters,
             random_state=random_state,
             predict_kwargs=kwargs,
         )
@@ -1307,7 +1327,28 @@ class ConformalModel(GlobalForecastingModel, ABC):
 
                 # calibrate and apply interval to the forecasts
                 q_hat_ = self._calibrate_interval(res[:, :, cal_start:cal_end])
-                vals = self._apply_interval(pred_vals_, q_hat_)
+
+                # TODO: replace this hack when autoregression with likelihood parameter prediction is supported
+                if (
+                    isinstance(self.model.likelihood, QuantileRegression)
+                    and num_samples == 1
+                    and predict_likelihood_parameters
+                    and all(self.quantiles == self.model.likelihood.quantiles)
+                ):
+                    vals = np.concatenate(
+                        [
+                            pred_vals_[:, :, : self.idx_median]
+                            + q_hat_[0],  # lower quantiles
+                            pred_vals_[
+                                :, :, self.idx_median : self.idx_median + 1
+                            ],  # model forecast
+                            pred_vals_[:, :, self.idx_median + 1 :]
+                            + q_hat_[1],  # upper quantiles
+                        ],
+                        axis=2,
+                    )
+                else:
+                    vals = self._apply_interval(pred_vals_, q_hat_)
 
                 # optionally, generate samples from the intervals
                 if not predict_likelihood_parameters:

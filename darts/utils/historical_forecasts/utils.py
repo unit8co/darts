@@ -233,17 +233,18 @@ def _historical_forecasts_general_checks(
                 logger,
             )
 
-        if (
-            model.output_chunk_length is not None
-            and n.forecast_horizon > model.output_chunk_length
-        ):
-            raise_log(
-                ValueError(
-                    "`predict_likelihood_parameters=True` is only supported for `forecast_horizon` smaller than or "
-                    "equal to model's `output_chunk_length`."
-                ),
-                logger,
-            )
+        # TODO: disable this check for now.
+        # if (
+        #     model.output_chunk_length is not None
+        #     and n.forecast_horizon > model.output_chunk_length
+        # ):
+        #     raise_log(
+        #         ValueError(
+        #             "`predict_likelihood_parameters=True` is only supported for `forecast_horizon` smaller than or "
+        #             "equal to model's `output_chunk_length`."
+        #         ),
+        #         logger,
+        #     )
 
     if n.data_transformers is not None:
         # check the type
