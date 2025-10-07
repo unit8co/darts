@@ -83,7 +83,7 @@ from darts.utils.data.tabularization import (
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
-    _optimized_historical_forecasts_all_points_regression,
+    _optimized_historical_forecasts_regression,
     _process_historical_forecast_input,
 )
 from darts.utils.likelihood_models.base import LikelihoodType
@@ -1554,7 +1554,7 @@ class SKLearnModel(GlobalForecastingModel):
             allow_autoregression=True,
         )
 
-        hfc = _optimized_historical_forecasts_all_points_regression(
+        hfc = _optimized_historical_forecasts_regression(
             model=self,
             series=series,
             past_covariates=past_covariates,
