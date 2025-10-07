@@ -83,8 +83,7 @@ from darts.utils.data.tabularization import (
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
-    _optimized_historical_forecasts_all_points,
-    _optimized_historical_forecasts_last_points_only,
+    _optimized_historical_forecasts_all_points_regression,
     _process_historical_forecast_input,
 )
 from darts.utils.likelihood_models.base import LikelihoodType
@@ -716,7 +715,8 @@ class SKLearnModel(GlobalForecastingModel):
         stride: int,
     ) -> dict:
         """Creates a validation set and returns a new set of kwargs passed to `self.model.fit()` including the
-        validation set. This method can be overridden if the model requires a different logic to add the eval set."""
+        validation set. This method can be overridden if the model requires a different logic to add the eval set.
+        """
         val_samples, val_labels, val_weight = self._create_lagged_data(
             series=val_series,
             past_covariates=val_past_covariates,
@@ -1516,7 +1516,7 @@ class SKLearnModel(GlobalForecastingModel):
             forecast_horizon=forecast_horizon,
             retrain=retrain,
             show_warnings=show_warnings,
-            allow_autoregression=False,
+            allow_autoregression=True,
         )
 
     def _optimized_historical_forecasts(
@@ -1551,46 +1551,27 @@ class SKLearnModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
-            allow_autoregression=False,
+            allow_autoregression=True,
         )
 
-        # TODO: move the loop here instead of duplicated code in each sub-routine?
-        if last_points_only:
-            hfc = _optimized_historical_forecasts_last_points_only(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                start=start,
-                start_format=start_format,
-                forecast_horizon=forecast_horizon,
-                stride=stride,
-                overlap_end=overlap_end,
-                show_warnings=show_warnings,
-                verbose=verbose,
-                predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
-                predict_kwargs=predict_kwargs,
-            )
-        else:
-            hfc = _optimized_historical_forecasts_all_points(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                start=start,
-                start_format=start_format,
-                forecast_horizon=forecast_horizon,
-                stride=stride,
-                overlap_end=overlap_end,
-                show_warnings=show_warnings,
-                verbose=verbose,
-                predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
-                predict_kwargs=predict_kwargs,
-            )
+        hfc = _optimized_historical_forecasts_all_points_regression(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            overlap_end=overlap_end,
+            show_warnings=show_warnings,
+            verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
+            last_points_only=last_points_only,
+            predict_kwargs=predict_kwargs,
+        )
         return hfc
 
     @property
@@ -1799,19 +1780,27 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         """
         target_ts = get_single_series(series)
         categorical_covariates = [
-            list(target_ts.components)
-            if self._get_lags("target") is not None
-            and self._model_type == ModelType.FORECASTING_CLASSIFIER
-            else [],
-            self.categorical_past_covariates
-            if self.categorical_past_covariates
-            else [],
-            self.categorical_future_covariates
-            if self.categorical_future_covariates
-            else [],
-            self.categorical_static_covariates
-            if self.categorical_static_covariates
-            else [],
+            (
+                list(target_ts.components)
+                if self._get_lags("target") is not None
+                and self._model_type == ModelType.FORECASTING_CLASSIFIER
+                else []
+            ),
+            (
+                self.categorical_past_covariates
+                if self.categorical_past_covariates
+                else []
+            ),
+            (
+                self.categorical_future_covariates
+                if self.categorical_future_covariates
+                else []
+            ),
+            (
+                self.categorical_static_covariates
+                if self.categorical_static_covariates
+                else []
+            ),
         ]
 
         # if no categorical covariates are declared, return empty lists

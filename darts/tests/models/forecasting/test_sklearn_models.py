@@ -3965,6 +3965,71 @@ class TestSKLearnModels:
             future_cov = [future_cov, future_cov] if future_cov else None
         return series, past_cov, future_cov
 
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [(LinearRegressionModel, {})]
+                + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+                + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
+                + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
+            ),
+            [True, False],  # multi_models
+            [True, False],  # last_points_only
+        ),
+    )
+    def test_optimized_historical_forecasts(self, config):
+        """This test ensures that the optimized historical_forecasts method produces the same output as
+        the non-optimized version. It runs the historical_forecasts method twice, once with optimization
+        disabled and once with it enabled, and compares the results."""
+        from darts.datasets import AirPassengersDataset
+
+        (model_cls, model_kwargs), multi_models, last_points_only = config
+
+        forecast_horizon = 5
+        model_kwargs["lags"] = 3
+        model_kwargs["multi_models"] = multi_models
+        model_kwargs["output_chunk_length"] = forecast_horizon - 1
+
+        model = model_cls(
+            **model_kwargs,
+        )
+
+        series = AirPassengersDataset().load()
+
+        model.fit(series)
+
+        hfc_non_optimized = model.historical_forecasts(
+            series=series,
+            retrain=False,
+            last_points_only=last_points_only,
+            enable_optimization=False,
+            num_samples=1,
+            random_state=42,
+        )
+
+        hfc_optimized = model.historical_forecasts(
+            series=series,
+            retrain=False,
+            enable_optimization=True,
+            last_points_only=last_points_only,
+            num_samples=1,
+            random_state=42,
+        )
+
+        assert len(hfc_non_optimized) == len(hfc_optimized)
+        if not last_points_only:
+            [
+                np.testing.assert_array_almost_equal(
+                    hfc_non_optimized[i].values(), hfc_optimized[i].values()
+                )
+                for i in range(len(hfc_non_optimized))
+            ]
+        else:
+            np.testing.assert_array_almost_equal(
+                hfc_non_optimized.values(), hfc_optimized.values()
+            )
+
 
 class TestProbabilisticSKLearnModels:
     models_cls_kwargs_errs = [

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from numpy.lib.stride_tricks import sliding_window_view
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.logging import get_logger
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
@@ -323,7 +323,7 @@ def _optimized_historical_forecasts_all_points_regression(
         )
 
         if last_points_only:
-            predictions = [pred[-1:] for pred in predictions]
+            predictions = concatenate([pred[-1:] for pred in predictions])
 
         forecasts_list.append(predictions)
     return forecasts_list
