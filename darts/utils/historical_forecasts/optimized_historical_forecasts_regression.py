@@ -192,7 +192,7 @@ def _optimized_historical_forecasts_last_points_only(
     return forecasts_list
 
 
-def _optimized_historical_forecasts_all_points_regression(
+def _optimized_historical_forecasts_regression(
     model,
     series: Sequence[TimeSeries],
     past_covariates: Optional[Sequence[TimeSeries]] = None,
