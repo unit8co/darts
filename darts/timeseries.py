@@ -3744,10 +3744,10 @@ class TimeSeries:
         if num_args == 1:  # apply fn on values directly
             values = fn(self._values)
         elif num_args == 2:
-            # apply function to (times, values) - assumes the user provides the reshaped time index
+            # apply function on (times, values)
             values = fn(self._time_index, self._values)
         else:
-            raise_log(ValueError("fn must have either one or two arguments"), logger)
+            raise_log(ValueError("fn must accept either one or two arguments"), logger)
 
         if values.shape != self.shape:
             raise_log(
