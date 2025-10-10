@@ -118,6 +118,7 @@ class SKLearnModel(GlobalForecastingModel):
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
         random_state: Optional[int] = None,
+        dir_rec: Optional[bool] = False,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -210,6 +211,8 @@ class SKLearnModel(GlobalForecastingModel):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
             Controls the randomness for reproducible forecasting.
+        dir_rec
+            Whether the model should use DirRec prediction strategy.
 
         Examples
         --------

@@ -43,6 +43,7 @@ class LinearRegressionModel(SKLearnModel):
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        dir_rec: Optional[bool] = False,
         **kwargs,
     ):
         """Linear regression model.
@@ -136,6 +137,9 @@ class LinearRegressionModel(SKLearnModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        dir_rec
+            Whether the model should use DirRec prediction strategy.
+
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
             `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
@@ -200,6 +204,7 @@ class LinearRegressionModel(SKLearnModel):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
 
     def fit(
