@@ -1670,7 +1670,7 @@ class TestTimeSeries:
         zeroes = zeroes.with_columns_renamed("constant", "linear")
 
         def function(ts, x):
-            return x - ts.month
+            return x - ts.month.values.reshape(-1, 1, 1)
 
         new_series = series.map(function)
         assert new_series == zeroes
@@ -1694,6 +1694,20 @@ class TestTimeSeries:
 
         with pytest.raises(ValueError):
             series.map(ufunc_add)
+
+    def test_map_fn_not_callable(self):
+        series = linear_timeseries(length=3)
+        with pytest.raises(TypeError) as exc:
+            series.map(fn=1)
+        assert str(exc.value) == "fn must be a callable"
+
+    def test_map_fn_wrong_output_shape(self):
+        series = linear_timeseries(length=3)
+        with pytest.raises(ValueError) as exc:
+            series.map(fn=lambda x: np.concatenate([x] * 2, axis=1))
+        assert str(exc.value) == (
+            "fn must return an array of shape `(3, 1, 1)`. Received shape `(3, 2, 1)`"
+        )
 
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")

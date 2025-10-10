@@ -1800,10 +1800,11 @@ class TimeSeries:
         if not self.is_deterministic:
             if not suppress_warnings:
                 logger.warning(
-                    "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
+                    "You are transforming a stochastic TimeSeries (it contains several samples). "
                     "The resulting DataFrame is a 2D object with all samples on the columns. "
-                    "If this is not the expected behavior consider calling a function "
-                    "adapted to stochastic TimeSeries like quantile_df()."
+                    "If this is not the expected behavior, extract statistics from the TimeSeries "
+                    "before calling `to_dataframe()` (e.g. with `TimeSeries.quantile()`, `mean()`, "
+                    "...)."
                 )
 
             comp_name = list(self.components)
@@ -3661,16 +3662,16 @@ class TimeSeries:
     def map(
         self,
         fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[Union[pd.Timestamp, int], np.number], np.number],
+            Callable[[np.ndarray], np.ndarray],
+            Callable[[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray], np.ndarray],
         ],
     ) -> Self:  # noqa: E501
         """Return a new series with the function `fn` applied to the values of this series.
 
         If `fn` takes 1 argument it is simply applied on the values array of shape `(time, n_components, n_samples)`.
-        If `fn` takes 2 arguments, it is applied repeatedly on the `(ts, value[ts])` tuples, where `ts` denotes a
-        timestamp value, and `value[ts]` denotes the array of values at this timestamp, of shape
-        `(n_components, n_samples)`.
+        If `fn` takes 2 arguments, it is applied on the `(ts, values)` tuple, where `ts` denotes the
+        series' time index, and `values` denotes the series' array of values, of shape
+        `(n_timestamps, n_components, n_samples)`. Timestamp index's shape should be `(n, 1, 1)`;
 
         Parameters
         ----------
@@ -3686,9 +3687,36 @@ class TimeSeries:
         -------
         TimeSeries
             A new series with the function `fn` applied to the values.
+
+        Examples
+        --------
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> # create a simple TimeSeries
+        >>> series = TimeSeries.from_times_and_values(
+        >>>     times=generate_index("2020-01-01", length=3, freq="D"),
+        >>>     values=range(3),
+        >>> )
+        >>> # map function on values only
+        >>> def fn1(values):
+        >>>     return values / 3.
+        >>>
+        >>> series.map(fn1).values()
+        array([[0.        ],
+               [0.33333333],
+               [0.66666667]])
+        >>>
+        >>> # map function on time index and values
+        >>> def fn2(times, values):
+        >>>     return values / times.days_in_month.values.reshape(-1, 1, 1)
+        >>>
+        >>> series.map(fn2).values()
+        array([[0.        ],
+               [0.03225806],
+               [0.06451613]])
         """
         if not isinstance(fn, Callable):
-            raise_log(TypeError("fn should be callable"), logger)
+            raise_log(TypeError("fn must be a callable"), logger)
 
         if isinstance(fn, np.ufunc):
             if fn.nin == 1 and fn.nout == 1:
@@ -3715,30 +3743,18 @@ class TimeSeries:
 
         if num_args == 1:  # apply fn on values directly
             values = fn(self._values)
-        elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-            # go over shortest amount of iterations, either over time steps or components and samples
-            if self.n_timesteps <= self.n_components * self.n_samples:
-                new_vals = np.vstack([
-                    np.expand_dims(
-                        fn(self.time_index[i], self._values[i, :, :]), axis=0
-                    )
-                    for i in range(self.n_timesteps)
-                ])
-            else:
-                new_vals = np.stack(
-                    [
-                        np.column_stack([
-                            fn(self.time_index, self._values[:, i, j])
-                            for j in range(self.n_samples)
-                        ])
-                        for i in range(self.n_components)
-                    ],
-                    axis=1,
-                )
-            values = new_vals
-
+        elif num_args == 2:
+            # apply function on (times, values)
+            values = fn(self._time_index, self._values)
         else:
-            raise_log(ValueError("fn must have either one or two arguments"), logger)
+            raise_log(ValueError("fn must accept either one or two arguments"), logger)
+
+        if values.shape != self.shape:
+            raise_log(
+                ValueError(
+                    f"fn must return an array of shape `{self.shape}`. Received shape `{values.shape}`"
+                )
+            )
 
         return self.__class__(
             times=self._time_index,
