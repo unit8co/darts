@@ -149,6 +149,10 @@ class XGBModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to `poisson` or `quantile`. If set, the model will be probabilistic, allowing sampling at
             prediction time. This will overwrite any `objective` parameter.
@@ -458,6 +462,10 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
