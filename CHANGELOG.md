@@ -12,6 +12,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Improved**
 
 **Fixed**
+- `backtest()` now provides clear, actionable error messages when `future_covariates` don't extend far enough or start too late, replacing cryptic `IndexError` and `TypeError` with detailed `ValueError` messages that include timestamps, missing steps, and code examples. Also fixed bug in `residuals()` method where `past_covariates` and `future_covariates` weren't being forwarded to `backtest()`. [#2846](https://github.com/unit8co/darts/issues/2846) by [Aditya Mehra](https://github.com/addym).
 
 **Dependencies**
 
