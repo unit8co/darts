@@ -120,6 +120,10 @@ class RandomForestModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         n_estimators : int
             The number of trees in the forest.
         max_depth : int
