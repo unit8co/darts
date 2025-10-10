@@ -106,13 +106,13 @@ class RegressionEnsembleModel(EnsembleModel):
         >>> )
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[494.24050364],
-               [464.3869697 ],
-               [496.53180506],
-               [544.82269341],
-               [557.35256055],
-               [630.24334385]])
+        >>> print(pred.values())
+        [[494.24050364]
+         [464.3869697 ]
+         [496.53180506]
+         [544.82269341]
+         [557.35256055]
+         [630.24334385]]
         """
         if regression_model is None:
             regression_model = LinearRegressionModel(

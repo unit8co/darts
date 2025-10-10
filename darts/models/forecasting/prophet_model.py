@@ -175,13 +175,13 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         >>> )
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[472.26891239],
-               [467.56955721],
-               [494.47230467],
-               [493.10568429],
-               [497.54686113],
-               [539.11716811]])
+        >>> print(pred.values())
+        [[472.26891239]
+         [467.56955721]
+         [494.47230467]
+         [493.10568429]
+         [497.54686113]
+         [539.11716811]]
         """
 
         super().__init__(add_encoders=add_encoders)

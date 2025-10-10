@@ -768,13 +768,13 @@ class NBEATSModel(PastCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[ 929.78509085],
-               [1013.66339481],
-               [ 999.8843893 ],
-               [ 892.66032082],
-               [ 921.09781534],
-               [ 950.37965429]])
+        >>> print(pred.values())
+        [[ 929.78509085]
+         [1013.66339481]
+         [ 999.8843893 ]
+         [ 892.66032082]
+         [ 921.09781534]
+         [ 950.37965429]]
 
         .. note::
             `NBEATS example notebook <https://unit8co.github.io/darts/examples/07-NBEATS-examples.html>`_

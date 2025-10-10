@@ -102,13 +102,13 @@ class AutoCES(StatsForecastModel):
         >>> model = AutoCES(season_length=12, model="Z")
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[437.52763596],
-               [412.76187406],
-               [445.26244666],
-               [498.15901335],
-               [492.5184186 ],
-               [550.25118939]])
+        >>> print(pred.values())
+        [[437.52763596]
+         [412.76187406]
+         [445.26244666]
+         [498.15901335]
+         [492.5184186 ]
+         [550.25118939]]
         """
         super().__init__(
             model=SFAutoCES(*args, **kwargs),

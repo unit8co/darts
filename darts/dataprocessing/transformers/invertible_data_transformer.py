@@ -108,63 +108,27 @@ class InvertibleDataTransformer(BaseDataTransformer):
         >>>             return (series - b) / a
         >>>
         >>> series = linear_timeseries(length=5)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[0.  ]],
-
-            [[0.25]],
-
-            [[0.5 ]],
-
-            [[0.75]],
-
-            [[1.  ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[0.  ]
+         [0.25]
+         [0.5 ]
+         [0.75]
+         [1.  ]]
         >>> transform = SimpleTransform(a=2)
         >>> series = transform.transform(series, b=3)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[3. ]],
-
-            [[3.5]],
-
-            [[4. ]],
-
-            [[4.5]],
-
-            [[5. ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[3. ]
+         [3.5]
+         [4. ]
+         [4.5]
+         [5. ]]
         >>> series = transform.inverse_transform(series, b=3)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[0.  ]],
-
-            [[0.25]],
-
-            [[0.5 ]],
-
-            [[0.75]],
-
-            [[1.  ]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[0.  ]
+         [0.25]
+         [0.5 ]
+         [0.75]
+         [1.  ]]
         """
         super().__init__(
             name=name,

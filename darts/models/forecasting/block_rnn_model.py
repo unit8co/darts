@@ -477,13 +477,13 @@ class BlockRNNModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[4.97979827],
-               [3.9707572 ],
-               [5.27869295],
-               [5.19697244],
-               [5.28424783],
-               [5.22497681]])
+        >>> print(pred.values())
+        [[4.97979827]
+         [3.9707572 ]
+         [5.27869295]
+         [5.19697244]
+         [5.28424783]
+         [5.22497681]]
 
         .. note::
             `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques

@@ -196,6 +196,10 @@ class SKLearnModel(GlobalForecastingModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         model
             Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
             support multi-output regression for multivariate timeseries, in which case one regressor
@@ -234,13 +238,13 @@ class SKLearnModel(GlobalForecastingModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.73340676],
-               [1005.71159051],
-               [1005.7322616 ],
-               [1005.76314504],
-               [1005.82204348],
-               [1005.89100967]])
+        >>> print(pred.values())
+        [[1005.73340676]
+         [1005.71159051]
+         [1005.7322616 ]
+         [1005.76314504]
+         [1005.82204348]
+         [1005.89100967]]
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -1712,6 +1716,10 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
@@ -2025,6 +2033,10 @@ class RegressionModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         model
             Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
             support multi-output regression for multivariate timeseries, in which case one regressor
@@ -2063,13 +2075,13 @@ class RegressionModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.73340676],
-                [1005.71159051],
-                [1005.7322616 ],
-                [1005.76314504],
-                [1005.82204348],
-                [1005.89100967]])
+        >>> print(pred.values())
+        [[1005.73340676]
+         [1005.71159051]
+         [1005.7322616 ]
+         [1005.76314504]
+         [1005.82204348]
+         [1005.89100967]]
         """
         raise_deprecation_warning(
             "`RegressionModel` is deprecated and will be removed in a future version. "
@@ -2289,6 +2301,10 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
@@ -2326,13 +2342,13 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [1.],
-               [1.],
-               [1.],
-               [0.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [1.]
+         [1.]
+         [1.]
+         [0.]]
         """
 
         model = model if model is not None else LogisticRegression(n_jobs=-1)

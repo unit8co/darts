@@ -99,13 +99,13 @@ class ExponentialSmoothing(LocalForecastingModel):
         >>> model = ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.MULTIPLICATIVE)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[445.24283838],
-               [418.22618932],
-               [465.31305075],
-               [494.95129261],
-               [505.4770514 ],
-               [573.31519186]])
+        >>> print(pred.values())
+        [[445.24283838]
+         [418.22618932]
+         [465.31305075]
+         [494.95129261]
+         [505.4770514 ]
+         [573.31519186]]
         """
         super().__init__()
         self.trend = trend

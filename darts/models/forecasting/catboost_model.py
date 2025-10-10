@@ -135,6 +135,10 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to 'quantile', 'poisson' or 'gaussian'. If set, the model will be probabilistic,
             allowing sampling at prediction time. When set to 'gaussian', the model will use CatBoost's
@@ -194,13 +198,13 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.4153701 ],
-               [1006.41907237],
-               [1006.30872957],
-               [1006.28614154],
-               [1006.22355514],
-               [1006.21607546]])
+        >>> print(pred.values())
+        [[1006.4153701 ]
+         [1006.41907237]
+         [1006.30872957]
+         [1006.28614154]
+         [1006.22355514]
+         [1006.21607546]]
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
@@ -549,6 +553,10 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
@@ -602,13 +610,13 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [0.],
-               [1.],
-               [1.],
-               [1.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [0.]
+         [1.]
+         [1.]
+         [1.]]
         """
         # likelihood always set to ClassProbability as it's the only supported classification likelihood
         # this allow users to predict class probabilities,

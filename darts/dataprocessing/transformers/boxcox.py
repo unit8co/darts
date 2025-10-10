@@ -89,17 +89,12 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         >>> series = AirPassengersDataset().load()
         >>> transformer = BoxCox(lmbda=0.2)
         >>> series_transformed = transformer.fit_transform(series)
-        >>> print(series_transformed.head())
-        <TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)>
-        array([[[7.84735157]],
-            [[7.98214351]],
-            [[8.2765364 ]],
-            [[8.21563229]],
-            [[8.04749318]]])
-        Coordinates:
-        * Month      (Month) datetime64[ns] 1949-01-01 1949-02-01 ... 1949-05-01
-        * component  (component) object '#Passengers'
-        Dimensions without coordinates: sample
+        >>> print(series_transformed.values()[:5])
+        [[7.84735157]
+         [7.98214351]
+         [8.2765364 ]
+         [8.21563229]
+         [8.04749318]]
 
         References
         ----------

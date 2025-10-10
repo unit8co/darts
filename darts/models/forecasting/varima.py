@@ -97,13 +97,13 @@ class VARIMA(TransferableFutureCovariatesLocalForecastingModel):
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
         >>> # the two targets are predicted together
-        >>> pred.values()
-        array([[48.11846185, 47.94272629],
-               [49.85314633, 47.97713346],
-               [51.16145791, 47.99804203],
-               [52.14674087, 48.00872598],
-               [52.88729152, 48.01166578],
-               [53.44242919, 48.00874069]])
+        >>> print(pred.values())
+        [[48.11846185, 47.94272629]
+         [49.85314633, 47.97713346]
+         [51.16145791, 47.99804203]
+         [52.14674087, 48.00872598]
+         [52.88729152, 48.01166578]
+         [53.44242919, 48.00874069]]
         """
         super().__init__(add_encoders=add_encoders)
         self.p = p

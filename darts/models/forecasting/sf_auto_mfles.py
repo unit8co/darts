@@ -102,13 +102,13 @@ class AutoMFLES(StatsForecastModel):
         >>> model = AutoMFLES(season_length=12, test_size=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[466.03298745],
-               [450.76192105],
-               [517.6342497 ],
-               [511.62988828],
-               [520.15305998],
-               [593.38690019]])
+        >>> print(pred.values())
+        [[466.03298745]
+         [450.76192105]
+         [517.6342497 ]
+         [511.62988828]
+         [520.15305998]
+         [593.38690019]]
         """
         super().__init__(
             model=SFAutoMFLES(*args, **kwargs),

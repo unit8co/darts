@@ -126,43 +126,19 @@ class FittableDataTransformer(BaseDataTransformer):
         >>>         return {'scale': scale, 'position': position}
         >>>
         >>> series = linear_timeseries(length=5, start_value=1, end_value=5)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[1.]],
-
-            [[2.]],
-
-            [[3.]],
-
-            [[4.]],
-
-            [[5.]]])
-        Coordinates:
-        * time       (time) datetime64[ns] 2000-01-01 2000-01-02 ... 2000-01-05
-        * component  (component) object 'linear'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[1.]
+         [2.]
+         [3.]
+         [4.]
+         [5.]]
         >>> series = SimpleRangeScaler(scale=2, position=-1).fit_transform(series)
-        >>> print(series)
-        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
-        array([[[-1. ]],
-
-            [[-0.5]],
-
-            [[ 0. ]],
-
-            [[ 0.5]],
-
-            [[ 1. ]]])
-        Coordinates:
-        * time       (time) int64 0 1 2 3 4
-        * component  (component) <U1 '0'
-        Dimensions without coordinates: sample
-        Attributes:
-            static_covariates:  None
-            hierarchy:          None
+        >>> print(series.values())
+        [[-1. ]
+         [-0.5]
+         [ 0. ]
+         [ 0.5]
+         [ 1. ]]
         """
         super().__init__(
             name=name,

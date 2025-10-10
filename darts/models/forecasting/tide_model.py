@@ -610,13 +610,13 @@ class TiDEModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1008.1667634 ],
-               [ 997.08337201],
-               [1017.72035839],
-               [1005.10790392],
-               [ 998.90537286],
-               [1005.91534452]])
+        >>> print(pred.values())
+        [[1008.1667634 ]
+         [ 997.08337201]
+         [1017.72035839]
+         [1005.10790392]
+         [ 998.90537286]
+         [1005.91534452]]
 
         .. note::
             `TiDE example notebook <https://unit8co.github.io/darts/examples/18-TiDE-examples.html>`_ presents

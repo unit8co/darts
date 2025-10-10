@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.37.1"
+version = "0.38.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -40,6 +40,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
+    "sphinx_copybutton",
     "nbsphinx",
     "m2r2",
     "numpydoc",
@@ -121,6 +122,10 @@ html_static_path = ["static"]
 
 
 # -- Extension configuration -------------------------------------------------
+
+# ignore outputs code blocks when copying (see https://sphinx-copybutton.readthedocs.io/en/latest/use.html#strip-and-configure-input-prompts-for-code-cells)
+copybutton_prompt_text = r">>>\s?|\.\.\.\s?"
+copybutton_prompt_is_regexp = True
 
 # -- Options for todo extension ----------------------------------------------
 

@@ -149,6 +149,10 @@ class XGBModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to `poisson` or `quantile`. If set, the model will be probabilistic, allowing sampling at
             prediction time. This will overwrite any `objective` parameter.
@@ -190,13 +194,13 @@ class XGBModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.9185 ],
-               [1005.8315 ],
-               [1005.7878 ],
-               [1005.72626],
-               [1005.7475 ],
-               [1005.76074]])
+        >>> print(pred.values())
+        [[1005.9185 ]
+         [1005.8315 ]
+         [1005.7878 ]
+         [1005.72626]
+         [1005.7475 ]
+         [1005.76074]]
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
@@ -458,6 +462,10 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
@@ -496,13 +504,13 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [0.],
-               [1.],
-               [1.],
-               [1.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [0.]
+         [1.]
+         [1.]
+         [1.]]
         """
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,

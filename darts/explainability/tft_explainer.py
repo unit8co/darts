@@ -90,7 +90,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         >>> model = TFTModel(
         >>>     input_chunk_length=12,
         >>>     output_chunk_length=6,
-        >>>     add_encoders={"cyclic": {"future": ["hour"]}}
+        >>>     add_encoders={"cyclic": {"future": ["month"]}}
         >>> )
         >>> model.fit(series)
         >>> # create the explainer and generate explanations

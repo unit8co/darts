@@ -102,13 +102,13 @@ class AutoETS(StatsForecastModel):
         >>> model = AutoETS(season_length=12, model="AZZ")
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[441.40323676],
-               [415.09871431],
-               [448.90785391],
-               [491.38584654],
-               [493.11817462],
-               [549.88974472]])
+        >>> print(pred.values())
+        [[441.40323676]
+         [415.09871431]
+         [448.90785391]
+         [491.38584654]
+         [493.11817462]
+         [549.88974472]]
         """
         super().__init__(
             model=SFAutoETS(*args, **kwargs),

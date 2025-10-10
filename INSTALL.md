@@ -17,10 +17,10 @@ we also maintain the `u8darts` package, which provides the following alternate l
 * Install core + neural networks (PyTorch): `pip install "u8darts[torch]"` (equivalent to `pip install darts`)
 
 ## From conda-forge
-Create a conda environment (e.g., for Python 3.10):
+Create a conda environment (e.g., for Python 3.11):
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
 
-    conda create --name <env-name> python=3.10
+    conda create --name <env-name> python=3.11
 
 Activate the environment
 
