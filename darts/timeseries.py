@@ -1800,10 +1800,11 @@ class TimeSeries:
         if not self.is_deterministic:
             if not suppress_warnings:
                 logger.warning(
-                    "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
+                    "You are transforming a stochastic TimeSeries (it contains several samples). "
                     "The resulting DataFrame is a 2D object with all samples on the columns. "
-                    "If this is not the expected behavior consider calling a function "
-                    "adapted to stochastic TimeSeries like quantile_df()."
+                    "If this is not the expected behavior, extract statistics from the TimeSeries "
+                    "before calling `to_dataframe()` (e.g. with `TimeSeries.quantile()`, `mean()`, "
+                    "...)."
                 )
 
             comp_name = list(self.components)
