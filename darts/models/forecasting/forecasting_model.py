@@ -1254,6 +1254,100 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             forecasts = forecasts_list
         return series2seq(forecasts, seq_type_out=sequence_type_in)
 
+    def _validate_future_covariates_for_forecast(
+            self,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
+            forecast_horizon: int,
+            method_name: str = "forecast",
+    ) -> None:
+        """
+        Validate that future_covariates have proper time coverage.
+
+        This validation detects when covariates are provided but don't extend far enough,
+        which would otherwise cause cryptic IndexError or TypeError. If covariates are None,
+        the model's own validation will handle it.
+
+        Parameters
+        ----------
+        series
+            The target series or sequence of series
+        future_covariates
+            The future covariates to validate (can be None)
+        forecast_horizon
+            Number of time steps to forecast
+        method_name
+            Name of calling method (for error messages)
+
+        Raises
+        ------
+        ValueError
+            If future_covariates don't start early enough or don't extend far enough
+        """
+        # Only validate if model uses future covariates
+        if not (hasattr(self, 'uses_future_covariates') and self.uses_future_covariates):
+            return
+
+        # Only validate coverage if covariates are provided
+        # If None, let the model's own validation handle it
+        if future_covariates is None:
+            return
+
+        # Validate time coverage
+        from darts import TimeSeries
+
+        model_name = self.__class__.__name__
+
+        # Handle both single series and sequences
+        series_seq = series if isinstance(series, (list, tuple)) else [series]
+        cov_seq = future_covariates if isinstance(future_covariates, (list, tuple)) else [future_covariates]
+
+        for idx, (ts, fc) in enumerate(zip(series_seq, cov_seq)):
+            series_label = f" (series {idx})" if len(series_seq) > 1 else ""
+
+            # Check 1: Covariates must START at or before series start
+            if fc.start_time() > ts.start_time():
+                raise ValueError(
+                    f"{model_name} requires future_covariates to cover the entire series time range{series_label}.\n\n"
+                    f"Problem:\n"
+                    f"  - Series starts at: {ts.start_time()}\n"
+                    f"  - Future covariates start at: {fc.start_time()}\n"
+                    f"  - Gap: Covariates start {(fc.start_time() - ts.start_time()) // ts.freq} time steps AFTER series start\n\n"
+                    f"Solution: Ensure future_covariates begin at or before the series start time.\n\n"
+                    f"Example:\n"
+                    f"    model.{method_name}(\n"
+                    f"        series=my_series,\n"
+                    f"        future_covariates=my_covariates,  # Must cover from series start\n"
+                    f"        forecast_horizon={forecast_horizon}\n"
+                    f"    )"
+                )
+
+            # Check 2: Covariates must END after series end + forecast_horizon
+            required_end = ts.end_time() + ts.freq * forecast_horizon
+            actual_end = fc.end_time()
+
+            if actual_end < required_end:
+                missing_steps = int((required_end - actual_end) / ts.freq)
+
+                raise ValueError(
+                    f"{model_name} requires future_covariates to extend beyond the series end{series_label}.\n\n"
+                    f"Problem:\n"
+                    f"  - Series ends at: {ts.end_time()}\n"
+                    f"  - Future covariates end at: {actual_end}\n"
+                    f"  - Required: {required_end} (series end + {forecast_horizon} steps)\n"
+                    f"  - Missing: {missing_steps} time steps\n\n"
+                    f"Solution: Extend future_covariates to cover the full series + {forecast_horizon} steps.\n\n"
+                    f"Example:\n"
+                    f"    cov_dates = pd.date_range(\n"
+                    f"        start=series.start_time(),\n"
+                    f"        periods=len(series) + {forecast_horizon},\n"
+                    f"        freq=series.freq\n"
+                    f"    )\n"
+                    f"    future_covariates = TimeSeries.from_times_and_values(\n"
+                    f"        times=cov_dates, values=your_data\n"
+                    f"    )\n"
+                    f"    model.{method_name}(series, future_covariates, forecast_horizon={forecast_horizon})"
+                )
     def backtest(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -1456,7 +1550,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             computed per time `series`.
         random_state
             Controls the randomness of probabilistic predictions.
-
         Returns
         -------
         float
@@ -1481,6 +1574,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Same as for type `np.ndarray` but for a sequence of series. The returned metric list has length
             `len(series)` with the `np.ndarray` metrics for each input `series`.
         """
+        self._validate_future_covariates_for_forecast(
+            series,
+            future_covariates,
+            forecast_horizon,
+            "backtest"
+        )
         metric_kwargs = metric_kwargs or dict()
         if not isinstance(metric_kwargs, list):
             metric_kwargs = [metric_kwargs]
@@ -2278,6 +2377,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         residuals = self.backtest(
             series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
             historical_forecasts=historical_forecasts,
             last_points_only=False,
             metric=metric,
