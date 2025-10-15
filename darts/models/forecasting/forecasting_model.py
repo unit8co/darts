@@ -72,9 +72,7 @@ from darts.utils.ts_utils import (
     get_single_series,
     series2seq,
 )
-from darts.utils.utils import (
-    generate_index,
-)
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
