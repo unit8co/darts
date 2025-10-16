@@ -81,6 +81,7 @@ from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
     create_lagged_component_names,
     create_lagged_training_data,
+    strided_moving_window,
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
@@ -1626,7 +1627,14 @@ class SKLearnModel(GlobalForecastingModel):
             covariate_matrices: dict[str, np.ndarray] = {}
             relative_cov_lags: dict[str, np.ndarray] = {}
 
+            # We pre-compute the covariate arrays required by every forecast window.
+            # Each covariate type (past/future) iterates over the forecast start points to
+            # determine the required time span and extract the matching values. The “fast path”
+            # handles the common scenario where all windows share the exact same covariate
+            # series; in that case we slice it once (optionally with a strided view) instead of
+            # slicing per window, yielding O(1) extractions instead of O(n_forecasts).
             # Complexity of this loop: O(n_covariate_types * n_forecasts) with n_covariate_types <= 2 so O(n_forecasts)
+            # TODO: this whole loop is quite complex. Refactor and simplify as much as possible.
             for cov_type, (covs_list, lags) in covariate_inputs.items():
                 lags = list(lags)
                 if len(lags) == 0:
@@ -1641,16 +1649,108 @@ class SKLearnModel(GlobalForecastingModel):
                     + shift
                 )
 
-                covariate_windows = []
-                for train_series, cov_series in zip(prediction_series, covs_list):
+                # Track the covariate time span needed for each prediction window
+                per_series_bounds = []
+                for train_series in prediction_series:
                     start_ts = train_series.end_time() - train_series.freq * steps_back
                     end_ts = start_ts + train_series.freq * (n_steps - 1)
+                    per_series_bounds.append((train_series, start_ts, end_ts))
 
+                vectorized = False
+                # Fast path when every window draws from the same covariate series.
+                if covs_list and len({id(cov) for cov in covs_list}) == 1:
+                    cov_series = covs_list[0]
+                    cov_start = cov_series.start_time()
+                    cov_end = cov_series.end_time()
+                    # Ensure a single covariate series covers the full time span of every forecast window.
+                    # Raise an error otherwise.
+                    coverage_idx = next(
+                        (
+                            idx
+                            for idx, (_, start_ts, end_ts) in enumerate(
+                                per_series_bounds
+                            )
+                            if start_ts < cov_start or end_ts > cov_end
+                        ),
+                        None,
+                    )
+                    if coverage_idx is not None:
+                        _, fail_start_ts, fail_end_ts = per_series_bounds[coverage_idx]
+                        index_text = f" at list/sequence index {coverage_idx} "
+                        raise_log(
+                            ValueError(
+                                f"The `{cov_type}_covariates`{index_text}are not long enough. "
+                                f"Given horizon `n={forecast_horizon}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
+                                f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
+                                f"`output_chunk_length={self.output_chunk_length}`, the `{cov_type}_covariates` have to"
+                                f" range from {fail_start_ts} until {fail_end_ts} (inclusive), but they only range from"
+                                f" {cov_series.start_time()} until {cov_series.end_time()}."
+                            ),
+                            logger=logger,
+                        )
+
+                    start_indices = np.array(
+                        [
+                            cov_series.get_index_at_point(start_ts, after=True)
+                            for _, start_ts, _ in per_series_bounds
+                        ],
+                        dtype=int,
+                    )
+
+                    cov_values = cov_series.values(copy=False)
+                    if not cov_values.flags["C_CONTIGUOUS"]:
+                        # Strided window views rely on contiguous memory
+                        cov_values = np.ascontiguousarray(cov_values)
+
+                    if start_indices.size == 1:
+                        start_idx = start_indices[0]
+                        end_idx = start_idx + n_steps
+                        if end_idx <= len(cov_values):
+                            covariate_matrices[cov_type] = cov_values[
+                                start_idx:end_idx
+                            ][None, ...]
+                            vectorized = True
+                    else:
+                        idx_diffs = np.diff(start_indices)
+                        stride_indices = int(idx_diffs[0]) if idx_diffs.size > 0 else 0
+                        if (
+                            idx_diffs.size > 0
+                            and np.all(idx_diffs == stride_indices)
+                            and stride_indices > 0
+                        ):
+                            # The same covariate chunk can be reused with a constant stride across windows
+                            start_idx = start_indices[0]
+                            required_len = (
+                                stride_indices * (start_indices.size - 1) + n_steps
+                            )
+                            end_idx = start_idx + required_len
+                            if end_idx <= len(cov_values):
+                                cov_segment = cov_values[start_idx:end_idx]
+                                windows_view = strided_moving_window(
+                                    cov_segment,
+                                    window_len=n_steps,
+                                    stride=stride_indices,
+                                    axis=0,
+                                    check_inputs=False,
+                                )
+                                covariate_matrices[cov_type] = np.swapaxes(
+                                    windows_view, 1, 2
+                                )
+                                vectorized = True
+
+                    if vectorized:
+                        continue
+
+                covariate_windows = []
+                for (train_series, start_ts, end_ts), cov_series in zip(
+                    per_series_bounds, covs_list
+                ):
                     end_ts_slice = (
                         end_ts + train_series.freq
                         if train_series.has_range_index
                         else end_ts
                     )
+                    # Slice per window when vectorized extraction is not possible
                     cov_slice = cov_series.slice(start_ts, end_ts_slice)
                     covariate_windows.append(cov_slice.values(copy=False))
 
