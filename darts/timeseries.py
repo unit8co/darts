@@ -64,6 +64,13 @@ from scipy.stats import kurtosis, skew
 
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils.formatting import (
+    format_bytes,
+    format_dict,
+    format_list,
+    make_collapsible_section,
+    make_paragraph,
+)
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
     dataframe_col_to_time_index,
@@ -5468,22 +5475,73 @@ class TimeSeries:
         return np.greater_equal(self._values, other)
 
     def __str__(self):
-        return str(self.data_array(copy=False)).replace(
-            "xarray.DataArray", "TimeSeries (DataArray)"
+        # if one sample then print all values, otherwise print median of samples
+        values_str = (
+            f"Values:\n{self.to_dataframe()}"
+            if self.n_samples == 1
+            else f"Values (median of samples):\n{self.median().to_dataframe()}"
+        )
+
+        freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
+
+        return (
+            f"<TimeSeries shape(timesteps: {self.n_timesteps}, "
+            f"components: {self.n_components}, "
+            f"samples: {self.n_samples})> "
+            f"Size: {format_bytes(self._values.nbytes)}\n"
+            f"{values_str}\n"
+            f"Time frame:   {self._time_index.min()} to {self._time_index.max()} with step {freq_str}\n"
+            f"Components:   {format_list(list(self.components))}\n"
+            f"Static covariates:\n{self.static_covariates if self.static_covariates is not None else '<empty>'}\n"
+            f"Hierarchy:    {format_dict(self.hierarchy)}\n"
+            f"Metadata:     {format_dict(self.metadata)}\n"
         )
 
     def __repr__(self):
-        return (
-            self.data_array(copy=False)
-            .__repr__()
-            .replace("xarray.DataArray", "TimeSeries")
-        )
+        return str(self)
 
     def _repr_html_(self):
+        values_str = (
+            f"Values:\n{self.to_dataframe().to_html(max_rows=10, max_cols=15)}"
+            if self.n_samples == 1
+            else f"Values (median of samples):\n{self.median().to_dataframe().to_html(max_rows=10, max_cols=15)}"
+        )
+
+        freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
+
         return (
-            self.data_array(copy=False)
-            ._repr_html_()
-            .replace("xarray.DataArray", "TimeSeries")
+            make_paragraph(
+                f"&lt;TimeSeries shape(timesteps: {self.n_timesteps}, "
+                f"components: {self.n_components}, "
+                f"samples: {self.n_samples})&gt; "
+                f"Size: {format_bytes(self._values.nbytes)}\n",
+                bold=True,
+                size="1.5em",
+            )
+            + make_paragraph(values_str, bold=True)
+            + make_collapsible_section("Values (full array):", self._values)
+            + make_collapsible_section(
+                "Time frame:",
+                f"{self._time_index.min()} to {self._time_index.max()} with step {freq_str}",
+            )
+            + make_collapsible_section(
+                "Components:",
+                f"{format_list(list(self.components), render_html=True, max_items=10)}",
+            )
+            + make_collapsible_section(
+                "Static covariates:",
+                self.static_covariates.to_html(max_rows=10, max_cols=15)
+                if self.static_covariates is not None
+                else "&lt;empty&gt;",
+            )
+            + make_collapsible_section(
+                "Hierarchy:",
+                f"{format_dict(self.hierarchy, render_html=True, max_items=10)}",
+            )
+            + make_collapsible_section(
+                "Metadata:",
+                f"{format_dict(self.metadata, render_html=True, max_items=10)}",
+            )
         )
 
     def __copy__(self, deep: bool = True):
