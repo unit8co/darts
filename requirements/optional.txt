@@ -1,5 +1,6 @@
 onnx
 onnxruntime
+onnxscript
 optuna
 optuna-integration[pytorch_lightning]
 polars
