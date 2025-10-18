@@ -71,7 +71,8 @@ class TestOnnx:
 
         # check that saving default name works
         model.to_onnx()
-        assert len(os.listdir(tmpdir_fn)) == n_files + 1
+        # PyTorch 2.9+ creates both .onnx and .onnx.data files
+        assert len(os.listdir(tmpdir_fn)) == n_files * 2
 
         # onnx model verification
         onnx_model = onnx.load(onnx_filename)
