@@ -186,9 +186,9 @@ class Pipeline:
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in the pipeline, inverse-transform data. Then inverse transformed data is passed to
-        the next transformer. Transformers are traversed in reverse order. Raises value error if not all of the
-        transformers are invertible and ``partial`` is set to `False`. Set ``partial`` to True for inverting only the
-        InvertibleDataTransformer in the pipeline.
+        the next transformer. Transformers are traversed in reverse order. Raises value error if not all transformers
+        are invertible and `partial` is set to `False`. Set `partial` to True for inverting only the
+        `InvertibleDataTransformer` in the pipeline.
 
         Parameters
         ----------
@@ -196,7 +196,7 @@ class Pipeline:
             (Sequence of) TimeSeries to be inverse transformed.
         partial
             If set to `True`, the inverse transformation is applied even if the pipeline is not fully invertible,
-            calling `inverse_transform()` only on the `InvertibleDataTransformer`s
+            calling `inverse_transform()` only on transformers of type `InvertibleDataTransformer`.
         series_idx
             Optionally, the index(es) of each series corresponding to their positions within the series used to fit
             the transformer (to retrieve the appropriate transformer parameters).

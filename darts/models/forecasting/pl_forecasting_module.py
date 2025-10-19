@@ -35,11 +35,13 @@ def io_processor(forward):
     Note that this wrapper must be added to each of PLForecastinModule's subclasses forward methods.
     Here is an example how to add the decorator:
 
-    ```python
+    .. highlight:: python
+    .. code-block:: python
+
         @io_processor
         def forward(self, *args, **kwargs)
             pass
-    ```
+    ..
 
     Applies
     -------

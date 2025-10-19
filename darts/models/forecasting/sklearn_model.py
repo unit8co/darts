@@ -637,7 +637,7 @@ class SKLearnModel(GlobalForecastingModel):
     def get_estimator(
         self, horizon: int, target_dim: int, quantile: Optional[float] = None
     ):
-        """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
+        """Returns the estimator that forecasts the step `horizon` of the target component `target_dim`.
 
         For probabilistic models fitting quantiles, a desired `quantile` can also be passed. If not passed, it will
         return the model predicting the median (quantile=0.5).

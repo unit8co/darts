@@ -512,26 +512,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         A seven element tuple containing in order:
 
-        (
-            min target lag,
-            max target lag,
-            min past covariate lag,
-            max past covariate lag,
-            min future covariate lag,
-            max future covariate lag,
-            output shift,
-        )
+        - min target lag
+        - max target lag
+        - min past covariate lag
+        - max past covariate lag
+        - min future covariate lag
+        - max future covariate lag
+        - output shift
 
         If `0` is the index of the first prediction point, then all lags are relative to this index.
 
         See examples below.
 
         If the model wasn't fitted with:
-            - target (concerning SKLearnModels only): then the first element should be `None`.
 
-            - past covariates: then the third and fourth elements should be `None`.
-
-            - future covariates: then the fifth and sixth elements should be `None`.
+        - target (concerning SKLearnModels only): then the first element should be `None`.
+        - past covariates: then the third and fourth elements should be `None`.
+        - future covariates: then the fifth and sixth elements should be `None`.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
         lag and maximum target lags potentially different from -1 and 0.

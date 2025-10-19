@@ -39,7 +39,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         we refer to this link for the original and more complete documentation of the parameters.
 
         `trend` must be a ``ModelMode`` Enum member. You can access the Enum with
-         ``from darts.utils.utils import ModelMode``.
+        ``from darts.utils.utils import ModelMode``.
         `seasonal` must be a ``SeasonalityMode`` Enum member. You can access the Enum with
         ``from darts.utils.utils import SeasonalityMode``.
 

@@ -153,16 +153,17 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
     ):
         """
         Collates static covariates of all provided `TimeSeries` and fits the following parameters:
+
             1. `transformer_num`, the fitted numerical static covariate transformer.
             2. `transformer_cat`, the fitted categorical static covariate transformer.
             3. `mask_num`, a dictionary containing two boolean arrays: one that indicates which
-            components of the *untransformed* static covariates are numerical, and another that
-            indicates which components of the *transformed* static covariates are numerical.
+               components of the *untransformed* static covariates are numerical, and another that
+               indicates which components of the *transformed* static covariates are numerical.
             4. `mask_cat`, a dictionary containing two boolean arrays: one that indicates which
-            components of the *untransformed* static covariates are categorical, and another that
-            indicates which components of the *transformed* static covariates are categorical.
+               components of the *untransformed* static covariates are categorical, and another that
+               indicates which components of the *transformed* static covariates are categorical.
             5. `n_cat_cols`, a dictionary that stores the number of categorical columns
-            we should expect in the untransformed and in the transformed static covariates.
+               we should expect in the untransformed and in the transformed static covariates.
         """
 
         fixed_params = params["fixed"]

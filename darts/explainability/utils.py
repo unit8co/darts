@@ -34,8 +34,8 @@ def process_input(
     """Helper function to process and check either of the background or foreground series input to
     `_ForecastingModelExplainer`.
 
-    If no input was provided (`series`, `past/future_covariates`), the fallback will be used for downstream tasks.
-    Will raise an error if both input and fallback are not available.
+    If no input was provided (`series`, `past_covariates`, `future_covariates`), the fallback will be used for
+    downstream tasks. Will raise an error if both input and fallback are not available.
 
     The fallback is dependent on the input type ("background" or "foreground"):
     - for background `input_type`: fallback are the series saved in fitted forecasting model
@@ -62,8 +62,8 @@ def process_input(
         Optionally, one or a sequence of future covariates `TimeSeries` to fall back to in case `future_covariates` was
         not provided.
     check_component_names
-        Whether to enforce that, in the case of multiple time series, all series of the same type (target or
-        *_covariates) must have the same component names.
+        Whether to enforce that, in the case of multiple time series, all series of the same type (target `series` or
+        `past_covariates`, `future_covariates`) must have the same component names.
     requires_input
         Whether the input is required. If `True`, raises an error if no input was provided.
     requires_covariates_encoding

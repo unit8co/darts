@@ -593,15 +593,17 @@ class FittableAnomalyScorer(AnomalyScorer):
         Computes the score on the given series input. And plots the results.
 
         The plot will be composed of the following:
-            - the series itself.
-            - the anomaly score of the score.
-            - the actual anomalies, if given.
+
+        - the series itself.
+        - the anomaly score of the score.
+        - the actual anomalies, if given.
 
         It is possible to:
-            - add a title to the figure with the parameter `title`
-            - give personalized name to the scorer with `scorer_name`
-            - show the results of a metric for the anomaly score (AUC_ROC or AUC_PR),
-            if the actual anomalies is provided.
+
+        - add a title to the figure with the parameter `title`
+        - give personalized name to the scorer with `scorer_name`
+        - show the results of a metric for the anomaly score (AUC_ROC or AUC_PR),
+          if the actual anomalies is provided.
 
         Parameters
         ----------
