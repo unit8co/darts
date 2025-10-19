@@ -55,9 +55,9 @@ class _TFTModule(PLForecastingModule):
         skip_interpolation: bool = False,
         **kwargs,
     ):
-        """PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
+        """PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`__
         The implementation is built upon `pytorch-forecasting's TemporalFusionTransformer
-        <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_.
+        <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`__.
 
         Parameters
         ----------
@@ -678,7 +678,7 @@ class TFTModel(MixedCovariatesTorchModel):
         This is an implementation of the TFT architecture, as outlined in [1]_.
 
         The internal sub models are adopted from `pytorch-forecasting's TemporalFusionTransformer
-        <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_ implementation.
+        <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`__ implementation.
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time),
         future covariates (known for `output_chunk_length` points after prediction time), static covariates,
@@ -848,7 +848,7 @@ class TFTModel(MixedCovariatesTorchModel):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -867,7 +867,7 @@ class TFTModel(MixedCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -933,7 +933,7 @@ class TFTModel(MixedCovariatesTorchModel):
                [[-0.83076568, -0.25780816, -0.28318784]]])
 
         .. note::
-            `TFT example notebook <https://unit8co.github.io/darts/examples/13-TFT-examples.html>`_ presents
+            `TFT example notebook <https://unit8co.github.io/darts/examples/13-TFT-examples.html>`__ presents
             techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}

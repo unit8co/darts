@@ -49,7 +49,7 @@ class TFMProgressBar(TQDMProgressBar):
             Whether to disable all progress bars except the bar for training.
         **kwargs
             Arguments passed to the PyTorch Lightning's `TQDMProgressBar
-            <https://scikit-learn.org/stable/glossary.html#term-random_state>`_.
+            <https://scikit-learn.org/stable/glossary.html#term-random_state>`__.
         """
         super().__init__(**kwargs)
         self.enable_sanity_check_bar = enable_sanity_check_bar

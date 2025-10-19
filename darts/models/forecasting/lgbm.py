@@ -11,8 +11,8 @@ The wrappers come with all capabilities of Darts' `SKLearn*Model`.
 
 For detailed examples and tutorials, see:
 
-* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
-* `SKLearn-Like Classification Model Examples <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
+* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
+* `SKLearn-Like Classification Model Examples <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 
 To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the INSTALL:
 https://github.com/unit8co/darts/blob/master/INSTALL.md
@@ -156,7 +156,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as
             categorical must be integer-encoded. For more information on how LightGBM handles categorical
             features, visit: `Categorical feature support documentation
-            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that
@@ -485,7 +485,7 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
             as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as
             categorical must be integer-encoded. For more information on how LightGBM handles categorical
             features, visit: `Categorical feature support documentation
-            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that

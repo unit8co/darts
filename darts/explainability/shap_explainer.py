@@ -2,7 +2,7 @@
 Shap Explainer for SKLearnModels
 --------------------------------
 
-A `shap explainer <https://github.com/slundberg/shap>`_ specifically for time series
+A `shap explainer <https://github.com/slundberg/shap>`__ specifically for time series
 forecasting models.
 
 This class is (currently) limited to Darts' `SKLearnModel` instances of forecasting models. It uses shap values to

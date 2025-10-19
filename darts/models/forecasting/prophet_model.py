@@ -49,7 +49,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     ):
         """Facebook Prophet
 
-        This class provides a basic wrapper around `Facebook Prophet <https://github.com/facebook/prophet>`_.
+        This class provides a basic wrapper around `Facebook Prophet <https://github.com/facebook/prophet>`__.
         It supports adding country holidays as well as custom seasonalities and adds support for stochastic
         forecasting and future covariates.
 
@@ -155,7 +155,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
-            `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+            `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`__.
 
         Examples
         --------

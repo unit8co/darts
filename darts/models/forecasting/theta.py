@@ -215,7 +215,7 @@ class FourTheta(LocalForecastingModel):
         """
         An implementation of the 4Theta method with configurable `theta` parameter.
 
-        See M4 competition `solution <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`_.
+        See M4 competition `solution <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`__.
 
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.

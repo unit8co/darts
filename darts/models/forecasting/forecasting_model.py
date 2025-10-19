@@ -1407,7 +1407,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         metric
             A metric function or a list of metric functions. Each metric must either be a Darts metric (see `here
-            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__), or a custom metric that has an
             identical signature as Darts' metrics, uses decorators :func:`~darts.metrics.metrics.multi_ts_support` and
             :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
         reduction
@@ -1763,7 +1763,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         metric
             A metric function that returns the error between two `TimeSeries` as a float value . Must either be one of
             Darts' "aggregated over time" metrics (see `here
-            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that as input two
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__), or a custom metric that as input two
             `TimeSeries` and returns the error
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
@@ -2170,7 +2170,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         metric
             Either one of Darts' "per time step" metrics (see `here
-            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__), or a custom metric that has an
             identical signature as Darts' "per time step" metrics, uses decorators
             :func:`~darts.metrics.metrics.multi_ts_support` and :func:`~darts.metrics.metrics.multi_ts_support`,
             and returns one value per time step.

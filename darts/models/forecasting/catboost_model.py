@@ -13,9 +13,9 @@ The wrappers come with all capabilities of Darts' `SKLearn*Model`.
 For detailed examples and tutorials, see:
 
 * `SKLearn-Like Regression Model Examples
-  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
+  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
 * `SKLearn-Like Classification Model Examples
-  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
+  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 
 To enable CatBoost support in Darts, follow the detailed install instructions for CatBoost in the INSTALL:
 https://github.com/unit8co/darts/blob/master/INSTALL.md
@@ -162,7 +162,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
             must be integer-encoded. For more information on how CatBoost handles categorical features,
             visit: `Categorical feature support documentatio
-            <https://catboost.ai/docs/en/features/categorical-features>`_.
+            <https://catboost.ai/docs/en/features/categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `CatBoostRegressor`. The components that
@@ -576,7 +576,7 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
             as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
             must be integer-encoded. For more information on how CatBoost handles categorical features,
             visit: `Categorical feature support documentatio
-            <https://catboost.ai/docs/en/features/categorical-features>`_.
+            <https://catboost.ai/docs/en/features/categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `CatBoostRegressor`. The components that

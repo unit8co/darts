@@ -21,17 +21,17 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 
 - **Static covariates** are time-invariant external data / information about the series and can be used by some models
   to help improve predictions. Find more info on covariates `here
-  <https://unit8co.github.io/darts/userguide/covariates.html>`_.
+  <https://unit8co.github.io/darts/userguide/covariates.html>`__.
 - A **hierarchy** describes the hierarchical structure of the components which can be used to reconcile forecasts. For
   more info on hierarchical reconciliation `here
-  <https://unit8co.github.io/darts/examples/16-hierarchical-reconciliation.html>`_.
+  <https://unit8co.github.io/darts/examples/16-hierarchical-reconciliation.html>`__.
 - **Metadata** can be used to store any additional information about the series which will not be used by any model.
 
 ``TimeSeries`` **are guaranteed to:**
 
 - Have a strictly monotonically increasing time index with a well-defined frequency (without holes / missing dates).
   For more info on available ``DateTimeIndex`` frequencies, see `date offset aliases
-  <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_. For integer-indexed
+  <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__. For integer-indexed
   series the frequency corresponds to the constant step size between consecutive indices.
 - Contain numeric data types only
 - Have unique component / column names
@@ -142,7 +142,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         components
@@ -180,7 +180,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
@@ -528,7 +528,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -618,7 +618,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -654,7 +654,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
 
@@ -708,7 +708,7 @@ class TimeSeries:
         df
             The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
             polars.DataFrame, ...). See the `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`__ for more
             information.
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
@@ -729,7 +729,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -765,7 +765,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
@@ -878,7 +878,7 @@ class TimeSeries:
         df
             The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
             polars.DataFrame, ...). See the `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`__ for more
             information.
         group_cols
             A string or list of strings representing the columns from the DataFrame by which to extract the
@@ -912,7 +912,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -1162,7 +1162,7 @@ class TimeSeries:
         pd_series
             The Series, or anything which can be converted to a narwhals Series (e.g. pandas.Series, ...). See the
             `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`__ for more
             information.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
@@ -1172,7 +1172,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -1255,7 +1255,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         columns
@@ -1293,7 +1293,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
@@ -1386,7 +1386,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
@@ -1469,7 +1469,7 @@ class TimeSeries:
             ..
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
 
@@ -1730,7 +1730,7 @@ class TimeSeries:
             Whether to return a copy of the series. Leave it to True unless you know what you are doing.
         backend
             The backend to which to export the `TimeSeries`. See the `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`_ for all supported
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`__ for all supported
             backends.
 
         Returns
@@ -1774,7 +1774,7 @@ class TimeSeries:
             Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
         backend
             The backend to which to export the `TimeSeries`. See the `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`_ for all supported
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`__ for all supported
             backends.
         time_as_index
             Whether to set the time index as the index of the dataframe or in the left-most column.
@@ -3179,7 +3179,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -3313,7 +3313,7 @@ class TimeSeries:
             For example, assume the series contains the components
             ``["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]``,
             the following dictionary would encode the groupings shown on
-            `this figure <https://otexts.com/fpp3/hts.html#fig:GroupTree>`_:
+            `this figure <https://otexts.com/fpp3/hts.html#fig:GroupTree>`__:
 
             .. highlight:: python
             .. code-block:: python
@@ -3515,7 +3515,7 @@ class TimeSeries:
 
         The holiday component is binary where `1` corresponds to a time step falling on a holiday.
 
-        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
+        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`__.
 
         This works only for deterministic time series (i.e., made of 1 sample).
 
@@ -3567,7 +3567,7 @@ class TimeSeries:
         method
             A method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
             in the reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
-            <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`_.
+            <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`__.
             Supported methods: ["all", "any", "asfreq", "backfill", "bfill", "count", "ffill", "first", "interpolate",
             "last", "max", "mean", "median", "min", "nearest", "pad", "prod", "quantile", "reduce", "std", "sum",
             "var"].
@@ -3578,7 +3578,7 @@ class TimeSeries:
             some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more information, see the `xarray resample() documentation
-            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`__.
 
         Returns
         -------
@@ -3787,14 +3787,14 @@ class TimeSeries:
             :``"function"``: Mandatory. The name of one of the pandas builtin transformation functions,
                             or a callable function that can be applied to the input series.
                             Pandas' functions can be found in the
-                            `documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+                            `documentation <https://pandas.pydata.org/docs/reference/window.html>`__.
 
             :``"mode"``: Optional. The name of the pandas windowing mode on which the ``"function"`` is going to be
                         applied. The options are "rolling", "expanding" and "ewm".
                         If not provided, Darts defaults to "expanding".
                         User defined functions can use either "rolling" or "expanding" modes.
                         More information on pandas windowing operations can be found in the `documentation
-                        <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`_.
+                        <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`__.
 
             :``"components"``: Optional. A string or list of strings specifying the TimeSeries components on which the
                                transformation should be applied. If not specified, the transformation will be
@@ -3823,7 +3823,7 @@ class TimeSeries:
                 NaN). Darts reuses pandas defaults of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
             * :``"win_type"``: The type of weigthing to apply to the window elements.
                 If provided, it should be one of `scipy.signal.windows
-                <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
+                <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`__.
             * :``"center"``: ``True``/``False`` to set the observation at the current timestep at the center of the
                 window (when ``forecasting_safe`` is `True`, Darts enforces ``"center"`` to ``False``).
             * :``"closed"``: ``"right"``/``"left"``/``"both"``/``"neither"`` to specify whether the right,
@@ -3831,7 +3831,7 @@ class TimeSeries:
                 Darts defaults to pandas default of ``"right"``.
 
             More information on the available functions and their parameters can be found in the
-            `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+            `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`__.
 
             For user-provided functions, extra keyword arguments in the transformation dictionary are passed to the
             user-defined function.
@@ -3840,9 +3840,9 @@ class TimeSeries:
             It is expected that the function returns a single
             value for each window. Other possible configurations can be found in the
             `pandas.DataFrame.rolling().apply()
-            documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
+            documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`__
             and `pandas.DataFrame.expanding().apply()
-            documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
+            documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`__.
 
         treat_na
             Specifies how to treat missing values that were added by the window transformations
@@ -4934,7 +4934,7 @@ class TimeSeries:
         """Return the time index and values with missing dates inserted.
 
         This requires either a provided `freq` or the possibility to infer a unique frequency from `times` (see
-        `offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
+        `offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__
         for more info on supported frequencies).
 
         Parameters

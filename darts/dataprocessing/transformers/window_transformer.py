@@ -42,14 +42,14 @@ class WindowTransformer(BaseDataTransformer):
             :``"function"``:        Mandatory. The name of one of the pandas builtin transformation functions,
                                     or a callable function that can be applied to the input series.
                                     Pandas' functions can be found in the
-                                    `documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+                                    `documentation <https://pandas.pydata.org/docs/reference/window.html>`__.
 
             :``"mode"``:            Optional. The name of the pandas windowing mode on which the ``"function"`` is
                                     going to be applied. The options are "rolling", "expanding" and "ewm".
                                     If not provided, Darts defaults to "expanding".
                                     User defined functions can use either "rolling" or "expanding" modes.
                                     More information on pandas windowing operations can be found in the `documentation
-                                    <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`_.
+                                    <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`__.
 
             :``"components"``:      Optional. A string or list of strings specifying the TimeSeries components on which
                                     the transformation should be applied. If not specified, the transformation will be
@@ -82,7 +82,7 @@ class WindowTransformer(BaseDataTransformer):
             :``"win_type"``:    The type of weigthing to apply to the window elements.
                                 If provided, it should be one of `scipy.signal.windows
                                 <https://docs.scipy.org/doc/scipy/reference/signal.windows.html
-                                #module-scipy.signal.windows>`_.
+                                #module-scipy.signal.windows>`__.
 
             :``"center"``:      ``True``/``False`` to set the observation at the current timestep at the center of the
                                 window (when ``forecasting_safe`` is `True`, Darts enforces ``"center"`` to ``False``).
@@ -92,7 +92,7 @@ class WindowTransformer(BaseDataTransformer):
                                 Darts defaults to ``"both"``.
 
             More information on the available functions and their parameters can be found in the
-            `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+            `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`__.
 
             For user-provided functions, extra keyword arguments in the transformation dictionary are passed to the
             user-defined function.
@@ -101,9 +101,9 @@ class WindowTransformer(BaseDataTransformer):
             It is expected that the function returns a single
             value for each window. Other possible configurations can be found in the
             `pandas.DataFrame.rolling().apply() documentation
-            <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
+            <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`__
             and `pandas.DataFrame.expanding().apply() documentation
-            <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
+            <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`__.
         treat_na
             Specifies how to treat missing values that were added by the window transformations
             at the beginning of the resulting TimeSeries. By default, Darts will leave NaNs in the resulting TimeSeries.

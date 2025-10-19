@@ -19,7 +19,7 @@ The attention and feature importance values can be extracted using the :class:`T
 :func:`explain() <TFTExplainer.explain>`. An example of this is shown in the method description.
 
 We also show how to use the `TFTExplainer` in the example notebook of the `TFTModel` `here
-<https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability>`_.
+<https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability>`__.
 """
 
 from collections.abc import Sequence
