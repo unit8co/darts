@@ -667,7 +667,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         random_state: Optional[int] = None,
     ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
-        """Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
+        r"""Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
 
         If `historical_forecasts` are provided, the metric(s) (given by the `metric` function) is evaluated directly on
         all forecasts and actual values. The same `series` and `last_points_only` value must be passed that were used
@@ -735,11 +735,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
               or `retrain` is a ``Callable`` and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
-            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
-            shifted by `output_chunk_shift` points into the future.
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
-            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+            There are additional rules for some edge cases:
+
+            - If `start` is before the trainable / forecastable points, uses the closest valid start point that is a
+              round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            - If `start` is after the trainable / forecastable points, will ignore the parameter (default behavior with
+              ``None``) and start at the first trainable / predictable point.
+            - If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is
+              also shifted by `output_chunk_shift` points into the future.
+
         start_format
             Defines the `start` format.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
@@ -820,9 +824,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
             An numpy array of backtest scores. For single series and one of:
 
             - a single `metric` function, `historical_forecasts` generated with `last_points_only=False`
-              and backtest `reduction=None`. The output has shape (n forecasts, *).
+              and backtest `reduction=None`. The output has shape (n forecasts, \*).
             - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.
-              The output has shape (*, n metrics) when using a backtest `reduction`, and (n forecasts, *, n metrics)
+              The output has shape (\*, n metrics) when using a backtest `reduction`, and (n forecasts, \*, n metrics)
               when `reduction=None`
             - multiple uni/multivariate series including `series_reduction` and at least one of
               `component_reduction=None` or `time_reduction=None` for "per time step metrics"
