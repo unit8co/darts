@@ -14,7 +14,7 @@ import os
 import sys
 from datetime import datetime
 
-sys.path.insert(0, os.path.abspath("../../.."))
+sys.path.insert(0, os.path.abspath("../.."))
 
 
 # -- Project information -----------------------------------------------------
@@ -86,6 +86,8 @@ exclude_patterns = [
 ]
 
 autosummary_generate = True
+autosummary_generate_overwrite = True
+autosummary_imported_members = False
 
 
 # -- numpydoc options --------------------------------------------------------
@@ -96,7 +98,7 @@ numpydoc_attributes_as_param_list = False
 numpydoc_show_class_members = True
 
 # This might be needed, see https://github.com/numpy/numpydoc/issues/69
-numpydoc_class_members_toctree = True
+numpydoc_class_members_toctree = False
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -111,7 +113,6 @@ html_favicon = "static/docs-favicon.ico"
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
     "twitter_url": "https://twitter.com/unit8co",
-    "search_bar_position": "navbar",
 }
 
 

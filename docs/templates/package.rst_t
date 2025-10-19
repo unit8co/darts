@@ -11,6 +11,9 @@
 {%- endmacro %}
 
 
+{{ pkgname }}
+{{ "=" * pkgname|length }}
+
 {{ automodule(pkgname, automodule_options) }}
 
     .. toctree::

@@ -1,3 +1,6 @@
+{{ qualname }}
+{{ "=" * qualname|length }}
+
 .. automodule:: {{ qualname }}
    :members:
    :undoc-members:

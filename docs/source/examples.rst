@@ -97,7 +97,7 @@ Classification models example notebook:
    examples/24-SKLearnClassifierModel-examples.ipynb
 
 Conformal Prediction
-=================
+====================
 
 Conformal prediction example notebook:
 
