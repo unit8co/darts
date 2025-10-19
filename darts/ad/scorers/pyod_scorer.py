@@ -1,6 +1,6 @@
 """
 PyOD Scorer
------
+-----------
 
 This scorer can wrap around detection algorithms of PyOD.
 `PyOD https://pyod.readthedocs.io/en/latest/#`_.

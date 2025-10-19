@@ -1,6 +1,6 @@
 """
-TFT Explainer for Temporal Fusion Transformer (TFTModel)
-------------------------------------
+TFTModel Explainer
+------------------
 
 The `TFTExplainer` uses a trained :class:`TFTModel <darts.models.forecasting.tft_model.TFTModel>` and extracts the
 explainability information from the model.

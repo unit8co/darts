@@ -1,5 +1,8 @@
 """
-This file contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules
+Base Lightning Module
+---------------------
+
+Contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules
 """
 
 import copy

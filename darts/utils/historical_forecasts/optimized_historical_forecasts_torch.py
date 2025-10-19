@@ -1,3 +1,8 @@
+"""
+Optimized Historical Forecasts for `TorchForecastingModel`
+----------------------------------------------------------
+"""
+
 import inspect
 from collections.abc import Sequence
 from typing import Any, Literal, Optional, Union

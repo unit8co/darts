@@ -50,14 +50,15 @@ autodoc_default_options = {
     "inherited-members": None,
     "show-inheritance": None,
     "ignore-module-all": True,
-    "exclude-members": "LocalForecastingModel,FutureCovariatesLocalForecastingModel,"
-    + "TransferableFutureCovariatesLocalForecastingModel,GlobalForecastingModel,TorchForecastingModel,"
-    + "PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,MixedCovariatesTorchModel,"
-    + "SplitCovariatesTorchModel,"
-    + "min_train_series_length,"
-    + "first_prediction_index,future_covariate_series,past_covariate_series,"
-    + "initialize_encoders,register_datapipe_as_function,register_function,functions,"
-    + "SplitTimeSeriesSequence,randint,AnomalyModel",
+    "exclude-members": (
+        "LocalForecastingModel,FutureCovariatesLocalForecastingModel,"
+        "TransferableFutureCovariatesLocalForecastingModel,GlobalForecastingModel,"
+        "TorchForecastingModel,PastCovariatesTorchModel,FutureCovariatesTorchModel,"
+        "DualCovariatesTorchModel,MixedCovariatesTorchModel,SplitCovariatesTorchModel,"
+        "min_train_series_length,first_prediction_index,future_covariate_series,"
+        "past_covariate_series,initialize_encoders,register_datapipe_as_function,"
+        "register_function,functions,SplitTimeSeriesSequence,randint,AnomalyModel"
+    ),
 }
 
 # In order to also have the docstrings of __init__() methods included
@@ -86,8 +87,6 @@ exclude_patterns = [
 ]
 
 autosummary_generate = True
-autosummary_generate_overwrite = True
-autosummary_imported_members = False
 
 
 # -- numpydoc options --------------------------------------------------------
@@ -113,6 +112,7 @@ html_favicon = "static/docs-favicon.ico"
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
     "twitter_url": "https://twitter.com/unit8co",
+    "search_bar_position": "navbar",
 }
 
 

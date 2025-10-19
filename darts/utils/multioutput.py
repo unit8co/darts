@@ -1,3 +1,8 @@
+"""
+Multi-Output Models for `SKLearnModel`
+--------------------------------------
+"""
+
 import inspect
 from typing import Optional
 

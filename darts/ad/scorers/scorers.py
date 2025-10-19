@@ -1,5 +1,6 @@
 """
-Scorers Base Classes
+Base Scorer
+-----------
 """
 
 # TODO:

@@ -1,6 +1,6 @@
 """
 Explainability Result
---------------------
+---------------------
 
 Contains the explainability results obtained from :func:`_ForecastingModelExplainer.explain()
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.

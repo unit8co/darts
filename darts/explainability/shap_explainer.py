@@ -1,6 +1,7 @@
 """
 Shap Explainer for SKLearnModels
-------------------------------------
+--------------------------------
+
 A `shap explainer <https://github.com/slundberg/shap>`_ specifically for time series
 forecasting models.
 

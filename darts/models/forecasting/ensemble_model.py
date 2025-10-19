@@ -1,5 +1,6 @@
 """
-Ensemble Model Base Class
+Base Ensemble Model
+-------------------
 """
 
 import copy

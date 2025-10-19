@@ -1,5 +1,6 @@
 """
-Anomaly models base classes
+Base Anomaly Model
+------------------
 """
 
 import sys

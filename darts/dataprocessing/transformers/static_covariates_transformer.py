@@ -1,6 +1,6 @@
 """
 Static Covariates Transformer
-------
+-----------------------------
 """
 
 from collections import OrderedDict

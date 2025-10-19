@@ -1,6 +1,6 @@
 """
-Gaussian Processes
-------------------
+Gaussian Process Filter
+-----------------------
 """
 
 from typing import Optional

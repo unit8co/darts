@@ -1,4 +1,7 @@
 """
+Layer Norm Variants
+-------------------
+
 MIT License
 
 Copyright (c) 2020 Phil Wang

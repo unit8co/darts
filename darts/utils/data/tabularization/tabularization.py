@@ -1,3 +1,10 @@
+"""
+Data Tabularization Methods
+---------------------------
+
+Tabularization methods to convert time series data into tabular format for usage with SKLearn-like models.
+"""
+
 import warnings
 from collections.abc import Sequence
 from functools import reduce

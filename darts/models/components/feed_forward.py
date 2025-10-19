@@ -1,4 +1,7 @@
 r"""
+Feed-Forward Module
+-------------------
+
 The MIT License (MIT)
 
 Copyright (c) 2020 Varuna Jayasiri

@@ -1,3 +1,8 @@
+"""
+Callbacks for `TorchForecastingModel`
+-------------------------------------
+"""
+
 import sys
 
 from pytorch_lightning.callbacks import TQDMProgressBar
