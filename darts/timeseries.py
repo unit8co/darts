@@ -4338,7 +4338,7 @@ class TimeSeries:
         default_formatting
             Whether to use the darts default scheme.
         title
-            Optionally, a custom plot title. If `None`, will use an empty string.
+            Optionally, a plot title.
         label
             Can either be a string or list of strings. If a string and the series only has a single component, it is
             used as the label for that component. If a string and the series has multiple components, it is used as
