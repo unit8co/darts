@@ -8,6 +8,22 @@ Install Darts with all models except the ones from optional dependencies (Prophe
 If this fails on your platform, please follow the official installation
 guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
 
+## From Source (Development Version)
+To install the latest development version directly from GitHub:
+
+```bash
+# Install from main branch
+uv pip install git+https://github.com/unit8co/darts.git@master
+
+# Or install a specific branch (e.g., a feature branch)
+uv pip install git+https://github.com/unit8co/darts.git@feature-branch-name
+
+# Or install with optional dependencies
+uv pip install "git+https://github.com/unit8co/darts.git@master#egg=u8darts[all]"
+```
+
+This is useful for testing unreleased features or contributing to development.
+
 As some dependencies are relatively big or involve non-Python dependencies,
 we also maintain the `u8darts` package, which provides the following alternate lighter install options:
 
@@ -53,6 +69,42 @@ Install the `xgboost` package (version 2.1.4 or more recent) using the [XGBoost 
 
 #### StatsForecast
 Install the `statsforecast` package (version 1.4 or more recent) using the [StatsForecast install guide](https://nixtlaverse.nixtla.io/statsforecast/index.html#installation)
+
+#### TimesFM
+To use the `TimesFMModel` wrapper for Google's TimesFM foundation model:
+
+**Option 1: Install with Darts extras (recommended)**
+```bash
+pip install "darts[timesfm]"
+# or with uv
+uv pip install "darts[timesfm]"
+```
+
+**Option 2: Manual installation from source**
+1. Install Darts with PyTorch support: `pip install "u8darts[torch]"` or `pip install darts`
+2. Install TimesFM from source:
+   ```bash
+   git clone https://github.com/google-research/timesfm.git
+   cd timesfm
+   pip install -e .[torch]
+   ```
+
+**Requirements:**
+- Python 3.11+ (for PyTorch version)
+- PyTorch 2.0+ with MPS support (for Apple Silicon) or CUDA (for NVIDIA GPUs)
+
+**Example:**
+```python
+from darts.datasets import AirPassengersDataset
+from darts.models import TimesFMModel
+
+series = AirPassengersDataset().load()
+model = TimesFMModel(zero_shot=True)
+model.fit(series)
+forecast = model.predict(n=12, series=series)
+```
+
+For more details, see the [TimesFM GitHub repository](https://github.com/google-research/timesfm) and [HuggingFace model card](https://huggingface.co/google/timesfm-2.5-200m-pytorch).
 
 ### Enabling GPU support
 Darts relies on PyTorch for the neural network models.
