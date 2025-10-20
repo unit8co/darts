@@ -14,6 +14,14 @@ from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
+# Optional psutil for memory reporting
+try:
+    import psutil
+    HAS_PSUTIL = True
+except ImportError:
+    HAS_PSUTIL = False
+    logger.debug("psutil not available - memory reporting will be limited")
+
 
 def auto_detect_device() -> str:
     """
@@ -71,7 +79,7 @@ def get_device_memory_info(device: str) -> dict:
     Notes
     -----
     Memory reporting is only available for CUDA devices. MPS and CPU return
-    estimated values.
+    estimated values if psutil is installed. Install with: pip install psutil
     """
     memory_info = {"total": 0.0, "allocated": 0.0, "free": 0.0}
 
@@ -84,18 +92,22 @@ def get_device_memory_info(device: str) -> dict:
         memory_info["free"] = memory_info["total"] - memory_info["allocated"]
     elif device == "mps":
         # MPS doesn't expose memory APIs, estimate based on system
-        import psutil
-        mem = psutil.virtual_memory()
-        memory_info["total"] = mem.total / (1024**3)
-        memory_info["free"] = mem.available / (1024**3)
-        memory_info["allocated"] = 0.0  # Cannot track MPS allocation
+        if HAS_PSUTIL:
+            mem = psutil.virtual_memory()
+            memory_info["total"] = mem.total / (1024**3)
+            memory_info["free"] = mem.available / (1024**3)
+            memory_info["allocated"] = 0.0  # Cannot track MPS allocation
+        else:
+            logger.debug("psutil not available - cannot report MPS memory info")
     else:
         # CPU memory
-        import psutil
-        mem = psutil.virtual_memory()
-        memory_info["total"] = mem.total / (1024**3)
-        memory_info["free"] = mem.available / (1024**3)
-        memory_info["allocated"] = (mem.total - mem.available) / (1024**3)
+        if HAS_PSUTIL:
+            mem = psutil.virtual_memory()
+            memory_info["total"] = mem.total / (1024**3)
+            memory_info["free"] = mem.available / (1024**3)
+            memory_info["allocated"] = (mem.total - mem.available) / (1024**3)
+        else:
+            logger.debug("psutil not available - cannot report CPU memory info")
 
     return memory_info
 
