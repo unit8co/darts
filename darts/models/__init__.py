@@ -132,7 +132,7 @@ except ImportError:
     XGBClassifierModel = NotImportedModule(module_name="XGBoost")
 
 try:
-    from darts.models.forecasting.timesfm_model import TimesFMModel
+    from darts.models.forecasting.foundation import TimesFMModel
 except ImportError:
     logger.warning(
         "The TimesFM module could not be imported. "

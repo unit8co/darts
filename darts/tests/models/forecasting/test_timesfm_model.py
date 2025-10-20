@@ -15,7 +15,7 @@ class TestTimesFMModelConstruction:
 
     def test_model_construction_default(self):
         """Test model can be constructed with default parameters"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         model = TimesFMModel()
         assert model.model_version == "2.5"
@@ -25,7 +25,7 @@ class TestTimesFMModelConstruction:
 
     def test_model_construction_custom(self):
         """Test model construction with custom parameters"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         model = TimesFMModel(
             model_version="2.5",
@@ -39,35 +39,35 @@ class TestTimesFMModelConstruction:
 
     def test_invalid_model_version(self):
         """Test that invalid model version raises error"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         with pytest.raises(ValueError, match="model_version"):
             TimesFMModel(model_version="3.0")
 
     def test_invalid_model_size(self):
         """Test that invalid model size raises error"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         with pytest.raises(ValueError, match="model_size"):
             TimesFMModel(model_size="100m")
 
     def test_invalid_context_length_not_divisible_by_32(self):
         """Test that context length not divisible by 32 raises error"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         with pytest.raises(ValueError, match="divisible by 32"):
             TimesFMModel(max_context_length=100)
 
     def test_invalid_context_length_negative(self):
         """Test that negative context length raises error"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         with pytest.raises(ValueError, match="positive"):
             TimesFMModel(max_context_length=-32)
 
     def test_device_detection_auto(self):
         """Test automatic device detection"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         model = TimesFMModel(device=None)  # Auto-detect
 
@@ -84,14 +84,14 @@ class TestTimesFMModelConstruction:
 
     def test_device_detection_manual_cpu(self):
         """Test manual CPU device selection"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         model = TimesFMModel(device="cpu")
         assert model.device == "cpu"
 
     def test_model_properties(self):
         """Test model capability properties"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         model = TimesFMModel()
 
@@ -106,14 +106,14 @@ class TestTimesFMModelConstruction:
 
     def test_model_properties_custom_context(self):
         """Test model properties with custom context length"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         model = TimesFMModel(max_context_length=512)
         assert model.extreme_lags == (-512, 0, 0, 0, 0, 0, 0)
 
     def test_string_representation(self):
         """Test string representation of model"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         model = TimesFMModel(
             model_version="2.5",
@@ -132,7 +132,7 @@ class TestTimesFMModelFit:
 
     def test_zero_shot_fit_validates_univariate(self):
         """Test that fit validates univariate series requirement"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         # Create multivariate series
         series = tg.sine_timeseries(length=100, value_frequency=1)
@@ -146,7 +146,7 @@ class TestTimesFMModelFit:
 
     def test_zero_shot_fit_accepts_univariate(self):
         """Test that fit accepts univariate series"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         series = tg.sine_timeseries(length=100)
         model = TimesFMModel(zero_shot=True)
@@ -157,7 +157,7 @@ class TestTimesFMModelFit:
 
     def test_fit_warns_on_short_series(self):
         """Test that fit warns when series is shorter than recommended"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         short_series = tg.sine_timeseries(length=20)  # Less than min_train_series_length
         model = TimesFMModel(zero_shot=True)
@@ -167,7 +167,7 @@ class TestTimesFMModelFit:
 
     def test_fit_loads_model(self):
         """Test that fit loads the TimesFM model"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         series = tg.sine_timeseries(length=100)
         model = TimesFMModel(zero_shot=True)
@@ -183,7 +183,7 @@ class TestTimesFMModelFit:
 
     def test_fit_rejects_multivariate_in_list(self):
         """Test that fit rejects multivariate series even in a list"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         # Create list with one multivariate series
         series_list = [
@@ -198,7 +198,7 @@ class TestTimesFMModelFit:
 
     def test_fit_accepts_list_of_univariate(self):
         """Test that fit accepts list of univariate series"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         series_list = [
             tg.sine_timeseries(length=100),
@@ -216,7 +216,7 @@ class TestTimesFMModelPredict:
 
     def test_predict_without_fit_zero_shot(self):
         """Test true zero-shot: predict() without calling fit() first"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
         from darts.utils import timeseries_generation as tg
 
         series = tg.sine_timeseries(length=100)
@@ -232,7 +232,7 @@ class TestTimesFMModelPredict:
 
     def test_predict_univariate(self):
         """Test basic prediction on univariate series"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
         from darts.datasets import AirPassengersDataset
 
         series = AirPassengersDataset().load()
@@ -252,7 +252,7 @@ class TestTimesFMModelPredict:
 
     def test_predict_returns_correct_horizon(self):
         """Test that predict returns exactly n points"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         series = tg.sine_timeseries(length=100)
         model = TimesFMModel(zero_shot=True)
@@ -264,7 +264,7 @@ class TestTimesFMModelPredict:
 
     def test_predict_multiple_series(self):
         """Test batch prediction on multiple series"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         series_list = [
             tg.sine_timeseries(length=100),
@@ -285,7 +285,7 @@ class TestTimesFMModelPredict:
 
     def test_predict_multiple_series_with_multivariate_component_selection(self):
         """Test batch forecasting with multivariate series component selection"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         # Create multivariate series
         multivariate = tg.sine_timeseries(length=100, value_frequency=0.1, column_name="A")
@@ -313,7 +313,7 @@ class TestTimesFMModelPredict:
 
     def test_predict_with_different_series_than_fit(self):
         """Test zero-shot: predict on different series than fit"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         train_series = tg.sine_timeseries(length=100, value_frequency=1)
         test_series = tg.sine_timeseries(length=80, value_frequency=2)
@@ -327,7 +327,7 @@ class TestTimesFMModelPredict:
 
     def test_predict_requires_series_parameter(self):
         """Test that predict requires series parameter in zero-shot mode"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
 
         series = tg.sine_timeseries(length=100)
         model = TimesFMModel(zero_shot=True)
@@ -339,7 +339,7 @@ class TestTimesFMModelPredict:
 
     def test_predict_time_index_continuation(self):
         """Test that forecast continues the time index correctly"""
-        from darts.models.forecasting.timesfm_model import TimesFMModel
+        from darts.models.forecasting.foundation import TimesFMModel
         import pandas as pd
 
         # Create series with datetime index
