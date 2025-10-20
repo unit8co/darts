@@ -9,8 +9,9 @@ def read_requirements(path):
 
 base_reqs = read_requirements("requirements/core.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
+timesfm_reqs = read_requirements("requirements/timesfm.txt")
 
-# Note: Prophet, LightGBM, Catboost are not included in darts package by default
+# Note: Prophet, LightGBM, Catboost, TimesFM are not included in darts package by default
 
 reqs = base_reqs + torch_reqs
 
@@ -41,6 +42,9 @@ setup(
     license="Apache License 2.0",
     packages=find_packages(exclude=["examples*"]),
     install_requires=reqs,
+    extras_require={
+        "timesfm": timesfm_reqs,
+    },
     package_data={
         "darts": ["py.typed"],
     },
