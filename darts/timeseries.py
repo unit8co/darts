@@ -5477,24 +5477,32 @@ class TimeSeries:
     def __str__(self):
         # if one sample then print all values, otherwise print median of samples
         values_str = (
-            f"Values:\n{self.to_dataframe()}"
+            f"{self.to_dataframe()}"
             if self.n_samples == 1
-            else f"Values (median of samples):\n{self.median().to_dataframe()}"
+            else f"(displaying median of samples):\n{self.median().to_dataframe()}"
         )
 
         freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
+        time_index_name = self._time_index.name or "timesteps"
+
+        # indentation, first line needs to be manual
+        if self.static_covariates is not None:
+            df_str = str(self.static_covariates)
+            static_cov_str = "    " + df_str.replace("\n", "\n    ")
+        else:
+            static_cov_str = "    <empty>"
 
         return (
-            f"<TimeSeries shape(timesteps: {self.n_timesteps}, "
+            f"<TimeSeries shape({time_index_name}: {self.n_timesteps}, "
             f"components: {self.n_components}, "
-            f"samples: {self.n_samples})> "
-            f"Size: {format_bytes(self._values.nbytes)}\n"
-            f"{values_str}\n"
-            f"Time frame:   {self._time_index.min()} to {self._time_index.max()} with step {freq_str}\n"
-            f"Components:   {format_list(list(self.components))}\n"
-            f"Static covariates:\n{self.static_covariates if self.static_covariates is not None else '<empty>'}\n"
-            f"Hierarchy:    {format_dict(self.hierarchy)}\n"
-            f"Metadata:     {format_dict(self.metadata)}\n"
+            f"samples: {self.n_samples})> \n"
+            f"Size: {format_bytes(self._values.nbytes)}\n\n"
+            f"{values_str}\n\n"
+            f"Time frame:\n    ({self._time_index.min()}, {self._time_index.max()}, {freq_str})\n\n"
+            f"Components:\n    {format_list(list(self.components))}\n\n"
+            f"Static covariates:\n{static_cov_str}\n\n"
+            f"Hierarchy:\n{format_dict(self.hierarchy)}\n"
+            f"Metadata:\n{format_dict(self.metadata)}\n"
         )
 
     def __repr__(self):
@@ -5502,45 +5510,62 @@ class TimeSeries:
 
     def _repr_html_(self):
         values_str = (
-            f"Values:\n{self.to_dataframe().to_html(max_rows=10, max_cols=15)}"
+            f"{self.to_dataframe().to_html(max_rows=10, max_cols=15)}"
             if self.n_samples == 1
-            else f"Values (median of samples):\n{self.median().to_dataframe().to_html(max_rows=10, max_cols=15)}"
+            else f"(displaying median of samples):\n{self.median().to_dataframe().to_html(max_rows=10, max_cols=15)}"
+        )
+        dataframe_html = make_paragraph(
+            values_str, bold=True, size="1.2em", margin_left="0"
         )
 
+        time_index_name = self._time_index.name or "timesteps"
         freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
 
+        shape_info_content = (
+            f"({time_index_name}: {self.n_timesteps}, "
+            f"components: {self.n_components}, "
+            f"samples: {self.n_samples}) <br>\n"
+            f"Size: {format_bytes(self._values.nbytes)}\n"
+        )
+        shape_info_html = make_paragraph(
+            shape_info_content, bold=True, size="1.0em", margin_left="0"
+        )
+
+        # container div for top section with 2 columns
+        top_section_html = f"""
+        <div style="display: flex; align-items: center; gap: 2em; margin-left: 0.5em;">
+            <div>{dataframe_html}</div>
+            <div>{shape_info_html}</div>
+        </div>
+        """
+
+        static_covs_empty = self.static_covariates is None
+        hierarchy_empty = self.hierarchy is None or len(self.hierarchy) == 0
+        metadata_empty = self.metadata is None or len(self.metadata) == 0
+
         return (
-            make_paragraph(
-                f"&lt;TimeSeries shape(timesteps: {self.n_timesteps}, "
-                f"components: {self.n_components}, "
-                f"samples: {self.n_samples})&gt; "
-                f"Size: {format_bytes(self._values.nbytes)}\n",
-                bold=True,
-                size="1.5em",
-            )
-            + make_paragraph(values_str, bold=True)
-            + make_collapsible_section("Values (full array):", self._values)
+            top_section_html
             + make_collapsible_section(
-                "Time frame:",
-                f"{self._time_index.min()} to {self._time_index.max()} with step {freq_str}",
-            )
-            + make_collapsible_section(
-                "Components:",
-                f"{format_list(list(self.components), render_html=True, max_items=10)}",
+                "Details:",
+                f"Time frame: ({self._time_index.min()}, {self._time_index.max()}, {freq_str})\n"
+                f"Components: {format_list(list(self.components), render_html=True, max_items=10)}",
             )
             + make_collapsible_section(
                 "Static covariates:",
                 self.static_covariates.to_html(max_rows=10, max_cols=15)
                 if self.static_covariates is not None
                 else "&lt;empty&gt;",
+                open_by_default=not static_covs_empty,
             )
             + make_collapsible_section(
                 "Hierarchy:",
                 f"{format_dict(self.hierarchy, render_html=True, max_items=10)}",
+                open_by_default=not hierarchy_empty,
             )
             + make_collapsible_section(
                 "Metadata:",
                 f"{format_dict(self.metadata, render_html=True, max_items=10)}",
+                open_by_default=not metadata_empty,
             )
         )
 

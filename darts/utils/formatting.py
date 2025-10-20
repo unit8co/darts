@@ -72,20 +72,24 @@ def format_list(lst: list, max_items: int = 5, render_html: bool = False) -> str
 
 
 def make_collapsible_section(
-    title: str, content: str, open_by_default: bool = False
+    title: str, content: str, open_by_default: bool = True
 ) -> str:
     """Creates a collapsible HTML section."""
     open_tag = " open" if open_by_default else ""
     return f"""
     <details{open_tag}>
-        <summary style="font-size: 1.2em;"><strong>{title}</strong></summary>
+        <summary style="font-size: 1.2em;">{title}</summary>
         <pre style="margin-left: 0.5em;">{content}</pre>
     </details>
     """
 
 
-def make_paragraph(text: str, bold: bool = False, size: str = "1.2em") -> str:
-    """Creates an HTML paragraph with optional bold text and custom font size."""
+def make_paragraph(
+    text: str, bold: bool = False, size: str = "1.2em", margin_left: str = "0.5em"
+) -> str:
+    """Creates an HTML paragraph with optional bold text, custom font size, and margin."""
     if bold:
         text = f"<strong>{text}</strong>"
-    return f"<p style='margin-left: 0.5em; font-size: {size}'>{text}</p>"
+    # Use margin_left parameter in the style
+    style = f"margin-left: {margin_left}; font-size: {size}; text-align: center;"
+    return f"<p style='{style}'>{text}</p>"
