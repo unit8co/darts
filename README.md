@@ -83,6 +83,7 @@ train, val = series[:-36], series[-36:]
 ```
 
 Fit an exponential smoothing model, and make a (probabilistic) prediction over the validation series' duration:
+
 ```python
 from darts.models import ExponentialSmoothing
 
@@ -92,6 +93,7 @@ prediction = model.predict(len(val), num_samples=1000)
 ```
 
 Plot the median, 5th and 95th percentiles:
+
 ```python
 import matplotlib.pyplot as plt
 

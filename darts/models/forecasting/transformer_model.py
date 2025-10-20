@@ -543,9 +543,8 @@ class TransformerModel(PastCovariatesTorchModel):
 
         Notes
         -----
-        Disclaimer:
-        This current implementation is fully functional and can already produce some good predictions. However,
-        it is still limited in how it uses the Transformer architecture because the `tgt` input of
+        Disclaimer: This current implementation is fully functional and can already produce some good predictions.
+        However, it is still limited in how it uses the Transformer architecture because the `tgt` input of
         `torch.nn.Transformer` is not utilized to its full extent. Currently, we simply pass the last value of the
         `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we
         should allow the model to consume its own output as part of the `tgt` argument, such that when predicting
@@ -580,6 +579,7 @@ class TransformerModel(PastCovariatesTorchModel):
             `Transformer example notebook <https://unit8co.github.io/darts/examples/06-Transformer-examples.html>`__
             presents techniques that can be used to improve the forecasts quality compared to this simple usage
             example.
+        ..
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

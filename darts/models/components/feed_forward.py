@@ -31,28 +31,25 @@ summary: Documented reusable implementation of the position wise feedforward net
 ---
 
 # Position-wise Feed-Forward Network (FFN)
-This is a [PyTorch](https://pytorch.org)  implementation
-of position-wise feedforward network used in transformer.
+This is a `PyTorch <https://pytorch.org>`__ implementation of position-wise feedforward network used in transformer.
 
-FFN consists of two fully connected layers.
-Number of dimensions in the hidden layer $d_{ff}$, is generally set to around
-four times that of the token embedding $d_{model}$.
-So it is sometime also called the expand-and-contract network.
+FFN consists of two fully connected layers. Number of dimensions in the hidden layer $d_{ff}$ is generally set to around
+four times that of the token embedding $d_{model}$. So it is sometime also called the expand-and-contract network.
 
-There is an activation at the hidden layer, which is
-usually set to ReLU (Rectified Linear Unit) activation, $$\max(0, x)$$
+There is an activation at the hidden layer, which is usually set to ReLU (Rectified Linear Unit) activation,
+$$\max(0, x)$$
 
 That is, the FFN function is,
 $$FFN(x, W_1, W_2, b_1, b_2) = \max(0, x W_1 + b_1) W_2 + b_2$$
 where $W_1$, $W_2$, $b_1$ and $b_2$ are learnable parameters.
 
-Sometimes the
-GELU (Gaussian Error Linear Unit) activation is also used instead of ReLU.
+Sometimes the GELU (Gaussian Error Linear Unit) activation is also used instead of ReLU.
 $$x \Phi(x)$$ where $\Phi(x) = P(X \le x), X \sim \mathcal{N}(0,1)$
+
 ### Gated Linear Units
 
-This is a generic implementation that supports different variants including
-[Gated Linear Units](https://papers.labml.ai/paper/2002.05202) (GLU).
+This is a generic implementation that supports different variants including `Gated Linear Units
+<https://papers.labml.ai/paper/2002.05202>`__ (GLU).
 """
 
 import torch
@@ -62,13 +59,6 @@ from darts.utils.torch import MonteCarloDropout
 
 
 class FeedForward(nn.Module):
-    """
-    ## FFN module
-
-    source
-    [FeedForward network](https://arxiv.org/abs/2002.05202)
-    """
-
     def __init__(
         self,
         d_model: int,
@@ -80,15 +70,28 @@ class FeedForward(nn.Module):
         bias2: bool = True,
         bias_gate: bool = True,
     ):
-        """
-        * `d_model` is the number of features in a token embedding
-        * `d_ff` is the number of features in the hidden layer of the FFN
-        * `dropout` is dropout probability for the hidden layer,
-           compatible with Monte Carlo dropout at inference time
-        * `is_gated` specifies whether the hidden layer is gated
-        * `bias1` specified whether the first fully connected layer should have a learnable bias
-        * `bias2` specified whether the second fully connected layer should have a learnable bias
-        * `bias_gate` specified whether the fully connected layer for the gate should have a learnable bias
+        """FFN module [1]_.
+
+        Parameters
+        ----------
+        d_model
+            The number of features in a token embedding.
+        d_ff
+            The number of features in the hidden layer of the FFN.
+        dropout
+            The dropout probability for the hidden layer, compatible with Monte Carlo dropout at inference time.
+        is_gated
+            Whether the hidden layer is gated.
+        bias1
+            Whether the first fully connected layer should have a learnable bias.
+        bias2
+            Whether the second fully connected layer should have a learnable bias.
+        bias_gate
+            Whether the fully connected layer for the gate should have a learnable bias.
+
+        References
+        ----------
+        .. [1] https://arxiv.org/abs/2002.05202
         """
         super().__init__()
         # Layer one parameterized by weight $W_1$ and bias $b_1$

@@ -32,7 +32,8 @@ logger = get_logger(__name__)
 
 def io_processor(forward):
     """Applies some input / output processing to PLForecastingModule.forward.
-    Note that this wrapper must be added to each of PLForecastinModule's subclasses forward methods.
+
+    Note that this wrapper must be added to each of PLForecastingModule's subclasses forward methods.
     Here is an example how to add the decorator:
 
     .. highlight:: python
@@ -43,10 +44,10 @@ def io_processor(forward):
             pass
     ..
 
-    Applies
-    -------
-    Reversible Instance Normalization
-        normalizes batch input target features, and inverse transform the forward output back to the original scale
+    Current applications include:
+
+    - Reversible Instance Normalization: normalizes batch input target features, and inverse transform the forward
+      output back to the original scale. Activated with `use_reversible_instance_norm=True` at model creation.
     """
 
     @wraps(forward)
