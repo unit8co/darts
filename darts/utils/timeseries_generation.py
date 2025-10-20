@@ -595,8 +595,8 @@ def datetime_attribute_timeseries(
         a `TimeSeries` whose time axis will serve this purpose.
     attribute
         An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day",
-        "hour", "minute", "second". See all available attributes in
-        https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
+        "hour", "minute", "second". See all available attributes `here
+        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex>`__.
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
@@ -614,11 +614,12 @@ def datetime_attribute_timeseries(
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series
     with_columns
         Optionally, specify the output component names.
-        * If `one_hot` and `cyclic` are ``False``, must be a string
-        * If `cyclic` is ``True``, must be a list of two strings. The first string for the sine, the second for the
-            cosine component name.
-        * If `one_hot` is ``True``, must be a list of strings of the same length as the generated one hot encoded
-            features.
+
+        - If `one_hot` and `cyclic` are ``False``, must be a string
+        - If `cyclic` is ``True``, must be a list of two strings. The first string for the sine, the second for the
+          cosine component name.
+        - If `one_hot` is ``True``, must be a list of strings of the same length as the generated one hot encoded
+          features.
     tz
         Optionally, a time zone to convert the time index to before computing the attributes.
 

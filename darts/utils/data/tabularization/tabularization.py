@@ -57,7 +57,7 @@ def create_lagged_data(
     Optional[tuple[int, int]],
     Optional[ArrayOrArraySequence],
 ]:
-    """
+    r"""
     Creates the features array `X` and labels array `y` to train a lagged-variables `SKLearnModel` when
     `is_training = True`; alternatively, creates the features array `X` to produce a series of prediction from an
     already-trained model when `is_training = False`. In both cases, a list of time indices corresponding to
@@ -81,12 +81,12 @@ def create_lagged_data(
     The `X` array is constructed from the lagged values of up to three separate timeseries:
 
     1. The `target_series`, which contains the values we're trying to predict. An `SKLearnModel` that
-      uses previous values of the target its predicting is referred to as *autoregressive*; please refer to
-      [1]_ for further details about autoregressive timeseries models.
+       uses previous values of the target its predicting is referred to as *autoregressive*; please refer to
+       [1]_ for further details about autoregressive timeseries models.
     2. The past covariates series, which contains values that are *not* known into the future. Unlike
-      the target series, however, past covariates are *not* to be predicted by the `SKLearnModel`.
+       the target series, however, past covariates are *not* to be predicted by the `SKLearnModel`.
     3. The future covariates (AKA 'exogenous' covariates) series, which contains values that are known
-      into the future, even beyond the data in `target_series` and `past_covariates`.
+       into the future, even beyond the data in `target_series` and `past_covariates`.
 
     See [2]_ for a more detailed discussion about target, past, and future covariates. Conversely, `y` is
     comprised only of the lagged values of `target_series`.
@@ -96,19 +96,31 @@ def create_lagged_data(
     The shape of `y` is: `(n_observations, output_chunk_length, n_samples)`, if `multi_models = True`, otherwise:
     `(n_observations, 1, n_samples)`.
 
-    Along the `n_lagged_features` axis, `X` has the following structure (for `*_lags=[-2,-1]` and
-    `*_series.n_components = 2`):
+    Along the `n_lagged_features` axis, `X` has the following structure (for `\*_lags=[-2,-1]` and
+    `\*_series.n_components = 2`):
 
-    - lagged_target | lagged_past_covariates | lagged_future_covariates
+    .. highlight:: md
+    .. code-block:: md
 
-    where each `lagged_*` has the following structure:
+        lagged_target | lagged_past_covariates | lagged_future_covariates
+    ..
 
-    - lag_-2_comp_1_* | lag_-2_comp_2_* | lag_-1_comp_1_* | lag_-1_comp_2_*
+    where each `lagged_\*` has the following structure:
+
+    .. highlight:: md
+    .. code-block:: md
+
+        lag_-2_comp_1_* | lag_-2_comp_2_* | lag_-1_comp_1_* | lag_-1_comp_2_*
+    ..
 
     Along the `n_lagged_labels` axis, `y` has the following structure (for `output_chunk_length=4` and
     `target_series.n_components=2`):
 
-    - lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
+    .. highlight:: md
+    .. code-block:: md
+
+        lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
+    ..
 
     The `lags` and `lags_past_covariates` must contain only values less than or equal to -1. In other words, one
     cannot use the value of either of these series at time `t` to predict the value of the target series at the
@@ -203,7 +215,7 @@ def create_lagged_data(
         If `False`, then the `SKLearnModel` is assumed to predict *only* the time step at `t+output_chunk_length`.
         This input is ignored if `is_training = False`.
     check_inputs
-        Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Should be set
+        Optionally, specifies that the `lags_\*` and `series_\*` inputs should be checked for validity. Should be set
         to `False` if inputs have already been checked for validity (e.g. inside the `__init__` of a class), otherwise
         should be set to `True`.
     use_moving_windows
@@ -732,8 +744,13 @@ def add_static_covariates_to_lagged_data(
     covariates with identical dimensionality. Otherwise, will not consider static covariates.
 
     The static covariates are added to the right of the lagged features following the convention:
-    with a 2 component series, and 2 static covariates per component ->
-    scov_1_comp_1 | scov_1_comp_2 | scov_2_comp_1 | scov_2_comp_2
+    with a 2 component series, and 2 static covariates per component:
+
+    .. highlight:: md
+    .. code-block:: md
+
+        scov_1_comp_1 | scov_1_comp_2 | scov_2_comp_1 | scov_2_comp_2
+    ..
 
     Parameters
     ----------
@@ -826,26 +843,46 @@ def create_lagged_component_names(
 
     Along the `n_lagged_features` axis, `X` has the following structure:
 
-    - lagged_target | lagged_past_covariates | lagged_future_covariates | static covariates
+    .. highlight:: md
+    .. code-block:: md
+
+        lagged_target | lagged_past_covariates | lagged_future_covariates | static covariates
+    ..
 
     For `*_lags=[-2,-1]` and `*_series.n_components = 2` (lags shared across all the components),
     each `lagged_*` has the following structure (grouped by lags):
 
-    - comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
+    .. highlight:: md
+    .. code-block:: md
+
+        comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
+    ..
 
     For `*_lags={'comp0':[-3, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
     specific lags), each `lagged_*` has the following structure (sorted by lags, then by components):
 
-    - comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1
+    .. highlight:: md
+    .. code-block:: md
+
+        comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1
+    ..
 
     and for static covariates (2 static covariates acting on 2 target components):
 
-    - cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1
+    .. highlight:: md
+    .. code-block:: md
+
+        cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1
+    ..
 
     Along the `n_lagged_labels` axis, `y` has the following structure (for `output_chunk_length=4` and
     `target_series.n_components=2`):
 
-    - comp0_target_lag0 | comp1_target_lag0 | ... | comp0_target_lag3 | comp1_target_lag3
+    .. highlight:: md
+    .. code-block:: md
+
+        comp0_target_lag0 | comp1_target_lag0 | ... | comp0_target_lag3 | comp1_target_lag3
+    ..
 
     Note : will only use the component names of the first series from `target_series`, `past_covariates`,
     `future_covariates`, and static_covariates.
@@ -1931,10 +1968,12 @@ def strided_moving_window(
     Notes
     -----
     This function is similar to `sliding_window_view` in `np.lib.stride_tricks`, except that:
-        1. `strided_moving_window` allows for consecutive windows to be separated by a specified `stride`,
-        whilst `sliding_window_view` does not.
-        2. `strided_moving_window` can only operate along a single axis, whereas `sliding_window_view` can
-        operate along multiple axes.
+
+    - `strided_moving_window` allows for consecutive windows to be separated by a specified `stride`,
+      whilst `sliding_window_view` does not.
+    - `strided_moving_window` can only operate along a single axis, whereas `sliding_window_view` can
+      operate along multiple axes.
+
     Additionally, unlike `sliding_window_view`, using `strided_moving_window` doesn't require `numpy >= 1.20.0`.
 
     Parameters
