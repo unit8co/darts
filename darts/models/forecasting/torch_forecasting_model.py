@@ -2388,7 +2388,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     def to_cpu(self):
-        """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :fun:`fit()` or
+        """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :func:`fit()` or
         :func:`predict()` is called.
         """
         self.trainer_params["accelerator"] = "cpu"

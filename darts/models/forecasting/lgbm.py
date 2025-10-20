@@ -281,7 +281,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             TimeSeries or Sequence[TimeSeries] object containing the target values for evaluation dataset
         val_past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
-        val_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        val_future_covariates
             Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
         max_samples_per_ts
             This is an integer upper bound on the number of tuples that can be produced

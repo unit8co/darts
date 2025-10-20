@@ -63,11 +63,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             .. code-block:: python
 
                 dict({
-                'name': str  # (name of the seasonality component),
-                'seasonal_periods': Union[int, float]  # (nr of steps composing a season),
-                'fourier_order': int  # (number of Fourier components to use),
-                'prior_scale': Optional[float]  # (a prior scale for this component),
-                'mode': Optional[str]  # ('additive' or 'multiplicative')
+                    'name': str  # (name of the seasonality component),
+                    'seasonal_periods': Union[int, float]  # (nr of steps composing a season),
+                    'fourier_order': int  # (number of Fourier components to use),
+                    'prior_scale': Optional[float]  # (a prior scale for this component),
+                    'mode': Optional[str]  # ('additive' or 'multiplicative')
                 })
             ..
 
@@ -113,7 +113,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
             - a number, for constant carrying capacities
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-            where each number indicates the carrying capacity at this index.
+              where each number indicates the carrying capacity at this index.
         floor
             Parameter specifying the minimum carrying capacity when predicting logistic growth.
             Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
@@ -123,7 +123,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
             - a number, for constant carrying capacities
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-            where each number indicates the carrying capacity at this index.
+              where each number indicates the carrying capacity at this index.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
