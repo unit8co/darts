@@ -16,7 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 **Dependencies**
-- Changed `Timeseries.plot()` implementation to no longer rely on xarray under the hood while keeping same functionality. [#2932](https://github.com/unit8co/darts/pull/2932) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- Changed `Timeseries.plot()` implementation to no longer rely on xarray under the hood while keeping the same functionality. [#2932](https://github.com/unit8co/darts/pull/2932) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
 ### For developers of the library:
 
