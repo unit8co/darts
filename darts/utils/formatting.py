@@ -79,7 +79,7 @@ def make_collapsible_section(
     return f"""
     <details{open_tag}>
         <summary style="font-size: 1.2em;">{title}</summary>
-        <pre style="margin-left: 0.5em;">{content}</pre>
+        <pre style="margin-left: 0.5em; font-family: inherit;">{content}</pre>
     </details>
     """
 
@@ -91,5 +91,5 @@ def make_paragraph(
     if bold:
         text = f"<strong>{text}</strong>"
     # Use margin_left parameter in the style
-    style = f"margin-left: {margin_left}; font-size: {size}; text-align: center;"
+    style = f"margin-left: {margin_left}; font-size: {size}; text-align: left;"
     return f"<p style='{style}'>{text}</p>"

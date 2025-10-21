@@ -67,7 +67,6 @@ from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils.formatting import (
     format_bytes,
     format_dict,
-    format_list,
     make_collapsible_section,
     make_paragraph,
 )
@@ -5483,7 +5482,6 @@ class TimeSeries:
         )
 
         freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
-        time_index_name = self._time_index.name or "timesteps"
 
         # indentation, first line needs to be manual
         if self.static_covariates is not None:
@@ -5493,13 +5491,12 @@ class TimeSeries:
             static_cov_str = "    <empty>"
 
         return (
-            f"<TimeSeries shape({time_index_name}: {self.n_timesteps}, "
-            f"components: {self.n_components}, "
-            f"samples: {self.n_samples})> \n"
-            f"Size: {format_bytes(self._values.nbytes)}\n\n"
             f"{values_str}\n\n"
-            f"Time frame:\n    ({self._time_index.min()}, {self._time_index.max()}, {freq_str})\n\n"
-            f"Components:\n    {format_list(list(self.components))}\n\n"
+            f"Shape: (times: {self.n_timesteps}, "
+            f"components: {self.n_components}, "
+            f"samples: {self.n_samples}) \n"
+            f"Time frame: ({self._time_index.min()}, {self._time_index.max()}, {freq_str})\n"
+            f"Size: {format_bytes(self._values.nbytes)}\n\n"
             f"Static covariates:\n{static_cov_str}\n\n"
             f"Hierarchy:\n{format_dict(self.hierarchy)}\n"
             f"Metadata:\n{format_dict(self.metadata)}\n"
@@ -5514,41 +5511,20 @@ class TimeSeries:
             if self.n_samples == 1
             else f"(displaying median of samples):\n{self.median().to_dataframe().to_html(max_rows=10, max_cols=15)}"
         )
-        dataframe_html = make_paragraph(
-            values_str, bold=True, size="1.2em", margin_left="0"
-        )
-
-        time_index_name = self._time_index.name or "timesteps"
         freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
-
-        shape_info_content = (
-            f"({time_index_name}: {self.n_timesteps}, "
-            f"components: {self.n_components}, "
-            f"samples: {self.n_samples}) <br>\n"
-            f"Size: {format_bytes(self._values.nbytes)}\n"
-        )
-        shape_info_html = make_paragraph(
-            shape_info_content, bold=True, size="1.0em", margin_left="0"
-        )
-
-        # container div for top section with 2 columns
-        top_section_html = f"""
-        <div style="display: flex; align-items: center; gap: 2em; margin-left: 0.5em;">
-            <div>{dataframe_html}</div>
-            <div>{shape_info_html}</div>
-        </div>
-        """
 
         static_covs_empty = self.static_covariates is None
         hierarchy_empty = self.hierarchy is None or len(self.hierarchy) == 0
         metadata_empty = self.metadata is None or len(self.metadata) == 0
 
         return (
-            top_section_html
-            + make_collapsible_section(
-                "Details:",
-                f"Time frame: ({self._time_index.min()}, {self._time_index.max()}, {freq_str})\n"
-                f"Components: {format_list(list(self.components), render_html=True, max_items=10)}",
+            make_paragraph(values_str, bold=True, size="1.2em", margin_left="0")
+            + make_paragraph(
+                f"Shape: (times: {self.n_timesteps}, "
+                f"components: {self.n_components}, "
+                f"samples: {self.n_samples})<br>"
+                f"Time frame: ({self._time_index.min()}, {self._time_index.max()}, {freq_str})<br>"
+                f"Size: {format_bytes(self._values.nbytes)}"
             )
             + make_collapsible_section(
                 "Static covariates:",
