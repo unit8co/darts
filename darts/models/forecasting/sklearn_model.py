@@ -63,6 +63,7 @@ from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
+from numpy.lib.stride_tricks import sliding_window_view
 from sklearn.base import is_classifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import has_fit_parameter
@@ -80,16 +81,14 @@ from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import (
     _create_lagged_data_autoregression,
     create_lagged_component_names,
+    create_lagged_prediction_data,
     create_lagged_training_data,
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
     _process_historical_forecast_input,
 )
-from darts.utils.historical_forecasts.utils import (
-    _get_historical_forecast_boundaries,
-    _process_predict_start_points_bounds,
-)
+from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
@@ -1489,18 +1488,6 @@ class SKLearnModel(GlobalForecastingModel):
 
         Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
         """
-
-        super().predict(
-            n=forecast_horizon,
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            num_samples=num_samples,
-            verbose=verbose,
-            predict_likelihood_parameters=predict_likelihood_parameters,
-            show_warnings=show_warnings,
-        )
-
         predict_kwargs = predict_kwargs or {}
         forecasts_list = []
         iterator = _build_tqdm_iterator(
@@ -1514,6 +1501,11 @@ class SKLearnModel(GlobalForecastingModel):
                 future_covariates[idx] if future_covariates is not None else None
             )
             freq = series_.freq
+            forecast_components = (
+                self.likelihood.component_names(series=series_)
+                if predict_likelihood_parameters
+                else series_.columns
+            )
 
             # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
             (
@@ -1561,133 +1553,132 @@ class SKLearnModel(GlobalForecastingModel):
                         else hist_fct_fc_start
                     )
 
-            left_bound = (
-                len(series_)
-                if hist_fct_start > series_.end_time()
-                else series_.get_index_at_point(hist_fct_start)
-            )
-            right_bound = (
-                len(series_)
-                if hist_fct_end > series_.end_time()
-                else series_.get_index_at_point(hist_fct_end)
+            if self.multi_models:
+                # shift = 0 # TODO use shift
+                step = self.output_chunk_length
+            else:
+                # shift = self.output_chunk_length - 1 # TODO use shift
+                step = 1
+
+            X, _ = create_lagged_prediction_data(
+                target_series=(
+                    None
+                    if self._get_lags("target") is None
+                    and not self.uses_static_covariates
+                    else series_[hist_fct_tgt_start:hist_fct_tgt_end]
+                ),
+                past_covariates=(
+                    None
+                    if past_covariates_ is None
+                    else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
+                ),
+                future_covariates=(
+                    None
+                    if future_covariates_ is None
+                    else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
+                ),
+                lags=self._get_lags("target"),
+                lags_past_covariates=self._get_lags("past"),
+                lags_future_covariates=self._get_lags("future"),
+                uses_static_covariates=self.uses_static_covariates,
+                last_static_covariates_shape=self._static_covariates_shape,
+                max_samples_per_ts=None,
+                check_inputs=True,
+                use_moving_windows=True,
+                concatenate=False,
+                show_warnings=False,
+                forecast_horizon=forecast_horizon,
+                step=step,
             )
 
-            bounds_array, _ = _process_predict_start_points_bounds(
-                series=[series_],
-                bounds=np.array([[left_bound, right_bound]]),
-                stride=stride,
-            )
-            left_bound, right_bound = bounds_array[0].astype(int)
+            # stride must be applied post-hoc to avoid missing values
+            X = X[0][:, :, 0]
+            predictions = []
 
-            n_forecasts = (
-                (right_bound - left_bound) // stride + 1
-                if right_bound >= left_bound
-                else 0
-            )
-            if n_forecasts <= 0:
-                raise ValueError(
-                    "Unable to compute historical forecasts: no valid prediction start points were found."
+            if X.ndim == 2:
+                X = X[:, :, np.newaxis]
+
+            for t_pred in range(X.shape[-1]):
+                current_X = X[:, :, t_pred]
+                if predictions:
+                    # Replace current_X NaNs with previous predictions
+                    current_X[np.isnan(current_X)] = predictions[-1].flatten()
+
+                # repeat rows for probabilistic forecast
+                forecast = self._predict(
+                    x=np.repeat(current_X, num_samples, axis=0),
+                    num_samples=num_samples,
+                    predict_likelihood_parameters=predict_likelihood_parameters,
+                    random_state=random_state,
+                    **predict_kwargs,
                 )
 
-            prediction_start_times = generate_index(
-                start=hist_fct_start,
-                length=n_forecasts,
-                freq=freq * stride,
+                # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
+                # where k = output_chunk length if multi_models, 1 otherwise
+                # reshape into (forecasted indexes, output_chunk_length, n_components, n_samples)
+                forecast = np.moveaxis(
+                    forecast.reshape(
+                        X.shape[0],
+                        num_samples,
+                        self.output_chunk_length if self.multi_models else 1,
+                        -1,
+                    ),
+                    1,
+                    -1,
+                )
+                predictions.append(forecast)
+            forecast = np.concatenate(predictions, axis=1)
+
+            if self.multi_models:
+                forecast = forecast[::stride, :forecast_horizon]
+            else:
+                # entire forecast horizon is given by multiple (previous) forecasts -> apply sliding window
+                forecast = sliding_window_view(
+                    forecast[:, 0],
+                    (forecast_horizon, len(forecast_components), num_samples),
+                )
+
+                # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values
+                if forecast_horizon != self.output_chunk_length:
+                    forecast = forecast[
+                        : -shift_start + forecast_horizon - 1 : stride,
+                        0,
+                        0,
+                        :forecast_horizon,
+                        :,
+                        :,
+                    ]
+                # apply stride
+                else:
+                    forecast = forecast[::stride, 0, 0, :, :, :]
+
+            # TODO: check if faster to create in the loop
+            new_times = generate_index(
+                start=hist_fct_start + self.output_chunk_shift * series_.freq,
+                length=forecast_horizon + (forecast.shape[0] - 1) * stride,
+                freq=freq,
                 name=series_._time_index.name,
             )
 
-            shift_delta = freq
-            prediction_series = []
-            for pred_time in prediction_start_times:
-                train_end_time = pred_time - shift_delta
-                series_start = series_.start_time()
-                if train_end_time < series_start:
-                    train_end_time = series_start
-                train_series = series_.drop_after(train_end_time, keep_point=True)
-                prediction_series.append(train_series)
-
-            covariate_inputs: dict[str, tuple[list[TimeSeries], Any]] = {}
-            past_lags = self.lags.get("past")
-            if past_covariates_ is not None and past_lags:
-                covariate_inputs["past"] = (
-                    [past_covariates_] * len(prediction_start_times),
-                    past_lags,
+            forecasts_ = []
+            for idx_ftc, step_fct in enumerate(
+                range(0, forecast.shape[0] * stride, stride)
+            ):
+                ts = TimeSeries(
+                    times=new_times[step_fct : step_fct + forecast_horizon],
+                    values=forecast[idx_ftc],
+                    components=forecast_components,
+                    static_covariates=series_.static_covariates,
+                    hierarchy=series_.hierarchy,
+                    metadata=series_.metadata,
+                    copy=False,
                 )
-            future_lags = self.lags.get("future")
-            if future_covariates_ is not None and future_lags:
-                covariate_inputs["future"] = (
-                    [future_covariates_] * len(prediction_start_times),
-                    future_lags,
-                )
-
-            shift = 0 if self.multi_models else self.output_chunk_length - 1
-            step = self.output_chunk_length if self.multi_models else 1
-
-            covariate_matrices: dict[str, np.ndarray] = {}
-            relative_cov_lags: dict[str, np.ndarray] = {}
-
-            # Complexity of this loop: O(n_covariate_types * n_forecasts) with n_covariate_types <= 2 so O(n_forecasts)
-            for cov_type, (covs_list, lags) in covariate_inputs.items():
-                lags = list(lags)
-                if len(lags) == 0:
-                    continue
-
-                relative_cov_lags[cov_type] = np.array(lags) - lags[0]
-                steps_back = -(min(lags) + 1) + shift
-                lags_diff = max(lags) - min(lags) + 1
-                n_steps = (
-                    lags_diff
-                    + max(0, forecast_horizon - self.output_chunk_length)
-                    + shift
-                )
-
-                covariate_windows = []
-                for train_series, cov_series in zip(prediction_series, covs_list):
-                    start_ts = train_series.end_time() - train_series.freq * steps_back
-                    end_ts = start_ts + train_series.freq * (n_steps - 1)
-
-                    end_ts_slice = (
-                        end_ts + train_series.freq
-                        if train_series.has_range_index
-                        else end_ts
-                    )
-                    cov_slice = cov_series.slice(start_ts, end_ts_slice)
-                    covariate_windows.append(cov_slice.values(copy=False))
-
-                covariate_matrices[cov_type] = np.stack(covariate_windows)
-
-            predictions = self.generate_predictions(
-                forecast_horizon=forecast_horizon,
-                series=prediction_series,
-                num_samples=num_samples,
-                predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
-                kwargs=dict(predict_kwargs),
-                called_with_single_series=False,
-                shift=shift,
-                step=step,
-                covariate_matrices=covariate_matrices,
-                relative_cov_lags=relative_cov_lags,
-            )
+                forecasts_.append(ts)
 
             if last_points_only:
-                last_point_series = [pred[-1] for pred in predictions]
-                concatenated = concatenate(last_point_series, ignore_time_axis=True)
-
-                last_point_times = generate_index(
-                    start=prediction_start_times[0]
-                    + (forecast_horizon + self.output_chunk_shift - 1) * freq,
-                    length=len(last_point_series),
-                    freq=freq * stride,
-                    name=series_._time_index.name,
-                )
-
-                predictions = concatenated.with_times_and_values(
-                    times=last_point_times,
-                    values=concatenated.all_values(copy=False),
-                )
-
-            forecasts_list.append(predictions)
+                last_point_series = [pred[-1] for pred in forecasts_]
+                forecasts_ = concatenate(last_point_series, ignore_time_axis=True)
+            forecasts_list.append(forecasts_)
         return forecasts_list
 
     @property
