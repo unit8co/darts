@@ -43,6 +43,7 @@ def create_lagged_data(
     sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     stride: int = 1,
     show_warnings: bool = True,
+    shift: int = 0,
     forecast_horizon: Optional[int] = None,
     step: Optional[int] = None,
 ) -> tuple[
@@ -289,6 +290,11 @@ def create_lagged_data(
         )
 
     # Setup values used for autoregression
+    if not isinstance(output_chunk_length, int) or output_chunk_length < 1:
+        raise_log(
+            ValueError("`output_chunk_length` must be a positive `int`."),
+            logger=logger,
+        )
     if forecast_horizon is None:
         forecast_horizon = output_chunk_length
     if step is None:
@@ -358,7 +364,7 @@ def create_lagged_data(
 
         # variables for autoregression
         X_i_array = []
-        last_step_shift = 0
+        # last_step_shift = 0
         # shift = 0  # TODO add  shift as method parameter
         for t_pred in range(0, forecast_horizon, step):
             # for t_pred in range(1):
@@ -366,13 +372,30 @@ def create_lagged_data(
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
             # we have to step back `step` from `n` in the last iteration
             if 0 < forecast_horizon - t_pred < step and t_pred > 0:
-                last_step_shift = t_pred - (forecast_horizon - step)
+                # last_step_shift = t_pred - (forecast_horizon - step)
                 t_pred = forecast_horizon - step
 
+            # TODO: refactor this ugly loop
             tmp_lags_extract = []
-            for lag in lags_extract:
-                if lag is not None:
-                    tmp_lags_extract.append(lag + t_pred)
+            for series_type, lag in zip(
+                ["target", "past_cov", "future_cov"], lags_extract
+            ):
+                if lag is not None and t_pred > 0:
+                    # if series_type == "target":
+                    #     offset = -(shift + t_pred - last_step_shift)
+                    # else:
+                    offset = t_pred
+                    # if series_type == "target":
+                    #     tmp_lags_extract.append(
+                    #         [l - (shift + last_step_shift) for l in lag]
+                    #     )
+                    # else:
+                    if isinstance(lag, list):
+                        tmp_lags_extract.append([
+                            inner_lag + offset for inner_lag in lag
+                        ])
+                    else:
+                        tmp_lags_extract.append(lag + offset)
                 else:
                     tmp_lags_extract.append(lag)
             if use_moving_windows and series_equal_freq:
@@ -383,11 +406,9 @@ def create_lagged_data(
                     past_covariates=past_i,
                     future_covariates=future_i,
                     sample_weight=sample_weight_i,
-                    lags=lags,  # [lag - (shift + last_step_shift) for lag in lags],
-                    lags_past_covariates=lags_past_covariates,  # [lag + t_pred for lag in lags_past_covariates],
-                    lags_future_covariates=lags_future_covariates,  # [
-                    #     lag + t_pred for lag in lags_future_covariates
-                    # ],
+                    lags=lags,
+                    lags_past_covariates=lags_past_covariates,
+                    lags_future_covariates=lags_future_covariates,
                     lags_extract=tmp_lags_extract,
                     lags_order=lags_order,
                     max_samples_per_ts=max_samples_per_ts,
@@ -395,7 +416,7 @@ def create_lagged_data(
                     check_inputs=check_inputs,
                     is_training=is_training,
                     stride=stride,
-                    last_step_shift=last_step_shift,
+                    last_step_shift=t_pred,
                     show_warnings=show_warnings,
                 )
             else:
@@ -631,6 +652,7 @@ def create_lagged_prediction_data(
     concatenate: bool = True,
     stride: int = 1,
     show_warnings: bool = True,
+    shift: int = 0,
     forecast_horizon: Optional[int] = None,
     step: Optional[int] = None,
 ) -> tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
@@ -744,6 +766,7 @@ def create_lagged_prediction_data(
         concatenate=concatenate,
         stride=stride,
         show_warnings=show_warnings,
+        shift=shift,
         forecast_horizon=forecast_horizon,
         step=step,
     )
@@ -1157,7 +1180,7 @@ def _create_lagged_data_by_moving_window(
                 # when training with forecast horizon > 1, we need to shift the target series' lagged
                 # values by `last_step_shift` to account for the gap between the last input time step
                 # and the first output time step
-                series_vals[:, -(last_step_shift + 1) :, :] = np.nan
+                series_vals[:, -last_step_shift:, :] = np.nan
             # extract and append the reordered lagged values
             X.append(series_vals)
         # Cache `start_time_idx` for label creation:

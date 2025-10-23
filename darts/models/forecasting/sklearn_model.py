@@ -68,7 +68,7 @@ from sklearn.base import is_classifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import has_fit_parameter
 
-from darts import TimeSeries, concatenate
+from darts import TimeSeries
 from darts.logging import (
     get_logger,
     raise_deprecation_warning,
@@ -1554,10 +1554,10 @@ class SKLearnModel(GlobalForecastingModel):
                     )
 
             if self.multi_models:
-                # shift = 0 # TODO use shift
+                shift = 0  # TODO use shift
                 step = self.output_chunk_length
             else:
-                # shift = self.output_chunk_length - 1 # TODO use shift
+                shift = self.output_chunk_length - 1  # TODO use shift
                 step = 1
 
             X, _ = create_lagged_prediction_data(
@@ -1587,6 +1587,7 @@ class SKLearnModel(GlobalForecastingModel):
                 use_moving_windows=True,
                 concatenate=False,
                 show_warnings=False,
+                shift=shift,
                 forecast_horizon=forecast_horizon,
                 step=step,
             )
@@ -1598,15 +1599,31 @@ class SKLearnModel(GlobalForecastingModel):
             if X.ndim == 2:
                 X = X[:, :, np.newaxis]
 
-            for t_pred in range(X.shape[-1]):
-                current_X = X[:, :, t_pred]
+            last_step_shift = 0
+            t_pred = 0
+
+            for pred_idx in range(X.shape[-1]):
+                if 0 < forecast_horizon - t_pred < step and t_pred > 0:
+                    last_step_shift = t_pred - (forecast_horizon - step)
+                    t_pred = forecast_horizon - step
+
+                current_X = X[:, :, pred_idx]
+                current_X = np.repeat(current_X, num_samples, axis=0)
                 if predictions:
                     # Replace current_X NaNs with previous predictions
-                    current_X[np.isnan(current_X)] = predictions[-1].flatten()
+                    if np.isnan(current_X).any():
+                        mask = np.isnan(current_X)
+                        rows, cols = np.where(mask)
+                        current_X[rows, cols] = predictions[-1][
+                            rows, current_X.shape[1] - cols - 1
+                        ].flatten()
+                        # current_X[np.isnan(current_X)] = predictions[-1][
+                        #     :, : current_X.shape[1], ...
+                        # ].flatten()
 
                 # repeat rows for probabilistic forecast
                 forecast = self._predict(
-                    x=np.repeat(current_X, num_samples, axis=0),
+                    x=current_X,
                     num_samples=num_samples,
                     predict_likelihood_parameters=predict_likelihood_parameters,
                     random_state=random_state,
@@ -1626,7 +1643,8 @@ class SKLearnModel(GlobalForecastingModel):
                     1,
                     -1,
                 )
-                predictions.append(forecast)
+                predictions.append(forecast[:, last_step_shift:, ...])
+                t_pred += step
             forecast = np.concatenate(predictions, axis=1)
 
             if self.multi_models:
@@ -1653,31 +1671,51 @@ class SKLearnModel(GlobalForecastingModel):
                     forecast = forecast[::stride, 0, 0, :, :, :]
 
             # TODO: check if faster to create in the loop
-            new_times = generate_index(
-                start=hist_fct_start + self.output_chunk_shift * series_.freq,
-                length=forecast_horizon + (forecast.shape[0] - 1) * stride,
-                freq=freq,
-                name=series_._time_index.name,
-            )
-
-            forecasts_ = []
-            for idx_ftc, step_fct in enumerate(
-                range(0, forecast.shape[0] * stride, stride)
-            ):
-                ts = TimeSeries(
-                    times=new_times[step_fct : step_fct + forecast_horizon],
-                    values=forecast[idx_ftc],
+            # if last_points_only:
+            # else:
+            if last_points_only:
+                new_times = generate_index(
+                    start=hist_fct_start
+                    + (forecast_horizon + self.output_chunk_shift - 1) * freq,
+                    length=forecast.shape[0],
+                    freq=freq * stride,
+                    name=series_._time_index.name,
+                )
+                forecasts_ = TimeSeries(
+                    times=new_times,
+                    values=forecast[:, -1],
                     components=forecast_components,
                     static_covariates=series_.static_covariates,
                     hierarchy=series_.hierarchy,
                     metadata=series_.metadata,
                     copy=False,
                 )
-                forecasts_.append(ts)
+            else:
+                forecasts_ = []
 
-            if last_points_only:
-                last_point_series = [pred[-1] for pred in forecasts_]
-                forecasts_ = concatenate(last_point_series, ignore_time_axis=True)
+                new_times = generate_index(
+                    start=hist_fct_start + self.output_chunk_shift * series_.freq,
+                    length=forecast_horizon + (forecast.shape[0] - 1) * stride,
+                    freq=freq,
+                    name=series_._time_index.name,
+                )
+                for idx_ftc, step_fct in enumerate(
+                    range(0, forecast.shape[0] * stride, stride)
+                ):
+                    ts = TimeSeries(
+                        times=new_times[step_fct : step_fct + forecast_horizon],
+                        values=forecast[idx_ftc],
+                        components=forecast_components,
+                        static_covariates=series_.static_covariates,
+                        hierarchy=series_.hierarchy,
+                        metadata=series_.metadata,
+                        copy=False,
+                    )
+                    forecasts_.append(ts)
+
+            # if last_points_only:
+            #     last_point_series = [pred[-1] for pred in forecasts_]
+            #     forecasts_ = concatenate(last_point_series, ignore_time_axis=True)
             forecasts_list.append(forecasts_)
         return forecasts_list
 

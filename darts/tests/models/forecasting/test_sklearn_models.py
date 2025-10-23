@@ -3987,7 +3987,7 @@ class TestSKLearnModels:
         (model_cls, model_kwargs), multi_models, last_points_only = config
 
         forecast_horizon = 5
-        model_kwargs["lags"] = 3
+        model_kwargs["lags"] = 12
         model_kwargs["multi_models"] = multi_models
         model_kwargs["output_chunk_length"] = forecast_horizon - 1
 
@@ -4002,18 +4002,24 @@ class TestSKLearnModels:
         hfc_non_optimized = model.historical_forecasts(
             series=series,
             retrain=False,
+            forecast_horizon=forecast_horizon,
+            # start=2,
             last_points_only=last_points_only,
             enable_optimization=False,
             num_samples=1,
+            # stride=2,
             random_state=42,
         )
 
         hfc_optimized = model.historical_forecasts(
             series=series,
+            forecast_horizon=forecast_horizon,
             retrain=False,
+            # start=2,
             enable_optimization=True,
             last_points_only=last_points_only,
             num_samples=1,
+            # stride=2,
             random_state=42,
         )
 
