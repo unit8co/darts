@@ -389,7 +389,7 @@ class TransformerModel(PastCovariatesTorchModel):
             Fraction of neurons affected by Dropout (default=0.1).
         activation
             The activation function of encoder/decoder intermediate layer, (default='relu').
-            can be one of the glu variant's FeedForward Network (FFN)[2]. A feedforward network is a
+            can be one of the glu variant's FeedForward Network (FFN) [2]_. A feedforward network is a
             fully-connected layer with an activation. The glu variant's FeedForward Network are a series
             of FFNs designed to work better with Transformer based models. ["GLU", "Bilinear", "ReGLU", "GEGLU",
             "SwiGLU", "ReLU", "GELU"] or one the pytorch internal activations ["relu", "gelu"]
@@ -535,11 +535,11 @@ class TransformerModel(PastCovariatesTorchModel):
         References
         ----------
         .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,
-        and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
-        pages 6000-6010. https://arxiv.org/abs/1706.03762.
+               and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing
+               Systems, pages 6000-6010. https://arxiv.org/abs/1706.03762.
         .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
         .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
-                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+               Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Notes
         -----
