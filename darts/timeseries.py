@@ -57,7 +57,6 @@ import narwhals as nw
 import numpy as np
 import pandas as pd
 import xarray as xr
-from narwhals.typing import IntoDataFrame, IntoSeries
 from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
@@ -101,7 +100,7 @@ class TimeSeries:
         values: np.ndarray,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
-        components: Optional[pd._typing.Axes] = None,
+        components: Optional[Union[Sequence, str]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
@@ -689,7 +688,7 @@ class TimeSeries:
     @classmethod
     def from_dataframe(
         cls,
-        df: IntoDataFrame,
+        df,
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
@@ -853,7 +852,7 @@ class TimeSeries:
     @classmethod
     def from_group_dataframe(
         cls,
-        df: IntoDataFrame,
+        df,
         group_cols: Union[list[str], str],
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
@@ -1145,7 +1144,7 @@ class TimeSeries:
     @classmethod
     def from_series(
         cls,
-        pd_series: IntoSeries,
+        pd_series,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
@@ -1230,7 +1229,7 @@ class TimeSeries:
         values: np.ndarray,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
-        columns: Optional[pd._typing.Axes] = None,
+        columns: Optional[Union[Sequence, str]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
@@ -1338,7 +1337,7 @@ class TimeSeries:
     def from_values(
         cls,
         values: np.ndarray,
-        columns: Optional[pd._typing.Axes] = None,
+        columns: Optional[Union[Sequence, str]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,

@@ -46,19 +46,31 @@ extensions = [
     "numpydoc",
 ]
 
+exclude_parent_classes = [
+    "Module",  # torch.nn.modules.module.Module
+    "LightningModule",  # pytorch_lightning.core.module.LightningModule
+    "TQDMProgressBar",  #
+    "_MultiOutputEstimator",  # sklearn.multioutput._MultiOutputEstimator
+    "MultiOutputClassifier",  # sklearn.multioutput.MultiOutputClassifier
+    "MultiOutputRegressor",  # sklearn.multioutput.MultiOutputRegressor
+    "ndarray",  # numpy.ndarray
+]
+
+exclude_members = [
+    "min_train_series_length",
+    "first_prediction_index",
+    "future_covariate_series",
+    "past_covariate_series",
+    "initialize_encoders",
+    "SplitTimeSeriesSequence",
+    "randint",
+]
+
 autodoc_default_options = {
-    "inherited-members": None,
+    "inherited-members": ",".join(exclude_parent_classes),
     "show-inheritance": None,
     "ignore-module-all": True,
-    "exclude-members": (
-        "LocalForecastingModel,FutureCovariatesLocalForecastingModel,"
-        "TransferableFutureCovariatesLocalForecastingModel,GlobalForecastingModel,"
-        "TorchForecastingModel,PastCovariatesTorchModel,FutureCovariatesTorchModel,"
-        "DualCovariatesTorchModel,MixedCovariatesTorchModel,SplitCovariatesTorchModel,"
-        "min_train_series_length,first_prediction_index,future_covariate_series,"
-        "past_covariate_series,initialize_encoders,register_datapipe_as_function,"
-        "register_function,functions,SplitTimeSeriesSequence,randint,AnomalyModel"
-    ),
+    "exclude-members": ",".join(exclude_members),
 }
 
 # In order to also have the docstrings of __init__() methods included
@@ -84,6 +96,26 @@ exclude_patterns = [
     "**/modules.rst",
     "**/darts.tests.*",
     "**/*logging.rst",
+    "**/darts.ad.aggregators.aggregators.rst",
+    "**/darts.ad.anomaly_model.anomaly_model.rst",
+    "**/darts.ad.detectors.detectors.rst",
+    "**/darts.ad.scorers.scorers.rst",
+    "**/darts.explainability.explainability.rst",
+    "**/darts.explainability.utils.rst",
+    "**/darts.models.components.*",
+    "**/darts.models.forecasting.ensemble_model.rst",
+    "**/darts.models.forecasting.forecasting_model.rst",
+    "**/darts.models.forecasting.torch_forecasting_model.rst",
+    "**/darts.models.forecasting.pl_forecasting_module.rst",
+    "**/darts.utils.historical_forecasts.*",
+    "**/darts.utils.likelihood_models.base.rst",
+    "**/darts.utils.multioutput.rst",
+    "**/darts.utils.onnx_utils.rst",
+    "**/darts.utils.ts_utils.rst",
+]
+
+suppress_warnings = [
+    "toc.excluded",  # Suppress warnings about excluded documents from above
 ]
 
 autosummary_generate = True

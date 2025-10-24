@@ -150,7 +150,7 @@ class MultiOutputMixin:
 
 class MultiOutputRegressor(MultiOutputMixin, sk_MultiOutputRegressor):
     """
-    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices
+    :class:`sklearn.utils.multioutput.MultiOutputRegressor` with a modified ``fit()`` method that also slices
     validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
     """
 

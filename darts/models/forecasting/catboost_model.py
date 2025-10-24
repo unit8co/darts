@@ -31,6 +31,8 @@ from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import (
+    FUTURE_LAGS_TYPE,
+    LAGS_TYPE,
     SKLearnModelWithCategoricalFeatures,
     _ClassifierMixin,
     _QuantileModelContainer,
@@ -44,9 +46,9 @@ logger = get_logger(__name__)
 class CatBoostModel(SKLearnModelWithCategoricalFeatures):
     def __init__(
         self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, list[int]] = None,
-        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
+        lags: Optional[LAGS_TYPE] = None,
+        lags_past_covariates: Optional[LAGS_TYPE] = None,
+        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
