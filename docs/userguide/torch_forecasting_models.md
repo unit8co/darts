@@ -359,7 +359,7 @@ It is also possible to export the model weights to the ONNX format to run infere
 model = SomeTorchForecastingModel(...)
 model.fit(...)
 
-# make sure to have `onnx`, `onnxruntime`, and `onnxscript` installed
+# make sure to have `onnx` and `onnxruntime` installed
 onnx_filename = "example_onnx.onnx"
 model.to_onnx(onnx_filename, export_params=True)
 ```
