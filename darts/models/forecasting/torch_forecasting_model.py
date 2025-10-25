@@ -799,10 +799,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if self.uses_static_covariates:
             input_names.append("x_static")
 
+        # TODO: `dynamo=True` should be the way to go since PyTorch 2.9; we have to wait until RNN module onnx exports
+        #  are  fixed
         self.model.to_onnx(
             file_path=path,
             input_sample=(input_sample,),
             input_names=input_names,
+            dynamo=False,
             **kwargs,
         )
 
