@@ -50,9 +50,9 @@ time is crucial.
 
 For detailed examples and tutorials, see:
 
-* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
+* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
 * `SKLearn-Like Classification Model Examples
-  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
+  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 """
 
 import inspect
@@ -637,7 +637,7 @@ class SKLearnModel(GlobalForecastingModel):
     def get_estimator(
         self, horizon: int, target_dim: int, quantile: Optional[float] = None
     ):
-        """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
+        """Returns the estimator that forecasts the step `horizon` of the target component `target_dim`.
 
         For probabilistic models fitting quantiles, a desired `quantile` can also be passed. If not passed, it will
         return the model predicting the median (quantile=0.5).

@@ -71,7 +71,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
             .. note::
                 if `forecasting_models` contains a mix of probabilistic and deterministic models,
-                `regression_train_num_samples will be passed only to the probabilistic ones.
+                `regression_train_num_samples` will be passed only to the probabilistic ones.
             ..
         regression_train_samples_reduction
             If `forecasting_models` are probabilistic and `regression_train_num_samples` > 1, method used to

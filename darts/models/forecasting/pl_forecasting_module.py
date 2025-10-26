@@ -1,5 +1,8 @@
 """
-This file contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules
+Base Lightning Module
+---------------------
+
+Contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules
 """
 
 import copy
@@ -29,19 +32,22 @@ logger = get_logger(__name__)
 
 def io_processor(forward):
     """Applies some input / output processing to PLForecastingModule.forward.
-    Note that this wrapper must be added to each of PLForecastinModule's subclasses forward methods.
+
+    Note that this wrapper must be added to each of PLForecastingModule's subclasses forward methods.
     Here is an example how to add the decorator:
 
-    ```python
+    .. highlight:: python
+    .. code-block:: python
+
         @io_processor
         def forward(self, *args, **kwargs)
             pass
-    ```
+    ..
 
-    Applies
-    -------
-    Reversible Instance Normalization
-        normalizes batch input target features, and inverse transform the forward output back to the original scale
+    Current applications include:
+
+    - Reversible Instance Normalization: normalizes batch input target features, and inverse transform the forward
+      output back to the original scale. Activated with `use_reversible_instance_norm=True` at model creation.
     """
 
     @wraps(forward)
@@ -93,11 +99,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
         When subclassing this class, please make sure to add the following methods with the given signatures:
-            - :func:`PLForecastingModule.__init__()`
-            - :func:`PLForecastingModule.forward()`
-            - :func:`PLForecastingModule._process_input_batch()`
-            - :func:`PLForecastingModule._produce_train_output()`
-            - :func:`PLForecastingModule._get_batch_prediction()`
+
+        - :func:`PLForecastingModule.__init__()`
+        - :func:`PLForecastingModule.forward()`
+        - :func:`PLForecastingModule._process_input_batch()`
+        - :func:`PLForecastingModule._produce_train_output()`
+        - :func:`PLForecastingModule._get_batch_prediction()`
 
         In subclass `MyModel`'s :func:`__init__` function call ``super(MyModel, self).__init__(**kwargs)`` where
         ``kwargs`` are the parameters of :class:`PLForecastingModule`.

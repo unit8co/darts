@@ -33,7 +33,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         """StatsForecast Model.
 
         Can be used to fit any `StatsForecast` base model. For more information on available models, see the
-        `StatsForecast package <https://nixtlaverse.nixtla.io/statsforecast/index.html>`_.
+        `StatsForecast package <https://nixtlaverse.nixtla.io/statsforecast/index.html>`__.
 
         In addition to univariate deterministic forecasting, our `StatsForecastModel` comes with additional support:
 
@@ -44,7 +44,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
           - It adds future covariates support by first regressing the series against the future covariates using a
             :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
             StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
-            `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+            `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
 
         - **Probabilstic forecasting:** Some base models might require setting `prediction_intervals` at `model`
           creation to support probabilistic forecasting. To generate probabilistic forecasts, you can set the following

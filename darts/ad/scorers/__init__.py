@@ -29,7 +29,7 @@ functions:
   prediction (coming e.g., from a forecasting model) and the series itself. When scoring, the scorer will attribute a
   higher score to residuals that are distant from the clusters found during the training phase.
 
-Note that `Anomaly Models <https://unit8co.github.io/darts/generated_api/darts.ad.anomaly_model.html>`_
+Note that `Anomaly Models <https://unit8co.github.io/darts/generated_api/darts.ad.anomaly_model.html>`__
 can be used to conveniently combine any of Darts forecasting and filtering models with one or multiple scorers.
 
 Most of the scorers have the following main parameters:

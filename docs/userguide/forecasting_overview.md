@@ -127,7 +127,7 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 supports_multi_ts = issubclass(SKLearnModel, GlobalForecastingModel)
 ```
 
-[This article](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844) provides more explanations about training models on multiple series.
+[This article on multi-series forecasting](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844) provides more explanations about training models on multiple series.
 
 ## Support for Covariates
 
@@ -149,7 +149,7 @@ Models supporting past (resp. future) covariates are indicated with a "✅" unde
 
 To know more about covariates, please refer to the [covariates section of the user guide](https://unit8co.github.io/darts/userguide/covariates.html).
 
-In addition, you can have a look at [this article](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993) for some examples of how to use past and future covariates.
+In addition, you can have a look at [this article on covariates](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993) for some examples of how to use past and future covariates.
 
 ## Probabilistic forecasts
 

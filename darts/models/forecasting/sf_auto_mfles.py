@@ -22,12 +22,12 @@ class AutoMFLES(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-MFLES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-MFLES based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
 
         Automatically selects the best MFLES model from all feasible combinations of the parameters
         `seasonality_weights`, `smoother`, `ma`, and `seasonal_period`. Selection is made using the sMAPE metric by
         default. We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#automfles>`_ for the exhaustive documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#automfles>`__ for the exhaustive documentation
         of the arguments.
 
         In addition to univariate deterministic forecasting, it comes with additional support:

@@ -1,7 +1,8 @@
 """
 Shap Explainer for SKLearnModels
-------------------------------------
-A `shap explainer <https://github.com/slundberg/shap>`_ specifically for time series
+--------------------------------
+
+A `shap explainer <https://github.com/slundberg/shap>`__ specifically for time series
 forecasting models.
 
 This class is (currently) limited to Darts' `SKLearnModel` instances of forecasting models. It uses shap values to
@@ -21,7 +22,7 @@ each of the (lagged) series.
   component dimension of the target series.
 - :func:`force_plot_from_ts() <ShapExplainer.force_plot_from_ts>` displays a shap force_plot for one target
   and one horizon, for a given target series. It displays shap values of each lag/covariate with an additive force
-   layout.
+  layout.
 """
 
 from collections.abc import Sequence
@@ -400,7 +401,7 @@ class ShapExplainer(_ForecastingModelExplainer):
 
         Returns
         -------
-        shaps_
+        dict[int, dict[str, shap.Explanation]]
             A nested dictionary {horizon : {component : shap.Explanation}} containing the raw Explanations for all
             the horizons and components.
         """

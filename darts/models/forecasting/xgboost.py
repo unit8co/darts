@@ -13,9 +13,9 @@ The wrappers come with all capabilities of Darts' `SKLearn*Model`.
 For detailed examples and tutorials, see:
 
 * `SKLearn-Like Regression Model Examples
-  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
+  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
 * `SKLearn-Like Classification Model Examples
-  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
+  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 """
 
 from collections.abc import Sequence

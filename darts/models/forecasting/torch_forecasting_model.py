@@ -1,5 +1,6 @@
 """
-TorchForecastingModel
+Base Torch Forecasting Model
+----------------------------
 
 This file contains several abstract classes:
 
@@ -219,7 +220,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -231,16 +232,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             For more info, see here:
             `trainer flags
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`_,
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`__,
             and `training on multiple gpus
-            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`_.
+            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`__.
 
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -739,7 +740,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def to_onnx(self, path: Optional[str] = None, **kwargs):
         """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
         :func:`torch.onnx.export` method (`official documentation <https://lightning.ai/docs/pytorch/
-        stable/common/lightning_module.html#to-onnx>`_).
+        stable/common/lightning_module.html#to-onnx>`__).
 
         Note: requires `onnx` library (optional dependency) to be installed.
 
@@ -765,7 +766,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         **kwargs
             Additional kwargs for PyTorch's :func:`torch.onnx.export` method (except parameters ``file_path``,
             ``input_sample``, ``input_name``). For more information, read the `official documentation
-            <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`_.
+            <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`__.
         """
         # TODO: LSTM model should be exported with a batch size of 1
         # TODO: predictions with TFT and TCN models is incorrect, might be caused by helper function to process inputs
@@ -839,7 +840,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ .
+        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
         This function can be called several times to do some extra training. If ``epochs`` is specified, the model
         will be trained for some (extra) ``epochs`` epochs.
@@ -887,7 +888,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
             training and validation datasets. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         sample_weight
@@ -1099,7 +1100,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_.
+        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
         This function can be called several times to do some extra training. If ``epochs`` is specified, the model
         will be trained for some (extra) ``epochs`` epochs.
@@ -1111,7 +1112,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             :class:`PastCovariatesTorchModel`).
         val_dataset
             A training dataset with a type matching this model (e.g. :class:`SequentialTorchTrainingDataset` for
-            :class:`PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
+            :class:`PastCovariatesTorchModel`), representing the validation set (to track the validation loss).
         trainer
             Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom `trainer` will
             override Darts' default trainer.
@@ -1124,7 +1125,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
             training and validation datasets. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         load_best
@@ -1397,8 +1398,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         A wrapper around PyTorch Lightning's `Tuner.lr_find()`. Performs a range test of good initial learning rates,
         to reduce the amount of guesswork in picking a good starting learning rate. For more information on PyTorch
-        Lightning's Tuner check out
-        `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`_.
+        Lightning's Tuner check out `this link
+        <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`__.
         It is recommended to increase the number of `epochs` if the tuner did not give satisfactory results.
         Consider creating a new model object with the suggested learning rate for example using model creation
         parameters `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
@@ -1474,7 +1475,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
             training and validation datasets. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         min_lr
@@ -1550,7 +1551,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ .
+        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
         Below, all possible parameters are documented, but not all models support all parameters. For instance,
         all the :class:`PastCovariatesTorchModel` support only ``past_covariates`` and not ``future_covariates``.
@@ -1604,7 +1605,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
             inference/prediction dataset. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mc_dropout
@@ -1729,7 +1730,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ .
+        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
         Parameters
         ----------
@@ -1759,7 +1760,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
             inference/prediction dataset. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mc_dropout
@@ -2043,13 +2044,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
             tasks (e.g. prediction).
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
-            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
             for more information about the supported kwargs.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
-            common/lightning_module.html#load-from-checkpoint>`_.
+            common/lightning_module.html#load-from-checkpoint>`__.
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
         with open(path, "rb") as fin:
@@ -2131,7 +2132,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
-            common/lightning_module.html#load-from-checkpoint>`_.
+            common/lightning_module.html#load-from-checkpoint>`__.
 
 
         Returns
@@ -2236,7 +2237,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set, strictly enforce that the keys in state_dict match the keys returned by this module’s state_dict().
             Default: ``True``.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/torch.
-            nn.Module.html?highlight=load_state_dict#torch.nn.Module.load_state_dict>`_.
+            nn.Module.html?highlight=load_state_dict#torch.nn.Module.load_state_dict>`__.
         load_encoders
             If set, will load the encoders from the model to enable direct call of fit() or predict().
             Default: ``True``.
@@ -2247,7 +2248,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
-            torch.load.html>`_.
+            torch.load.html>`__.
         """
         raise_if(
             "weights_only" in kwargs.keys() and kwargs["weights_only"],
@@ -2372,7 +2373,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
-            torch.load.html>`_.
+            torch.load.html>`__.
 
         """
         path_ptl_ckpt = path + ".ckpt"
@@ -2390,7 +2391,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     def to_cpu(self):
-        """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :fun:`fit()` or
+        """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :func:`fit()` or
         :func:`predict()` is called.
         """
         self.trainer_params["accelerator"] = "cpu"

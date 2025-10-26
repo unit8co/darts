@@ -1,5 +1,6 @@
 """
-Forecasting Model Explainer Base Class
+Base Forecasting Model Explainer
+--------------------------------
 
 A `_ForecastingModelExplainer` takes a fitted forecasting model as input and generates explanations for it.
 """

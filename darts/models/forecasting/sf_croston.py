@@ -26,14 +26,14 @@ class Croston(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Croston method as presented `in this paper <https://otexts.com/fpp3/counts.html>`_ and based on the
-        `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """Croston method as presented `in this paper <https://otexts.com/fpp3/counts.html>`__ and based on the
+        `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
 
         We refer to the StatsForecast documentation of
-        `CrostonClassic <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonclassic>`_,
-        `CrostonOptimized <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonoptimized>`_,
-        `CrostonSBA <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonsba>`_, and
-        `Teunter-Syntetos-Babai <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tsb>`_.
+        `CrostonClassic <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonclassic>`__,
+        `CrostonOptimized <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonoptimized>`__,
+        `CrostonSBA <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#crostonsba>`__, and
+        `Teunter-Syntetos-Babai <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tsb>`__.
 
         In addition to univariate deterministic forecasting, it comes with additional support:
 
@@ -41,7 +41,7 @@ class Croston(StatsForecastModel):
           Darts adds support by first regressing the series against the future covariates using a
           :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
           StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
-          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
 
         - **Probabilstic / Conformal forecasting:** Probabilstic forecasting can be performed using conformal
           prediction. To activate it, simply set `prediction_intervals` at model creation. To generate probabilistic

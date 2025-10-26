@@ -5,16 +5,16 @@ Forecasting Models
 Regression Models
 -----------------
 
-Baseline Models (`LocalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms>`_)
+Baseline Models (`LocalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms>`__)
     - :class:`~darts.models.forecasting.baselines.NaiveMean`
     - :class:`~darts.models.forecasting.baselines.NaiveSeasonal`
     - :class:`~darts.models.forecasting.baselines.NaiveDrift`
     - :class:`~darts.models.forecasting.baselines.NaiveMovingAverage`
-Global Baseline Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
+Global Baseline Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`__)
     - :class:`~darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate`
     - :class:`~darts.models.forecasting.global_baseline_models.GlobalNaiveDrift`
     - :class:`~darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal`
-Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms>`_)
+Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms>`__)
     - :class:`~darts.models.forecasting.arima.ARIMA`
     - :class:`~darts.models.forecasting.varima.VARIMA`
     - :class:`~darts.models.forecasting.sf_auto_arima.AutoARIMA`
@@ -32,14 +32,14 @@ Statistical Models (`LocalForecastingModel <https://unit8co.github.io/darts/user
     - :class:`~darts.models.forecasting.fft.FFT`
     - :class:`~darts.models.forecasting.kalman_forecaster.KalmanForecaster`
     - :class:`~darts.models.forecasting.sf_croston.Croston`
-SKLearn-Like Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
+SKLearn-Like Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`__)
     - :class:`~darts.models.forecasting.sklearn_model.SKLearnModel`
     - :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel`
     - :class:`~darts.models.forecasting.random_forest.RandomForestModel`
     - :class:`~darts.models.forecasting.catboost_model.CatBoostModel`
     - :class:`~darts.models.forecasting.lgbm.LightGBMModel`
     - :class:`~darts.models.forecasting.xgboost.XGBModel`
-PyTorch (Lightning)-based Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
+PyTorch (Lightning)-based Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`__)
     - :class:`~darts.models.forecasting.rnn_model.RNNModel`
     - :class:`~darts.models.forecasting.block_rnn_model.BlockRNNModel`
     - :class:`~darts.models.forecasting.nbeats.NBEATSModel`
@@ -51,17 +51,17 @@ PyTorch (Lightning)-based Models (`GlobalForecastingModel <https://unit8co.githu
     - :class:`~darts.models.forecasting.nlinear.NLinearModel`
     - :class:`~darts.models.forecasting.tide_model.TiDEModel`
     - :class:`~darts.models.forecasting.tsmixer_model.TSMixerModel`
-Ensemble Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
+Ensemble Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`__)
     - :class:`~darts.models.forecasting.baselines.NaiveEnsembleModel`
     - :class:`~darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel`
-Conformal Models  (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
+Conformal Models  (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`__)
     - :class:`~darts.models.forecasting.conformal_models.ConformalNaiveModel`
     - :class:`~darts.models.forecasting.conformal_models.ConformalQRModel`
 
 Classification Models
 ---------------------
 
-SKLearn-Like Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_)
+SKLearn-Like Models (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`__)
     - :class:`~darts.models.forecasting.sklearn_model.SKLearnClassifierModel`
     - :class:`~darts.models.forecasting.catboost_model.CatBoostClassifierModel`
     - :class:`~darts.models.forecasting.lgbm.LightGBMClassifierModel`

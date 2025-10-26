@@ -3,7 +3,7 @@ VARIMA
 ------
 
 Models for VARIMA (Vector Autoregressive moving average) [1]_.
-The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_.
+The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`__.
 
 References
 ----------

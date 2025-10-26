@@ -13,9 +13,9 @@ The wrappers come with all capabilities of Darts' `SKLearn*Model`.
 For detailed examples and tutorials, see:
 
 * `SKLearn-Like Regression Model Examples
-  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
+  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
 * `SKLearn-Like Classification Model Examples
-  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
+  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 
 To enable CatBoost support in Darts, follow the detailed install instructions for CatBoost in the INSTALL:
 https://github.com/unit8co/darts/blob/master/INSTALL.md
@@ -31,6 +31,8 @@ from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import (
+    FUTURE_LAGS_TYPE,
+    LAGS_TYPE,
     SKLearnModelWithCategoricalFeatures,
     _ClassifierMixin,
     _QuantileModelContainer,
@@ -44,9 +46,9 @@ logger = get_logger(__name__)
 class CatBoostModel(SKLearnModelWithCategoricalFeatures):
     def __init__(
         self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, list[int]] = None,
-        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
+        lags: Optional[LAGS_TYPE] = None,
+        lags_past_covariates: Optional[LAGS_TYPE] = None,
+        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
@@ -162,7 +164,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
             must be integer-encoded. For more information on how CatBoost handles categorical features,
             visit: `Categorical feature support documentatio
-            <https://catboost.ai/docs/en/features/categorical-features>`_.
+            <https://catboost.ai/docs/en/features/categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `CatBoostRegressor`. The components that
@@ -310,7 +312,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             TimeSeries or Sequence[TimeSeries] object containing the target values for evaluation dataset
         val_past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
-        val_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        val_future_covariates
             Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
         max_samples_per_ts
             This is an integer upper bound on the number of tuples that can be produced
@@ -576,7 +578,7 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
             as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
             must be integer-encoded. For more information on how CatBoost handles categorical features,
             visit: `Categorical feature support documentatio
-            <https://catboost.ai/docs/en/features/categorical-features>`_.
+            <https://catboost.ai/docs/en/features/categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `CatBoostRegressor`. The components that
