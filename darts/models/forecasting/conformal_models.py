@@ -116,7 +116,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         ----------
         model
             A pre-trained global forecasting model. See the list of models
-            `here <https://unit8co.github.io/darts/#forecasting-models>`_.
+            `here <https://unit8co.github.io/darts/#forecasting-models>`__.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.2, 0.5, 0.8 0.9] correspond to two intervals with (0.9 - 0.1) = 80%, and (0.8 - 0.2) 60% coverage
@@ -667,7 +667,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         random_state: Optional[int] = None,
     ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
-        """Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
+        r"""Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
 
         If `historical_forecasts` are provided, the metric(s) (given by the `metric` function) is evaluated directly on
         all forecasts and actual values. The same `series` and `last_points_only` value must be passed that were used
@@ -685,7 +685,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         Notes
         -----
         Darts has several metrics to evaluate probabilistic forecasts. For conformal models, we recommend using
-        quantile interval metrics (see `here <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_).
+        quantile interval metrics (see `here <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__).
         You can specify which intervals to evaluate by setting `metric_kwargs={'q_interval': my_intervals}`. To check
         all intervals used by your conformal model `my_model`, you can set ``{'q_interval': my_model.q_interval}``.
 
@@ -735,11 +735,15 @@ class ConformalModel(GlobalForecastingModel, ABC):
               or `retrain` is a ``Callable`` and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
-            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
-            shifted by `output_chunk_shift` points into the future.
-            Note: Raises a ValueError if `start` yields a time outside the time index of `series`.
-            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-            (default behavior with ``None``) and start at the first trainable/predictable point.
+            There are additional rules for some edge cases:
+
+            - If `start` is before the trainable / forecastable points, uses the closest valid start point that is a
+              round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            - If `start` is after the trainable / forecastable points, will ignore the parameter (default behavior with
+              ``None``) and start at the first trainable / predictable point.
+            - If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is
+              also shifted by `output_chunk_shift` points into the future.
+
         start_format
             Defines the `start` format.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
@@ -764,7 +768,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         metric
             A metric function or a list of metric functions. Each metric must either be a Darts metric (see `here
-            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__), or a custom metric that has an
             identical signature as Darts' metrics, uses decorators :func:`~darts.metrics.metrics.multi_ts_support` and
             :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
         reduction
@@ -820,9 +824,9 @@ class ConformalModel(GlobalForecastingModel, ABC):
             An numpy array of backtest scores. For single series and one of:
 
             - a single `metric` function, `historical_forecasts` generated with `last_points_only=False`
-              and backtest `reduction=None`. The output has shape (n forecasts, *).
+              and backtest `reduction=None`. The output has shape (n forecasts, \*).
             - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.
-              The output has shape (*, n metrics) when using a backtest `reduction`, and (n forecasts, *, n metrics)
+              The output has shape (\*, n metrics) when using a backtest `reduction`, and (n forecasts, \*, n metrics)
               when `reduction=None`
             - multiple uni/multivariate series including `series_reduction` and at least one of
               `component_reduction=None` or `time_reduction=None` for "per time step metrics"
@@ -925,7 +929,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
         -----
         Darts has several metrics to evaluate probabilistic forecasts. For conformal models, we recommend using
         "per time step" quantile interval metrics (see `here
-        <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_). You can specify which intervals to
+        <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__). You can specify which intervals to
         evaluate by setting `metric_kwargs={'q_interval': my_intervals}`. To check all intervals used by your conformal
         model `my_model`, you can set ``{'q_interval': my_model.q_interval}``.
 
@@ -1004,7 +1008,7 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         metric
             Either one of Darts' "per time step" metrics (see `here
-            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__), or a custom metric that has an
             identical signature as Darts' "per time step" metrics, uses decorators
             :func:`~darts.metrics.metrics.multi_ts_support` and :func:`~darts.metrics.metrics.multi_ts_support`,
             and returns one value per time step.
@@ -1458,13 +1462,13 @@ class ConformalModel(GlobalForecastingModel, ABC):
             Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
             tasks (e.g. prediction).
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
-            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
             for more information about the supported kwargs.
         **kwargs
             Only effective if the underlying forecasting model is a `TorchForecastingModel`.
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
-            common/lightning_module.html#load-from-checkpoint>`_.
+            common/lightning_module.html#load-from-checkpoint>`__.
         """
         model: ConformalModel = GlobalForecastingModel.load(path)
 
@@ -1650,7 +1654,7 @@ class ConformalNaiveModel(ConformalModel):
         ----------
         model
             A pre-trained global forecasting model. See the list of models
-            `here <https://unit8co.github.io/darts/#forecasting-models>`_.
+            `here <https://unit8co.github.io/darts/#forecasting-models>`__.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.2, 0.5, 0.8 0.9] correspond to two intervals with (0.9 - 0.1) = 80%, and (0.8 - 0.2) 60% coverage
@@ -1786,7 +1790,7 @@ class ConformalQRModel(ConformalModel):
         ----------
         model
             A pre-trained global forecasting model. See the list of models
-            `here <https://unit8co.github.io/darts/#forecasting-models>`_.
+            `here <https://unit8co.github.io/darts/#forecasting-models>`__.
         quantiles
             A list of quantiles centered around the median `q=0.5` to use. For example quantiles
             [0.1, 0.2, 0.5, 0.8 0.9] correspond to two intervals with (0.9 - 0.1) = 80%, and (0.8 - 0.2) 60% coverage

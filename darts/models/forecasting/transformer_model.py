@@ -389,7 +389,7 @@ class TransformerModel(PastCovariatesTorchModel):
             Fraction of neurons affected by Dropout (default=0.1).
         activation
             The activation function of encoder/decoder intermediate layer, (default='relu').
-            can be one of the glu variant's FeedForward Network (FFN)[2]. A feedforward network is a
+            can be one of the glu variant's FeedForward Network (FFN) [2]_. A feedforward network is a
             fully-connected layer with an activation. The glu variant's FeedForward Network are a series
             of FFNs designed to work better with Transformer based models. ["GLU", "Bilinear", "ReGLU", "GEGLU",
             "SwiGLU", "ReLU", "GELU"] or one the pytorch internal activations ["relu", "gelu"]
@@ -488,7 +488,7 @@ class TransformerModel(PastCovariatesTorchModel):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -507,7 +507,7 @@ class TransformerModel(PastCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -535,17 +535,16 @@ class TransformerModel(PastCovariatesTorchModel):
         References
         ----------
         .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,
-        and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
-        pages 6000-6010. https://arxiv.org/abs/1706.03762.
+               and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing
+               Systems, pages 6000-6010. https://arxiv.org/abs/1706.03762.
         .. [2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
         .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
-                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+               Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Notes
         -----
-        Disclaimer:
-        This current implementation is fully functional and can already produce some good predictions. However,
-        it is still limited in how it uses the Transformer architecture because the `tgt` input of
+        Disclaimer: This current implementation is fully functional and can already produce some good predictions.
+        However, it is still limited in how it uses the Transformer architecture because the `tgt` input of
         `torch.nn.Transformer` is not utilized to its full extent. Currently, we simply pass the last value of the
         `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we
         should allow the model to consume its own output as part of the `tgt` argument, such that when predicting
@@ -577,9 +576,10 @@ class TransformerModel(PastCovariatesTorchModel):
          [5.65417736]]
 
         .. note::
-            `Transformer example notebook <https://unit8co.github.io/darts/examples/06-Transformer-examples.html>`_
+            `Transformer example notebook <https://unit8co.github.io/darts/examples/06-Transformer-examples.html>`__
             presents techniques that can be used to improve the forecasts quality compared to this simple usage
             example.
+        ..
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 

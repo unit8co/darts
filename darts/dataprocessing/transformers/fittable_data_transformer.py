@@ -175,7 +175,7 @@ class FittableDataTransformer(BaseDataTransformer):
         be stored in ``self._fitted_params``, which can be later used during the transformation step.
 
         Regardless of whether the `global_fit` attribute is set to `True` or `False`, `ts_fit` should also accept
-        a dictionary of fixed parameter values as a second argument (i.e. `params['fixed'] contains the fixed
+        a dictionary of fixed parameter values as a second argument (i.e. `params['fixed']` contains the fixed
         parameters of the data transformer).
 
         Any additional positional and/or keyword arguments passed to the `fit` method will be passed as
@@ -212,10 +212,11 @@ class FittableDataTransformer(BaseDataTransformer):
 
         The fitted parameters returned by `ts_fit` are stored in the ``self._fitted_params`` attribute.
         If a `Sequence[TimeSeries]` is passed as the `series` data, then one of two outcomes will occur:
-            1. If the `global_fit` attribute was set to `False`, then a different set of parameters will be
+
+        - If the `global_fit` attribute was set to `False`, then a different set of parameters will be
             individually fitted to each `TimeSeries` in the `Sequence`. In this case, this function automatically
             parallelises this fitting process over all of the multiple `TimeSeries` that have been passed.
-            2. If the `global_fit` attribute was set to `True`, then all of the `TimeSeries` objects will be used
+        - If the `global_fit` attribute was set to `True`, then all of the `TimeSeries` objects will be used
             fit a single set of parameters.
 
         Parameters

@@ -1,3 +1,8 @@
+"""
+Base Likelihood Model
+---------------------
+"""
+
 from collections.abc import Sequence
 from enum import Enum
 from typing import Optional, Union

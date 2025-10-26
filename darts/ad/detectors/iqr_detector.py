@@ -1,6 +1,6 @@
 """
 Interquartile Range (IQR) Detector
------------------
+----------------------------------
 
 Flags anomalies that are beyond the IQR (between the third and the first quartile)
 of historical data by some factor of it's difference (typically 1.5).
