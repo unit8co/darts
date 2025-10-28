@@ -63,7 +63,6 @@ from typing import Any, Callable, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
-from numpy.lib.stride_tricks import sliding_window_view
 from sklearn.base import is_classifier
 from sklearn.linear_model import LinearRegression, LogisticRegression
 from sklearn.utils.validation import has_fit_parameter
@@ -1488,6 +1487,22 @@ class SKLearnModel(GlobalForecastingModel):
 
         Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
         """
+
+        # TODO this check is also in forecasting_model predict. Put it inside a function to avoid code duplication
+        is_autoregression = (
+            False
+            if self.output_chunk_length is None
+            else (forecast_horizon > self.output_chunk_length)
+        )
+        if self.output_chunk_shift and is_autoregression:
+            raise_log(
+                ValueError(
+                    "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
+                    "shifted output chunk `(output_chunk_shift > 0)`."
+                ),
+                logger=logger,
+            )
+
         predict_kwargs = predict_kwargs or {}
         forecasts_list = []
         iterator = _build_tqdm_iterator(
@@ -1553,11 +1568,39 @@ class SKLearnModel(GlobalForecastingModel):
                         else hist_fct_fc_start
                     )
 
+            from darts.utils.historical_forecasts.utils import (
+                _process_predict_start_points_bounds,
+            )
+
+            left_bound = (
+                len(series_)
+                if hist_fct_start > series_.end_time()
+                else series_.get_index_at_point(hist_fct_start)
+            )
+            right_bound = (
+                len(series_)
+                if hist_fct_end > series_.end_time()
+                else series_.get_index_at_point(hist_fct_end)
+            )
+
+            bounds_array, _ = _process_predict_start_points_bounds(
+                series=[series_],
+                bounds=np.array([[left_bound, right_bound]]),
+                stride=stride,
+            )
+            left_bound, right_bound = bounds_array[0].astype(int)
+
+            n_forecasts = (
+                (right_bound - left_bound) // stride + 1
+                if right_bound >= left_bound
+                else 0
+            )
+
             if self.multi_models:
-                shift = 0  # TODO use shift
+                # shift = 0  # TODO use shift
                 step = self.output_chunk_length
             else:
-                shift = self.output_chunk_length - 1  # TODO use shift
+                # shift = self.output_chunk_length - 1  # TODO use shift
                 step = 1
 
             X, _ = create_lagged_prediction_data(
@@ -1587,7 +1630,7 @@ class SKLearnModel(GlobalForecastingModel):
                 use_moving_windows=True,
                 concatenate=False,
                 show_warnings=False,
-                shift=shift,
+                shift=self.multi_models,
                 forecast_horizon=forecast_horizon,
                 step=step,
             )
@@ -1602,24 +1645,75 @@ class SKLearnModel(GlobalForecastingModel):
             last_step_shift = 0
             t_pred = 0
 
+            start_idx = 0
+
+            # for concatenating target with predictions (or quantile parameters)
+            # likelihood = self.likelihood
+            # if predict_likelihood_parameters and likelihood is not None:
+            #     # with `multi_models=False`, the predictions are concatenated with the past target, even if `n<=ocl`
+            #     # to make things work, we just append the first predicted parameter (it will never be accessed)
+            #     sample_slice = slice(0, None, likelihood.num_parameters)
+            # else:
+            #     sample_slice = slice(None)
+            forecasts = []
             for pred_idx in range(X.shape[-1]):
                 if 0 < forecast_horizon - t_pred < step and t_pred > 0:
                     last_step_shift = t_pred - (forecast_horizon - step)
                     t_pred = forecast_horizon - step
 
-                current_X = X[:, :, pred_idx]
+                current_X = X[::stride, :, pred_idx]
+                if not self.multi_models:
+                    current_X = current_X[:n_forecasts, ...]
+
                 current_X = np.repeat(current_X, num_samples, axis=0)
-                if predictions:
+
+                if (
+                    predictions
+                    and t_pred + 1 - self.output_chunk_length > 0
+                    and "target" in self.lags
+                ):
+                    # find column containing NaN
+                    _, col = np.where(np.isnan(current_X))
+                    col = np.unique(col)
+
+                    # end_idx = current_X.shape[1] - min(col)
+
+                    current_X[:, col] = forecasts[
+                        :, start_idx : start_idx + (len(col) // forecasts.shape[-1]), :
+                    ].reshape(current_X[:, col].shape)
+
+                    if len(col) == len(self.lags["target"]):
+                        start_idx += 1
+                    # current_X[:, col] = np.concatenate(
+                    #     predictions[
+                    #         -min(pred_offset, current_X.shape[1], col.shape[0]) :
+                    #     ]
+                    # ).reshape(current_X[:, col].shape)
+                    # current_X[:, -pred_offset:] = np.concatenate(
+                    #     predictions[-min(pred_offset, current_X.shape[1]) :]
+                    # ).reshape(current_X[:, -pred_offset:].shape)
+                if predictions and last_step_shift > 0 and "target" in self.lags:
+                    _, col = np.where(np.isnan(current_X))
+                    col = np.unique(col)
+
+                    current_X[:, col] = forecasts.reshape(forecasts.shape[0], -1)[
+                        :, : len(col)
+                    ].reshape(current_X[:, col].shape)
+
+                    # shape = predictions[-1].shape[1] - pred_idx
+                    # current_X[:, -pred_idx:] = forecasts[:, :-shape].reshape(
+                    #     current_X[:, -pred_idx:].shape
+                    # )
                     # Replace current_X NaNs with previous predictions
-                    if np.isnan(current_X).any():
-                        mask = np.isnan(current_X)
-                        rows, cols = np.where(mask)
-                        current_X[rows, cols] = predictions[-1][
-                            rows, current_X.shape[1] - cols - 1
-                        ].flatten()
-                        # current_X[np.isnan(current_X)] = predictions[-1][
-                        #     :, : current_X.shape[1], ...
-                        # ].flatten()
+                    # if np.isnan(current_X).any()
+                    #     mask = np.isnan(current_X)
+                    #     rows, cols = np.where(mask)
+                    #     current_X[rows, cols] = predictions[-1][
+                    #         rows, current_X.shape[1] - cols - 1
+                    #     ].flatten()
+                    #     # current_X[np.isnan(current_X)] = predictions[-1][
+                    #     #     :, : current_X.shape[1], ...
+                    #     # ].flatten()
 
                 # repeat rows for probabilistic forecast
                 forecast = self._predict(
@@ -1633,43 +1727,60 @@ class SKLearnModel(GlobalForecastingModel):
                 # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
                 # where k = output_chunk length if multi_models, 1 otherwise
                 # reshape into (forecasted indexes, output_chunk_length, n_components, n_samples)
-                forecast = np.moveaxis(
-                    forecast.reshape(
-                        X.shape[0],
-                        num_samples,
-                        self.output_chunk_length if self.multi_models else 1,
-                        -1,
-                    ),
-                    1,
-                    -1,
-                )
+                # forecast = np.moveaxis(
+                #     forecast.reshape(
+                #         X.shape[0],
+                #         num_samples,
+                #         self.output_chunk_length if self.multi_models else 1,
+                #         -1,
+                #     ),
+                #     1,
+                #     -1,
+                # )
                 predictions.append(forecast[:, last_step_shift:, ...])
+                forecasts = np.concatenate(predictions, axis=1)
                 t_pred += step
             forecast = np.concatenate(predictions, axis=1)
 
-            if self.multi_models:
-                forecast = forecast[::stride, :forecast_horizon]
-            else:
-                # entire forecast horizon is given by multiple (previous) forecasts -> apply sliding window
-                forecast = sliding_window_view(
-                    forecast[:, 0],
-                    (forecast_horizon, len(forecast_components), num_samples),
-                )
+            # forecast = forecast[::stride, :forecast_horizon]
+            # if self.multi_models:
+            #     forecast = forecast[::stride, :forecast_horizon]
+            # else:
+            #     # entire forecast horizon is given by multiple (previous) forecasts -> apply sliding window
+            #     forecast = sliding_window_view(
+            #         forecast[:, 0],
+            #         (forecast_horizon, len(forecast_components), num_samples),
+            #     )
 
-                # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values
-                if forecast_horizon != self.output_chunk_length:
-                    forecast = forecast[
-                        : -shift_start + forecast_horizon - 1 : stride,
-                        0,
-                        0,
-                        :forecast_horizon,
-                        :,
-                        :,
-                    ]
-                # apply stride
-                else:
-                    forecast = forecast[::stride, 0, 0, :, :, :]
+            #     # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values
+            #     if forecast_horizon != self.output_chunk_length:
+            #         forecast = forecast[
+            #             : -shift_start + forecast_horizon - 1 : stride,
+            #             0,
+            #             0,
+            #             :forecast_horizon,
+            #             :,
+            #             :,
+            #         ]
+            #     # apply stride
+            #     else:
+            #         forecast = forecast[::stride, 0, 0, :, :, :]
 
+            # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
+            # predictions = np.moveaxis(
+            #     predictions.reshape(len(series), num_samples, forecast_horizon, -1), 1, -1
+            # )
+            forecast = forecast[:, :forecast_horizon, :]
+            forecast = np.moveaxis(
+                forecast.reshape(
+                    -1,
+                    num_samples,
+                    forecast_horizon,
+                    len(forecast_components),
+                ),
+                1,
+                -1,
+            )  # [::stride]
             # TODO: check if faster to create in the loop
             # if last_points_only:
             # else:

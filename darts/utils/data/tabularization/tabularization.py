@@ -43,7 +43,7 @@ def create_lagged_data(
     sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     stride: int = 1,
     show_warnings: bool = True,
-    shift: int = 0,
+    shift: bool = False,
     forecast_horizon: Optional[int] = None,
     step: Optional[int] = None,
 ) -> tuple[
@@ -367,66 +367,60 @@ def create_lagged_data(
         # last_step_shift = 0
         # shift = 0  # TODO add  shift as method parameter
         for t_pred in range(0, forecast_horizon, step):
-            # for t_pred in range(1):
-
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
             # we have to step back `step` from `n` in the last iteration
             if 0 < forecast_horizon - t_pred < step and t_pred > 0:
                 # last_step_shift = t_pred - (forecast_horizon - step)
                 t_pred = forecast_horizon - step
 
-            # TODO: refactor this ugly loop
-            tmp_lags_extract = []
-            for series_type, lag in zip(
-                ["target", "past_cov", "future_cov"], lags_extract
-            ):
-                if lag is not None and t_pred > 0:
-                    # if series_type == "target":
-                    #     offset = -(shift + t_pred - last_step_shift)
-                    # else:
-                    offset = t_pred
-                    # if series_type == "target":
-                    #     tmp_lags_extract.append(
-                    #         [l - (shift + last_step_shift) for l in lag]
-                    #     )
-                    # else:
-                    if isinstance(lag, list):
-                        tmp_lags_extract.append([
-                            inner_lag + offset for inner_lag in lag
-                        ])
-                    else:
-                        tmp_lags_extract.append(lag + offset)
+            shifted_target_i = target_i.copy() if target_i else None
+            shifted_past_i = past_i.copy() if past_i else None
+            shifted_future_i = future_i.copy() if future_i else None
+            if shifted_target_i and t_pred > 0:
+                shifted_target_i = shifted_target_i.append_values(
+                    [[np.nan] * shifted_target_i.shape[1]] * t_pred
+                )
+                shifted_target_i = shifted_target_i[t_pred:]
+            if shifted_past_i and t_pred > 0:
+                if shift:
+                    shifted_past_i._time_index += t_pred * shifted_past_i.freq
                 else:
-                    tmp_lags_extract.append(lag)
+                    shifted_past_i = shifted_past_i[t_pred:]
+            if shifted_future_i and t_pred > 0:
+                if shift:
+                    shifted_future_i._time_index += t_pred * shifted_future_i.freq
+                else:
+                    shifted_future_i = shifted_future_i[t_pred:]
+
+            #         tmp_lags_extract.append(lag)
             if use_moving_windows and series_equal_freq:
                 X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
-                    target_series=target_i,
+                    target_series=shifted_target_i,
                     output_chunk_length=output_chunk_length,
                     output_chunk_shift=output_chunk_shift,
-                    past_covariates=past_i,
-                    future_covariates=future_i,
+                    past_covariates=shifted_past_i,
+                    future_covariates=shifted_future_i,
                     sample_weight=sample_weight_i,
                     lags=lags,
                     lags_past_covariates=lags_past_covariates,
                     lags_future_covariates=lags_future_covariates,
-                    lags_extract=tmp_lags_extract,
+                    lags_extract=lags_extract,
                     lags_order=lags_order,
                     max_samples_per_ts=max_samples_per_ts,
                     multi_models=multi_models,
                     check_inputs=check_inputs,
                     is_training=is_training,
                     stride=stride,
-                    last_step_shift=t_pred,
                     show_warnings=show_warnings,
                 )
             else:
                 X_i, y_i, times_i, weights_i = (
                     _create_lagged_data_by_intersecting_times(
-                        target_series=target_i,
+                        target_series=shifted_target_i,
                         output_chunk_length=output_chunk_length,
                         output_chunk_shift=output_chunk_shift,
-                        past_covariates=past_i,
-                        future_covariates=future_i,
+                        past_covariates=shifted_past_i,
+                        future_covariates=shifted_future_i,
                         sample_weight=sample_weight_i,
                         lags=lags,
                         lags_past_covariates=lags_past_covariates,
@@ -447,7 +441,11 @@ def create_lagged_data(
             )
             X_i_array.append(X_i)
         if len(X_i_array) > 1:
-            X_i_array = np.stack(X_i_array, axis=-1)
+            min_forecast_len = min(X_i_part.shape[0] for X_i_part in X_i_array)
+            X_i_array = np.stack(
+                [array[:min_forecast_len] for array in X_i_array], axis=-1
+            )
+            # X_i_array = np.stack(X_i_array, axis=-1)
         else:
             X_i_array = X_i_array[0]
         X.append(X_i_array)
@@ -1057,7 +1055,6 @@ def _create_lagged_data_by_moving_window(
     check_inputs: bool,
     is_training: bool,
     stride: int,
-    last_step_shift: int,
     show_warnings: bool = True,
 ) -> tuple[np.ndarray, Optional[np.ndarray], pd.Index, Optional[np.ndarray]]:
     """
@@ -1164,6 +1161,8 @@ def _create_lagged_data_by_moving_window(
                 :,
                 :,
             ]
+
+            # TODO: maybe append np.nan to the end of vals, proceed with windows, then shift with t_pred
             windows = strided_moving_window(
                 x=vals, window_len=window_len, stride=stride, axis=0, check_inputs=False
             )
@@ -1176,11 +1175,11 @@ def _create_lagged_data_by_moving_window(
                 windows, lags_extract_i, lags_shift=min_lag_i - 1
             )
             series_vals = lagged_vals[:, lags_order_i]
-            if i == 0 and last_step_shift > 0:
-                # when training with forecast horizon > 1, we need to shift the target series' lagged
-                # values by `last_step_shift` to account for the gap between the last input time step
-                # and the first output time step
-                series_vals[:, -last_step_shift:, :] = np.nan
+            # if i == 0 and last_step_shift > 0:
+            #     # when training with forecast horizon > 1, we need to shift the target series' lagged
+            #     # values by `last_step_shift` to account for the gap between the last input time step
+            #     # and the first output time step
+            #     series_vals[:, -last_step_shift:, :] = np.nan
             # extract and append the reordered lagged values
             X.append(series_vals)
         # Cache `start_time_idx` for label creation:
