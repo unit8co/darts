@@ -1,4 +1,7 @@
 """
+Layer Norm Variants
+-------------------
+
 MIT License
 
 Copyright (c) 2020 Phil Wang
@@ -27,7 +30,7 @@ import torch.nn as nn
 
 
 class RMSNorm(nn.Module):
-    """An alternate to layer normalization, without mean centering and the learned bias [1]
+    """An alternate to layer normalization, without mean centering and the learned bias [1]_
 
     References
     ----------
@@ -58,7 +61,7 @@ class LayerNorm(nn.LayerNorm):
 
 class RINorm(nn.Module):
     def __init__(self, input_dim: int, eps=1e-5, affine=True):
-        """Reversible Instance Normalization based on [1]
+        """Reversible Instance Normalization based on [1]_
 
         Parameters
         ----------

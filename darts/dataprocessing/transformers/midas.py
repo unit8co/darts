@@ -170,6 +170,10 @@ class MIDAS(FittableDataTransformer, InvertibleDataTransformer):
             (3) Replace input series by unsampled series if it's not 'full'
             (4) Transform every column of the high frequency series into multiple columns for the low frequency series
             (5) Transform the low frequency series back into a TimeSeries
+
+        References
+        ----------
+        .. [1] https://en.wikipedia.org/wiki/Mixed-data_sampling
         """
         low_freq = params["fixed"]["_low_freq"]
         strip = params["fixed"]["_strip"]

@@ -35,11 +35,11 @@ class ExponentialSmoothing(LocalForecastingModel):
 
         This is a wrapper around
         `statsmodels  Holt-Winters' Exponential Smoothing
-        <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_;
+        <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`__;
         we refer to this link for the original and more complete documentation of the parameters.
 
         `trend` must be a ``ModelMode`` Enum member. You can access the Enum with
-         ``from darts.utils.utils import ModelMode``.
+        ``from darts.utils.utils import ModelMode``.
         `seasonal` must be a ``SeasonalityMode`` Enum member. You can access the Enum with
         ``from darts.utils.utils import SeasonalityMode``.
 
@@ -69,12 +69,12 @@ class ExponentialSmoothing(LocalForecastingModel):
             Specifies the type of error model for state space formulation to use when using predict()
             with ``num_samples > 1``. Default is `"add"`.
             Will be passed to statsmodels' :func:`simulate()` method. See the documentation `here
-            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`_
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`__
             for more information.
         random_errors
             Specifies how the random errors should be obtained, when using predict() with ``num_samples > 1``.
             Will be passed to statsmodels' :func:`simulate()` method. See the documentation `here
-            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`_
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`__
             for more information.
         random_state
             Controls the randomness for reproducible forecasting.
@@ -82,12 +82,12 @@ class ExponentialSmoothing(LocalForecastingModel):
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing()`.
             See `the documentation
-            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_.
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`__.
         fit_kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
             See `the documentation
-            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`__.
 
         Examples
         --------

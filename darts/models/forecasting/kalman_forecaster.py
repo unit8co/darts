@@ -106,7 +106,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
          [590.30647185]]
 
         .. note::
-            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`_
+            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`__
             presents techniques that can be used to improve the forecasts quality compared to this simple usage
             example.
         """

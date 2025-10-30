@@ -1,6 +1,6 @@
 """
-Additional util functions
--------------------------
+Additional TimeSeries-related util functions
+--------------------------------------------
 """
 
 from collections.abc import Sequence

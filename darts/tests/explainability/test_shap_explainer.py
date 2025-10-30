@@ -21,12 +21,10 @@ from darts.models import (
     LightGBMModel,
     LinearRegressionModel,
     SKLearnModel,
-    XGBModel,
 )
 from darts.tests.conftest import (
     GBM_AVAILABLE,
     LGBM_AVAILABLE,
-    XGB_AVAILABLE,
 )
 from darts.utils.timeseries_generation import linear_timeseries
 
@@ -162,16 +160,17 @@ class TestShapExplainer:
                     "output_chunk_length": 4,
                 },
             },
-            {
-                "model_cls": XGBModel,
-                "config": {
-                    "lags": 4,
-                    "lags_past_covariates": [-1, -2, -3],
-                    "lags_future_covariates": [0],
-                    "output_chunk_length": 4,
-                    "add_encoders": add_encoders,
-                },
-            },
+            # # TODO: add back test once shap fixes issue https://github.com/shap/shap/issues/4184
+            # {
+            #     "model_cls": XGBModel,
+            #     "config": {
+            #         "lags": 4,
+            #         "lags_past_covariates": [-1, -2, -3],
+            #         "lags_future_covariates": [0],
+            #         "output_chunk_length": 4,
+            #         "add_encoders": add_encoders,
+            #     },
+            # },
         ],
     )
     def test_gbm_creation(self, model):
@@ -724,7 +723,8 @@ class TestShapExplainer:
     @pytest.mark.parametrize(
         "config",
         [(LinearRegressionModel, {})]
-        + ([(XGBModel, {})] if XGB_AVAILABLE else [])
+        # # TODO: add back test once shap fixes issue https://github.com/shap/shap/issues/4184
+        # + ([(XGBModel, {})] if XGB_AVAILABLE else [])
         + (
             [(LightGBMModel, {"likelihood": "quantile", "quantiles": [0.5]})]
             if LGBM_AVAILABLE

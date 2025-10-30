@@ -1,3 +1,8 @@
+"""
+Optimized Historical Forecasts for `SKLearnModel`
+-------------------------------------------------
+"""
+
 from collections.abc import Sequence
 from typing import Any, Literal, Optional, Union
 

@@ -1,3 +1,8 @@
+"""
+Metric Utils
+------------
+"""
+
 import inspect
 from collections.abc import Sequence
 from enum import Enum

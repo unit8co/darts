@@ -1,5 +1,6 @@
 """
-Forecasting Model Base Classes
+Base Forecasting Model
+----------------------
 
 A forecasting model captures the future values of a time series as a function of the past as follows:
 
@@ -509,26 +510,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         A seven element tuple containing in order:
 
-        (
-            min target lag,
-            max target lag,
-            min past covariate lag,
-            max past covariate lag,
-            min future covariate lag,
-            max future covariate lag,
-            output shift,
-        )
+        - min target lag
+        - max target lag
+        - min past covariate lag
+        - max past covariate lag
+        - min future covariate lag
+        - max future covariate lag
+        - output shift
 
         If `0` is the index of the first prediction point, then all lags are relative to this index.
 
         See examples below.
 
         If the model wasn't fitted with:
-            - target (concerning SKLearnModels only): then the first element should be `None`.
 
-            - past covariates: then the third and fourth elements should be `None`.
-
-            - future covariates: then the fifth and sixth elements should be `None`.
+        - target (concerning SKLearnModels only): then the first element should be `None`.
+        - past covariates: then the third and fourth elements should be `None`.
+        - future covariates: then the fifth and sixth elements should be `None`.
 
         Should be overridden by models that use past or future covariates, and/or for model that have minimum target
         lag and maximum target lags potentially different from -1 and 0.
@@ -1286,7 +1284,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         random_state: Optional[int] = None,
     ) -> Union[float, np.ndarray, list[float], list[np.ndarray]]:
-        """Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
+        r"""Compute error values that the model produced for historical forecasts on (potentially multiple) `series`.
 
         If `historical_forecasts` are provided, the metric(s) (given by the `metric` function) is evaluated directly on
         all forecasts and actual values. The same `series` and `last_points_only` value must be passed that were used
@@ -1352,12 +1350,15 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
               or `retrain` is a ``Callable`` and the first trainable point is earlier than the first predictable point.
             - the first trainable point (given `train_length`) otherwise
 
-            Note: If `start` is not within the trainable / forecastable points, uses the closest valid start point that
-              is a round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
-            Note: If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is also
-              shifted by `output_chunk_shift` points into the future.
-            Note: If `start` is outside the possible historical forecasting times, will ignore the parameter
-              (default behavior with ``None``) and start at the first trainable/predictable point.
+            There are additional rules for some edge cases:
+
+            - If `start` is before the trainable / forecastable points, uses the closest valid start point that is a
+              round multiple of `stride` ahead of `start`. Raises a `ValueError`, if no valid start point exists.
+            - If `start` is after the trainable / forecastable points, will ignore the parameter (default behavior with
+              ``None``) and start at the first trainable / predictable point.
+            - If the model uses a shifted output (`output_chunk_shift > 0`), then the first predicted point is
+              also shifted by `output_chunk_shift` points into the future.
+
         start_format
             Defines the `start` format.
             If set to ``'position'``, `start` corresponds to the index position of the first predicted point and can
@@ -1401,7 +1402,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         metric
             A metric function or a list of metric functions. Each metric must either be a Darts metric (see `here
-            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__), or a custom metric that has an
             identical signature as Darts' metrics, uses decorators :func:`~darts.metrics.metrics.multi_ts_support` and
             :func:`~darts.metrics.metrics.multi_ts_support`, and returns the metric score.
         reduction
@@ -1466,9 +1467,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             An numpy array of backtest scores. For single series and one of:
 
             - a single `metric` function, `historical_forecasts` generated with `last_points_only=False`
-              and backtest `reduction=None`. The output has shape (n forecasts, *).
+              and backtest `reduction=None`. The output has shape (n forecasts, \*).
             - multiple `metric` functions and `historical_forecasts` generated with `last_points_only=False`.
-              The output has shape (*, n metrics) when using a backtest `reduction`, and (n forecasts, *, n metrics)
+              The output has shape (\*, n metrics) when using a backtest `reduction`, and (n forecasts, \*, n metrics)
               when `reduction=None`
             - multiple uni/multivariate series including `series_reduction` and at least one of
               `component_reduction=None` or `time_reduction=None` for "per time step metrics"
@@ -1757,7 +1758,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         metric
             A metric function that returns the error between two `TimeSeries` as a float value . Must either be one of
             Darts' "aggregated over time" metrics (see `here
-            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that as input two
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__), or a custom metric that as input two
             `TimeSeries` and returns the error
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
@@ -2164,7 +2165,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Otherwise, returns a list of historical ``TimeSeries`` forecasts.
         metric
             Either one of Darts' "per time step" metrics (see `here
-            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`_), or a custom metric that has an
+            <https://unit8co.github.io/darts/generated_api/darts.metrics.html>`__), or a custom metric that has an
             identical signature as Darts' "per time step" metrics, uses decorators
             :func:`~darts.metrics.metrics.multi_ts_support` and :func:`~darts.metrics.metrics.multi_ts_support`,
             and returns one value per time step.
