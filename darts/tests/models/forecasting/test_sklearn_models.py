@@ -3049,7 +3049,7 @@ class TestSKLearnModels:
         ocl = 7
         series = tg.linear_timeseries(
             length=28, start=pd.Timestamp("2000-01-01"), freq="d"
-        ).with_static_covariates(pd.Series([1.0]))
+        ).with_static_covariates(pd.Series([1.0, 2.0, 3.0]))
 
         model = LinearRegressionModel(
             lags=None,
@@ -3987,6 +3987,7 @@ class TestSKLearnModels:
         (model_cls, model_kwargs), multi_models, last_points_only = config
 
         forecast_horizon = 5
+        model_kwargs = dict(model_kwargs)  # make a copy
         model_kwargs["lags"] = 12
         model_kwargs["multi_models"] = multi_models
         model_kwargs["output_chunk_length"] = forecast_horizon - 1
