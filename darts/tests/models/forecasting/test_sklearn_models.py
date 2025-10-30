@@ -3965,6 +3965,7 @@ class TestSKLearnModels:
             future_cov = [future_cov, future_cov] if future_cov else None
         return series, past_cov, future_cov
 
+    # TODO add tests for covariates as well
     @pytest.mark.parametrize(
         "config",
         product(
@@ -3976,6 +3977,9 @@ class TestSKLearnModels:
             ),
             [True, False],  # multi_models
             [True, False],  # last_points_only
+            [1, 3, 5],  # forecast_horizon
+            [1, 2, 3],  # output_chunk_length
+            [0, 1, 2],  # start
         ),
     )
     def test_optimized_historical_forecasts(self, config):
@@ -3984,13 +3988,20 @@ class TestSKLearnModels:
         disabled and once with it enabled, and compares the results."""
         from darts.datasets import AirPassengersDataset
 
-        (model_cls, model_kwargs), multi_models, last_points_only = config
-
-        forecast_horizon = 5
+        (
+            (model_cls, model_kwargs),
+            multi_models,
+            last_points_only,
+            forecast_horizon,
+            output_chunk_length,
+            start,
+        ) = config
+        # stride = 1
+        random_state = 42
         model_kwargs = dict(model_kwargs)  # make a copy
         model_kwargs["lags"] = 12
         model_kwargs["multi_models"] = multi_models
-        model_kwargs["output_chunk_length"] = forecast_horizon - 1
+        model_kwargs["output_chunk_length"] = output_chunk_length
 
         model = model_cls(
             **model_kwargs,
@@ -4004,24 +4015,22 @@ class TestSKLearnModels:
             series=series,
             retrain=False,
             forecast_horizon=forecast_horizon,
-            # start=2,
+            start=start,
             last_points_only=last_points_only,
             enable_optimization=False,
             num_samples=1,
-            # stride=2,
-            random_state=42,
+            random_state=random_state,
         )
 
         hfc_optimized = model.historical_forecasts(
             series=series,
             forecast_horizon=forecast_horizon,
             retrain=False,
-            # start=2,
+            start=start,
             enable_optimization=True,
             last_points_only=last_points_only,
             num_samples=1,
-            # stride=2,
-            random_state=42,
+            random_state=random_state,
         )
 
         assert len(hfc_non_optimized) == len(hfc_optimized)

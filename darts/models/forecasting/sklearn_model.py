@@ -87,7 +87,10 @@ from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
     _process_historical_forecast_input,
 )
-from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
+from darts.utils.historical_forecasts.utils import (
+    _get_historical_forecast_boundaries,
+    _process_predict_start_points_bounds,
+)
 from darts.utils.likelihood_models.base import LikelihoodType
 from darts.utils.likelihood_models.sklearn import (
     QuantileRegression,
@@ -1572,10 +1575,7 @@ class SKLearnModel(GlobalForecastingModel):
                         else hist_fct_fc_start
                     )
 
-            from darts.utils.historical_forecasts.utils import (
-                _process_predict_start_points_bounds,
-            )
-
+            # Compute left and right bounds to know how many forecasts will be produced
             left_bound = (
                 len(series_)
                 if hist_fct_start > series_.end_time()
@@ -1600,13 +1600,19 @@ class SKLearnModel(GlobalForecastingModel):
                 else 0
             )
 
+            # In case of multi-models, we predict all steps at once so autoregression is done
+            # output_chunk_length by output_chunk_length. Without multi-models,
+            # a single model predicts one step at a time and we shift
+            # the input sequence by one time step after each prediction.
             if self.multi_models:
-                shift = 0  # TODO use shift
                 step = self.output_chunk_length
             else:
-                shift = self.output_chunk_length - 1  # TODO use shift
                 step = 1
 
+            # If forecast_horizon <= step, we can predict all steps in one go
+            # so X will be of shape (n_forecasts, n_lags, n_components)
+            # Otherwise, X will be of shape (n_forecasts, n_lags, n_components, n_prediction_iterations)
+            # where n_prediction_iterations = ceil(forecast_horizon / step)
             X, _ = create_lagged_prediction_data(
                 target_series=(
                     None
@@ -1633,8 +1639,6 @@ class SKLearnModel(GlobalForecastingModel):
                 check_inputs=True,
                 use_moving_windows=True,
                 concatenate=False,
-                # show_warnings=False,
-                shift=shift,
                 forecast_horizon=forecast_horizon,
                 step=step,
             )
@@ -1643,56 +1647,89 @@ class SKLearnModel(GlobalForecastingModel):
             X = X[0][:, :, 0]
             predictions = []
 
+            # In case of not doing autoregression, n_prediction_iterations is 1,
+            # so internally the last dimension has been collapsed.
+            # Add a dummy dimension so the for loop works as expected
             if X.ndim == 2:
                 X = X[:, :, np.newaxis]
 
             last_step_shift = 0
             t_pred = 0
-
             start_idx = 0
 
             forecasts = []
             for pred_idx in range(X.shape[-1]):
+                # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
+                # we have to step back `step` from `n` in the last iteration
                 if 0 < forecast_horizon - t_pred < step and t_pred > 0:
                     last_step_shift = t_pred - (forecast_horizon - step)
                     t_pred = forecast_horizon - step
 
-                current_X = X[::stride, :, pred_idx]
+                # Select the appropriate slice of X to process and cut according to stride
+                # X can have more samples than needed, so cut to n_forecasts
+                # current_X = X[::stride, :, pred_idx]
+                current_X = X[::, :, pred_idx]
                 if not self.multi_models:
-                    current_X = current_X[:n_forecasts, ...]
+                    current_X = current_X[::stride][:n_forecasts, ...]
 
                 current_X = np.repeat(current_X, num_samples, axis=0)
 
-                if (
-                    predictions
-                    and t_pred + 1 - self.output_chunk_length > 0
-                    and "target" in self.lags
-                ):
-                    # find column containing NaN
+                # When predictions exist, we are either doing autoregression, or predicting multiple steps with
+                # multi_models=False
+                # We are also interested in filling current_X with previous predictions when we use target
+                # (so when self.lags contains "target")
+                # if predictions and "target" in self.lags:
+
+                # Fill history is when we are doing autoregression
+                fill_history = t_pred + 1 > self.output_chunk_length
+
+                if np.isnan(current_X).any():
+                    # When we have NaN in current_X, we need to fill them
                     _, col = np.where(np.isnan(current_X))
                     col = np.unique(col)
 
-                    if self.multi_models:
-                        current_X[:, col] = forecasts[
-                            :, -(len(col) // forecasts.shape[-1]) :
-                        ].reshape(current_X[:, col].shape)
+                    if fill_history:
+                        if self.multi_models:
+                            # Flatten the forecasts as a 2D array for easier indexing
+                            # Instead of having (n_series * n_samples, output_chunk_length, n_components),
+                            # we have (n_series * n_samples, output_chunk_length * n_components)
+                            # Because X is built the same way, so the indexing will be coherent
+                            flattened_forecasts = forecasts.reshape(
+                                forecasts.shape[0], -1
+                            )
+                            # Find which prediction steps we need to fill in current_X. It's the last len(col) steps
+                            # but if last_step_shift > 0, we need to shift accordingly
+                            slice_start = flattened_forecasts.shape[1] - (
+                                col.size + last_step_shift
+                            )
+                            slice_start = 0 if slice_start < 0 else slice_start
+                            slice_end = slice_start + len(col)
+                            slice_end = (
+                                flattened_forecasts.shape[1]
+                                if slice_end > flattened_forecasts.shape[1]
+                                else slice_end
+                            )
+
+                            # Fill the current X columns with the corresponding forecasts
+                            current_X[:, col] = flattened_forecasts[
+                                :,
+                                slice_start:slice_end,
+                            ].reshape(current_X[:, col].shape)
+                        else:
+                            # When not using multi_models, we predict one step at a time so we only need to
+                            # shift the start_idx one by one each prediction iteration
+                            current_X[:, col] = forecasts[
+                                :,
+                                start_idx : start_idx
+                                + (col.size // forecasts.shape[-1]),
+                                :,
+                            ].reshape(current_X[:, col].shape)
+                        if col.size == len(self.lags["target"]):
+                            start_idx += 1
                     else:
-                        current_X[:, col] = forecasts[
-                            :,
-                            start_idx : start_idx + (len(col) // forecasts.shape[-1]),
-                            :,
+                        current_X[:, col] = forecasts.reshape(forecasts.shape[0], -1)[
+                            :, : col.size
                         ].reshape(current_X[:, col].shape)
-
-                    if len(col) == len(self.lags["target"]):
-                        start_idx += 1
-
-                elif predictions and last_step_shift > 0 and "target" in self.lags:
-                    _, col = np.where(np.isnan(current_X))
-                    col = np.unique(col)
-
-                    current_X[:, col] = forecasts.reshape(forecasts.shape[0], -1)[
-                        :, : len(col)
-                    ].reshape(current_X[:, col].shape)
 
                 # repeat rows for probabilistic forecast
                 forecast = self._predict(
@@ -1707,7 +1744,11 @@ class SKLearnModel(GlobalForecastingModel):
                 t_pred += step
             forecast = np.concatenate(predictions, axis=1)
 
+            # Cut up to forecast_horizon because we might have predicted to much in the last
+            # iteration (if step does not divide forecast_horizon)
             forecast = forecast[:, :forecast_horizon, :]
+
+            # bring into correct shape: (n_forecasts, n_components, n_samples)
             forecast = np.moveaxis(
                 forecast.reshape(
                     -1,
@@ -1717,7 +1758,13 @@ class SKLearnModel(GlobalForecastingModel):
                 ),
                 1,
                 -1,
-            )[:n_forecasts]
+            )
+            # For multi-models, we need to apply the stride now, as we predicted all steps at once
+            # For non-multi-models, we already applied the stride when building X
+            if self.multi_models:
+                forecast = forecast[::stride][:n_forecasts]
+            else:
+                forecast = forecast[:n_forecasts]
 
             # TODO: see if can be cleaned
             if last_points_only:

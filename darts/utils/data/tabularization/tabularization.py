@@ -50,7 +50,6 @@ def create_lagged_data(
     sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     stride: int = 1,
     show_warnings: bool = True,
-    shift: int = 0,
     forecast_horizon: Optional[int] = None,
     step: Optional[int] = None,
 ) -> tuple[
@@ -257,11 +256,21 @@ def create_lagged_data(
         be used with caution as it might introduce bias in the forecasts.
     show_warnings
         Whether to show warnings.
+    forecast_horizon
+        Optionally, the total forecast horizon for autoregressive prediction. Only used when `is_training = False`.
+        If not specified, it defaults to `output_chunk_length`.
+    step
+        The number of time steps to forecast in each iteration. Only used when `is_training = False`.
+        If not specified, it defaults to `model.output_chunk_length`. Usually, if `multi_models = True`,
+        `step` will be equal to `output_chunk_length`. If `multi_models = False`, `step` will usually be `1`.
 
     Returns
     -------
     X
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
+        In case of autoregressive prediction (`forecast_horizon > output_chunk_length`), `X` is of shape
+        `(n_observations, n_lagged_features, n_samples, n_prediction_iterations)` where
+        `n_prediction_iterations = ceil(forecast_horizon / step)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     y
@@ -389,36 +398,17 @@ def create_lagged_data(
 
         # variables for autoregression
         X_i_array = []
-        last_step_shift = 0
-        # shift = 0  # TODO add  shift as method parameter
         for t_pred in range(0, forecast_horizon, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
             # we have to step back `step` from `n` in the last iteration
             if 0 < forecast_horizon - t_pred < step and t_pred > 0:
-                last_step_shift = t_pred - (forecast_horizon - step)
                 t_pred = forecast_horizon - step
 
-            # shifted_target_i = target_i.copy() if target_i else None
-            # shifted_past_i = past_i.copy() if past_i else None
-            # shifted_future_i = future_i.copy() if future_i else None
-
+            # append NaN values to target series for autoregressive prediction
             if target_i and t_pred > 0:
                 target_i = target_i.append_values(
                     [[np.nan] * target_i.shape[1]] * t_pred
                 )
-                # shifted_target_i = shifted_target_i[t_pred:]
-            # if shifted_past_i and t_pred > 0:
-            #     if shift:
-            #         shifted_past_i._time_index += t_pred * shifted_past_i.freq
-            #     else:
-            #         shifted_past_i = shifted_past_i[t_pred:]
-            # if shifted_future_i and t_pred > 0:
-            #     if shift:
-            #         shifted_future_i._time_index += t_pred * shifted_future_i.freq
-            #     else:
-            #         shifted_future_i = shifted_future_i[t_pred:]
-
-            #         tmp_lags_extract.append(lag)
             if use_moving_windows and series_equal_freq:
                 X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
                     target_series=target_i,
@@ -437,12 +427,11 @@ def create_lagged_data(
                     check_inputs=check_inputs,
                     is_training=is_training,
                     stride=stride,
-                    shift=shift,
-                    last_step_shift=last_step_shift,
-                    t_pred=t_pred,
+                    offset=t_pred,
                     show_warnings=show_warnings,
                 )
             else:
+                # TODO maybe need to add t_pred below as well
                 X_i, y_i, times_i, weights_i = (
                     _create_lagged_data_by_intersecting_times(
                         target_series=target_i,
@@ -474,11 +463,9 @@ def create_lagged_data(
             X_i_array = np.stack(
                 [array[:min_forecast_len] for array in X_i_array], axis=-1
             )
-            # X_i_array = np.stack(X_i_array, axis=-1)
         else:
             X_i_array = X_i_array[0]
         X.append(X_i_array)
-        # X.append(X_i_array[0])
         y.append(y_i)
         times.append(times_i)
         if weights_i is not None:
@@ -679,7 +666,6 @@ def create_lagged_prediction_data(
     concatenate: bool = True,
     stride: int = 1,
     show_warnings: bool = True,
-    shift: int = 0,
     forecast_horizon: Optional[int] = None,
     step: Optional[int] = None,
 ) -> tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
@@ -751,11 +737,22 @@ def create_lagged_prediction_data(
         be used with caution as it will cause gaps in the forecasts.
     show_warnings
         Whether to show warnings.
+    forecast_horizon
+        Optionally, the total forecast horizon for autoregressive prediction. Only used when `is_training = False`.
+        If not specified, it defaults to `output_chunk_length`.
+    step
+        The number of time steps to forecast in each iteration. Only used when `is_training = False`.
+        If not specified, it defaults to `model.output_chunk_length`. Usually, if `multi_models = True`,
+        `step` will be equal to `output_chunk_length`. If `multi_models = False`, `step` will usually be `1`.
+
 
     Returns
     -------
     X
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
+        In case of autoregressive prediction (`forecast_horizon > output_chunk_length`), `X` is of shape
+        `(n_observations, n_lagged_features, n_samples, n_prediction_iterations)` where
+        `n_prediction_iterations = ceil(forecast_horizon / step)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     times
@@ -793,7 +790,6 @@ def create_lagged_prediction_data(
         concatenate=concatenate,
         stride=stride,
         show_warnings=show_warnings,
-        shift=shift,
         forecast_horizon=forecast_horizon,
         step=step,
     )
@@ -1116,9 +1112,7 @@ def _create_lagged_data_by_moving_window(
     is_training: bool,
     stride: int,
     show_warnings: bool = True,
-    shift: int = 0,
-    last_step_shift: int = 0,
-    t_pred: int = 0,
+    offset: int = 0,
 ) -> tuple[np.ndarray, Optional[np.ndarray], pd.Index, Optional[np.ndarray]]:
     """
     Helper function called by `create_lagged_data` that computes `X`, `y`, and `times` by
@@ -1218,7 +1212,7 @@ def _create_lagged_data_by_moving_window(
             # by `stride` position each time; to create `(num_samples - 1)` more windows
             # in addition to the first window, need to take `(num_samples - 1) * stride`
             # values after `first_window_end_idx`:
-            offset = t_pred
+
             vals = series_i.all_values(copy=False)[
                 first_window_start_idx + offset : first_window_end_idx
                 + offset
