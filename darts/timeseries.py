@@ -4464,7 +4464,7 @@ class TimeSeries:
                 else:
                     central_ts = comp_ts.quantile(q=central_quantile)
             else:
-                central_ts = comp_ts.mean()
+                central_ts = comp_ts
 
             central_series = central_ts.to_series()  # shape: (time,)
 
@@ -4483,7 +4483,8 @@ class TimeSeries:
             kwargs_central = deepcopy(kwargs)
             if self.is_stochastic:
                 kwargs_central["alpha"] = 1
-            if central_series.shape[0] > 1:
+            # line plot
+            if len(central_series) > 1:
                 p = central_series.plot(
                     *args,
                     ax=ax,
@@ -4492,20 +4493,21 @@ class TimeSeries:
                 color_used = (
                     p.get_lines()[-1].get_color() if default_formatting else None
                 )
-            # empty TimeSeries
-            elif central_series.shape[0] == 0:
-                p = ax.plot(
-                    [],
-                    [],
-                    *args,
-                    **kwargs_central,
-                )
-                color_used = p[0].get_color() if default_formatting else None
-            else:
+            # point plot
+            elif len(central_series) == 1:
                 p = ax.plot(
                     [self.start_time()],
                     central_series.values[0],
                     "o",
+                    *args,
+                    **kwargs_central,
+                )
+                color_used = p[0].get_color() if default_formatting else None
+            # empty plot
+            else:
+                p = ax.plot(
+                    [],
+                    [],
                     *args,
                     **kwargs_central,
                 )
@@ -4520,7 +4522,8 @@ class TimeSeries:
             ):
                 low_series = comp_ts.quantile(q=low_quantile).to_series()
                 high_series = comp_ts.quantile(q=high_quantile).to_series()
-                if low_series.shape[0] > 1:
+                # filled area
+                if len(low_series) > 1:
                     ax.fill_between(
                         self.time_index,
                         low_series,
@@ -4528,7 +4531,8 @@ class TimeSeries:
                         color=color_used,
                         alpha=(alpha if alpha is not None else alpha_confidence_intvls),
                     )
-                else:
+                # filled line
+                elif len(low_series) == 1:
                     ax.plot(
                         [self.start_time(), self.start_time()],
                         [low_series.values[0], high_series.values[0]],
