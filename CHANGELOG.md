@@ -9,6 +9,23 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+**Added**
+
+- Added `TimesFMModel` for Google's TimesFM 2.5 foundation model (200M parameters).
+  Supports univariate zero-shot forecasting without requiring training.
+  [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [nehalecky](https://github.com/nehalecky).
+- Added `foundation/` package infrastructure for foundation models:
+  - Base classes and utilities for future model integrations
+  - Device detection and management (CUDA, MPS, CPU)
+  - Extensible architecture for Chronos 2 and additional models
+  [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [nehalecky](https://github.com/nehalecky).
+- Added foundation model documentation:
+  - User guide explaining zero-shot forecasting
+  - Jupyter notebook tutorial (`examples/25-TimesFM-foundation-model.ipynb`)
+  - Roadmap for future model integrations
+  [#XXXX](https://github.com/unit8co/darts/pull/XXXX) by [nehalecky](https://github.com/nehalecky).
+- Added optional dependency `darts[timesfm]` for installing TimesFM from GitHub source.
+
 **Improved**
 
 - 🔴 Improved the performance of the `TimeSeries.map()` method for functions that take two arguments. The mapping is now applied on the entire time index and values array which requires users to reshape the time index explicitly within the function. See more information in the `TimeSeries.map()` method documentation. [#2911](https://github.com/unit8co/darts/pull/2911) by [Jakub Chłapek](https://github.com/jakubchlapek)
