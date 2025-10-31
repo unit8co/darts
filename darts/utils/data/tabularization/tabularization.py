@@ -50,6 +50,8 @@ def create_lagged_data(
     sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     stride: int = 1,
     show_warnings: bool = True,
+    forecast_horizon: Optional[int] = None,
+    step: Optional[int] = None,
 ) -> tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
@@ -254,11 +256,21 @@ def create_lagged_data(
         be used with caution as it might introduce bias in the forecasts.
     show_warnings
         Whether to show warnings.
+    forecast_horizon
+        Optionally, the total forecast horizon for autoregressive prediction. Only used when `is_training = False`.
+        If not specified, it defaults to `output_chunk_length`.
+    step
+        The number of time steps to forecast in each iteration. Only used when `is_training = False`.
+        If not specified, it defaults to `model.output_chunk_length`. Usually, if `multi_models = True`,
+        `step` will be equal to `output_chunk_length`. If `multi_models = False`, `step` will usually be `1`.
 
     Returns
     -------
     X
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
+        In case of autoregressive prediction (`forecast_horizon > output_chunk_length`), `X` is of shape
+        `(n_observations, n_lagged_features, n_samples, n_prediction_iterations)` where
+        `n_prediction_iterations = ceil(forecast_horizon / step)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     y
@@ -310,6 +322,17 @@ def create_lagged_data(
             ValueError("Must specify `target_series` if `is_training = True`."),
             logger=logger,
         )
+
+    # Setup values used for autoregression
+    if not isinstance(output_chunk_length, int) or output_chunk_length < 1:
+        raise_log(
+            ValueError("`output_chunk_length` must be a positive `int`."),
+            logger=logger,
+        )
+    if forecast_horizon is None:
+        forecast_horizon = output_chunk_length
+    if step is None:
+        step = output_chunk_length
 
     # ensure list of TimeSeries format
     target_series = series2seq(target_series)
@@ -372,51 +395,77 @@ def create_lagged_data(
                 ),
                 logger,
             )
-        if use_moving_windows and series_equal_freq:
-            X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
+
+        # variables for autoregression
+        X_i_array = []
+        for t_pred in range(0, forecast_horizon, step):
+            # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
+            # we have to step back `step` from `n` in the last iteration
+            if 0 < forecast_horizon - t_pred < step and t_pred > 0:
+                t_pred = forecast_horizon - step
+
+            # append NaN values to target series for autoregressive prediction
+            if target_i and t_pred > 0:
+                target_i = target_i.append_values(
+                    [[np.nan] * target_i.shape[1]] * t_pred
+                )
+            if use_moving_windows and series_equal_freq:
+                X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
+                    target_series=target_i,
+                    output_chunk_length=output_chunk_length,
+                    output_chunk_shift=output_chunk_shift,
+                    past_covariates=past_i,
+                    future_covariates=future_i,
+                    sample_weight=sample_weight_i,
+                    lags=lags,
+                    lags_past_covariates=lags_past_covariates,
+                    lags_future_covariates=lags_future_covariates,
+                    lags_extract=lags_extract,
+                    lags_order=lags_order,
+                    max_samples_per_ts=max_samples_per_ts,
+                    multi_models=multi_models,
+                    check_inputs=check_inputs,
+                    is_training=is_training,
+                    stride=stride,
+                    offset=t_pred,
+                    show_warnings=show_warnings,
+                )
+            else:
+                # TODO maybe need to add t_pred below as well
+                X_i, y_i, times_i, weights_i = (
+                    _create_lagged_data_by_intersecting_times(
+                        target_series=target_i,
+                        output_chunk_length=output_chunk_length,
+                        output_chunk_shift=output_chunk_shift,
+                        past_covariates=past_i,
+                        future_covariates=future_i,
+                        sample_weight=sample_weight_i,
+                        lags=lags,
+                        lags_past_covariates=lags_past_covariates,
+                        lags_future_covariates=lags_future_covariates,
+                        max_samples_per_ts=max_samples_per_ts,
+                        multi_models=multi_models,
+                        check_inputs=check_inputs,
+                        is_training=is_training,
+                        stride=stride,
+                        show_warnings=show_warnings,
+                    )
+                )
+            X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
+                features=X_i,
                 target_series=target_i,
-                output_chunk_length=output_chunk_length,
-                output_chunk_shift=output_chunk_shift,
-                past_covariates=past_i,
-                future_covariates=future_i,
-                sample_weight=sample_weight_i,
-                lags=lags,
-                lags_past_covariates=lags_past_covariates,
-                lags_future_covariates=lags_future_covariates,
-                lags_extract=lags_extract,
-                lags_order=lags_order,
-                max_samples_per_ts=max_samples_per_ts,
-                multi_models=multi_models,
-                check_inputs=check_inputs,
-                is_training=is_training,
-                stride=stride,
-                show_warnings=show_warnings,
+                uses_static_covariates=uses_static_covariates,
+                last_shape=last_static_covariates_shape,
+            )
+            X_i_array.append(X_i)
+        if len(X_i_array) > 1:
+            min_forecast_len = min(X_i_part.shape[0] for X_i_part in X_i_array)
+            X_i_array = np.stack(
+                [array[:min_forecast_len] for array in X_i_array], axis=-1
             )
         else:
-            X_i, y_i, times_i, weights_i = _create_lagged_data_by_intersecting_times(
-                target_series=target_i,
-                output_chunk_length=output_chunk_length,
-                output_chunk_shift=output_chunk_shift,
-                past_covariates=past_i,
-                future_covariates=future_i,
-                sample_weight=sample_weight_i,
-                lags=lags,
-                lags_past_covariates=lags_past_covariates,
-                lags_future_covariates=lags_future_covariates,
-                max_samples_per_ts=max_samples_per_ts,
-                multi_models=multi_models,
-                check_inputs=check_inputs,
-                is_training=is_training,
-                stride=stride,
-                show_warnings=show_warnings,
-            )
-        X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
-            features=X_i,
-            target_series=target_i,
-            uses_static_covariates=uses_static_covariates,
-            last_shape=last_static_covariates_shape,
-        )
-        X.append(X_i)
+            X_i_array = X_i_array[0]
+        X.append(X_i_array)
         y.append(y_i)
         times.append(times_i)
         if weights_i is not None:
@@ -617,6 +666,8 @@ def create_lagged_prediction_data(
     concatenate: bool = True,
     stride: int = 1,
     show_warnings: bool = True,
+    forecast_horizon: Optional[int] = None,
+    step: Optional[int] = None,
 ) -> tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
     """
     Creates the features array `X` to produce a series of prediction from an already-trained `SKLearnModel`; the
@@ -686,11 +737,22 @@ def create_lagged_prediction_data(
         be used with caution as it will cause gaps in the forecasts.
     show_warnings
         Whether to show warnings.
+    forecast_horizon
+        Optionally, the total forecast horizon for autoregressive prediction. Only used when `is_training = False`.
+        If not specified, it defaults to `output_chunk_length`.
+    step
+        The number of time steps to forecast in each iteration. Only used when `is_training = False`.
+        If not specified, it defaults to `model.output_chunk_length`. Usually, if `multi_models = True`,
+        `step` will be equal to `output_chunk_length`. If `multi_models = False`, `step` will usually be `1`.
+
 
     Returns
     -------
     X
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
+        In case of autoregressive prediction (`forecast_horizon > output_chunk_length`), `X` is of shape
+        `(n_observations, n_lagged_features, n_samples, n_prediction_iterations)` where
+        `n_prediction_iterations = ceil(forecast_horizon / step)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     times
@@ -728,6 +790,8 @@ def create_lagged_prediction_data(
         concatenate=concatenate,
         stride=stride,
         show_warnings=show_warnings,
+        forecast_horizon=forecast_horizon,
+        step=step,
     )
     return X, times
 
@@ -1048,6 +1112,7 @@ def _create_lagged_data_by_moving_window(
     is_training: bool,
     stride: int,
     show_warnings: bool = True,
+    offset: int = 0,
 ) -> tuple[np.ndarray, Optional[np.ndarray], pd.Index, Optional[np.ndarray]]:
     """
     Helper function called by `create_lagged_data` that computes `X`, `y`, and `times` by
@@ -1147,12 +1212,15 @@ def _create_lagged_data_by_moving_window(
             # by `stride` position each time; to create `(num_samples - 1)` more windows
             # in addition to the first window, need to take `(num_samples - 1) * stride`
             # values after `first_window_end_idx`:
+
             vals = series_i.all_values(copy=False)[
-                first_window_start_idx : first_window_end_idx
+                first_window_start_idx + offset : first_window_end_idx
+                + offset
                 + (num_samples - 1) * stride,
                 :,
                 :,
             ]
+
             windows = strided_moving_window(
                 x=vals, window_len=window_len, stride=stride, axis=0, check_inputs=False
             )
@@ -1164,11 +1232,15 @@ def _create_lagged_data_by_moving_window(
             lagged_vals = _extract_lagged_vals_from_windows(
                 windows, lags_extract_i, lags_shift=min_lag_i - 1
             )
+            series_vals = lagged_vals[:, lags_order_i]
             # extract and append the reordered lagged values
-            X.append(lagged_vals[:, lags_order_i])
+            X.append(series_vals)
         # Cache `start_time_idx` for label creation:
         if is_target_series:
             target_start_time_idx = start_time_idx
+
+    num_windows = min([x.shape[0] for x in X])
+    X = [x[:num_windows, :, :] for x in X]
     X = np.concatenate(X, axis=1)
     # Construct labels array `y`:
     if is_training:
@@ -1763,19 +1835,16 @@ def _get_feature_times(
             # `target_series`/`past_covariates` in `Notes`:
             if max_lag_i > 0:
                 times_i = times_i[max_lag_i:]
-        elif (
-            show_warnings
-            and (not is_label_series)
-            and (series_specified ^ lags_specified)
-        ):
+        elif (not is_label_series) and (series_specified ^ lags_specified):
             # Warn user that series/lags input will be ignored:
             times_i = max_lag_i = None
             lags_name = "lags" if name_i == "target_series" else f"lags_{name_i}"
             specified = lags_name if lags_specified else name_i
             unspecified = name_i if lags_specified else lags_name
-            warnings.warn(
-                f"`{specified}` was specified without accompanying `{unspecified}` and, thus, will be ignored."
-            )
+            if show_warnings:
+                warnings.warn(
+                    f"`{specified}` was specified without accompanying `{unspecified}` and, thus, will be ignored."
+                )
 
         feature_times.append(times_i)
         # Note `max_lag_i` and `min_lag_i` if requested:
