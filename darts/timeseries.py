@@ -4323,8 +4323,6 @@ class TimeSeries:
     ) -> matplotlib.axes.Axes:
         """Plot the series.
 
-        This is a wrapper method around :func:`xarray.DataArray.plot()`.
-
         Parameters
         ----------
         new_plot
@@ -4345,7 +4343,7 @@ class TimeSeries:
         default_formatting
             Whether to use the darts default scheme.
         title
-            Optionally, a custom plot title. If `None`, will use the name of the underlying `xarray.DataArray`.
+            Optionally, a plot title.
         label
             Can either be a string or list of strings. If a string and the series only has a single component, it is
             used as the label for that component. If a string and the series has multiple components, it is used as
@@ -4457,19 +4455,18 @@ class TimeSeries:
             if ax is None:
                 ax = plt.gca()
 
-        # TODO: migrate from xarray plotting to something else
-        data_array = self.data_array(copy=False)
-        for i, c in enumerate(data_array.component[:n_components_to_plot]):
-            comp_name = str(c.values)
-            comp = data_array.sel(component=c)
+        for i, comp_name in enumerate(self.components[:n_components_to_plot]):
+            comp_ts = self[comp_name]
 
-            if comp.sample.size > 1:
+            if self.is_stochastic:
                 if central_quantile == "mean":
-                    central_series = comp.mean(dim=DIMS[2])
+                    central_ts = comp_ts.mean()
                 else:
-                    central_series = comp.quantile(q=central_quantile, dim=DIMS[2])
+                    central_ts = comp_ts.quantile(q=central_quantile)
             else:
-                central_series = comp.mean(dim=DIMS[2])
+                central_ts = comp_ts
+
+            central_series = central_ts.to_series()  # shape: (time,)
 
             if custom_labels:
                 label_to_use = label[i]
@@ -4484,19 +4481,20 @@ class TimeSeries:
             kwargs["c"] = color[i] if custom_colors else color
 
             kwargs_central = deepcopy(kwargs)
-            if not self.is_deterministic:
+            if self.is_stochastic:
                 kwargs_central["alpha"] = 1
-            if central_series.shape[0] > 1:
-                p = central_series.plot(*args, ax=ax, **kwargs_central)
-            # empty TimeSeries
-            elif central_series.shape[0] == 0:
-                p = ax.plot(
-                    [],
-                    [],
+            # line plot
+            if len(central_series) > 1:
+                p = central_series.plot(
                     *args,
+                    ax=ax,
                     **kwargs_central,
                 )
-            else:
+                color_used = (
+                    p.get_lines()[-1].get_color() if default_formatting else None
+                )
+            # point plot
+            elif len(central_series) == 1:
                 p = ax.plot(
                     [self.start_time()],
                     central_series.values[0],
@@ -4504,18 +4502,28 @@ class TimeSeries:
                     *args,
                     **kwargs_central,
                 )
+                color_used = p[0].get_color() if default_formatting else None
+            # empty plot
+            else:
+                p = ax.plot(
+                    [],
+                    [],
+                    *args,
+                    **kwargs_central,
+                )
+                color_used = p[0].get_color() if default_formatting else None
             ax.set_xlabel(self.time_dim)
-            color_used = p[0].get_color() if default_formatting else None
 
             # Optionally show confidence intervals
             if (
-                comp.sample.size > 1
+                self.is_stochastic
                 and low_quantile is not None
                 and high_quantile is not None
             ):
-                low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
-                high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
-                if low_series.shape[0] > 1:
+                low_series = comp_ts.quantile(q=low_quantile).to_series()
+                high_series = comp_ts.quantile(q=high_quantile).to_series()
+                # filled area
+                if len(low_series) > 1:
                     ax.fill_between(
                         self.time_index,
                         low_series,
@@ -4523,7 +4531,8 @@ class TimeSeries:
                         color=color_used,
                         alpha=(alpha if alpha is not None else alpha_confidence_intvls),
                     )
-                else:
+                # filled line
+                elif len(low_series) == 1:
                     ax.plot(
                         [self.start_time(), self.start_time()],
                         [low_series.values[0], high_series.values[0]],
@@ -4533,7 +4542,7 @@ class TimeSeries:
                     )
 
         ax.legend()
-        ax.set_title(title if title is not None else data_array.name)
+        ax.set_title(title if title is not None else "")
         return ax
 
     def with_columns_renamed(
