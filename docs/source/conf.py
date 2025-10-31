@@ -148,7 +148,6 @@ html_favicon = "static/docs-favicon.ico"
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
     "twitter_url": "https://twitter.com/unit8co",
-    "search_bar_position": "navbar",
 }
 
 

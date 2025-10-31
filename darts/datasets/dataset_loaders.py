@@ -71,7 +71,7 @@ class DatasetLoader(ABC):
         Downloads the dataset if it is not present already
 
         Raises
-        -------
+        ------
         DatasetLoadingException
             If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)
 
@@ -94,7 +94,7 @@ class DatasetLoader(ABC):
         Ensures that the dataset exists and its MD5 checksum matches the expected hash.
 
         Raises
-        -------
+        ------
         DatasetLoadingException
             if checks fail
 
@@ -119,7 +119,7 @@ class DatasetLoader(ABC):
         Downloads the dataset in the root_path directory
 
         Raises
-        -------
+        ------
         DatasetLoadingException
             if downloading or writing the file to disk fails
 
