@@ -72,6 +72,7 @@ class XGBModel(SKLearnModel):
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        dir_rec: Optional[bool] = False,
         **kwargs,
     ):
         """XGBoost Model
@@ -164,6 +165,10 @@ class XGBModel(SKLearnModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         **kwargs
             Additional keyword arguments passed to `xgb.XGBRegressor`.
 
@@ -219,6 +224,7 @@ class XGBModel(SKLearnModel):
             model=self._create_model(**self.kwargs),
             use_static_covariates=use_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
 
     @staticmethod
@@ -374,6 +380,7 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
         random_state: Optional[int] = None,
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
+        dir_rec: Optional[bool] = False,
         **kwargs,
     ):
         """XGBoost Model for classification forecasting
@@ -467,6 +474,10 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
             Whether the model should use static covariate information in case the input `series` passed to ``fit()``
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         **kwargs
             Additional keyword arguments passed to `xgb.XGBClassifier`.
 
@@ -513,6 +524,7 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
             random_state=random_state,
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
+            dir_rec=dir_rec,
             **kwargs,
         )
 

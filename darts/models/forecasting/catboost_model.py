@@ -58,6 +58,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        dir_rec: Optional[bool] = False,
         **kwargs,
     ):
         """CatBoost Model
@@ -167,6 +168,10 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
             by the underlying `CatBoostRegressor`. The components that
             are specified as categorical must be integer-encoded.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostRegressor`.
             Native multi-output support can be achieved by using an appropriate `loss_function` ('MultiRMSE',
@@ -230,6 +235,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
 
         # if no loss provided, get the default loss from the model
@@ -470,6 +476,7 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        dir_rec: Optional[bool] = False,
         **kwargs,
     ):
         """CatBoost Model for classification forecasting
@@ -576,6 +583,10 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
             by the underlying `CatBoostRegressor`. The components that
             are specified as categorical must be integer-encoded.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         **kwargs
             Additional keyword arguments passed to `catboost.CatBoostClassifier`.
 
@@ -626,6 +637,7 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
+            dir_rec=dir_rec,
             **kwargs,
         )
 

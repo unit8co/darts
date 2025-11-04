@@ -138,8 +138,9 @@ class LinearRegressionModel(SKLearnModel):
             contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         dir_rec
-            Whether the model should use DirRec prediction strategy.
-
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
             `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to

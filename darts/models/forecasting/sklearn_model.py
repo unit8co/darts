@@ -217,7 +217,9 @@ class SKLearnModel(GlobalForecastingModel):
         random_state
             Controls the randomness for reproducible forecasting.
         dir_rec
-            Whether the model should use DirRec prediction strategy.
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
 
         Examples
         --------
@@ -1026,7 +1028,7 @@ class SKLearnModel(GlobalForecastingModel):
             self.output_chunk_length > 1 and self.multi_models
         )
 
-        # If multi-output required and direct-recursive prediction is enabled, wrap it in RecurrentMultiOutputMixin
+        # If direct-recursive prediction is enabled, wrap it in RecurrentMultiOutputMixin
         # Note: dir_rec ALWAYS requires wrapping (even if model supports native multi-output)
         if self.dir_rec:
             val_set_name, val_weight_name = self.val_set_params
@@ -1045,7 +1047,6 @@ class SKLearnModel(GlobalForecastingModel):
                     "`n_jobs_multioutput_wrapper` parameter will be ignored."
                 )
 
-            # do I need to worry about regressor vs classifier here?
             self.model = get_recurrent_multioutput_estimator_cls(self._model_type)(
                 estimator=self.model, **mor_kwargs
             )
@@ -1648,6 +1649,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         random_state: Optional[int] = None,
+        dir_rec: Optional[bool] = False,
     ):
         """
         Extension of `SKLearnModel` for regression models that support categorical features.
@@ -1747,6 +1749,10 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
             categorical.
         random_state
             Controls the randomness for reproducible forecasting.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         """
         super().__init__(
             lags=lags,
@@ -1759,6 +1765,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
 
         if categorical_static_covariates is not None and not use_static_covariates:
@@ -1960,6 +1967,7 @@ class RegressionModel(SKLearnModel):
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
         random_state: Optional[int] = None,
+        dir_rec: Optional[bool] = False,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -2055,6 +2063,10 @@ class RegressionModel(SKLearnModel):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
             Controls the randomness for reproducible forecasting.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
 
         Examples
         --------
@@ -2103,6 +2115,7 @@ class RegressionModel(SKLearnModel):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
 
 
@@ -2199,6 +2212,7 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
         random_state: Optional[int] = None,
+        dir_rec: Optional[bool] = False,
     ):
         """SKLearn Classifier Model
 
@@ -2367,4 +2381,5 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
