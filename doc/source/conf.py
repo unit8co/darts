@@ -1,15 +1,11 @@
 # Configuration file for the Sphinx documentation builder.
 #
-# This file only contains a selection of the most common options. For a full
-# list see the documentation:
+# For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-# -- Path setup --------------------------------------------------------------
+# -- Project information -----------------------------------------------------
+# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#
 from datetime import datetime
 
 # -- Project information -----------------------------------------------------
@@ -24,27 +20,22 @@ version = "0.38.0"
 
 extensions = ["autoapi.extension"]
 
-templates_path = ["templates"]
+templates_path = ["_templates"]
 exclude_patterns = []
-
 
 autoapi_dirs = ["../../darts"]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-# -- Options for HTML output -------------------------------------------------
+html_theme = "alabaster"
 
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
 html_theme = "pydata_sphinx_theme"
+html_static_path = ["_static"]
 html_logo = "static/darts-logo-trim.png"
 html_favicon = "static/docs-favicon.ico"
-html_static_path = ["static"]
 
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
     "twitter_url": "https://twitter.com/unit8co",
-    "search_bar_position": "navbar",
 }
