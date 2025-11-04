@@ -1780,7 +1780,9 @@ class SKLearnModel(GlobalForecastingModel):
             else:
                 forecast = forecast[:n_forecasts]
 
-            # TODO: see if can be cleaned
+            # Construct TimeSeries objects
+            # Depending on last_points_only, either return only the last points of each forecast
+            # or all forecasts as a list of TimeSeries
             if last_points_only:
                 new_times = generate_index(
                     start=hist_fct_start
