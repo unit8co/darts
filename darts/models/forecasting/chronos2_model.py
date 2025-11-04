@@ -3,17 +3,21 @@
 
 # Authors: Abdul Fatir Ansari <ansarnd@amazon.com>
 
-import copy
 import os
 from dataclasses import dataclass
 from typing import Any, Literal, Optional, Union, cast
 
 import torch
-from chronos.chronos_bolt import InstanceNorm, Patch
 from einops import rearrange, repeat
 from torch import nn
 
 from darts.logging import get_logger, raise_if, raise_if_not
+from darts.models.forecasting.chronos2_submodels import (
+    _Chronos2Encoder,
+    _InstanceNorm,
+    _Patch,
+    _ResidualBlock,
+)
 from darts.models.forecasting.foundation_model import (
     FoundationModel,
     HuggingFaceModelMixin,
@@ -22,15 +26,6 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
 )
 from darts.utils.data.torch_datasets.utils import TorchTrainingSample
-
-from .layers import (
-    ResidualBlock,
-)
-from .unimported import (
-    Chronos2Encoder,
-    Chronos2EncoderOutput,
-    Chronos2Output,
-)
 
 logger = get_logger(__name__)
 
@@ -63,6 +58,8 @@ class _Chronos2Module(PLForecastingModule):
     _supports_long_horizon: bool = True
     _supports_future_covariates: bool = True
     _supports_sdpa: bool = True
+
+    quantiles: torch.Tensor
 
     def __init__(
         self,
@@ -100,6 +97,7 @@ class _Chronos2Module(PLForecastingModule):
         raise_if(
             self.is_gated_act,
             "gated activation is not supported",
+            logger,
         )
 
         # Attention implementation - default to "sdpa" if not specified
@@ -107,22 +105,28 @@ class _Chronos2Module(PLForecastingModule):
         raise_if_not(
             self.attn_implementation in ["eager", "sdpa"],
             f"attn_implementation {self.attn_implementation} not supported",
+            logger,
         )
 
         self.chronos_config = _Chronos2ForecastingConfig(**chronos_config)
+
+        # Only decoder_start_id (and optionally REG token)
+        if self.chronos_config.use_reg_token:
+            self.reg_token_id = 1
 
         raise_if_not(
             self.chronos_config.input_patch_size
             == self.chronos_config.output_patch_size,
             f"input_patch_size and output_patch_size sizes must be equal, "
             f"but found {self.chronos_config.input_patch_size} and {self.chronos_config.output_patch_size}",
+            logger,
         )
 
         self.vocab_size = 2 if self.chronos_config.use_reg_token else 1
         self.shared = nn.Embedding(self.vocab_size, self.d_model)
 
         # Input patch embedding layer
-        self.input_patch_embedding = ResidualBlock(
+        self.input_patch_embedding = _ResidualBlock(
             # x3 for [time_embedding, patch, patch_mask]
             in_dim=self.chronos_config.input_patch_size * 3,
             h_dim=self.d_ff,
@@ -132,24 +136,33 @@ class _Chronos2Module(PLForecastingModule):
         )
 
         # patching layer
-        self.patch = Patch(
+        self.patch = _Patch(
             patch_size=self.chronos_config.input_patch_size,
             patch_stride=self.chronos_config.input_patch_stride,
         )
 
         # instance normalization, also referred to as "scaling" in Chronos and GluonTS
-        self.instance_norm = InstanceNorm(use_arcsinh=self.chronos_config.use_arcsinh)
+        self.instance_norm = _InstanceNorm(use_arcsinh=self.chronos_config.use_arcsinh)
 
-        encoder_config = copy.deepcopy()
-        encoder_config.is_decoder = False
-        self.encoder = Chronos2Encoder(encoder_config)
+        self.encoder = _Chronos2Encoder(
+            d_model=self.d_model,
+            d_kv=self.d_kv,
+            d_ff=self.d_ff,
+            num_heads=self.num_heads,
+            dropout_rate=self.dropout_rate,
+            rope_theta=self.rope_theta,
+            attn_implementation=self.attn_implementation,
+            dense_act_fn=self.dense_act_fn,
+            layer_norm_epsilon=self.layer_norm_epsilon,
+            is_gated_act=self.is_gated_act,
+            num_layers=self.num_layers,
+        )
 
         self.num_quantiles = len(self.chronos_config.quantiles)
         quantiles = torch.tensor(self.chronos_config.quantiles)
-        self.quantiles: torch.Tensor
         self.register_buffer("quantiles", quantiles, persistent=False)
 
-        self.output_patch_embedding = ResidualBlock(
+        self.output_patch_embedding = _ResidualBlock(
             in_dim=self.d_model,
             h_dim=self.d_ff,
             out_dim=self.num_quantiles * self.chronos_config.output_patch_size,
@@ -241,6 +254,7 @@ class _Chronos2Module(PLForecastingModule):
             )
 
             if torch.isnan(future_covariates).any():
+                # TODO: replace this
                 raise ValueError(
                     "future_covariates contains NaN values at indices not masked by future_covariates_mask. "
                     "Input the correct future_covariates_mask or omit it to automatically infer the mask based on NaN "
@@ -398,7 +412,7 @@ class _Chronos2Module(PLForecastingModule):
         future_target: torch.Tensor | None = None,
         future_target_mask: torch.Tensor | None = None,
         output_attentions: bool = False,
-    ) -> Chronos2Output:
+    ) -> torch.Tensor:
         """Forward pass of the Chronos2 model.
 
         Parameters
@@ -479,7 +493,7 @@ class _Chronos2Module(PLForecastingModule):
         # append [REG] special token embedding, if needed
         if self.chronos_config.use_reg_token:
             reg_input_ids = torch.full(
-                (batch_size, 1), self.config.reg_token_id, device=input_embeds.device
+                (batch_size, 1), self.reg_token_id, device=input_embeds.device
             )
             reg_embeds = self.shared(reg_input_ids)
             input_embeds = torch.cat([input_embeds, reg_embeds], dim=-2)
@@ -513,13 +527,12 @@ class _Chronos2Module(PLForecastingModule):
             # by default, each time series is treated independently, i.e., no mixing across the batch
             group_ids = torch.arange(batch_size, dtype=torch.long, device=self.device)
 
-        encoder_outputs: Chronos2EncoderOutput = self.encoder(
+        hidden_states: torch.Tensor = self.encoder(
             attention_mask=attention_mask,
             inputs_embeds=input_embeds,
             group_ids=group_ids,
             output_attentions=output_attentions,
         )
-        hidden_states: torch.Tensor = encoder_outputs[0]
 
         assert hidden_states.shape == (
             batch_size,
@@ -538,19 +551,6 @@ class _Chronos2Module(PLForecastingModule):
             p=self.chronos_config.output_patch_size,
         )
 
-        loss = (
-            self._compute_loss(
-                quantile_preds=quantile_preds,
-                future_target=future_target,
-                future_target_mask=future_target_mask,
-                patched_future_covariates_mask=patched_future_covariates_mask,
-                loc_scale=loc_scale,
-                num_output_patches=num_output_patches,
-            )
-            if future_target is not None
-            else None
-        )
-
         # Unscale predictions
         quantile_preds = rearrange(
             quantile_preds,
@@ -567,12 +567,7 @@ class _Chronos2Module(PLForecastingModule):
             h=num_output_patches * self.chronos_config.output_patch_size,
         )
 
-        return Chronos2Output(
-            loss=loss,
-            quantile_preds=quantile_preds,
-            enc_time_self_attn_weights=encoder_outputs.all_time_self_attn_weights,
-            enc_group_self_attn_weights=encoder_outputs.all_group_self_attn_weights,
-        )
+        return quantile_preds
 
 
 class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
@@ -592,7 +587,9 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
+        pl_module_params = self.pl_module_params or {}
         module = self._load_model(
-            _Chronos2Module,
+            module_class=_Chronos2Module,
+            pl_module_params=pl_module_params,
         )
         return module

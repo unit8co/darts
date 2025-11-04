@@ -136,6 +136,7 @@ class HuggingFaceModelMixin:
     def _load_model(
         self,
         module_class: type[PLForecastingModule],
+        pl_module_params: dict,
     ) -> PLForecastingModule:
         """Load the model by creating an instance of the given module class and loading
         the weights.
@@ -151,7 +152,7 @@ class HuggingFaceModelMixin:
             The loaded PyTorch Lightning module.
         """
         config = self._load_config()
-        module = module_class(**config)
+        module = module_class(**config, **pl_module_params)
         self._load_model_weights(module)
         return module
 
