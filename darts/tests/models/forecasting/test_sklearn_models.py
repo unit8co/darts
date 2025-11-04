@@ -3965,7 +3965,6 @@ class TestSKLearnModels:
             future_cov = [future_cov, future_cov] if future_cov else None
         return series, past_cov, future_cov
 
-    # TODO add tests for covariates as well
     @pytest.mark.parametrize(
         "config",
         product(
@@ -3979,6 +3978,7 @@ class TestSKLearnModels:
             [True, False],  # last_points_only
             [1, 3, 5],  # forecast_horizon
             [1, 2, 3],  # output_chunk_length
+            [1, 2],  # stride
             [0, 1, 2],  # start
         ),
     )
@@ -3986,20 +3986,19 @@ class TestSKLearnModels:
         """This test ensures that the optimized historical_forecasts method produces the same output as
         the non-optimized version. It runs the historical_forecasts method twice, once with optimization
         disabled and once with it enabled, and compares the results."""
-        from darts.datasets import AirPassengersDataset
-
         (
             (model_cls, model_kwargs),
             multi_models,
             last_points_only,
             forecast_horizon,
             output_chunk_length,
+            stride,
             start,
         ) = config
-        # stride = 1
+
         random_state = 42
         model_kwargs = dict(model_kwargs)  # make a copy
-        model_kwargs["lags"] = 12
+        model_kwargs["lags"] = 2
         model_kwargs["multi_models"] = multi_models
         model_kwargs["output_chunk_length"] = output_chunk_length
 
@@ -4007,9 +4006,9 @@ class TestSKLearnModels:
             **model_kwargs,
         )
 
-        series = AirPassengersDataset().load()
+        series = tg.sine_timeseries(length=10)
 
-        model.fit(series)
+        model.fit(series[:8])
 
         hfc_non_optimized = model.historical_forecasts(
             series=series,
@@ -4019,6 +4018,7 @@ class TestSKLearnModels:
             last_points_only=last_points_only,
             enable_optimization=False,
             num_samples=1,
+            stride=stride,
             random_state=random_state,
         )
 
@@ -4031,10 +4031,15 @@ class TestSKLearnModels:
             last_points_only=last_points_only,
             num_samples=1,
             random_state=random_state,
+            stride=stride,
         )
 
         assert len(hfc_non_optimized) == len(hfc_optimized)
         if not last_points_only:
+            [
+                hfc_non_optimized[i].time_index.equals(hfc_optimized[i].time_index)
+                for i in range(len(hfc_non_optimized))
+            ]
             [
                 np.testing.assert_array_almost_equal(
                     hfc_non_optimized[i].values(), hfc_optimized[i].values()
@@ -4042,6 +4047,7 @@ class TestSKLearnModels:
                 for i in range(len(hfc_non_optimized))
             ]
         else:
+            hfc_non_optimized.time_index.equals(hfc_optimized.time_index)
             np.testing.assert_array_almost_equal(
                 hfc_non_optimized.values(), hfc_optimized.values()
             )

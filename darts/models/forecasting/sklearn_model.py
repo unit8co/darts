@@ -1653,11 +1653,21 @@ class SKLearnModel(GlobalForecastingModel):
             if X.ndim == 2:
                 X = X[:, :, np.newaxis]
 
+            # Trick to fix with stride, because NaN are in X at the end of the series, but
+            # with stride, we might not get NaN in current_X, so we manually set the relevant
+            # columns to NaN so that they get filled with previous predictions
+            if not self.multi_models:
+                offset_idx = 1
+                for i in range(self.output_chunk_length, X.shape[-1]):
+                    X[:, -offset_idx:, i] = np.nan
+                    offset_idx += 1
+
             last_step_shift = 0
             t_pred = 0
             start_idx = 0
 
             forecasts = []
+            forecast = None
             for pred_idx in range(X.shape[-1]):
                 # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
                 # we have to step back `step` from `n` in the last iteration
@@ -1718,14 +1728,18 @@ class SKLearnModel(GlobalForecastingModel):
                         else:
                             # When not using multi_models, we predict one step at a time so we only need to
                             # shift the start_idx one by one each prediction iteration
-                            current_X[:, col] = forecasts[
+                            flattened_forecasts = forecasts.reshape(
+                                forecasts.shape[0], -1
+                            )
+                            current_X[:, col] = flattened_forecasts[
                                 :,
-                                start_idx : start_idx
-                                + (col.size // forecasts.shape[-1]),
-                                :,
+                                start_idx : start_idx + col.size,
                             ].reshape(current_X[:, col].shape)
-                        if col.size == len(self.lags["target"]):
-                            start_idx += 1
+                        if (
+                            col.size == len(self.lags["target"])
+                            and forecast is not None
+                        ):
+                            start_idx += forecast.shape[-1]
                     else:
                         current_X[:, col] = forecasts.reshape(forecasts.shape[0], -1)[
                             :, : col.size
