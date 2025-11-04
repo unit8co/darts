@@ -8,7 +8,7 @@ some covariate series lags in order to obtain a forecast.
 See [1]_ for a reference around random forests.
 
 The implementations is wrapped around `RandomForestRegressor
-<https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_.
+<https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`__.
 
 References
 ----------
@@ -121,6 +121,10 @@ class RandomForestModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         n_estimators : int
             The number of trees in the forest.
         max_depth : int
@@ -165,13 +169,13 @@ class RandomForestModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.29805],
-               [1006.23675],
-               [1006.17325],
-               [1006.10295],
-               [1006.06505],
-               [1006.05465]])
+        >>> print(pred.values())
+        [[1006.29805]
+         [1006.23675]
+         [1006.17325]
+         [1006.10295]
+         [1006.06505]
+         [1006.05465]]
         """
         self.n_estimators = n_estimators
         self.max_depth = max_depth
@@ -329,13 +333,13 @@ class RandomForest(RandomForestModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.29805],
-               [1006.23675],
-               [1006.17325],
-               [1006.10295],
-               [1006.06505],
-               [1006.05465]])
+        >>> print(pred.values())
+        [[1006.29805]
+         [1006.23675]
+         [1006.17325]
+         [1006.10295]
+         [1006.06505]
+         [1006.05465]]
         """
 
         raise_deprecation_warning(

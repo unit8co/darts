@@ -3,7 +3,7 @@ ARIMA
 -----
 
 Models for ARIMA (Autoregressive integrated moving average) [1]_.
-The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`_.
+The implementations is wrapped around `statsmodels <https://github.com/statsmodels/statsmodels>`__.
 
 References
 ----------
@@ -120,13 +120,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
         >>> model = ARIMA(p=12, d=1, q=2)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[451.36489334],
-               [416.88972829],
-               [443.10520391],
-               [481.07892911],
-               [502.11286509],
-               [555.50153984]])
+        >>> print(pred.values())
+        [[451.36482652]
+         [416.8895219 ]
+         [443.10517554]
+         [481.07884246]
+         [502.11278494]
+         [555.5014505 ]]
 
         References
         ----------
@@ -142,8 +142,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
     def supports_multivariate(self) -> bool:
         return False
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
 
         self._assert_univariate(series)
 
@@ -181,12 +186,13 @@ class ARIMA(TransferableFutureCovariatesLocalForecastingModel):
             )
 
         super()._predict(
-            n,
-            series,
-            historic_future_covariates,
-            future_covariates,
-            num_samples,
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
             random_state=random_state,
+            verbose=verbose,
         )
 
         # updating statsmodels results object state with the new ts and covariates

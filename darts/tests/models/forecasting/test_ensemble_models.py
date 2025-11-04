@@ -9,7 +9,7 @@ import pytest
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import (
-    AutoARIMA,
+    ARIMA,
     ExponentialSmoothing,
     LinearRegressionModel,
     NaiveDrift,
@@ -521,10 +521,10 @@ class TestEnsembleModels:
 
     @pytest.mark.skipif(not TORCH_AVAILABLE, reason="requires torch")
     def test_call_predict_different_covariates_support(self):
-        # AutoARIMA support future covariates only
+        # ARIMA support future covariates only
         local_ensemble_one_covs = NaiveEnsembleModel([
             NaiveDrift(),
-            AutoARIMA(),
+            ARIMA(),
         ])
         with pytest.raises(ValueError):
             local_ensemble_one_covs.fit(self.series1, past_covariates=self.series2)
@@ -541,7 +541,7 @@ class TestEnsembleModels:
 
         # both models support future covariates only
         mixed_ensemble_future_covs = NaiveEnsembleModel([
-            AutoARIMA(),
+            ARIMA(),
             RNNModel(12, n_epochs=1, **tfm_kwargs),
         ])
         mixed_ensemble_future_covs.fit(self.series1, future_covariates=self.series2)
@@ -919,8 +919,8 @@ class TestEnsembleModels:
 
     def test_multivariate_support(self):
         assert NaiveEnsembleModel([NaiveSeasonal(1)]).supports_multivariate
-        assert not NaiveEnsembleModel([AutoARIMA()]).supports_multivariate
+        assert not NaiveEnsembleModel([ARIMA()]).supports_multivariate
         assert not NaiveEnsembleModel([
             NaiveSeasonal(1),
-            AutoARIMA(),
+            ARIMA(),
         ]).supports_multivariate

@@ -1,5 +1,5 @@
 """
-Dataset Base Class
+Base Torch Dataset
 ------------------
 """
 

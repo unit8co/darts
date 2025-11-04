@@ -19,11 +19,11 @@ class AutoETS(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-ETS based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-ETS based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
 
         Automatically selects the best Exponential Smoothing model (ETS) model using an information criterion.
         We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoets>`_ for the exhaustive documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoets>`__ for the exhaustive documentation
         of the arguments.
 
         In addition to univariate deterministic forecasting, it comes with additional support:
@@ -32,7 +32,7 @@ class AutoETS(StatsForecastModel):
           Darts adds support by first regressing the series against the future covariates using a
           :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
           StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
-          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
 
         - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
           parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
@@ -102,13 +102,13 @@ class AutoETS(StatsForecastModel):
         >>> model = AutoETS(season_length=12, model="AZZ")
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[441.40323676],
-               [415.09871431],
-               [448.90785391],
-               [491.38584654],
-               [493.11817462],
-               [549.88974472]])
+        >>> print(pred.values())
+        [[441.40323676]
+         [415.09871431]
+         [448.90785391]
+         [491.38584654]
+         [493.11817462]
+         [549.88974472]]
         """
         super().__init__(
             model=SFAutoETS(*args, **kwargs),

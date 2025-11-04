@@ -1,3 +1,8 @@
+"""
+GLU Variants
+------------
+"""
+
 import torch
 from torch import nn
 

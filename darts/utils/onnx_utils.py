@@ -1,3 +1,8 @@
+"""
+ONNX Utils
+----------
+"""
+
 from typing import Optional
 
 import numpy as np
@@ -15,11 +20,12 @@ def prepare_onnx_inputs(
 
     In order to remove the dependency on the `model` argument, it can be decomposed into
     the following arguments (and simplified depending on the characteristics of the model used):
-      - model_icl
-      - model_ocl
-      - model_uses_past_covs
-      - model_uses_future_covs
-      - model_uses_static_covs
+
+    - model_icl
+    - model_ocl
+    - model_uses_past_covs
+    - model_uses_future_covs
+    - model_uses_static_covs
     """
     past_feats, future_feats, static_feats = None, None, None
     # get input & output windows

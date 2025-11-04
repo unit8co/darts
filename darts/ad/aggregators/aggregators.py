@@ -1,5 +1,6 @@
 """
-Anomaly aggregators base classes
+Base Aggregator
+---------------
 """
 
 # TODO:

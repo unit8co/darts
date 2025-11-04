@@ -21,17 +21,17 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 
 - **Static covariates** are time-invariant external data / information about the series and can be used by some models
   to help improve predictions. Find more info on covariates `here
-  <https://unit8co.github.io/darts/userguide/covariates.html>`_.
+  <https://unit8co.github.io/darts/userguide/covariates.html>`__.
 - A **hierarchy** describes the hierarchical structure of the components which can be used to reconcile forecasts. For
   more info on hierarchical reconciliation `here
-  <https://unit8co.github.io/darts/examples/16-hierarchical-reconciliation.html>`_.
+  <https://unit8co.github.io/darts/examples/16-hierarchical-reconciliation.html>`__.
 - **Metadata** can be used to store any additional information about the series which will not be used by any model.
 
 ``TimeSeries`` **are guaranteed to:**
 
 - Have a strictly monotonically increasing time index with a well-defined frequency (without holes / missing dates).
   For more info on available ``DateTimeIndex`` frequencies, see `date offset aliases
-  <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_. For integer-indexed
+  <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__. For integer-indexed
   series the frequency corresponds to the constant step size between consecutive indices.
 - Contain numeric data types only
 - Have unique component / column names
@@ -57,7 +57,6 @@ import narwhals as nw
 import numpy as np
 import pandas as pd
 import xarray as xr
-from narwhals.typing import IntoDataFrame, IntoSeries
 from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
@@ -101,7 +100,7 @@ class TimeSeries:
         values: np.ndarray,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
-        components: Optional[pd._typing.Axes] = None,
+        components: Optional[Union[Sequence, str]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
@@ -142,7 +141,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         components
@@ -178,9 +177,10 @@ class TimeSeries:
                     "r2": ["total"]
                 }
             ..
+
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
@@ -528,7 +528,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -618,7 +618,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -652,9 +652,10 @@ class TimeSeries:
                     "r2": ["total"]
                 }
             ..
+
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
 
@@ -687,7 +688,7 @@ class TimeSeries:
     @classmethod
     def from_dataframe(
         cls,
-        df: IntoDataFrame,
+        df,
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
@@ -708,7 +709,7 @@ class TimeSeries:
         df
             The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
             polars.DataFrame, ...). See the `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`__ for more
             information.
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex (if it contains
@@ -729,7 +730,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -763,9 +764,10 @@ class TimeSeries:
                     "r2": ["total"]
                 }
             ..
+
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
@@ -850,7 +852,7 @@ class TimeSeries:
     @classmethod
     def from_group_dataframe(
         cls,
-        df: IntoDataFrame,
+        df,
         group_cols: Union[list[str], str],
         time_col: Optional[str] = None,
         value_cols: Optional[Union[list[str], str]] = None,
@@ -878,7 +880,7 @@ class TimeSeries:
         df
             The DataFrame, or anything which can be converted to a narwhals DataFrame (e.g. pandas.DataFrame,
             polars.DataFrame, ...). See the `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`__ for more
             information.
         group_cols
             A string or list of strings representing the columns from the DataFrame by which to extract the
@@ -912,7 +914,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -1142,7 +1144,7 @@ class TimeSeries:
     @classmethod
     def from_series(
         cls,
-        pd_series: IntoSeries,
+        pd_series,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
@@ -1162,7 +1164,7 @@ class TimeSeries:
         pd_series
             The Series, or anything which can be converted to a narwhals Series (e.g. pandas.Series, ...). See the
             `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`_ for more
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_native>`__ for more
             information.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates (or indices in case of integer index)
@@ -1172,7 +1174,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -1227,7 +1229,7 @@ class TimeSeries:
         values: np.ndarray,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
-        columns: Optional[pd._typing.Axes] = None,
+        columns: Optional[Union[Sequence, str]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
@@ -1255,7 +1257,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         columns
@@ -1291,9 +1293,10 @@ class TimeSeries:
                     "r2": ["total"]
                 }
             ..
+
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
@@ -1334,7 +1337,7 @@ class TimeSeries:
     def from_values(
         cls,
         values: np.ndarray,
-        columns: Optional[pd._typing.Axes] = None,
+        columns: Optional[Union[Sequence, str]] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         hierarchy: Optional[dict] = None,
@@ -1384,9 +1387,10 @@ class TimeSeries:
                     "r2": ["total"]
                 }
             ..
+
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
         copy
@@ -1467,9 +1471,10 @@ class TimeSeries:
                     "r2": ["total"]
                 }
             ..
+
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
-            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`_.
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
 
@@ -1730,7 +1735,7 @@ class TimeSeries:
             Whether to return a copy of the series. Leave it to True unless you know what you are doing.
         backend
             The backend to which to export the `TimeSeries`. See the `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`_ for all supported
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`__ for all supported
             backends.
 
         Returns
@@ -1774,7 +1779,7 @@ class TimeSeries:
             Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
         backend
             The backend to which to export the `TimeSeries`. See the `narwhals documentation
-            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`_ for all supported
+            <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`__ for all supported
             backends.
         time_as_index
             Whether to set the time index as the index of the dataframe or in the left-most column.
@@ -1800,10 +1805,11 @@ class TimeSeries:
         if not self.is_deterministic:
             if not suppress_warnings:
                 logger.warning(
-                    "You are transforming a stochastic TimeSeries (i.e., contains several samples). "
+                    "You are transforming a stochastic TimeSeries (it contains several samples). "
                     "The resulting DataFrame is a 2D object with all samples on the columns. "
-                    "If this is not the expected behavior consider calling a function "
-                    "adapted to stochastic TimeSeries like quantile_df()."
+                    "If this is not the expected behavior, extract statistics from the TimeSeries "
+                    "before calling `to_dataframe()` (e.g. with `TimeSeries.quantile()`, `mean()`, "
+                    "...)."
                 )
 
             comp_name = list(self.components)
@@ -2431,8 +2437,12 @@ class TimeSeries:
         """
         return self._split_at(split_point, after=False)
 
-    def drop_after(self, split_point: Union[pd.Timestamp, float, int]):
-        """Return a new series where everything after and including the provided time `split_point` was dropped.
+    def drop_after(
+        self,
+        split_point: Union[pd.Timestamp, float, int],
+        keep_point: bool = False,
+    ):
+        """Return a new series where everything after (and in-/excluding) the provided time `split_point` was dropped.
 
         The timestamp may not be in the series. If it is, the timestamp will be dropped.
 
@@ -2440,16 +2450,25 @@ class TimeSeries:
         ----------
         split_point
             The timestamp that indicates cut-off time.
+        keep_point
+            Whether the provided `split_point` should be included in the returned series (if it exists in the series).
 
         Returns
         -------
         TimeSeries
             A series that contains all entries until `split_point` (exclusive).
         """
-        return self[: self.get_index_at_point(split_point, after=True)]
+        return self[
+            : self.get_index_at_point(split_point, after=not keep_point)
+            + int(keep_point)
+        ]
 
-    def drop_before(self, split_point: Union[pd.Timestamp, float, int]):
-        """Return a new series where everything before and including the provided time `split_point` was dropped.
+    def drop_before(
+        self,
+        split_point: Union[pd.Timestamp, float, int],
+        keep_point: bool = False,
+    ):
+        """Return a new series where everything before (and in-/excluding) the provided time `split_point` was dropped.
 
         The timestamp may not be in the series. If it is, the timestamp will be dropped.
 
@@ -2457,13 +2476,18 @@ class TimeSeries:
         ----------
         split_point
             The timestamp that indicates cut-off time.
+        keep_point
+            Whether the provided `split_point` should be included in the returned series (if it exists in the series).
 
         Returns
         -------
         TimeSeries
             A series that contains all entries starting after `split_point` (exclusive).
         """
-        return self[self.get_index_at_point(split_point, after=False) + 1 :]
+        return self[
+            self.get_index_at_point(split_point, after=keep_point)
+            + int(not keep_point) :
+        ]
 
     def slice(
         self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]
@@ -3160,7 +3184,7 @@ class TimeSeries:
             Optionally, a string or integer representing the frequency of the underlying index. This is useful in order
             to fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
             If a string, represents the frequency of the pandas DatetimeIndex (see `offset aliases
-            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_ for more info on
+            <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__ for more info on
             supported frequencies).
             If an integer, represents the step size of the pandas Index or pandas RangeIndex.
         fillna_value
@@ -3294,7 +3318,7 @@ class TimeSeries:
             For example, assume the series contains the components
             ``["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]``,
             the following dictionary would encode the groupings shown on
-            `this figure <https://otexts.com/fpp3/hts.html#fig:GroupTree>`_:
+            `this figure <https://otexts.com/fpp3/hts.html#fig:GroupTree>`__:
 
             .. highlight:: python
             .. code-block:: python
@@ -3496,7 +3520,7 @@ class TimeSeries:
 
         The holiday component is binary where `1` corresponds to a time step falling on a holiday.
 
-        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
+        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`__.
 
         This works only for deterministic time series (i.e., made of 1 sample).
 
@@ -3548,7 +3572,7 @@ class TimeSeries:
         method
             A method to either aggregate grouped values (for down-sampling) or fill holes (for up-sampling)
             in the reindexed TimeSeries. For more information, see the `xarray DataArrayResample documentation
-            <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`_.
+            <https://docs.xarray.dev/en/stable/generated/xarray.core.resample.DataArrayResample.html>`__.
             Supported methods: ["all", "any", "asfreq", "backfill", "bfill", "count", "ffill", "first", "interpolate",
             "last", "max", "mean", "median", "min", "nearest", "pad", "prod", "quantile", "reduce", "std", "sum",
             "var"].
@@ -3559,7 +3583,7 @@ class TimeSeries:
             some keyword arguments for the `xarray.resample` method, notably `offset` or `base` to indicate where
             to start the resampling and avoid nan at the first value of the resampled TimeSeries
             For more information, see the `xarray resample() documentation
-            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`_.
+            <https://docs.xarray.dev/en/stable/generated/xarray.DataArray.resample.html>`__.
 
         Returns
         -------
@@ -3643,16 +3667,16 @@ class TimeSeries:
     def map(
         self,
         fn: Union[
-            Callable[[np.number], np.number],
-            Callable[[Union[pd.Timestamp, int], np.number], np.number],
+            Callable[[np.ndarray], np.ndarray],
+            Callable[[Union[pd.DatetimeIndex, pd.RangeIndex], np.ndarray], np.ndarray],
         ],
     ) -> Self:  # noqa: E501
         """Return a new series with the function `fn` applied to the values of this series.
 
         If `fn` takes 1 argument it is simply applied on the values array of shape `(time, n_components, n_samples)`.
-        If `fn` takes 2 arguments, it is applied repeatedly on the `(ts, value[ts])` tuples, where `ts` denotes a
-        timestamp value, and `value[ts]` denotes the array of values at this timestamp, of shape
-        `(n_components, n_samples)`.
+        If `fn` takes 2 arguments, it is applied on the `(ts, values)` tuple, where `ts` denotes the
+        series' time index, and `values` denotes the series' array of values, of shape
+        `(n_timestamps, n_components, n_samples)`. Timestamp index's shape should be `(n, 1, 1)`;
 
         Parameters
         ----------
@@ -3668,9 +3692,36 @@ class TimeSeries:
         -------
         TimeSeries
             A new series with the function `fn` applied to the values.
+
+        Examples
+        --------
+        >>> from darts import TimeSeries
+        >>> from darts.utils.utils import generate_index
+        >>> # create a simple TimeSeries
+        >>> series = TimeSeries.from_times_and_values(
+        >>>     times=generate_index("2020-01-01", length=3, freq="D"),
+        >>>     values=range(3),
+        >>> )
+        >>> # map function on values only
+        >>> def fn1(values):
+        >>>     return values / 3.
+        >>>
+        >>> series.map(fn1).values()
+        array([[0.        ],
+               [0.33333333],
+               [0.66666667]])
+        >>>
+        >>> # map function on time index and values
+        >>> def fn2(times, values):
+        >>>     return values / times.days_in_month.values.reshape(-1, 1, 1)
+        >>>
+        >>> series.map(fn2).values()
+        array([[0.        ],
+               [0.03225806],
+               [0.06451613]])
         """
         if not isinstance(fn, Callable):
-            raise_log(TypeError("fn should be callable"), logger)
+            raise_log(TypeError("fn must be a callable"), logger)
 
         if isinstance(fn, np.ufunc):
             if fn.nin == 1 and fn.nout == 1:
@@ -3697,30 +3748,18 @@ class TimeSeries:
 
         if num_args == 1:  # apply fn on values directly
             values = fn(self._values)
-        elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-            # go over shortest amount of iterations, either over time steps or components and samples
-            if self.n_timesteps <= self.n_components * self.n_samples:
-                new_vals = np.vstack([
-                    np.expand_dims(
-                        fn(self.time_index[i], self._values[i, :, :]), axis=0
-                    )
-                    for i in range(self.n_timesteps)
-                ])
-            else:
-                new_vals = np.stack(
-                    [
-                        np.column_stack([
-                            fn(self.time_index, self._values[:, i, j])
-                            for j in range(self.n_samples)
-                        ])
-                        for i in range(self.n_components)
-                    ],
-                    axis=1,
-                )
-            values = new_vals
-
+        elif num_args == 2:
+            # apply function on (times, values)
+            values = fn(self._time_index, self._values)
         else:
-            raise_log(ValueError("fn must have either one or two arguments"), logger)
+            raise_log(ValueError("fn must accept either one or two arguments"), logger)
+
+        if values.shape != self.shape:
+            raise_log(
+                ValueError(
+                    f"fn must return an array of shape `{self.shape}`. Received shape `{values.shape}`"
+                )
+            )
 
         return self.__class__(
             times=self._time_index,
@@ -3753,14 +3792,14 @@ class TimeSeries:
             :``"function"``: Mandatory. The name of one of the pandas builtin transformation functions,
                             or a callable function that can be applied to the input series.
                             Pandas' functions can be found in the
-                            `documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+                            `documentation <https://pandas.pydata.org/docs/reference/window.html>`__.
 
             :``"mode"``: Optional. The name of the pandas windowing mode on which the ``"function"`` is going to be
                         applied. The options are "rolling", "expanding" and "ewm".
                         If not provided, Darts defaults to "expanding".
                         User defined functions can use either "rolling" or "expanding" modes.
                         More information on pandas windowing operations can be found in the `documentation
-                        <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`_.
+                        <https://pandas.pydata.org/pandas-docs/stable/user_guide/window.html>`__.
 
             :``"components"``: Optional. A string or list of strings specifying the TimeSeries components on which the
                                transformation should be applied. If not specified, the transformation will be
@@ -3789,7 +3828,7 @@ class TimeSeries:
                 NaN). Darts reuses pandas defaults of 1 for "rolling" and "expanding" modes and of 0 for "ewm" mode.
             * :``"win_type"``: The type of weigthing to apply to the window elements.
                 If provided, it should be one of `scipy.signal.windows
-                <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`_.
+                <https://docs.scipy.org/doc/scipy/reference/signal.windows.html#module-scipy.signal.windows>`__.
             * :``"center"``: ``True``/``False`` to set the observation at the current timestep at the center of the
                 window (when ``forecasting_safe`` is `True`, Darts enforces ``"center"`` to ``False``).
             * :``"closed"``: ``"right"``/``"left"``/``"both"``/``"neither"`` to specify whether the right,
@@ -3797,7 +3836,7 @@ class TimeSeries:
                 Darts defaults to pandas default of ``"right"``.
 
             More information on the available functions and their parameters can be found in the
-            `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`_.
+            `Pandas documentation <https://pandas.pydata.org/docs/reference/window.html>`__.
 
             For user-provided functions, extra keyword arguments in the transformation dictionary are passed to the
             user-defined function.
@@ -3806,9 +3845,9 @@ class TimeSeries:
             It is expected that the function returns a single
             value for each window. Other possible configurations can be found in the
             `pandas.DataFrame.rolling().apply()
-            documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`_
+            documentation <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.rolling.html>`__
             and `pandas.DataFrame.expanding().apply()
-            documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`_.
+            documentation <https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.expanding.html>`__.
 
         treat_na
             Specifies how to treat missing values that were added by the window transformations
@@ -4284,8 +4323,6 @@ class TimeSeries:
     ) -> matplotlib.axes.Axes:
         """Plot the series.
 
-        This is a wrapper method around :func:`xarray.DataArray.plot()`.
-
         Parameters
         ----------
         new_plot
@@ -4306,7 +4343,7 @@ class TimeSeries:
         default_formatting
             Whether to use the darts default scheme.
         title
-            Optionally, a custom plot title. If `None`, will use the name of the underlying `xarray.DataArray`.
+            Optionally, a plot title.
         label
             Can either be a string or list of strings. If a string and the series only has a single component, it is
             used as the label for that component. If a string and the series has multiple components, it is used as
@@ -4418,19 +4455,18 @@ class TimeSeries:
             if ax is None:
                 ax = plt.gca()
 
-        # TODO: migrate from xarray plotting to something else
-        data_array = self.data_array(copy=False)
-        for i, c in enumerate(data_array.component[:n_components_to_plot]):
-            comp_name = str(c.values)
-            comp = data_array.sel(component=c)
+        for i, comp_name in enumerate(self.components[:n_components_to_plot]):
+            comp_ts = self[comp_name]
 
-            if comp.sample.size > 1:
+            if self.is_stochastic:
                 if central_quantile == "mean":
-                    central_series = comp.mean(dim=DIMS[2])
+                    central_ts = comp_ts.mean()
                 else:
-                    central_series = comp.quantile(q=central_quantile, dim=DIMS[2])
+                    central_ts = comp_ts.quantile(q=central_quantile)
             else:
-                central_series = comp.mean(dim=DIMS[2])
+                central_ts = comp_ts
+
+            central_series = central_ts.to_series()  # shape: (time,)
 
             if custom_labels:
                 label_to_use = label[i]
@@ -4445,19 +4481,20 @@ class TimeSeries:
             kwargs["c"] = color[i] if custom_colors else color
 
             kwargs_central = deepcopy(kwargs)
-            if not self.is_deterministic:
+            if self.is_stochastic:
                 kwargs_central["alpha"] = 1
-            if central_series.shape[0] > 1:
-                p = central_series.plot(*args, ax=ax, **kwargs_central)
-            # empty TimeSeries
-            elif central_series.shape[0] == 0:
-                p = ax.plot(
-                    [],
-                    [],
+            # line plot
+            if len(central_series) > 1:
+                p = central_series.plot(
                     *args,
+                    ax=ax,
                     **kwargs_central,
                 )
-            else:
+                color_used = (
+                    p.get_lines()[-1].get_color() if default_formatting else None
+                )
+            # point plot
+            elif len(central_series) == 1:
                 p = ax.plot(
                     [self.start_time()],
                     central_series.values[0],
@@ -4465,18 +4502,28 @@ class TimeSeries:
                     *args,
                     **kwargs_central,
                 )
+                color_used = p[0].get_color() if default_formatting else None
+            # empty plot
+            else:
+                p = ax.plot(
+                    [],
+                    [],
+                    *args,
+                    **kwargs_central,
+                )
+                color_used = p[0].get_color() if default_formatting else None
             ax.set_xlabel(self.time_dim)
-            color_used = p[0].get_color() if default_formatting else None
 
             # Optionally show confidence intervals
             if (
-                comp.sample.size > 1
+                self.is_stochastic
                 and low_quantile is not None
                 and high_quantile is not None
             ):
-                low_series = comp.quantile(q=low_quantile, dim=DIMS[2])
-                high_series = comp.quantile(q=high_quantile, dim=DIMS[2])
-                if low_series.shape[0] > 1:
+                low_series = comp_ts.quantile(q=low_quantile).to_series()
+                high_series = comp_ts.quantile(q=high_quantile).to_series()
+                # filled area
+                if len(low_series) > 1:
                     ax.fill_between(
                         self.time_index,
                         low_series,
@@ -4484,7 +4531,8 @@ class TimeSeries:
                         color=color_used,
                         alpha=(alpha if alpha is not None else alpha_confidence_intvls),
                     )
-                else:
+                # filled line
+                elif len(low_series) == 1:
                     ax.plot(
                         [self.start_time(), self.start_time()],
                         [low_series.values[0], high_series.values[0]],
@@ -4494,7 +4542,7 @@ class TimeSeries:
                     )
 
         ax.legend()
-        ax.set_title(title if title is not None else data_array.name)
+        ax.set_title(title if title is not None else "")
         return ax
 
     def with_columns_renamed(
@@ -4900,7 +4948,7 @@ class TimeSeries:
         """Return the time index and values with missing dates inserted.
 
         This requires either a provided `freq` or the possibility to infer a unique frequency from `times` (see
-        `offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
+        `offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`__
         for more info on supported frequencies).
 
         Parameters

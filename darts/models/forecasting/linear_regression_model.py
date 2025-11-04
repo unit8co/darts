@@ -121,6 +121,10 @@ class LinearRegressionModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
             prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if
@@ -169,13 +173,13 @@ class LinearRegressionModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.72085839],
-               [1005.6548696 ],
-               [1005.65403772],
-               [1005.6846175 ],
-               [1005.75753605],
-               [1005.81830675]])
+        >>> print(pred.values())
+        [[1005.72085839]
+         [1005.6548696 ]
+         [1005.65403772]
+         [1005.6846175 ]
+         [1005.75753605]
+         [1005.81830675]]
         """
         self.kwargs = kwargs
 
@@ -216,6 +220,7 @@ class LinearRegressionModel(SKLearnModel):
         max_samples_per_ts: Optional[int] = None,
         n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         likelihood = self.likelihood
@@ -250,6 +255,7 @@ class LinearRegressionModel(SKLearnModel):
                     max_samples_per_ts=max_samples_per_ts,
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
+                    verbose=verbose,
                     **kwargs,
                 )
                 # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
@@ -268,6 +274,7 @@ class LinearRegressionModel(SKLearnModel):
                 max_samples_per_ts=max_samples_per_ts,
                 n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                 sample_weight=sample_weight,
+                verbose=verbose,
                 **kwargs,
             )
 

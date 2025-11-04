@@ -26,9 +26,16 @@ from darts.models import (
     RegressionEnsembleModel,
     XGBModel,
 )
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import (
+    CB_AVAILABLE,
+    LGBM_AVAILABLE,
+    PROPHET_AVAILABLE,
+    SF_AVAILABLE,
+    TORCH_AVAILABLE,
+    XGB_AVAILABLE,
+    tfm_kwargs,
+)
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import NotImportedModule
 
 logger = get_logger(__name__)
 
@@ -67,10 +74,6 @@ if TORCH_AVAILABLE:
         WeibullLikelihood,
     )
 
-lgbm_available = not isinstance(LightGBMModel, NotImportedModule)
-cb_available = not isinstance(CatBoostModel, NotImportedModule)
-prophet_available = not isinstance(Prophet, NotImportedModule)
-
 np.random.seed(0)
 constant_ts = tg.constant_timeseries(length=200, value=0.5)
 constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
@@ -86,19 +89,6 @@ conformal_forecaster.fit(constant_noisy_ts_short)
 models_cls_kwargs_errs = [
     (ExponentialSmoothing, {"random_state": 3}, 0.3, None),
     (ARIMA, {"p": 1, "d": 0, "q": 1, "random_state": 42}, 0.03, None),
-    (
-        TBATS,
-        {
-            "season_length": 12,
-            "use_trend": False,
-            "use_damped_trend": False,
-            "use_boxcox": True,
-            "use_arma_errors": False,
-            "random_state": 42,
-        },
-        0.04,
-        0.04,
-    ),
     (
         ConformalNaiveModel,
         {
@@ -248,15 +238,6 @@ extra_configs = [
     (VARIMA, {"random_state": 42}, 0.03, None),
     (KalmanForecaster, {"random_state": 42}, 0.03, None),
     (
-        AutoARIMA,
-        {
-            "random_state": 42,
-            "season_length": 12,
-        },
-        0.04,
-        0.04,
-    ),
-    (
         LinearRegressionModel,
         {
             "lags": 12,
@@ -266,18 +247,6 @@ extra_configs = [
         },
         0.04,
         0.04,
-    ),
-    (
-        XGBModel,
-        {
-            "lags": 12,
-            "likelihood": "quantile",
-            "quantiles": [0.1, 0.5, 0.9],
-            "random_state": 42,
-            **xgb_test_params,
-        },
-        0.03,
-        None,
     ),
     (
         NaiveEnsembleModel,
@@ -332,7 +301,49 @@ extra_configs = [
     ),
 ]
 
-if lgbm_available:
+if SF_AVAILABLE:
+    models_cls_kwargs_errs += [
+        (
+            TBATS,
+            {
+                "season_length": 12,
+                "use_trend": False,
+                "use_damped_trend": False,
+                "use_boxcox": True,
+                "use_arma_errors": False,
+                "random_state": 42,
+            },
+            0.04,
+            0.04,
+        ),
+    ]
+    extra_configs += [
+        (
+            AutoARIMA,
+            {
+                "random_state": 42,
+                "season_length": 12,
+            },
+            0.04,
+            0.04,
+        ),
+    ]
+if XGB_AVAILABLE:
+    extra_configs += [
+        (
+            XGBModel,
+            {
+                "lags": 12,
+                "likelihood": "quantile",
+                "quantiles": [0.1, 0.5, 0.9],
+                "random_state": 42,
+                **xgb_test_params,
+            },
+            0.03,
+            None,
+        ),
+    ]
+if LGBM_AVAILABLE:
     extra_configs += [
         (
             LightGBMModel,
@@ -347,7 +358,7 @@ if lgbm_available:
             None,
         ),
     ]
-if cb_available:
+if CB_AVAILABLE:
     extra_configs += [
         (
             CatBoostModel,
@@ -362,7 +373,7 @@ if cb_available:
             None,
         ),
     ]
-if prophet_available:
+if PROPHET_AVAILABLE:
     extra_configs += [(Prophet, {"random_state": 42}, 0.03, None)]
 
 
@@ -579,9 +590,10 @@ class TestProbabilisticModels:
     @pytest.mark.parametrize(
         "config",
         itertools.product(
-            [(LinearRegressionModel, False, {}), (XGBModel, False, xgb_test_params)]
-            + ([(LightGBMModel, False, lgbm_test_params)] if lgbm_available else [])
-            + ([(CatBoostModel, True, cb_test_params)] if cb_available else []),
+            [(LinearRegressionModel, False, {})]
+            + ([(XGBModel, False, xgb_test_params)] if XGB_AVAILABLE else [])
+            + ([(LightGBMModel, False, lgbm_test_params)] if LGBM_AVAILABLE else [])
+            + ([(CatBoostModel, True, cb_test_params)] if CB_AVAILABLE else []),
             [1, 3],  # n components
             [
                 "quantile",

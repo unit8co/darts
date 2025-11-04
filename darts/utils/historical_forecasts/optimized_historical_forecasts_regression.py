@@ -1,5 +1,10 @@
+"""
+Optimized Historical Forecasts for `SKLearnModel`
+-------------------------------------------------
+"""
+
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -32,7 +37,7 @@ def _optimized_historical_forecasts_last_points_only(
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
     random_state: Optional[int] = None,
-    **kwargs,
+    predict_kwargs: Optional[dict[str, Any]] = None,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for SKLearnModel with last_points_only = True
@@ -41,6 +46,7 @@ def _optimized_historical_forecasts_last_points_only(
 
     The data_transformers are applied in historical_forecasts (input and predictions)
     """
+    predict_kwargs = predict_kwargs or {}
     forecasts_list = []
     iterator = _build_tqdm_iterator(
         series, verbose, total=len(series), desc="historical forecasts"
@@ -142,7 +148,7 @@ def _optimized_historical_forecasts_last_points_only(
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
-            **kwargs,
+            **predict_kwargs,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
         # where k = output_chunk length if multi_models, 1 otherwise
@@ -208,13 +214,14 @@ def _optimized_historical_forecasts_all_points(
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
     random_state: Optional[int] = None,
-    **kwargs,
+    predict_kwargs: Optional[dict[str, Any]] = None,
 ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for SKLearnModel with last_points_only = False.
 
     Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
     """
+    predict_kwargs = predict_kwargs or {}
     forecasts_list = []
     iterator = _build_tqdm_iterator(
         series, verbose, total=len(series), desc="historical forecasts"
@@ -315,7 +322,7 @@ def _optimized_historical_forecasts_all_points(
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
-            **kwargs,
+            **predict_kwargs,
         )
         # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
         # where k = output_chunk length if multi_models, 1 otherwise

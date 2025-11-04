@@ -50,11 +50,12 @@ time is crucial.
 
 For detailed examples and tutorials, see:
 
-* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`_
+* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
 * `SKLearn-Like Classification Model Examples
-  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`_
+  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 """
 
+import inspect
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from collections.abc import Sequence
@@ -201,6 +202,10 @@ class SKLearnModel(GlobalForecastingModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         model
             Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
             support multi-output regression for multivariate timeseries, in which case one regressor
@@ -243,13 +248,13 @@ class SKLearnModel(GlobalForecastingModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.73340676],
-               [1005.71159051],
-               [1005.7322616 ],
-               [1005.76314504],
-               [1005.82204348],
-               [1005.89100967]])
+        >>> print(pred.values())
+        [[1005.73340676]
+         [1005.71159051]
+         [1005.7322616 ]
+         [1005.76314504]
+         [1005.82204348]
+         [1005.89100967]]
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -643,7 +648,7 @@ class SKLearnModel(GlobalForecastingModel):
     def get_estimator(
         self, horizon: int, target_dim: int, quantile: Optional[float] = None
     ):
-        """Returns the estimator that forecasts the `horizon`th step of the `target_dim`th target component.
+        """Returns the estimator that forecasts the step `horizon` of the target component `target_dim`.
 
         For probabilistic models fitting quantiles, a desired `quantile` can also be passed. If not passed, it will
         return the model predicting the median (quantile=0.5).
@@ -852,6 +857,7 @@ class SKLearnModel(GlobalForecastingModel):
         val_past_covariates: Optional[Sequence[TimeSeries]] = None,
         val_future_covariates: Optional[Sequence[TimeSeries]] = None,
         val_sample_weight: Optional[Union[Sequence[TimeSeries], str]] = None,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         """
@@ -889,8 +895,20 @@ class SKLearnModel(GlobalForecastingModel):
                     "`sample_weight` was ignored since underlying regression model's "
                     "`fit()` method does not support it."
                 )
+
+        # only pass `verbose` if provided and the underlying model supports it;
+        # we always pass it to MultiOutputMixin as it will handle it there
+        if verbose is not None and (
+            isinstance(self.model, MultiOutputMixin)
+            or "verbose" in inspect.signature(self.model.fit).parameters
+        ):
+            kwargs["verbose"] = verbose
+
         self.model.fit(
-            training_samples, training_labels, **sample_weight_kwargs, **kwargs
+            training_samples,
+            training_labels,
+            **sample_weight_kwargs,
+            **kwargs,
         )
 
         # generate and store the lagged components names (for feature importance analysis)
@@ -917,6 +935,7 @@ class SKLearnModel(GlobalForecastingModel):
         n_jobs_multioutput_wrapper: Optional[int] = None,
         sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
         stride: int = 1,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         """
@@ -954,6 +973,8 @@ class SKLearnModel(GlobalForecastingModel):
             The number of time steps between consecutive samples, applied starting from the end of the series. The same
             stride will be applied to both the training and evaluation set (if supplied and supported). This should be
             used with caution as it might introduce bias in the forecasts.
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
@@ -1083,6 +1104,7 @@ class SKLearnModel(GlobalForecastingModel):
             series=seq2series(series),
             past_covariates=seq2series(past_covariates),
             future_covariates=seq2series(future_covariates),
+            verbose=verbose,
         )
         variate2arg = {
             "target": "lags",
@@ -1144,6 +1166,7 @@ class SKLearnModel(GlobalForecastingModel):
             val_sample_weight=val_sample_weight,
             max_samples_per_ts=max_samples_per_ts,
             stride=stride,
+            verbose=verbose,
             **kwargs,
         )
 
@@ -1159,7 +1182,7 @@ class SKLearnModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
@@ -1185,7 +1208,7 @@ class SKLearnModel(GlobalForecastingModel):
             Number of times a prediction is sampled from a probabilistic model. Should be set to 1
             for deterministic models.
         verbose
-            Whether to print the progress.
+            Optionally, set the prediction verbosity. Not effective for all models.
         predict_likelihood_parameters
             If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
             supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
@@ -1236,14 +1259,14 @@ class SKLearnModel(GlobalForecastingModel):
                 future_covariates=future_covariates,
             )
         super().predict(
-            n,
-            series,
-            past_covariates,
-            future_covariates,
-            num_samples,
-            verbose,
-            predict_likelihood_parameters,
-            show_warnings,
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            show_warnings=show_warnings,
         )
 
         # check that the input sizes of the target series and covariates match
@@ -1383,9 +1406,9 @@ class SKLearnModel(GlobalForecastingModel):
 
             # X has shape (n_series * n_samples, n_regression_features)
             prediction = self._predict(
-                X,
-                num_samples,
-                predict_likelihood_parameters,
+                x=X,
+                num_samples=num_samples,
+                predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
                 **kwargs,
             )
@@ -1428,6 +1451,7 @@ class SKLearnModel(GlobalForecastingModel):
         num_samples: int,
         predict_likelihood_parameters: bool,
         random_state: Optional[int] = None,
+        verbose: Optional[bool] = None,
         **kwargs,
     ) -> np.ndarray:
         """Generate predictions.
@@ -1537,9 +1561,9 @@ class SKLearnModel(GlobalForecastingModel):
 
     def _optimized_historical_forecasts(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
@@ -1551,8 +1575,8 @@ class SKLearnModel(GlobalForecastingModel):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
-        **kwargs,
-    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+        predict_kwargs: Optional[dict[str, Any]] = None,
+    ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
         For SKLearnModels we create the lagged prediction data once per series using a moving window.
         With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
@@ -1561,15 +1585,13 @@ class SKLearnModel(GlobalForecastingModel):
 
         TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
-        series, past_covariates, future_covariates, series_seq_type = (
-            _process_historical_forecast_input(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                forecast_horizon=forecast_horizon,
-                allow_autoregression=False,
-            )
+        series, past_covariates, future_covariates = _process_historical_forecast_input(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
+            allow_autoregression=False,
         )
 
         # TODO: move the loop here instead of duplicated code in each sub-routine?
@@ -1589,7 +1611,7 @@ class SKLearnModel(GlobalForecastingModel):
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
-                **kwargs,
+                predict_kwargs=predict_kwargs,
             )
         else:
             hfc = _optimized_historical_forecasts_all_points(
@@ -1607,9 +1629,9 @@ class SKLearnModel(GlobalForecastingModel):
                 verbose=verbose,
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
-                **kwargs,
+                predict_kwargs=predict_kwargs,
             )
-        return series2seq(hfc, seq_type_out=series_seq_type)
+        return hfc
 
     @property
     def _supports_native_multioutput(self) -> bool:
@@ -1731,6 +1753,10 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         multi_models
             If True, a separate model will be trained for each future lag to predict. If False, a single model is
             trained to predict at step 'output_chunk_length' in the future. Default: True.
@@ -1893,6 +1919,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         future_covariates,
         max_samples_per_ts,
         sample_weight,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         """
@@ -1922,6 +1949,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
             sample_weight=sample_weight,
+            verbose=verbose,
             **kwargs,
         )
 
@@ -2048,6 +2076,10 @@ class RegressionModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         model
             Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
             support multi-output regression for multivariate timeseries, in which case one regressor
@@ -2090,13 +2122,13 @@ class RegressionModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.73340676],
-                [1005.71159051],
-                [1005.7322616 ],
-                [1005.76314504],
-                [1005.82204348],
-                [1005.89100967]])
+        >>> print(pred.values())
+        [[1005.73340676]
+         [1005.71159051]
+         [1005.7322616 ]
+         [1005.76314504]
+         [1005.82204348]
+         [1005.89100967]]
         """
         raise_deprecation_warning(
             "`RegressionModel` is deprecated and will be removed in a future version. "
@@ -2131,11 +2163,25 @@ class _ClassifierMixin:
 
     def fit(
         self,
-        *args,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        max_samples_per_ts: Optional[int] = None,
+        n_jobs_multioutput_wrapper: Optional[int] = None,
+        sample_weight: Optional[Union[TimeSeries, Sequence[TimeSeries], str]] = None,
+        stride: int = 1,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         super().fit(
-            *args,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
+            n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+            sample_weight=sample_weight,
+            stride=stride,
+            verbose=verbose,
             **kwargs,
         )
 
@@ -2304,6 +2350,10 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
@@ -2341,13 +2391,13 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [1.],
-               [1.],
-               [1.],
-               [0.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [1.]
+         [1.]
+         [1.]
+         [0.]]
         """
 
         model = model if model is not None else LogisticRegression(n_jobs=-1)
