@@ -9,7 +9,7 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Optional, Union
 
-from huggingface_hub import snapshot_download
+from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 from torch import nn
 
@@ -19,6 +19,7 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import TorchTrainingSample
+from darts.utils.likelihood_models.torch import TorchLikelihood
 
 logger = get_logger(__name__)
 
@@ -97,11 +98,12 @@ class HuggingFaceModelMixin:
                 raise ValueError(f"Path {path} is not a file")
             return path
         else:
-            repo_path = snapshot_download(
+            file_path = hf_hub_download(
                 repo_id=self.repo_id,
+                filename=filename,
                 revision=self.repo_commit,
             )
-            return Path(repo_path) / filename
+            return Path(file_path)
 
     def _load_config(
         self,
@@ -158,6 +160,26 @@ class HuggingFaceModelMixin:
 
 
 class FoundationModel(MixedCovariatesTorchModel):
+    def __init__(
+        self,
+        loss_fn: Optional[nn.Module] = None,
+        likelihood: Optional[TorchLikelihood] = None,
+        **kwargs,
+    ):
+        # initialize `TorchForecastingModel` base class
+        super().__init__(**self._extract_torch_model_params(**self.model_params))
+
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(**self.model_params)
+
+        # validate loss function and likelihood model
+        raise_if_not(
+            loss_fn is None and likelihood is None,
+            "Custom loss function and likelihood model are not supported for any FoundationModel. "
+            "Please omit both `loss_fn` and `likelihood` to use the default likelihood model.",
+            logger,
+        )
+
     # TODO: add docstring
     @abstractmethod
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:

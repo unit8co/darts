@@ -329,12 +329,10 @@ class _MHA(nn.Module):
             mask : Attention mask tensor of shape [batch_size, num_heads, q_len, kv_len]
             encoder_states : Encoder states for cross-attention. Defaults to None.
             position_ids : Position IDs for RoPE. Defaults to None.
-            output_attentions : Whether to return attention weights. Defaults to False.
 
         Returns:
             AttentionOutput: Contains:
                 - hidden_states : Output tensor of shape [batch_size, seq_len, d_model]
-                - attn_weights : Attention weights if output_attentions=True
         """
         if self.use_rope:
             assert position_ids is not None, (
@@ -488,7 +486,6 @@ class _GroupSelfAttention(nn.Module):
         self,
         hidden_states: torch.Tensor,
         attention_mask: torch.Tensor,
-        output_attentions: bool = False,
     ) -> torch.Tensor:
         # flip time and batch axes because attention operates along dim=-2
         hidden_states = rearrange(hidden_states, "batch time d -> time batch d")
@@ -618,14 +615,12 @@ class _Chronos2EncoderBlock(nn.Module):
         position_ids: torch.Tensor,
         attention_mask: torch.Tensor,
         group_time_mask: torch.Tensor,
-        output_attentions: bool = False,
     ) -> torch.Tensor:
         # apply time attention
         time_hidden_states: torch.Tensor = self.layer[0](
             hidden_states,
             position_ids=position_ids,
             attention_mask=attention_mask,
-            output_attentions=output_attentions,
         )
 
         # apply group attention
