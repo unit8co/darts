@@ -557,6 +557,8 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
     _repo_id = "amazon/chronos-2"
     _repo_commit = "18128c7b4f3fd286f06d6d4efe1d252f1d2a9a7c"
 
+    _allows_finetuning = True
+
     def __init__(
         self,
         input_chunk_length: int,

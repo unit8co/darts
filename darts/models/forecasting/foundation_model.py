@@ -171,6 +171,9 @@ class HuggingFaceModelMixin:
 
 class FoundationModel(MixedCovariatesTorchModel):
     # TODO: add docstring
+
+    _allows_finetuning: bool = False
+
     def __init__(
         self,
         enable_finetuning: bool = False,
@@ -183,6 +186,14 @@ class FoundationModel(MixedCovariatesTorchModel):
 
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
+
+        # validate and set fine-tuning flag
+        raise_if(
+            enable_finetuning and not self.allows_finetuning,
+            f"Fine-tuning is not supported for {self.__class__.__name__}."
+            " Please set `enable_finetuning=False`.",
+            logger,
+        )
 
         self._enable_finetuning = enable_finetuning
 
@@ -213,6 +224,11 @@ class FoundationModel(MixedCovariatesTorchModel):
             f"Invalid model creation parameters. Model `{cls.__name__}` has no args/kwargs `{invalid_kwargs}`",
             logger=logger,
         )
+
+    @property
+    def allows_finetuning(self) -> bool:
+        """Whether fine-tuning is allowed for this foundation model."""
+        return self._allows_finetuning
 
     @property
     def enable_finetuning(self) -> bool:
