@@ -9,6 +9,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+**Added**
+
+- Added foundation models support for zero-shot forecasting with TimesFM 2.5 and Chronos 2. [#2942](https://github.com/unit8co/darts/pull/2942) by [Nicholaus Halecky](https://github.com/nehalecky).
+  - `TimesFMModel`: Google's decoder-only transformer (200M parameters) for univariate forecasting with native quantile forecasting (10 quantiles)
+  - `ChronosModel`: Amazon's T5-based encoder-decoder (120M parameters) for multivariate forecasting with past/future covariates and probabilistic forecasting (21 quantiles via sampling)
+  - Unified package infrastructure with lazy loading, device management (CUDA/MPS/CPU), and PEFT support for fine-tuning
+  - Proper Darts quantile naming conventions (q{value:.3f} format)
+  - Documentation with user guide, example notebook, and installation instructions
+  - Optional dependencies: `darts[timesfm]` and `darts[chronos]`
+
 **Improved**
 
 - 🔴 Improved the performance of the `TimeSeries.map()` method for functions that take two arguments. The mapping is now applied on the entire time index and values array which requires users to reshape the time index explicitly within the function. See more information in the `TimeSeries.map()` method documentation. [#2911](https://github.com/unit8co/darts/pull/2911) by [Jakub Chłapek](https://github.com/jakubchlapek)

@@ -131,6 +131,10 @@ except ImportError:
     XGBModel = NotImportedModule(module_name="XGBoost")
     XGBClassifierModel = NotImportedModule(module_name="XGBoost")
 
+# Foundation models are imported with independent try/except in foundation/__init__.py
+# This ensures one model's missing dependencies don't break others
+from darts.models.forecasting.foundation import ChronosModel, TimesFMModel
+
 # Filtering
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter
@@ -170,6 +174,8 @@ __all__ = [
     "TCNModel",
     "TFTModel",
     "TiDEModel",
+    "ChronosModel",
+    "TimesFMModel",
     "TransformerModel",
     "TSMixerModel",
     "Prophet",

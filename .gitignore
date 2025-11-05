@@ -26,3 +26,10 @@ docs_env
 
 # used by CI to build with latest versions of dependencies
 requirements-latest.txt
+
+# Git worktrees for parallel development
+.worktrees/
+
+# Local planning documents
+/plans/
+plan/

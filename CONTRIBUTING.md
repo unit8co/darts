@@ -33,6 +33,47 @@ and discuss it with some of the core team.
   strive to find computationally efficient solutions.
 
 
+## Documentation: User Guides vs Tutorial Notebooks
+
+Darts maintains two complementary types of documentation with distinct purposes:
+
+### User Guides (docs/userguide/*.md)
+**Purpose:** Reference + Concepts + Navigation
+
+**Content:**
+- WHAT the feature is (conceptual explanation)
+- WHY it matters (motivation, use cases)
+- WHEN to use it (decision guidance)
+- HOW it works (architecture, not implementation)
+- Minimal API snippets (2-5 lines showing syntax)
+- Cross-references to tutorial notebooks for hands-on learning
+
+**Style:** Explanatory prose with brief code examples
+**Audience:** Users who need to understand or look up information
+
+### Tutorial Notebooks (examples/*.ipynb)
+**Purpose:** Hands-on learning through executable code
+
+**Content:**
+- Complete workflows: data loading → model → prediction → evaluation
+- Step-by-step instructions with explanatory markdown
+- Full runnable code cells with visible outputs
+- Performance comparisons and benchmarks (when applicable)
+- Cross-references to user guides for conceptual depth
+
+**Style:** Interactive tutorial with working code
+**Audience:** Users who want to learn by doing or need copy-paste examples
+
+### The Complementary Relationship
+- **User Guide:** "Models support probabilistic forecasting. See example 13 for tutorial."
+- **Tutorial Notebook:** "This demonstrates probabilistic forecasts. [runnable code]. For architecture details, see torch_forecasting_models guide."
+
+### When Contributing
+- **Conceptual content** → User Guide
+- **Working examples** → Tutorial Notebook
+- **Performance comparisons** → Summary table in User Guide + Full executable comparison in Notebook
+
+
 ## Technical Procedure
 
 1. Make sure your work is being tracked (and if possible discussed) by an existing issue on the backlog
