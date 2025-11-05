@@ -47,6 +47,63 @@ class TestChronos2Model:
     def test_fidelity(self):
         """Test Chronos2Model predictions against original implementation.
         The test passes if the predictions match up to a certain numerical tolerance.
+        Original predictions were generated with the following code:
+
+        ```python
+        import numpy as np
+        import pandas as pd
+        from chronos import BaseChronosPipeline, Chronos2Pipeline
+        from darts.datasets import ElectricityConsumptionZurichDataset
+
+        # adapted from `20-SKLearnModel-examples` notebook
+        ts_energy = ElectricityConsumptionZurichDataset().load().astype(np.float32)
+
+        # extract temperature, solar irradiation and rain duration
+        ts_weather = ts_energy[["T [°C]", "StrGlo [W/m2]", "RainDur [min]"]]
+
+        # extract households energy consumption
+        ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
+
+        # create train and validation splits
+        validation_cutoff = pd.Timestamp("2022-01-01")
+        ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
+        ts_weather_train, ts_weather_val = ts_weather.split_after(validation_cutoff)
+
+        prediction_length = 1024
+
+        # load the Chronos-2 pipeline
+        pipeline: Chronos2Pipeline = BaseChronosPipeline.from_pretrained("amazon/chronos-2")
+
+        # make predictions
+        quantiles, mean = pipeline.predict_quantiles(
+            inputs=[
+                {
+                    "target": ts_energy_train.values().T,
+                    "past_covariates": {
+                        c: ts_weather_train[c].values().flatten()
+                        for c in ts_weather.components
+                    },
+                    "future_covariates": {
+                        c: ts_weather_val[c].values().flatten()[:prediction_length]
+                        for c in ts_weather.components
+                    }
+                }
+            ],
+            prediction_length=prediction_length,
+            quantile_levels=pipeline.quantiles,
+        )
+
+        # convert to numpy array with shape (time, quantile, variables)
+        quantiles_np = quantiles[0].cpu().numpy()
+        quantiles_np = quantiles_np.transpose(1, 0, 2)
+
+        # save quantiles to a npz file
+        np.savez_compressed("chronos2.npz", pred=quantiles_np)
+        ```
+
+        Code accessed from https://github.com/amazon-science/chronos-forecasting/commit/93419cfe9fd678b06503b3ce22113f4482c44b6f
+        on 5 November 2025.
+
         """
         # load model
         model = Chronos2Model(
