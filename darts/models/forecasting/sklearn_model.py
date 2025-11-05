@@ -1495,20 +1495,18 @@ class SKLearnModel(GlobalForecastingModel):
         Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
         """
 
-        # TODO this check is also in forecasting_model predict. Put it inside a function to avoid code duplication
-        is_autoregression = (
-            False
-            if self.output_chunk_length is None
-            else (forecast_horizon > self.output_chunk_length)
+        # Calling super().predict() to perform sanity checks
+        # e.g. is autoregression allowed, are parameters coherent, etc.
+        super().predict(
+            n=forecast_horizon,
+            series=seq2series(series),
+            past_covariates=seq2series(past_covariates),
+            future_covariates=seq2series(future_covariates),
+            num_samples=num_samples,
+            verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            show_warnings=show_warnings,
         )
-        if self.output_chunk_shift and is_autoregression:
-            raise_log(
-                ValueError(
-                    "Cannot perform auto-regression `(n > output_chunk_length)` with a model that uses a "
-                    "shifted output chunk `(output_chunk_shift > 0)`."
-                ),
-                logger=logger,
-            )
 
         predict_kwargs = predict_kwargs or {}
         forecasts_list = []
