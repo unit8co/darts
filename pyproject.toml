@@ -6,6 +6,30 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 
+[project]
+name = "darts"
+description = "A python library for easy manipulation and forecasting of time series."
+requires-python = ">=3.10"
+dynamic = ["version", "readme", "dependencies"]
+
+[project.optional-dependencies]
+# Foundation Models (Time Series Foundation Models)
+timesfm = [
+    "timesfm @ git+https://github.com/google-research/timesfm.git@main",
+]
+chronos = [
+    "chronos-forecasting>=2.0.0",
+]
+lag-llama = [
+    "lag-llama @ git+https://github.com/time-series-foundation-models/lag-llama.git",
+]
+
+# Foundation models bundle
+all-foundation = [
+    "darts[timesfm,chronos,lag-llama]",
+]
+
+
 [tool.pytest.ini_options]
 addopts = [
     "--strict-markers",

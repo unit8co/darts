@@ -2,6 +2,12 @@ from pathlib import Path
 
 from setuptools import find_packages, setup
 
+# For reading pyproject.toml
+try:
+    import tomli
+except ImportError:
+    import tomllib as tomli  # Python 3.11+
+
 
 def read_requirements(path):
     return list(Path(path).read_text().splitlines())
@@ -11,6 +17,7 @@ base_reqs = read_requirements("requirements/core.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
 
 # Note: Prophet, LightGBM, Catboost are not included in darts package by default
+# Foundation models (TimesFM, Chronos, Lag-Llama) are managed in pyproject.toml
 
 reqs = base_reqs + torch_reqs
 
@@ -41,6 +48,7 @@ setup(
     license="Apache License 2.0",
     packages=find_packages(exclude=["examples*"]),
     install_requires=reqs,
+    # extras_require removed - foundation models managed in pyproject.toml [project.optional-dependencies]
     package_data={
         "darts": ["py.typed"],
     },
