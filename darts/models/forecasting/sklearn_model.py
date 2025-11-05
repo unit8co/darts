@@ -1656,10 +1656,12 @@ class SKLearnModel(GlobalForecastingModel):
             # Trick to fix with stride, because NaN are in X at the end of the series, but
             # with stride, we might not get NaN in current_X, so we manually set the relevant
             # columns to NaN so that they get filled with previous predictions
-            if not self.multi_models:
+            if not self.multi_models and "target" in self.lags:
                 offset_idx = 1
+                end_idx = len(self.lags["target"])
                 for i in range(self.output_chunk_length, X.shape[-1]):
-                    X[:, -offset_idx:, i] = np.nan
+                    start_idx = end_idx - offset_idx
+                    X[:, start_idx:end_idx, i] = np.nan
                     offset_idx += 1
 
             last_step_shift = 0

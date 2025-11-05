@@ -451,6 +451,7 @@ def create_lagged_data(
                         show_warnings=show_warnings,
                     )
                 )
+
             X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
                 features=X_i,
                 target_series=target_i,
