@@ -4003,15 +4003,25 @@ class TestSKLearnModels:
         model_kwargs["output_chunk_length"] = output_chunk_length
 
         model = model_cls(
+            lags_past_covariates=2,
+            lags_future_covariates=[-2, -1, 0],
             **model_kwargs,
         )
 
-        series = tg.sine_timeseries(length=10)
+        series = tg.sine_timeseries(length=10).with_static_covariates(
+            pd.DataFrame({"static_cov": [1]})
+        )
+        past_cov = series + 2
+        future_cov = series + 3
 
-        model.fit(series[:8])
+        model.fit(
+            series[:8], past_covariates=past_cov[:8], future_covariates=future_cov[:8]
+        )
 
         hfc_non_optimized = model.historical_forecasts(
             series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
             retrain=False,
             forecast_horizon=forecast_horizon,
             start=start,
@@ -4024,6 +4034,8 @@ class TestSKLearnModels:
 
         hfc_optimized = model.historical_forecasts(
             series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
             forecast_horizon=forecast_horizon,
             retrain=False,
             start=start,

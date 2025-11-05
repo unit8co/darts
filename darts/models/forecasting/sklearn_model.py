@@ -1935,9 +1935,6 @@ class SKLearnModel(GlobalForecastingModel):
         For SKLearnModels we create the lagged prediction data once per series using a moving window.
         With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
         forecastable index and series.
-        Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.
-
-        TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
         series, past_covariates, future_covariates = _process_historical_forecast_input(
             model=self,
