@@ -26,7 +26,6 @@ from dataclasses import dataclass
 from typing import Any, Literal, Optional, Union, cast
 
 import torch
-from einops import rearrange, repeat
 from torch import nn
 
 from darts.logging import get_logger, raise_if, raise_if_not
@@ -229,16 +228,15 @@ class _Chronos2Module(PLForecastingModule):
         context_time_enc = torch.arange(
             start=-final_context_length, end=0, device=self.device, dtype=torch.float32
         )
-        context_time_enc = (
-            repeat(
-                context_time_enc,
-                "(n p) -> b n p",
-                b=batch_size,
-                n=num_context_patches,
-                p=self.chronos_config.input_patch_size,
-            )
-            .div(cast(int, self.chronos_config.time_encoding_scale))
-            .to(self.dtype)
+        context_time_enc = context_time_enc.div(
+            cast(int, self.chronos_config.time_encoding_scale)
+        ).to(self.dtype)
+        context_time_enc = context_time_enc.view(
+            1, num_context_patches, self.chronos_config.input_patch_size
+        ).expand(
+            batch_size,
+            num_context_patches,
+            self.chronos_config.input_patch_size,
         )
 
         # concat time encoding, context and mask along the last (feature) dim
@@ -303,17 +301,11 @@ class _Chronos2Module(PLForecastingModule):
                     dim=-1,
                 )
 
-            patched_future_covariates = rearrange(
-                future_covariates,
-                "b (n p) -> b n p",
-                n=num_output_patches,
-                p=output_patch_size,
+            patched_future_covariates = future_covariates.view(
+                batch_size, num_output_patches, output_patch_size
             )
-            patched_future_covariates_mask = rearrange(
-                future_covariates_mask,
-                "b (n p) -> b n p",
-                n=num_output_patches,
-                p=output_patch_size,
+            patched_future_covariates_mask = future_covariates_mask.view(
+                batch_size, num_output_patches, output_patch_size
             )
         else:
             patched_future_covariates = torch.zeros(
@@ -337,16 +329,15 @@ class _Chronos2Module(PLForecastingModule):
         future_time_enc = torch.arange(
             start=0, end=final_future_length, device=self.device, dtype=torch.float32
         )
-        future_time_enc = (
-            repeat(
-                future_time_enc,
-                "(n p) -> b n p",
-                b=batch_size,
-                n=num_output_patches,
-                p=output_patch_size,
-            )
-            .div(cast(int, self.chronos_config.time_encoding_scale))
-            .to(self.dtype)
+        future_time_enc = future_time_enc.div(
+            cast(int, self.chronos_config.time_encoding_scale)
+        ).to(self.dtype)
+        future_time_enc = future_time_enc.view(
+            1, num_output_patches, output_patch_size
+        ).expand(
+            batch_size,
+            num_output_patches,
+            output_patch_size,
         )
 
         patched_future = torch.cat(

@@ -3,6 +3,7 @@ Time Series Foundation Model (TSFM)
 ---------------------------------
 """
 
+import inspect
 import json
 import os
 from abc import abstractmethod
@@ -13,11 +14,14 @@ from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 from torch import nn
 
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
 )
-from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import (
+    MixedCovariatesTorchModel,
+    TorchForecastingModel,
+)
 from darts.utils.data.torch_datasets.utils import TorchTrainingSample
 from darts.utils.likelihood_models.torch import TorchLikelihood
 
@@ -135,6 +139,16 @@ class HuggingFaceModelMixin:
         state_dict = load_file(module_path)
         module.load_state_dict(state_dict)
 
+    @staticmethod
+    def _extract_module_params(
+        module_class: type[PLForecastingModule],
+        config: dict,
+    ):
+        """Extract params from `config` to set up the given `module_class`."""
+        get_params = list(inspect.signature(module_class.__init__).parameters.keys())
+        get_params.remove("self")
+        return {kwarg: config.get(kwarg) for kwarg in get_params if kwarg in config}
+
     def _load_model(
         self,
         module_class: type[PLForecastingModule],
@@ -154,7 +168,8 @@ class HuggingFaceModelMixin:
             The loaded PyTorch Lightning module.
         """
         config = self._load_config()
-        module = module_class(**config, **pl_module_params)
+        module_params = self._extract_module_params(module_class, config)
+        module = module_class(**module_params, **pl_module_params)
         self._load_model_weights(module)
         return module
 
@@ -162,6 +177,7 @@ class HuggingFaceModelMixin:
 class FoundationModel(MixedCovariatesTorchModel):
     def __init__(
         self,
+        enable_finetuning: bool = False,
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[TorchLikelihood] = None,
         **kwargs,
@@ -172,6 +188,8 @@ class FoundationModel(MixedCovariatesTorchModel):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
+        self._enable_finetuning = enable_finetuning
+
         # validate loss function and likelihood model
         raise_if_not(
             loss_fn is None and likelihood is None,
@@ -179,6 +197,37 @@ class FoundationModel(MixedCovariatesTorchModel):
             "Please omit both `loss_fn` and `likelihood` to use the default likelihood model.",
             logger,
         )
+
+    @classmethod
+    def _validate_model_params(cls, **kwargs):
+        """validate that parameters used at model creation are part of :class:`TorchForecastingModel`,
+        :class:`PLForecastingModule`, :class:`FoundationModel` or cls __init__ methods.
+        """
+        valid_kwargs = (
+            set(inspect.signature(TorchForecastingModel.__init__).parameters.keys())
+            | set(inspect.signature(PLForecastingModule.__init__).parameters.keys())
+            | set(inspect.signature(FoundationModel.__init__).parameters.keys())
+            | set(inspect.signature(cls.__init__).parameters.keys())
+        )
+
+        invalid_kwargs = [kwarg for kwarg in kwargs if kwarg not in valid_kwargs]
+
+        raise_if(
+            len(invalid_kwargs) > 0,
+            f"Invalid model creation parameters. Model `{cls.__name__}` has no args/kwargs `{invalid_kwargs}`",
+            logger=logger,
+        )
+
+    @property
+    def enable_finetuning(self) -> bool:
+        """Whether fine-tuning is enabled for this foundation model. When enabled, calling `fit()`
+        will update the model weights. When disabled, calling `fit()` will not update the model weights."""
+        return self._enable_finetuning
+
+    @property
+    def _requires_training(self) -> bool:
+        # Foundation models are pre-trained and do not require further training
+        return self.enable_finetuning
 
     # TODO: add docstring
     @abstractmethod

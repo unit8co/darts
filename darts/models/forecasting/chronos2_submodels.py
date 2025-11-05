@@ -15,7 +15,6 @@ Authors: Abdul Fatir Ansari <ansarnd@amazon.com>
 from typing import Literal
 
 import torch
-from einops import rearrange
 from torch import nn
 
 from darts.logging import get_logger, raise_if, raise_if_not
@@ -343,22 +342,19 @@ class _MHA(nn.Module):
 
         def shape(states: torch.Tensor) -> torch.Tensor:
             """(batch, seq_len, inner_dim) -> (batch, n_heads, seq_len, kv_proj_dim)"""
-            return rearrange(
-                states,
-                "b s (h d) -> b h s d",
-                h=self.n_heads,
-                s=seq_length,
-                d=self.kv_proj_dim,
-            )
+            return states.view(
+                -1,
+                seq_length,
+                self.n_heads,
+                self.kv_proj_dim,
+            ).permute(0, 2, 1, 3)
 
         def unshape(states: torch.Tensor) -> torch.Tensor:
             """(batch, n_heads, seq_len, kv_proj_dim) -> (batch, seq_len, inner_dim)"""
-            return rearrange(
-                states,
-                "b h s d -> b s (h d)",
-                h=self.n_heads,
-                s=seq_length,
-                d=self.kv_proj_dim,
+            return states.permute(0, 2, 1, 3).reshape(
+                -1,
+                seq_length,
+                self.inner_dim,
             )
 
         # Construct query states
@@ -488,7 +484,7 @@ class _GroupSelfAttention(nn.Module):
         attention_mask: torch.Tensor,
     ) -> torch.Tensor:
         # flip time and batch axes because attention operates along dim=-2
-        hidden_states = rearrange(hidden_states, "batch time d -> time batch d")
+        hidden_states = hidden_states.permute(1, 0, 2)
         normed_hidden_states = self.layer_norm(hidden_states)
         attention_output = self.self_attention(
             normed_hidden_states,
@@ -496,7 +492,7 @@ class _GroupSelfAttention(nn.Module):
         )
         hidden_states = hidden_states + self.dropout(attention_output)
         # flip time and batch axes back to their original position
-        hidden_states = rearrange(hidden_states, "time batch d -> batch time d")
+        hidden_states = hidden_states.permute(1, 0, 2)
 
         return hidden_states
 
@@ -705,7 +701,7 @@ class _Chronos2Encoder(nn.Module):
             floating_type = group_time_mask.dtype
 
         # reshape mask to shape of attention scores
-        group_time_mask = rearrange(group_time_mask, "q b t -> t 1 q b")
+        group_time_mask = group_time_mask.permute(2, 0, 1).unsqueeze(1)
         group_time_mask = (1.0 - group_time_mask) * torch.finfo(floating_type).min
 
         return group_time_mask
