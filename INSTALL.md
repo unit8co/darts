@@ -87,11 +87,6 @@ uv pip install "darts[chronos]"
 pip install "darts[timesfm]"
 # or with uv
 uv pip install "darts[timesfm]"
-
-# Lag-Llama
-pip install "darts[lag-llama]"
-# or with uv
-uv pip install "darts[lag-llama]"
 ```
 
 **Option 2: Install all foundation models**
@@ -150,13 +145,7 @@ forecast = model.predict(n=12, series=series)
 - [TimesFM GitHub repository](https://github.com/google-research/timesfm)
 - [HuggingFace model card](https://huggingface.co/google/timesfm-2.5-200m-pytorch)
 
-#### Lag-Llama
-Lag-Llama foundation model for time series forecasting.
-
-**Requirements:**
-- lag-llama package (installed automatically with `darts[lag-llama]`)
-
-**Note:** For detailed documentation on foundation models, their capabilities, and advanced usage patterns (zero-shot, few-shot, fine-tuning), see the [Foundation Models User Guide](docs/userguide/foundation_models.md).
+**Note:** For detailed documentation on foundation models, their capabilities, and advanced usage patterns (zero-shot, fine-tuning), see the [Foundation Models User Guide](docs/userguide/foundation_models.md).
 
 ### Enabling GPU support
 Darts relies on PyTorch for the neural network models.

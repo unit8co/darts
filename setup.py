@@ -17,7 +17,7 @@ base_reqs = read_requirements("requirements/core.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
 
 # Note: Prophet, LightGBM, Catboost are not included in darts package by default
-# Foundation models (TimesFM, Chronos, Lag-Llama) are managed in pyproject.toml
+# Foundation models (TimesFM, Chronos) are managed in pyproject.toml
 
 reqs = base_reqs + torch_reqs
 
