@@ -158,6 +158,7 @@ class HuggingFaceModelMixin:
 
 
 class FoundationModel(MixedCovariatesTorchModel):
+    # TODO: add docstring
     @abstractmethod
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         """Just like in `TorchForecastingModel`, subclasses must implement this method."""

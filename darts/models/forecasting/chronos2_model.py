@@ -1,7 +1,24 @@
-# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-# SPDX-License-Identifier: Apache-2.0
+"""
+Amazon Chronos 2 Pre-trained Model for Time Series Forecasting
+--------------------
 
-# Authors: Abdul Fatir Ansari <ansarnd@amazon.com>
+Apache-2.0 License from https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE,
+accessed on 4 November 2025:
+'
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
+Authors: Abdul Fatir Ansari <ansarnd@amazon.com>
+'
+
+Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integration:
+- Remove dependencies on `transformers` and `einops` libraries.
+- Load model config and weights from HuggingFace Hub using `HuggingFaceModelMixin`.
+- Remove `output_attentions` option from forward pass.
+- Integrate likelihood model and loss computation with Darts `QuantileRegression`, and
+    remove original loss computation in forward pass.
+-
+"""
 
 import os
 from dataclasses import dataclass
@@ -401,6 +418,7 @@ class _Chronos2Module(PLForecastingModule):
 
         return loss
 
+    # TODO: fine-tuning support w/ normalised loss
     def forward(
         self,
         context: torch.Tensor,

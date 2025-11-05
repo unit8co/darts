@@ -1,3 +1,17 @@
+"""
+Amazon Chronos 2 Submodels
+--------------------
+
+Apache-2.0 License from https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE,
+accessed on 4 November 2025:
+'
+Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+SPDX-License-Identifier: Apache-2.0
+
+Authors: Abdul Fatir Ansari <ansarnd@amazon.com>
+'
+"""
+
 from typing import Literal
 
 import torch
