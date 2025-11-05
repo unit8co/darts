@@ -15,8 +15,6 @@ This is forecasting's "GPT moment"—the shift from domain-specific training to 
 
 The spectrum of foundation model usage includes:
 - **Zero-shot**: Direct prediction without any training
-- **Few-shot**: Providing example time series to guide predictions (in-context learning)
-- **Fine-tuning**: Adapting the pre-trained model to your specific domain (coming soon)
 
 This pre-training paradigm fundamentally changes the forecasting workflow. Instead of the traditional "fit-then-predict" approach, you can now "predict immediately" with competitive accuracy, making foundation models ideal for cold-start scenarios, rapid prototyping, and situations with limited historical data.
 
@@ -33,7 +31,7 @@ Choosing the right forecasting approach depends on your specific requirements. H
 | **Max Forecast Horizon** | 256 steps | 1024 steps | Unlimited |
 | **Multivariate Support** | ❌ Univariate only | ✅ Yes (multivariate) | ✅ Many models |
 | **Covariates Support** | ❌ Not supported | ✅ Past & Future covariates | ✅ Widely supported |
-| **Model Size** | 200M parameters | 120M (base) | Varies widely |
+| **Model Size** | 200M parameters | 120M parameters | Varies widely |
 | **Inference Speed** | ⚡ Fast (decoder-only) | 🐢 Moderate (encoder-decoder) | ⚡⚡ Very fast |
 | **Memory Usage** | ~2GB GPU/RAM | ~1.5GB GPU/RAM | <100MB |
 | **Best For** | Quick prototyping, hourly/daily data | Complex forecasting with external signals | Explainability, domain knowledge |
@@ -99,38 +97,7 @@ From comprehensive benchmarking across diverse datasets (Air Passengers, Energy 
 2. **Add traditional models** if domain knowledge available or explainability needed
 3. **Ensemble both** for production if accuracy is critical
 
-See **[Foundation Models Comparison Tutorial](../../examples/28-Foundation-Models-Tutorial.ipynb)** for hands-on examples across multiple datasets.
-
-## The Semantic Intelligence: Understanding Examples vs Covariates
-
-One of the most powerful capabilities of TSFMs is their ability to distinguish between fundamentally different types of information: **temporal causality** (covariates) versus **pattern templates** (examples). This semantic intelligence mirrors how humans naturally separate "what affects my target" from "what my target resembles."
-
-Foundation models introduce **few-shot examples**—a concept semantically distinct from traditional covariates. Understanding this distinction unlocks the full power of these models.
-
-| **COVARIATES (TIME-DISTINGUISHED)** | **FEW-SHOT EXAMPLES (SHAPE TEMPLATES)** |
-|--------------------------------------|------------------------------------------|
-| **Question:** "What affects my target?" | **Question:** "What does my target resemble?" |
-| **Semantic role:** Temporal causality<br>External influences at specific times | **Semantic role:** Pattern recognition<br>Behavioral templates from similar series (shape, cycles, seasonality) |
-| **Key dimension:** TIME<br>"Temperature on July 15 affects sales on July 15" - temporal alignment | **Key dimension:** SHAPE<br>"Store A's weekly pattern teaches retail seasonality" - shape learning |
-| **Structure:** TimeSeries objects (temperature, prices, holidays) | **Structure:** (context, future) pairs from analogous series |
-| **Time alignment:** MUST align with target | **Time alignment:** Independent (unaligned) |
-| **Persistence:** Used at EVERY time step throughout prediction horizon | **Persistence:** Ephemeral - used once to condition model, then discarded |
-| **Mechanism:** Feature extraction (traditional ML pattern) | **Mechanism:** In-context learning (foundation model pattern) |
-| **Example:** "Temperature influences ice cream sales moment-by-moment" | **Example:** "Store A's holiday spikes show how retail series behave—apply to B" |
-
-### Why This Distinction Matters: TSFMs Understand Semantics
-
-This distinction reveals a profound capability of foundation models: **they understand the semantic difference between influence and resemblance**.
-
-**Covariates encode temporal causality**: "Temperature at time t affects sales at time t." The model processes these relationships at every prediction step because the causal mechanism persists through time. This is traditional machine learning—feature engineering where you tell the model "pay attention to this external variable."
-
-**Examples encode pattern templates**: "Here's how similar series behave—recognize these shapes, cycles, and seasonality structures." The model consumes these demonstrations once to understand "what kind of pattern am I forecasting," then applies that understanding. This is **in-context learning**—the foundation model innovation that enables zero-shot transfer.
-
-The robustness comes from TSFMs' training: by seeing billions of time points across domains, they've learned to distinguish:
-- **When to look for external influences** (covariate-like patterns): "This series correlates with external factors"
-- **When to apply learned templates** (example-like patterns): "This series resembles retail/weather/financial patterns I've seen"
-
-Attempting to use few-shot examples as covariates is like using example sentences as grammar rules—semantically incorrect. Examples teach "how to forecast this TYPE of series," while covariates provide "what influences THIS specific series." Foundation models' power lies in understanding both, separately.
+See **[Foundation Models Tutorial](../../examples/25-Foundation-Models.ipynb)** for hands-on examples across multiple datasets.
 
 ## API Design Philosophy
 
@@ -564,9 +531,7 @@ Chronos 2 supports:
 ## Learn More
 
 **Tutorial Notebooks:**
-- **[TimesFM 2.5 Tutorial](../../examples/25-TimesFM-foundation-model.ipynb)** - Google's TimesFM 2.5 with zero-shot forecasting
-- **[Chronos 2 Tutorial](../../examples/26-Chronos-foundation-model.ipynb)** - Amazon's Chronos with probabilistic forecasts
-- **[Foundation Models Comparison](../../examples/28-Foundation-Models-Tutorial.ipynb)** - Comprehensive comparison across TimesFM 2.5, Chronos 2, and traditional models on diverse datasets (Air Passengers, Energy Load, Taylor Electricity)
+- **[Foundation Models Tutorial](../../examples/25-Foundation-Models.ipynb)** - TimesFM 2.5 and Chronos 2 examples with zero-shot forecasting and probabilistic predictions
 
 **GitHub Issues & Tracking:**
 - **[Issue #2359](https://github.com/unit8co/darts/issues/2359)** - Foundation models tracking (April 2024)

@@ -5,7 +5,6 @@ This package provides infrastructure for time series foundation models in Darts.
 
 Foundation models are pre-trained on massive datasets (100B+ time points) enabling:
 - Zero-shot forecasting without training
-- Few-shot learning via in-context examples
 - Parameter-efficient fine-tuning (PEFT) with LoRA
 
 Architecture

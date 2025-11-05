@@ -72,7 +72,7 @@ Install the `statsforecast` package (version 1.4 or more recent) using the [Stat
 
 ### Foundation Models (Time Series Foundation Models)
 
-Darts provides wrappers for several Time Series Foundation Models (TSFMs)—large pre-trained models that can perform zero-shot forecasting without training on your specific dataset. These models have been trained on massive corpora of time series data and can recognize universal temporal patterns.
+Darts provides wrappers for two Time Series Foundation Models: TimesFM 2.5 and Chronos 2—large pre-trained models that can perform zero-shot forecasting without training on your specific dataset. These models have been trained on massive corpora of time series data and can recognize universal temporal patterns.
 
 #### Installing Foundation Models
 
@@ -103,10 +103,7 @@ Amazon's Chronos family of foundation models for zero-shot time series forecasti
 - chronos-forecasting>=2.0.0 (installed automatically with `darts[chronos]`)
 - PyTorch 2.0+
 
-**Model variants:**
-- `small`: Fastest, lower memory (~300M parameters)
-- `base`: Balanced performance and speed (~700M parameters)
-- `large`: Best accuracy, higher memory (~1.5B parameters)
+**Model:** Chronos 2 (120M parameters)
 
 **Example:**
 ```python
@@ -114,7 +111,7 @@ from darts.datasets import AirPassengersDataset
 from darts.models.forecasting.foundation import ChronosModel
 
 series = AirPassengersDataset().load()
-model = ChronosModel(variant="base")
+model = ChronosModel()
 forecast = model.predict(n=12, series=series)
 ```
 
@@ -136,8 +133,7 @@ from darts.datasets import AirPassengersDataset
 from darts.models import TimesFMModel
 
 series = AirPassengersDataset().load()
-model = TimesFMModel(zero_shot=True)
-model.fit(series)
+model = TimesFMModel()
 forecast = model.predict(n=12, series=series)
 ```
 
