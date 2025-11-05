@@ -8,6 +8,22 @@ Install Darts with all models except the ones from optional dependencies (Prophe
 If this fails on your platform, please follow the official installation
 guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
 
+## From Source (Development Version)
+To install the latest development version directly from GitHub:
+
+```bash
+# Install from main branch
+uv pip install git+https://github.com/unit8co/darts.git@master
+
+# Or install a specific branch (e.g., a feature branch)
+uv pip install git+https://github.com/unit8co/darts.git@feature-branch-name
+
+# Or install with optional dependencies
+uv pip install "git+https://github.com/unit8co/darts.git@master#egg=u8darts[all]"
+```
+
+This is useful for testing unreleased features or contributing to development.
+
 As some dependencies are relatively big or involve non-Python dependencies,
 we also maintain the `u8darts` package, which provides the following alternate lighter install options:
 
@@ -53,6 +69,94 @@ Install the `xgboost` package (version 2.1.4 or more recent) using the [XGBoost 
 
 #### StatsForecast
 Install the `statsforecast` package (version 1.4 or more recent) using the [StatsForecast install guide](https://nixtlaverse.nixtla.io/statsforecast/index.html#installation)
+
+### Foundation Models (Time Series Foundation Models)
+
+Darts provides wrappers for several Time Series Foundation Models (TSFMs)—large pre-trained models that can perform zero-shot forecasting without training on your specific dataset. These models have been trained on massive corpora of time series data and can recognize universal temporal patterns.
+
+#### Installing Foundation Models
+
+**Option 1: Install specific foundation models**
+```bash
+# Chronos (Amazon)
+pip install "darts[chronos]"
+# or with uv
+uv pip install "darts[chronos]"
+
+# TimesFM (Google)
+pip install "darts[timesfm]"
+# or with uv
+uv pip install "darts[timesfm]"
+
+# Lag-Llama
+pip install "darts[lag-llama]"
+# or with uv
+uv pip install "darts[lag-llama]"
+```
+
+**Option 2: Install all foundation models**
+```bash
+pip install "darts[all-foundation]"
+# or with uv
+uv pip install "darts[all-foundation]"
+```
+
+#### Chronos (Amazon)
+Amazon's Chronos family of foundation models for zero-shot time series forecasting.
+
+**Requirements:**
+- chronos-forecasting>=2.0.0 (installed automatically with `darts[chronos]`)
+- PyTorch 2.0+
+
+**Model variants:**
+- `small`: Fastest, lower memory (~300M parameters)
+- `base`: Balanced performance and speed (~700M parameters)
+- `large`: Best accuracy, higher memory (~1.5B parameters)
+
+**Example:**
+```python
+from darts.datasets import AirPassengersDataset
+from darts.models.forecasting.foundation import ChronosModel
+
+series = AirPassengersDataset().load()
+model = ChronosModel(variant="base")
+forecast = model.predict(n=12, series=series)
+```
+
+**References:**
+- [Chronos arXiv paper](https://arxiv.org/abs/2403.07815)
+- [Chronos GitHub repository](https://github.com/amazon-science/chronos-forecasting)
+
+#### TimesFM (Google)
+Google's TimesFM (Time Series Foundation Model) for zero-shot forecasting.
+
+**Requirements:**
+- timesfm package (installed automatically with `darts[timesfm]`)
+- Python 3.11+
+- PyTorch 2.0+ with MPS support (Apple Silicon) or CUDA (NVIDIA GPUs)
+
+**Example:**
+```python
+from darts.datasets import AirPassengersDataset
+from darts.models import TimesFMModel
+
+series = AirPassengersDataset().load()
+model = TimesFMModel(zero_shot=True)
+model.fit(series)
+forecast = model.predict(n=12, series=series)
+```
+
+**References:**
+- [TimesFM GitHub repository](https://github.com/google-research/timesfm)
+- [HuggingFace model card](https://huggingface.co/google/timesfm-2.5-200m-pytorch)
+
+#### Lag-Llama
+Lag-Llama foundation model for time series forecasting.
+
+**Requirements:**
+- lag-llama package (installed automatically with `darts[lag-llama]`)
+
+**Note:** For detailed documentation on foundation models, their capabilities, and advanced usage patterns (zero-shot, few-shot, fine-tuning), see the [Foundation Models User Guide](docs/userguide/foundation_models.md).
 
 ### Enabling GPU support
 Darts relies on PyTorch for the neural network models.
