@@ -29,6 +29,7 @@ logger = get_logger(__name__)
 
 
 class HuggingFaceModelMixin:
+    # TODO: add docstring
     _repo_id: str
     _repo_commit: str
     _config_file: str = "config.json"
@@ -63,13 +64,7 @@ class HuggingFaceModelMixin:
 
     @local_dir.setter
     def local_dir(self, value: Optional[Union[str, os.PathLike]]) -> None:
-        """Set the local directory where the pre-downloaded model files are stored.
-
-        Parameters
-        ----------
-        value
-            The local directory path.
-        """
+        """Set the local directory where the pre-downloaded model files are stored."""
         if value is not None:
             path = Path(value)
             raise_if_not(path.exists(), f"Directory {value} does not exist.", logger)
@@ -175,6 +170,7 @@ class HuggingFaceModelMixin:
 
 
 class FoundationModel(MixedCovariatesTorchModel):
+    # TODO: add docstring
     def __init__(
         self,
         enable_finetuning: bool = False,
@@ -226,12 +222,8 @@ class FoundationModel(MixedCovariatesTorchModel):
 
     @property
     def _requires_training(self) -> bool:
-        # Foundation models are pre-trained and do not require further training
         return self.enable_finetuning
 
-    # TODO: add docstring
     @abstractmethod
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         """Just like in `TorchForecastingModel`, subclasses must implement this method."""
-
-    # TODO: implement `fit()` but bypass training since the model is already trained.

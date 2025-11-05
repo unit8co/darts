@@ -17,7 +17,8 @@ Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integr
 - Remove `output_attentions` option from forward pass.
 - Integrate likelihood model and loss computation with Darts `QuantileRegression`, and
     remove original loss computation in forward pass.
--
+- Replace `*Output` return type with direct `torch.Tensor` to comply with Darts
+    `PLForecastingModule` interface.
 """
 
 import math
@@ -69,6 +70,7 @@ class _Chronos2ForecastingConfig:
 
 
 class _Chronos2Module(PLForecastingModule):
+    # TODO: add docstring
     """
     Chronos2 module
     """
@@ -417,8 +419,6 @@ class _Chronos2Module(PLForecastingModule):
             (batch_size, num_quantiles, num_output_patches * output_patch_size).
             quantile_preds will contain an entry for every time series in the context batch regardless of whether it
             was a known future covariate.
-        - enc_time_self_attn_weights: Time self attention weights, if output_attentions=True
-        - enc_group_self_attn_weights: Group self attention weights, if output_attentions=True
         """
 
         batch_size = context.shape[0]
@@ -492,8 +492,8 @@ class _Chronos2Module(PLForecastingModule):
         # According to `self._process_input_batch()` in `PLForecastingModule`,
         # x_past is a stack of [past_target, past_covariates, historic_future_covariates],
         # while x_future is just future_covariates.
-        # So here we need to create future_covariates in Chronos2's format that is
-        # a stack of [past_target, past_covariates, future_covariates].
+        # So here we need to create `future_covariates` in Chronos2's format that is
+        # a stack of [past_target (NaNs), past_covariates (NaNs), future_covariates].
         batch_size, past_length, n_variables = x_past.shape
         future_length = self.output_chunk_length or 0
         future_covariates = torch.full(
@@ -553,6 +553,7 @@ class _Chronos2Module(PLForecastingModule):
 
 
 class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
+    # TODO: add docstring
     _repo_id = "amazon/chronos-2"
     _repo_commit = "18128c7b4f3fd286f06d6d4efe1d252f1d2a9a7c"
 
