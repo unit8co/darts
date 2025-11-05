@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import tempfile
+from typing import Any
 
 import pytest
 
@@ -102,7 +103,7 @@ except ImportError:
     logger.warning("Polars not installed - Some tests will be skipped.")
     POLARS_AVAILABLE = False
 
-tfm_kwargs = {
+tfm_kwargs: dict[str, Any] = {
     "pl_trainer_kwargs": {
         "accelerator": "cpu",
         "enable_progress_bar": False,
