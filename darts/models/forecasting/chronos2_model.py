@@ -11,6 +11,9 @@ SPDX-License-Identifier: Apache-2.0
 Authors: Abdul Fatir Ansari <ansarnd@amazon.com>
 '
 
+Ported from https://github.com/amazon-science/chronos-forecasting/commit/c23d34cd887b889c302ca7b6df3fa0bca96d78a9
+on 4 November 2025.
+
 Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integration:
 - Remove dependencies on `transformers` and `einops` libraries.
 - Load model config and weights from HuggingFace Hub using `HuggingFaceModelMixin`.
@@ -19,6 +22,7 @@ Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integr
     remove original loss computation in forward pass.
 - Replace `*Output` return type with direct `torch.Tensor` to comply with Darts
     `PLForecastingModule` interface.
+- Replace `einops` rearrange operations with native PyTorch tensor operations.
 """
 
 import math
@@ -306,14 +310,6 @@ class _Chronos2Module(PLForecastingModule):
                 future_covariates_mask > 0.0, future_covariates, 0.0
             )
 
-            if torch.isnan(future_covariates).any():
-                # TODO: replace this
-                raise ValueError(
-                    "future_covariates contains NaN values at indices not masked by future_covariates_mask. "
-                    "Input the correct future_covariates_mask or omit it to automatically infer the mask based on NaN "
-                    "values."
-                )
-
             # add padding if the length of future_covariates is not an integer multiple of output_patch_size
             if num_output_patches * output_patch_size > future_covariates.shape[-1]:
                 padding_shape = (
@@ -386,7 +382,6 @@ class _Chronos2Module(PLForecastingModule):
 
         return patched_future, patched_future_covariates_mask
 
-    # TODO: fine-tuning support w/ normalised loss
     def _forward(
         self,
         context: torch.Tensor,
@@ -446,10 +441,8 @@ class _Chronos2Module(PLForecastingModule):
 
         Returns
         -------
-        Chronos2Output containing:
-        - loss: Training loss, if `future_target` is provided
-        - quantile_preds: Quantile predictions of shape
-            (batch_size, num_quantiles, num_output_patches * output_patch_size).
+        torch.Tensor
+            Quantile predictions of shape `(batch_size, num_output_patches * output_patch_size * num_quantiles,)`.
             quantile_preds will contain an entry for every time series in the context batch regardless of whether it
             was a known future covariate.
         """
@@ -477,7 +470,7 @@ class _Chronos2Module(PLForecastingModule):
                 dim=-1,
             )
 
-        patched_future, patched_future_covariates_mask = self._prepare_patched_future(
+        patched_future, _ = self._prepare_patched_future(
             future_covariates=future_covariates,
             future_covariates_mask=future_covariates_mask,
             loc_scale=loc_scale,
@@ -520,7 +513,29 @@ class _Chronos2Module(PLForecastingModule):
 
         return quantile_preds
 
+    # TODO: fine-tuning support w/ normalized loss
+    # Currently, Darts own `RINorm` is not used as Chronos-2 has its own implementation. Major differences
+    # 1. Chronos-2 `RINorm` normalizes both target and covariates, while Darts normalizes target only.
+    # 2. Chronos-2 `RINorm` additionally applies `arcsinh` transformation after standardization
+    # 3. Chronos-2 uses normalized values for loss computation, while Darts uses denormalized values.
+    # We need to think about how best to implmement Chronos-2 `RINorm` in `io_processor()` without
+    # breaking existing behavior, while also allowing fine-tuning with normalized loss.
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
+        """Chronos-2 model forward pass.
+
+        Parameters
+        ----------
+        x_in
+            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
+            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+
+        Returns
+        -------
+        torch.Tensor
+            the output tensor in the shape of `(n_samples, n_time_steps, n_targets, n_quantiles)` for
+            probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
+            deterministic forecasts (median only).
+        """
         x_past, x_future, _ = x_in
         # According to `self._process_input_batch()` in `PLForecastingModule`,
         # x_past is a stack of [past_target, past_covariates, historic_future_covariates],
@@ -692,8 +707,8 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
-            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
-            It is only applied to the features of the target series and not the covariates.
+            Whether to use reversible instance normalization `RINorm` against distribution shift. Ignored by
+            Chronos-2 as it has its own `RINorm` implementation.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
