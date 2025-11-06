@@ -44,7 +44,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
-from darts.utils.likelihood_models.torch import QuantileRegression
+from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
 
 logger = get_logger(__name__)
 
@@ -70,7 +70,6 @@ class _Chronos2ForecastingConfig:
 
 
 class _Chronos2Module(PLForecastingModule):
-    # TODO: add docstring
     """
     Chronos2 module
     """
@@ -83,6 +82,7 @@ class _Chronos2Module(PLForecastingModule):
 
     def __init__(
         self,
+        probabilistic: bool = True,
         d_model: int = 512,
         d_kv: int = 64,
         d_ff: int = 2048,
@@ -90,16 +90,49 @@ class _Chronos2Module(PLForecastingModule):
         num_heads: int = 8,
         dropout_rate: float = 0.1,
         layer_norm_epsilon: float = 1e-6,
-        initializer_factor: float = 0.05,
         feed_forward_proj: str = "relu",
-        vocab_size: int = 2,
         rope_theta: float = 10000.0,
         attn_implementation: Literal["eager", "sdpa"] | None = None,
         chronos_config: dict[str, Any] = {},
         **kwargs,
     ):
+        """PyTorch module implementing the Chronos-2 model, ported from
+        `amazon-science/chronos-forecasting <https://github.com/amazon-science/chronos-forecasting>`_ and
+        adapted for Darts :class:`PLForecastingModule` interface.
+
+        Parameters
+        ----------
+        probabilistic
+            Whether to output probabilistic forecasts (quantiles) or deterministic forecasts (median only).
+        d_model
+            Dimension of the model embeddings, also called "model size" in Transformer.
+        d_kv
+            Dimension of the key and value projections in multi-head attention.
+        d_ff
+            Dimension of the feed-forward network hidden layer.
+        num_layers
+            Number of Chronos-2 encoder layers.
+        num_heads
+            Number of attention heads in each encoder block.
+        dropout_rate
+            Dropout rate of the model.
+        layer_norm_epsilon
+            Epsilon value for layer normalization layers.
+        feed_forward_proj
+            Acctivation of feed-forward network.
+        rope_theta
+            Base period for Rotary Position Embeddings (RoPE).
+        attn_implementation
+            Attention implementation to use. If None, defaults to "sdpa".
+        chronos_config
+            Configuration parameters for Chronos-2 model. See :class:`_Chronos2ForecastingConfig` for details.
+        **kwargs
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
+        """
+
         super().__init__(**kwargs)
-        self.vocab_size = vocab_size
+        self.probabilistic = probabilistic
         self.d_model = d_model
         self.d_kv = d_kv
         self.d_ff = d_ff
@@ -107,7 +140,6 @@ class _Chronos2Module(PLForecastingModule):
         self.num_heads = num_heads
         self.dropout_rate = dropout_rate
         self.layer_norm_epsilon = layer_norm_epsilon
-        self.initializer_factor = initializer_factor
         self.feed_forward_proj = feed_forward_proj
         self.rope_theta = rope_theta
 
@@ -182,6 +214,7 @@ class _Chronos2Module(PLForecastingModule):
         self.num_quantiles = len(self.chronos_config.quantiles)
         quantiles = torch.tensor(self.chronos_config.quantiles)
         self.register_buffer("quantiles", quantiles, persistent=False)
+        self.median_idx = self.chronos_config.quantiles.index(0.5)
 
         self.output_patch_embedding = _ResidualBlock(
             in_dim=self.d_model,
@@ -363,7 +396,7 @@ class _Chronos2Module(PLForecastingModule):
         future_covariates_mask: torch.Tensor | None = None,
         num_output_patches: int = 1,
     ) -> torch.Tensor:
-        """Forward pass of the Chronos2 model.
+        """Forward pass of the Chronos-2 model.
 
         Parameters
         ----------
@@ -549,11 +582,13 @@ class _Chronos2Module(PLForecastingModule):
         # truncate to only target variables
         quantile_preds = quantile_preds[:, :, : self.n_targets, :]
 
+        if not self.probabilistic:
+            quantile_preds = quantile_preds[:, :, :, [self.median_idx]]
+
         return quantile_preds
 
 
 class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
-    # TODO: add docstring
     _repo_id = "amazon/chronos-2"
     _repo_commit = "18128c7b4f3fd286f06d6d4efe1d252f1d2a9a7c"
 
@@ -564,9 +599,220 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
+        probabilistic: bool = True,
+        enable_finetuning: bool = False,
+        loss_fn: Optional[nn.Module] = None,
+        likelihood: Optional[TorchLikelihood] = None,
         local_dir: Optional[Union[str, os.PathLike]] = None,
         **kwargs,
     ):
+        """Chronos-2 Model for Zero-Shot and Fine-Tuned Time Series Forecasting.
+
+        This is an implementation of Amazon's Chronos-2 model [1]_, [2]_, ported from
+        `amazon-science/chronos-forecasting <https://github.com/amazon-science/chronos-forecasting>`_
+        and adapted for Darts APIs. From the original authors:
+
+        "Chronos-2 is a 120M-parameter, encoder-only time series foundation model for zero-shot forecasting. It supports
+        univariate, multivariate, and covariate-informed tasks within a single architecture. Inspired by the T5 encoder,
+        Chronos-2 produces multi-step-ahead quantile forecasts and uses a group attention mechanism for efficient
+        in-context learning across related series and covariates. Trained on a combination of real-world and large-scale
+        synthetic datasets, it achieves state-of-the-art zero-shot accuracy among public models on fev-bench, GIFT-Eval,
+        and Chronos Benchmark II. Chronos-2 is also highly efficient, delivering over 300 time series forecasts per
+        second on a single A10G GPU and supporting both GPU and CPU inference."
+
+        This model supports past covariates (known for `input_chunk_length` points before prediction time),
+        and future covariates (known for `output_chunk_length` points after prediction time).
+
+        Using this model would automatically download the pre-trained model from HuggingFace Hub (amazon/chronos-2).
+        Alternatively, you can specify a local directory containing the model config and weights using the
+        ``local_dir`` parameter.
+
+        By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
+        probabilistic; it is recommended to call :func`predict()` with ``num_samples >> 1`` to get meaningful results.
+        To make the model deterministic, set ``probabilistic=False`` in declaration and only the median (0.5 quantile)
+        will be predicted.
+
+        Fine-tuning of Chronos-2 is experimental and can be enabled by setting ``enable_finetuning=True``. In this case,
+        calling :func:`fit()` will update the model weights.
+
+        Parameters
+        ----------
+        input_chunk_length
+            Number of time steps in the past to take as a model input (per chunk). Applies to the target
+            series, and past and/or future covariates (if the model supports it).
+            Maximum is 8192 for Chronos-2.
+        output_chunk_length
+            Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
+            from future covariates to use as a model input (if the model supports future covariates). It is not the same
+            as forecast horizon `n` used in `predict()`, which is the desired number of prediction points generated
+            using either a one-shot- or autoregressive forecast. Setting `n <= output_chunk_length` prevents
+            auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
+            the model from using future values of past and / or future covariates for prediction (depending on the
+            model's covariate support).
+            Maximum is 1024 for Chronos-2.
+        output_chunk_shift
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`).
+            Must be 0 for Chronos-2.
+        probabilistic
+            Whether the model is probabilistic. By default, Chronos-2 is probabilistic and uses quantile regression.
+            Setting this to ``False`` makes the model deterministic and only predicts the median. Default: ``True``.
+        enable_finetuning
+            Whether to enable fine-tuning of Chronos-2. If set to ``True``, calling :func:`fit()` will update the model
+            weights. Default: ``False``.
+        loss_fn
+            PyTorch loss function used for fine-tuning. By default, Chronos-2 is probabilistic and uses a ``likelihood``
+            instead (``QuantileRegression``). However, if Chronos-2 is made deterministic (``probabilistic=False``),
+            ``nn.MSELoss`` is used as the default loss function unless another is provided here.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts. Must be ``None`` at all times to use the
+            default ``QuantileRegression`` likelihood with Chronos-2.
+        local_dir
+            Optional local directory to load the model config and weights from instead of downloading them from
+            HuggingFace Hub.
+        **kwargs
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
+
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
+        optimizer_cls
+            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
+            for specifying a learning rate). Otherwise, the default values of the selected ``optimizer_cls``
+            will be used. Default: ``None``.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
+            to using a constant learning rate. Default: ``None``.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
+            It is only applied to the features of the target series and not the covariates.
+        batch_size
+            Number of time series (input and output sequences) used in each training pass. Default: ``32``.
+        n_epochs
+            Number of epochs over which to train the model. Default: ``100``.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
+            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            spawned at the same time by different processes to share the same model_name). E.g.,
+            ``"2021-06-14_09_53_32_torch_model_run_44607"``.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            Default: current working directory.
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            ``"{work_dir}/darts_logs/{model_name}/logs/"``. Default: ``False``.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.
+        force_reset
+            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded). Default: ``False``.
+        save_checkpoints
+            Whether to automatically save the untrained model and checkpoints from training.
+            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
+            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
+            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
+            :func:`save()` and loaded using :func:`load()`. Default: ``False``.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
+                }
+            ..
+        random_state
+            Controls the randomness of the weights initialization and reproducible forecasting.
+        pl_trainer_kwargs
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            that performs the training, validation and prediction processes. These presets include automatic
+            checkpointing, tensorboard logging, setting the torch device and more.
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
+            supported kwargs. Default: ``None``.
+            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
+            "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+            dict:
+
+            - ``{"accelerator": "cpu"}`` for CPU,
+            - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+            For more info, see here:
+            https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+            https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus
+
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more information on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor="val_loss",
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={"callbacks": [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
+        show_warnings
+            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+            your forecasting use case. Default: ``False``.
+
+        References
+        ----------
+        .. [1] A. Ansari, O. Shchur, J. Küken et al. "Chronos-2: From Univariate to Universal Forecasting", 2025.
+                arXiv https://arxiv.org/abs/2510.15821.
+        .. [2] "Introducing Chronos-2: From univariate to universal forecasting", 2025. Amazon Science Blog.
+                https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting
+
+        Examples
+        --------
+        >>> # TODO: add example code here
+
+        .. note::
+            Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
+            those obtained using the original implementation when prediction horizon `n` is larger than 1024.
+        """
         self.local_dir = local_dir
 
         # validate output_chunk_shift
@@ -600,18 +846,48 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
             logger,
         )
 
-        super().__init__(**kwargs)
+        # validate likelihood model
+        if probabilistic:
+            raise_if_not(
+                likelihood is None,
+                f"Custom likelihood model is not supported for Chronos2Model in Darts. "
+                f"Please omit `likelihood` to use the default QuantileRegression likelihood "
+                f"with quantiles {chronos_config['quantiles']}.",
+                logger,
+            )
+        else:
+            raise_if_not(
+                likelihood is None,
+                "`likelihood` must be None for deterministic Chronos2Model.",
+                logger,
+            )
+
+        super().__init__(
+            probabilistic=probabilistic, enable_finetuning=enable_finetuning, **kwargs
+        )
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
 
-        # convert Chronos 2's quantiles into Darts' QuantileRegression likelihood model
-        pl_module_params["likelihood"] = QuantileRegression(
-            quantiles=self._load_config()["chronos_config"]["quantiles"]
-        )
+        if self.probabilistic:
+            # convert Chronos 2's quantiles into Darts' QuantileRegression likelihood model
+            pl_module_params["likelihood"] = QuantileRegression(
+                quantiles=self._load_config()["chronos_config"]["quantiles"]
+            )
+            pl_module_params["loss_fn"] = None
+        else:
+            pl_module_params["likelihood"] = None
+            if pl_module_params.get("loss_fn", None) is None:
+                pl_module_params["loss_fn"] = nn.MSELoss()
+
+        # additional params
+        additional_params = {
+            "probabilistic": self.probabilistic,
+        }
 
         module = self._load_model(
             module_class=_Chronos2Module,
             pl_module_params=pl_module_params,
+            additional_params=additional_params,
         )
         return module
