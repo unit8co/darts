@@ -318,7 +318,6 @@ class _MHA(nn.Module):
         self,
         hidden_states: torch.Tensor,
         mask: torch.Tensor,
-        encoder_states: torch.Tensor | None = None,
         position_ids: torch.Tensor | None = None,
     ) -> torch.Tensor:
         """Multi-head attention forward pass.
@@ -326,7 +325,6 @@ class _MHA(nn.Module):
         Args:
             hidden_states : Input tensor of shape [batch_size, seq_len, d_model]
             mask : Attention mask tensor of shape [batch_size, num_heads, q_len, kv_len]
-            encoder_states : Encoder states for cross-attention. Defaults to None.
             position_ids : Position IDs for RoPE. Defaults to None.
 
         Returns:
@@ -359,20 +357,15 @@ class _MHA(nn.Module):
 
         # Construct query states
         query_states = shape(self.q(hidden_states))
-        is_cross_attention = encoder_states is not None
 
         # Construct key/value states
-        if is_cross_attention:
-            key_states = shape(self.k(encoder_states))
-            value_states = shape(self.v(encoder_states))
-        else:
-            key_states = shape(self.k(hidden_states))
-            value_states = shape(self.v(hidden_states))
-            if self.use_rope:
-                cos, sin = self.rope_embed(value_states, position_ids)
-                query_states, key_states = _RoPE.apply_rotary_pos_emb(
-                    query_states, key_states, cos, sin
-                )
+        key_states = shape(self.k(hidden_states))
+        value_states = shape(self.v(hidden_states))
+        if self.use_rope:
+            cos, sin = self.rope_embed(value_states, position_ids)
+            query_states, key_states = _RoPE.apply_rotary_pos_emb(
+                query_states, key_states, cos, sin
+            )
 
         if self.attn_implementation == "sdpa":
             attn_output, _ = self._sdpa_attention(
@@ -711,23 +704,15 @@ class _Chronos2Encoder(nn.Module):
         inputs_embeds: torch.Tensor,
         *,
         group_ids: torch.Tensor,
-        attention_mask: torch.Tensor | None = None,
+        attention_mask: torch.Tensor,
         position_ids: torch.Tensor | None = None,
     ) -> torch.Tensor:
-        batch_size, seq_length = inputs_embeds.size()[:-1]
+        seq_length = inputs_embeds.size(1)
 
         if position_ids is None:
             position_ids = torch.arange(
                 0, seq_length, dtype=torch.long, device=inputs_embeds.device
             ).unsqueeze(0)
-
-        if attention_mask is None:
-            attention_mask = torch.ones(
-                batch_size,
-                seq_length,
-                device=inputs_embeds.device,
-                dtype=inputs_embeds.dtype,
-            )
 
         # make the time attention mask broadcastable to attention scores (batch, n_heads, q_len, kv_len) and invert
         extended_attention_mask = self._expand_and_invert_time_attention_mask(

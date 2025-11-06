@@ -65,13 +65,6 @@ class _Chronos2ForecastingConfig:
     max_output_patches: int = 1
     time_encoding_scale: int | None = None
 
-    @classmethod
-    def editable_fields(cls) -> list[str]:
-        """
-        Fields that maybe modified during the fine-tuning stage.
-        """
-        return ["context_length", "max_output_patches"]
-
 
 class _Chronos2Module(PLForecastingModule):
     """
@@ -229,19 +222,12 @@ class _Chronos2Module(PLForecastingModule):
         )
 
     def _prepare_patched_context(
-        self, context: torch.Tensor, context_mask: torch.Tensor | None = None
+        self,
+        context: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
-        context_mask = (
-            context_mask.to(context.dtype)
-            if context_mask is not None
-            else torch.isnan(context).logical_not().to(context.dtype)
-        )
+        context_mask = torch.isnan(context).logical_not().to(context.dtype)
 
-        batch_size, context_length = context.shape
-        # truncate context if it's longer than model's context length
-        if context_length > self.chronos_config.context_length:
-            context = context[..., -self.chronos_config.context_length :]
-            context_mask = context_mask[..., -self.chronos_config.context_length :]
+        batch_size, _ = context.shape
 
         # scaling
         context, loc_scale = self.instance_norm(context)
@@ -287,72 +273,51 @@ class _Chronos2Module(PLForecastingModule):
 
     def _prepare_patched_future(
         self,
-        future_covariates: torch.Tensor | None,
-        future_covariates_mask: torch.Tensor | None,
+        future_covariates: torch.Tensor,
         loc_scale: tuple[torch.Tensor, torch.Tensor],
         num_output_patches: int,
         batch_size: int,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         output_patch_size = self.chronos_config.output_patch_size
-        if future_covariates is not None:
-            future_covariates, _ = self.instance_norm(future_covariates, loc_scale)
-            future_covariates = cast(torch.Tensor, future_covariates)
-            future_covariates = future_covariates.to(self.dtype)
+        future_covariates, _ = self.instance_norm(future_covariates, loc_scale)
+        future_covariates = cast(torch.Tensor, future_covariates)
+        future_covariates = future_covariates.to(self.dtype)
 
-            if future_covariates_mask is None:
-                future_covariates_mask = (
-                    torch.isnan(future_covariates)
-                    .logical_not()
-                    .to(future_covariates.dtype)
-                )
+        future_covariates_mask = (
+            torch.isnan(future_covariates).logical_not().to(future_covariates.dtype)
+        )
 
-            future_covariates = torch.where(
-                future_covariates_mask > 0.0, future_covariates, 0.0
+        future_covariates = torch.where(
+            future_covariates_mask > 0.0, future_covariates, 0.0
+        )
+
+        # add padding if the length of future_covariates is not an integer multiple of output_patch_size
+        if num_output_patches * output_patch_size > future_covariates.shape[-1]:
+            padding_shape = (
+                *future_covariates.shape[:-1],
+                num_output_patches * output_patch_size - future_covariates.shape[-1],
+            )
+            future_covariates = torch.cat(
+                [
+                    future_covariates,
+                    torch.zeros(padding_shape).to(future_covariates),
+                ],
+                dim=-1,
+            )
+            future_covariates_mask = torch.cat(
+                [
+                    future_covariates_mask,
+                    torch.zeros(padding_shape).to(future_covariates_mask),
+                ],
+                dim=-1,
             )
 
-            # add padding if the length of future_covariates is not an integer multiple of output_patch_size
-            if num_output_patches * output_patch_size > future_covariates.shape[-1]:
-                padding_shape = (
-                    *future_covariates.shape[:-1],
-                    num_output_patches * output_patch_size
-                    - future_covariates.shape[-1],
-                )
-                future_covariates = torch.cat(
-                    [
-                        future_covariates,
-                        torch.zeros(padding_shape).to(future_covariates),
-                    ],
-                    dim=-1,
-                )
-                future_covariates_mask = torch.cat(
-                    [
-                        future_covariates_mask,
-                        torch.zeros(padding_shape).to(future_covariates_mask),
-                    ],
-                    dim=-1,
-                )
-
-            patched_future_covariates = future_covariates.view(
-                batch_size, num_output_patches, output_patch_size
-            )
-            patched_future_covariates_mask = future_covariates_mask.view(
-                batch_size, num_output_patches, output_patch_size
-            )
-        else:
-            patched_future_covariates = torch.zeros(
-                batch_size,
-                num_output_patches,
-                output_patch_size,
-                device=self.device,
-                dtype=self.dtype,
-            )
-            patched_future_covariates_mask = torch.zeros(
-                batch_size,
-                num_output_patches,
-                output_patch_size,
-                device=self.device,
-                dtype=self.dtype,
-            )
+        patched_future_covariates = future_covariates.view(
+            batch_size, num_output_patches, output_patch_size
+        )
+        patched_future_covariates_mask = future_covariates_mask.view(
+            batch_size, num_output_patches, output_patch_size
+        )
 
         # future time encoding: every future timestep is assigned a sequential time index,
         # scaled by model's context length = [0, 1, ..., h-1] / context_length
@@ -385,10 +350,8 @@ class _Chronos2Module(PLForecastingModule):
     def _forward(
         self,
         context: torch.Tensor,
-        context_mask: torch.Tensor | None = None,
-        group_ids: torch.Tensor | None = None,
-        future_covariates: torch.Tensor | None = None,
-        future_covariates_mask: torch.Tensor | None = None,
+        group_ids: torch.Tensor,
+        future_covariates: torch.Tensor,
         num_output_patches: int = 1,
     ) -> torch.Tensor:
         """Forward pass of the Chronos-2 model.
@@ -397,9 +360,6 @@ class _Chronos2Module(PLForecastingModule):
         ----------
         context
             Input tensor of shape (batch_size, context_length) containing the historical values
-        context_mask
-            Binary mask tensor of same shape as context indicating which values are valid (1) vs missing (0)
-            If missing, the context_mask will be automatically constructed based on the NaN values in context.
         group_ids : torch.Tensor | None, optional
             Group IDs of shape (batch_size,) indicating which times series in the batch form a group.
             A group indicates a task, for example, for a batch of size 6:
@@ -430,10 +390,6 @@ class _Chronos2Module(PLForecastingModule):
             There is no theoretical limit on the number of time series in a group, i.e., the number of targets and known
             covariates in a task. The above setup subsumes tasks with past-only covariates as the model's prediction for
             those time series can simply be ignored downstream.
-        future_covariates_mask
-            Binary mask tensor of same shape as future_covariates indicating which future values are known
-            If omitted, future_covariates_mask is automatically constructed based on future_covariates with
-            all non-NaN values treated as known future values.
         num_output_patches
             Number of output patches to generate predictions for, by default 1
             When ``future_covariates`` and/or ``future_target`` are provided, num_output_patches should be large enough
@@ -449,7 +405,7 @@ class _Chronos2Module(PLForecastingModule):
 
         batch_size = context.shape[0]
         patched_context, attention_mask, loc_scale = self._prepare_patched_context(
-            context=context, context_mask=context_mask
+            context=context
         )
         num_context_patches = attention_mask.shape[-1]
 
@@ -472,13 +428,15 @@ class _Chronos2Module(PLForecastingModule):
 
         patched_future, _ = self._prepare_patched_future(
             future_covariates=future_covariates,
-            future_covariates_mask=future_covariates_mask,
             loc_scale=loc_scale,
             num_output_patches=num_output_patches,
             batch_size=batch_size,
         )
         future_attention_mask = torch.ones(
-            batch_size, num_output_patches, dtype=self.dtype, device=self.device
+            batch_size,
+            num_output_patches,
+            dtype=attention_mask.dtype,
+            device=self.device,
         )
 
         # get future embeddings of shape (batch, num_output_patches, d_model)
@@ -487,10 +445,6 @@ class _Chronos2Module(PLForecastingModule):
         # concatenate context and future embeddings and masks
         input_embeds = torch.cat([input_embeds, future_embeds], dim=-2)
         attention_mask = torch.cat([attention_mask, future_attention_mask], dim=-1)
-
-        if group_ids is None:
-            # by default, each time series is treated independently, i.e., no mixing across the batch
-            group_ids = torch.arange(batch_size, dtype=torch.long, device=self.device)
 
         hidden_states: torch.Tensor = self.encoder(
             attention_mask=attention_mask,
@@ -649,6 +603,9 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
 
         Fine-tuning of Chronos-2 is experimental and can be enabled by setting ``enable_finetuning=True``. In this case,
         calling :func:`fit()` will update the model weights.
+
+        Chronos-2 is licensed under the Apache-2.0 License, copyright Amazon.com, Inc. or its affiliates. By using
+        this model, you agree to the terms and conditions of the license.
 
         Parameters
         ----------
