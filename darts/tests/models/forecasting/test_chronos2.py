@@ -44,7 +44,8 @@ class TestChronos2Model:
     max_prediction_length = 1024
 
     @pytest.mark.slow
-    def test_fidelity(self):
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_fidelity(self, probabilistic: bool):
         """Test Chronos2Model predictions against original implementation.
         The test passes if the predictions match up to a certain numerical tolerance.
         Original predictions were generated with the following code:
@@ -109,6 +110,7 @@ class TestChronos2Model:
         model = Chronos2Model(
             input_chunk_length=8192,  # maximum context length
             output_chunk_length=self.max_prediction_length,  # maximum prediction length w/o AR
+            probabilistic=probabilistic,
             **tfm_kwargs,
         )
         # fit model w/o fine-tuning
@@ -118,7 +120,7 @@ class TestChronos2Model:
         pred = model.predict(
             n=self.max_prediction_length,
             future_covariates=self.ts_weather,
-            predict_likelihood_parameters=True,
+            predict_likelihood_parameters=probabilistic,
         )
         assert isinstance(pred, TimeSeries)
         # reshape to (time, variables, quantiles)
@@ -129,6 +131,9 @@ class TestChronos2Model:
         # load the original predictions
         path = Path(__file__).parent / "fidelity" / "chronos2.npz"
         original = np.load(path)["pred"]
+
+        if not probabilistic:
+            original = original[:, :, [10]]  # median quantile
 
         # compare predictions to original
         np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
