@@ -34,7 +34,7 @@ import torch
 from torch import nn
 
 from darts.logging import get_logger, raise_if, raise_if_not
-from darts.models.forecasting.chronos2_submodels import (
+from darts.models.components.chronos2_submodels import (
     _Chronos2Encoder,
     _InstanceNorm,
     _Patch,
