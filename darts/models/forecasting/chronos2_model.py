@@ -493,7 +493,9 @@ class _Chronos2Module(PLForecastingModule):
         # So here we need to create `future_covariates` in Chronos2's format that is
         # a stack of [past_target (NaNs), past_covariates (NaNs), future_covariates].
         batch_size, past_length, n_variables = x_past.shape
-        future_length = self.output_chunk_length or 0
+        output_chunk_length = self.output_chunk_length or 0
+        output_chunk_shift = self.output_chunk_shift
+        future_length = output_chunk_shift + output_chunk_length
         future_covariates = torch.full(
             (batch_size, future_length, n_variables),
             torch.nan,
@@ -501,7 +503,7 @@ class _Chronos2Module(PLForecastingModule):
         )
         if x_future is not None:
             n_future_covs = x_future.shape[-1]
-            future_covariates[:, :, -n_future_covs:] = x_future
+            future_covariates[:, -output_chunk_length:, -n_future_covs:] = x_future
 
         # reshape x_past and future_covariates to (batch * vars, time)
         context = x_past.permute(0, 2, 1).reshape(-1, past_length)
@@ -551,11 +553,10 @@ class _Chronos2Module(PLForecastingModule):
             self.num_quantiles,
         )
 
-        # truncate to future_length
-        quantile_preds = quantile_preds[:, :future_length]
-
-        # truncate to only target variables
-        quantile_preds = quantile_preds[:, :, : self.n_targets, :]
+        # truncate to output_chunk_length and only target variables
+        quantile_preds = quantile_preds[
+            :, output_chunk_shift:future_length, : self.n_targets, :
+        ]
 
         if not self.probabilistic:
             quantile_preds = quantile_preds[:, :, :, [self.median_idx]]
@@ -628,14 +629,13 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
-            Maximum is 1024 for Chronos-2.
+            For Chronos-2, `output_chunk_length + output_chunk_shift` must be less than or equal to 1024.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
             input chunk end). This will create a gap between the input and output. If the model supports
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
-            Must be 0 for Chronos-2.
         probabilistic
             Whether the model is probabilistic. By default, Chronos-2 is probabilistic and uses quantile regression.
             Setting this to ``False`` makes the model deterministic and only predicts the median. Default: ``True``.
@@ -794,13 +794,6 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         """
         self.local_dir = local_dir
 
-        # validate output_chunk_shift
-        raise_if_not(
-            output_chunk_shift == 0,
-            f"`output_chunk_shift` {output_chunk_shift} other than 0 is not supported for now",
-            logger,
-        )
-
         # load model config for validation
         config = self._load_config()
         chronos_config = config["chronos_config"]
@@ -814,14 +807,14 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
             logger,
         )
 
-        # validate `output_chunk_length` against model's prediction length
+        # validate `output_chunk_length` and `output_chunk_shift` against model's prediction length
         prediction_length = (
             chronos_config["output_patch_size"] * chronos_config["max_output_patches"]
         )
         raise_if(
-            output_chunk_length > prediction_length,
-            f"`output_chunk_length` {output_chunk_length} cannot be greater than "
-            f"model's maximum prediction length {prediction_length}",
+            output_chunk_length + output_chunk_shift > prediction_length,
+            f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
+            f"cannot be greater than model's maximum prediction length {prediction_length}",
             logger,
         )
 
