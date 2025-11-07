@@ -354,7 +354,7 @@ class _Chronos2Module(PLForecastingModule):
         future_covariates: torch.Tensor,
         num_output_patches: int = 1,
     ) -> torch.Tensor:
-        """Forward pass of the Chronos-2 model.
+        """Original forward pass of the Chronos-2 model.
 
         Parameters
         ----------
@@ -398,7 +398,7 @@ class _Chronos2Module(PLForecastingModule):
         Returns
         -------
         torch.Tensor
-            Quantile predictions of shape `(batch_size, num_output_patches * output_patch_size * num_quantiles,)`.
+            Quantile predictions of shape `(batch_size, n_variables * n_output_patches * n_quantiles * patch_size)`.
             quantile_preds will contain an entry for every time series in the context batch regardless of whether it
             was a known future covariate.
         """
@@ -523,6 +523,12 @@ class _Chronos2Module(PLForecastingModule):
             future_length / self.chronos_config.output_patch_size
         )
 
+        # call original Chronos-2 forward pass
+        # Unlike the original, we remove `context_mask`, `future_covariates_mask`, `future_target`,
+        # `future_target_mask`, and `output_attentions` parameters. They are not needed for Darts'
+        # implementation.
+        # We also remove `einops` rearrange operation at the end so the raw output tensor is returned,
+        # in shape of `(batch, vars * patches * quantiles * patch_size)`
         quantile_preds = self._forward(
             context=context,
             group_ids=group_ids,
@@ -530,7 +536,10 @@ class _Chronos2Module(PLForecastingModule):
             num_output_patches=num_output_patches,
         )
 
-        # reshape quantile_preds to (batch, time, vars, quantiles)
+        # The permutation and reshaping operations below replace the `einops` rearrange
+        # operations in the original Chronos-2 code to return the output tensor in Darts'
+        # expected shape.
+        # reshape quantile_preds to (batch, vars, patches, quantiles, patch_size)
         quantile_preds = quantile_preds.view(
             batch_size,
             n_variables,
@@ -538,6 +547,7 @@ class _Chronos2Module(PLForecastingModule):
             self.num_quantiles,
             self.chronos_config.output_patch_size,
         )
+        # permute and reshape to (batch, time, vars, quantiles)
         quantile_preds = quantile_preds.permute(0, 2, 4, 1, 3).reshape(
             batch_size,
             num_output_patches * self.chronos_config.output_patch_size,
