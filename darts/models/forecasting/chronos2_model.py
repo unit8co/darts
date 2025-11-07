@@ -71,9 +71,9 @@ class _Chronos2Module(PLForecastingModule):
     Chronos2 module
     """
 
-    _supports_long_horizon: bool = True
-    _supports_future_covariates: bool = True
-    _supports_sdpa: bool = True
+    # Fine-tuning is turned off for now pending proper fine-tuning support
+    # and configuration.
+    _allows_finetuning = False
 
     quantiles: torch.Tensor
 
