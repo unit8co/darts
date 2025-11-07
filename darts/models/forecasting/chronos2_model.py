@@ -71,10 +71,6 @@ class _Chronos2Module(PLForecastingModule):
     Chronos2 module
     """
 
-    # Fine-tuning is turned off for now pending proper fine-tuning support
-    # and configuration.
-    _allows_finetuning = False
-
     quantiles: torch.Tensor
 
     def __init__(
@@ -571,7 +567,9 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
     _repo_id = "amazon/chronos-2"
     _repo_commit = "18128c7b4f3fd286f06d6d4efe1d252f1d2a9a7c"
 
-    _allows_finetuning = True
+    # Fine-tuning is turned off for now pending proper fine-tuning support
+    # and configuration.
+    _allows_finetuning = False
 
     def __init__(
         self,
@@ -611,8 +609,7 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         To make the model deterministic, set ``probabilistic=False`` in declaration and only the median (0.5 quantile)
         will be predicted.
 
-        Fine-tuning of Chronos-2 is experimental and can be enabled by setting ``enable_finetuning=True``. In this case,
-        calling :func:`fit()` will update the model weights.
+        Fine-tuning of Chronos-2 is not supported at the moment. Setting ``enable_finetuning=True`` will raise an error.
 
         Chronos-2 is licensed under the Apache-2.0 License, copyright Amazon.com, Inc. or its affiliates. By using
         this model, you agree to the terms and conditions of the license.
