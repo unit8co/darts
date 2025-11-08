@@ -12,7 +12,7 @@ This file contains several abstract classes:
 import inspect
 import json
 import os
-from abc import abstractmethod
+from abc import ABC
 from pathlib import Path
 from typing import Optional, Union
 
@@ -27,7 +27,6 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchForecastingModel,
 )
-from darts.utils.data.torch_datasets.utils import TorchTrainingSample
 
 logger = get_logger(__name__)
 
@@ -204,7 +203,7 @@ class HuggingFaceModelMixin:
         return module
 
 
-class FoundationModel(MixedCovariatesTorchModel):
+class FoundationModel(MixedCovariatesTorchModel, ABC):
     _allows_finetuning: bool = False
 
     def __init__(
@@ -398,7 +397,3 @@ class FoundationModel(MixedCovariatesTorchModel):
     @property
     def _requires_training(self) -> bool:
         return self.enable_finetuning
-
-    @abstractmethod
-    def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
-        """Just like in `TorchForecastingModel`, subclasses must implement this method."""
