@@ -52,6 +52,9 @@ def load_validation_inputs():
 
     # extract temperature, solar irradiation and rain duration
     ts_weather = ts_energy[["T [°C]", "StrGlo [W/m2]", "RainDur [min]"]]
+    # extract other weather features as past covariates for the sake of example
+    # including humidity, wind direction, wind speed and air pressure
+    ts_other = ts_energy[["Hr [%Hr]", "WD [°]", "WVs [m/s]", "WVv [m/s]", "p [hPa]"]]
 
     # extract households energy consumption
     ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
@@ -59,12 +62,12 @@ def load_validation_inputs():
     # create train and validation splits
     validation_cutoff = pd.Timestamp("2022-01-01")
     ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
-    return ts_energy_train, ts_energy_val, ts_weather
+    return ts_energy_train, ts_energy_val, ts_weather, ts_other
 
 
 class TestChronos2Model:
     # load validation inputs once for fidelity tests
-    ts_energy_train, ts_energy_val, ts_weather = load_validation_inputs()
+    ts_energy_train, ts_energy_val, ts_weather, ts_other = load_validation_inputs()
     # maximum prediction length w/o triggering auto-regression where the results
     # would diverge from the original implementation due to different sampling methods
     max_prediction_length = 1024
@@ -87,6 +90,9 @@ class TestChronos2Model:
 
         # extract temperature, solar irradiation and rain duration
         ts_weather = ts_energy[["T [°C]", "StrGlo [W/m2]", "RainDur [min]"]]
+        # extract other weather features as past covariates for the sake of example
+        # including humidity, wind direction, wind speed and air pressure
+        ts_other = ts_energy[["Hr [%Hr]", "WD [°]", "WVs [m/s]", "WVv [m/s]", "p [hPa]"]]
 
         # extract households energy consumption
         ts_energy = ts_energy[["Value_NE5", "Value_NE7"]]
@@ -95,6 +101,7 @@ class TestChronos2Model:
         validation_cutoff = pd.Timestamp("2022-01-01")
         ts_energy_train, ts_energy_val = ts_energy.split_after(validation_cutoff)
         ts_weather_train, ts_weather_val = ts_weather.split_after(validation_cutoff)
+        ts_other_train, ts_other_val = ts_other.split_after(validation_cutoff)
 
         prediction_length = 1024
 
@@ -107,8 +114,9 @@ class TestChronos2Model:
                 {
                     "target": ts_energy_train.values().T,
                     "past_covariates": {
-                        c: ts_weather_train[c].values().flatten()
-                        for c in ts_weather.components
+                        c: series[c].values().flatten()
+                        for series in [ts_weather_train, ts_other_train]
+                        for c in series.components
                     },
                     "future_covariates": {
                         c: ts_weather_val[c].values().flatten()[:prediction_length]
@@ -142,11 +150,16 @@ class TestChronos2Model:
             **tfm_kwargs,
         )
         # fit model w/o fine-tuning
-        model.fit(self.ts_energy_train, future_covariates=self.ts_weather)
+        model.fit(
+            series=self.ts_energy_train,
+            past_covariates=self.ts_other,
+            future_covariates=self.ts_weather,
+        )
 
         # predict on the validation inputs w/ covariates
         pred = model.predict(
             n=self.max_prediction_length,
+            past_covariates=self.ts_other,
             future_covariates=self.ts_weather,
             predict_likelihood_parameters=probabilistic,
         )
