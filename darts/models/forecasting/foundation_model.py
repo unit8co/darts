@@ -206,7 +206,6 @@ class HuggingFaceModelMixin:
 
 class FoundationModel(MixedCovariatesTorchModel):
     _allows_finetuning: bool = False
-    _probabilistic: bool = False
 
     def __init__(
         self,
@@ -384,11 +383,6 @@ class FoundationModel(MixedCovariatesTorchModel):
                 ),
                 logger,
             )
-
-    @property
-    def probabilistic(self) -> bool:
-        """Whether the model produces probabilistic forecasts."""
-        return self._probabilistic
 
     @property
     def allows_finetuning(self) -> bool:

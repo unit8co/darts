@@ -831,7 +831,6 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         # otherwise, only QuantileRegression likelihood is supported and quantiles must be
         # a subset of Chronos-2 quantiles
         if likelihood is not None:
-            self._probabilistic = True
             if not isinstance(likelihood, QuantileRegression):
                 raise_log(
                     ValueError(
