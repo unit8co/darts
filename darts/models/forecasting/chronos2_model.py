@@ -565,7 +565,7 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         local_dir: Optional[Union[str, os.PathLike]] = None,
         **kwargs,
     ):
-        """Chronos-2 Model for Zero-Shot and Fine-Tuned Time Series Forecasting.
+        """Chronos-2 Model for zero-shot forecasting.
 
         This is an implementation of Amazon's Chronos-2 model [1]_, [2]_, ported from
         `amazon-science/chronos-forecasting <https://github.com/amazon-science/chronos-forecasting>`_
