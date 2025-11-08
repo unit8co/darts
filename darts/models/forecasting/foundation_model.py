@@ -217,10 +217,11 @@ class FoundationModel(MixedCovariatesTorchModel):
 
         This class is meant to be inherited to create a new foundation forecasting model.
         It governs the interactions between:
-            - Darts forecasting models (module) :class:`PLTorchForecastingModel`
-            - Darts integrated PL Lightning Trainer :class:`pytorch_lightning.Trainer` or custom PL Trainers
-            - Dataset loaders :class:`TorchTrainingDataset` and :class:`TorchInferenceDataset` or custom Dataset
-              Loaders.
+        - Darts forecasting models (module) :class:`PLTorchForecastingModel`
+        - Darts integrated PL Lightning Trainer :class:`pytorch_lightning.Trainer` or custom PL Trainers
+        - Dataset loaders :class:`TorchTrainingDataset` and :class:`TorchInferenceDataset` or custom Dataset
+          Loaders.
+
         This class itself inherits from :class:`MixedCovariatesTorchModel`, which in turn inherits from
         :class:`TorchForecastingModel`. That allows :class:`FoundationModel` to use functionalities from both,
         such as optimized historical forecasting, model training (fine-tuning), checkpointing, and more.
