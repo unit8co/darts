@@ -204,10 +204,10 @@ class HuggingFaceModelMixin:
 
 class FoundationModel(MixedCovariatesTorchModel):
     _allows_finetuning: bool = False
+    _probabilistic: bool = False
 
     def __init__(
         self,
-        probabilistic: bool = True,
         enable_finetuning: bool = False,
         **kwargs,
     ):
@@ -232,10 +232,6 @@ class FoundationModel(MixedCovariatesTorchModel):
 
         Parameters
         ----------
-        probabilistic
-            Whether the model is probabilistic. Most foundation models are probabilistic. Setting this to ``False``
-            would convert the model's probabilistic forecasts to determinstic ones, usually by returning the median
-            of the forecast distribution. Default: ``True``.
         enable_finetuning
             Whether to enable fine-tuning of the foundation model. If set to ``True``, calling :func:`fit()` will
             update the model weights. Default: ``False``.
@@ -359,7 +355,6 @@ class FoundationModel(MixedCovariatesTorchModel):
             logger,
         )
 
-        self._probabilistic = probabilistic
         self._enable_finetuning = enable_finetuning
 
     @classmethod
