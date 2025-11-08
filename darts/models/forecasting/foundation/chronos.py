@@ -835,7 +835,8 @@ class ChronosModel(FoundationForecastingModel):
             future_df=future_df,
             id_column="id",
             timestamp_column="timestamp",
-            target=target  # Pass list for multivariate, string for univariate
+            target=target,  # Pass list for multivariate, string for univariate
+            **kwargs
         )
 
         # Convert predictions back to Darts TimeSeries
