@@ -80,7 +80,7 @@ class _Chronos2Module(PLForecastingModule):
         feed_forward_proj: str = "relu",
         rope_theta: float = 10000.0,
         attn_implementation: Literal["eager", "sdpa"] | None = None,
-        chronos_config: dict[str, Any] = {},
+        chronos_config: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
         """PyTorch module implementing the Chronos-2 model, ported from
@@ -149,6 +149,8 @@ class _Chronos2Module(PLForecastingModule):
             logger,
         )
 
+        # Chronos-2 forecasting specific config
+        chronos_config = chronos_config or {}
         self.chronos_config = _Chronos2ForecastingConfig(**chronos_config)
 
         # Only decoder_start_id (and optionally REG token)
