@@ -69,7 +69,6 @@ class _Chronos2ForecastingConfig:
 class _Chronos2Module(PLForecastingModule):
     def __init__(
         self,
-        user_quantiles: list[float],
         d_model: int = 512,
         d_kv: int = 64,
         d_ff: int = 2048,
@@ -89,9 +88,6 @@ class _Chronos2Module(PLForecastingModule):
 
         Parameters
         ----------
-        user_quantiles
-            The quantiles to be predicted by the model. Must be a subset of the quantiles used during
-            Chronos-2 pre-training.
         d_model
             Dimension of the model embeddings, also called "model size" in Transformer.
         d_kv
@@ -120,7 +116,6 @@ class _Chronos2Module(PLForecastingModule):
         """
 
         super().__init__(**kwargs)
-        self.user_quantiles = user_quantiles
         self.d_model = d_model
         self.d_kv = d_kv
         self.d_ff = d_ff
@@ -207,7 +202,12 @@ class _Chronos2Module(PLForecastingModule):
         self.register_buffer("quantiles", quantiles_tensor, persistent=False)
 
         # gather indices of user-specified quantiles
-        self.user_quantile_indices = [quantiles.index(q) for q in self.user_quantiles]
+        user_quantiles: list[float] = (
+            self.likelihood.quantiles
+            if isinstance(self.likelihood, QuantileRegression)
+            else [0.5]
+        )
+        self.user_quantile_indices = [quantiles.index(q) for q in user_quantiles]
 
         self.output_patch_embedding = _ResidualBlock(
             in_dim=self.d_model,
@@ -838,28 +838,11 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
 
         super().__init__(enable_finetuning=enable_finetuning, **kwargs)
 
-    @property
-    def user_quantiles(self) -> list[float]:
-        """The quantiles used by the model. If the model is probabilistic, these are taken from the likelihood.
-        If the model is deterministic, only the median (0.5 quantile) is used.
-        """
-        return (
-            self.likelihood.quantiles
-            if self.probabilistic and self.likelihood
-            else [0.5]
-        )  # pyright: ignore[reportAttributeAccessIssue]
-
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
-
-        # additional params
-        additional_params = {
-            "user_quantiles": self.user_quantiles,
-        }
 
         module = self._load_model(
             module_class=_Chronos2Module,
             pl_module_params=pl_module_params,
-            additional_params=additional_params,
         )
         return module
