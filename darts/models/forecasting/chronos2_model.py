@@ -589,7 +589,7 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
         forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
         ``likelihood`` parameter. The quantiles used must be a subset of those used during Chronos-2 pre-training, see
-        below for details. It is recommended to call :func`predict()` with ``predict_likelihood_parameters=True``
+        below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
         or ``num_samples >> 1`` to get meaningful results.
 
         Fine-tuning of Chronos-2 is not supported at the moment.
