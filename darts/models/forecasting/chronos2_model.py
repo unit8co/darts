@@ -583,7 +583,6 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        enable_finetuning: bool = False,
         likelihood: Optional[QuantileRegression] = None,
         local_dir: Optional[Union[str, os.PathLike]] = None,
         **kwargs,
@@ -641,8 +640,6 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
-        enable_finetuning
-            Whether to enable fine-tuning of Chronos-2. Currently not supported and must be kept ``False``.
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
@@ -849,7 +846,7 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
                     logger,
                 )
 
-        super().__init__(enable_finetuning=enable_finetuning, **kwargs)
+        super().__init__(enable_finetuning=False, **kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
