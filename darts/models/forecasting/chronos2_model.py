@@ -67,12 +67,6 @@ class _Chronos2ForecastingConfig:
 
 
 class _Chronos2Module(PLForecastingModule):
-    """
-    Chronos2 module
-    """
-
-    quantiles: torch.Tensor
-
     def __init__(
         self,
         user_quantiles: list[float],
@@ -472,7 +466,7 @@ class _Chronos2Module(PLForecastingModule):
     # 1. Chronos-2 `RINorm` normalizes both target and covariates, while Darts normalizes target only.
     # 2. Chronos-2 `RINorm` additionally applies `arcsinh` transformation after standardization
     # 3. Chronos-2 uses normalized values for loss computation, while Darts uses denormalized values.
-    # We need to think about how best to implmement Chronos-2 `RINorm` in `io_processor()` without
+    # We need to think about how best to implement Chronos-2 `RINorm` in `io_processor()` without
     # breaking existing behavior, while also allowing fine-tuning with normalized loss.
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
         """Chronos-2 model forward pass.
@@ -491,9 +485,8 @@ class _Chronos2Module(PLForecastingModule):
             deterministic forecasts (median only).
         """
         x_past, x_future, _ = x_in
-        # According to `self._process_input_batch()` in `PLForecastingModule`,
         # x_past is a stack of [past_target, past_covariates, historic_future_covariates],
-        # while x_future is just future_covariates.
+        # x_future is just future_covariates.
         # So here we need to create `future_covariates` in Chronos2's format that is
         # a stack of [past_target (NaNs), past_covariates (NaNs), future_covariates].
         batch_size, past_length, n_variables = x_past.shape
@@ -591,7 +584,7 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
 
         This is an implementation of Amazon's Chronos-2 model [1]_, [2]_, ported from
         `amazon-science/chronos-forecasting <https://github.com/amazon-science/chronos-forecasting>`_
-        and adapted for Darts APIs. From the original authors:
+        with adaptations to use the Darts API. From the original authors:
 
         "Chronos-2 is a 120M-parameter, encoder-only time series foundation model for zero-shot forecasting. It supports
         univariate, multivariate, and covariate-informed tasks within a single architecture. Inspired by the T5 encoder,
@@ -604,16 +597,17 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         This model supports past covariates (known for `input_chunk_length` points before prediction time),
         and future covariates (known for `output_chunk_length` points after prediction time).
 
-        Using this model would automatically download the pre-trained model from HuggingFace Hub (amazon/chronos-2).
-        Alternatively, you can specify a local directory containing the model config and weights using the
-        ``local_dir`` parameter.
+        By default, using this model will automatically download the pre-trained model from HuggingFace Hub
+        (amazon/chronos-2). Alternatively, you can specify a local directory containing the model config and weights
+        using the ``local_dir`` parameter.
 
         By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
-        forecasts, pass a :class:`darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood``
-        parameter. The quantiles used must be a subset of those used during Chronos-2 pre-training, see below for
-        details. It is recommended to call :func`predict()` with ``num_samples >> 1`` to get meaningful results.
+        forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
+        ``likelihood`` parameter. The quantiles used must be a subset of those used during Chronos-2 pre-training, see
+        below for details. It is recommended to call :func`predict()` with ``predict_likelihood_parameters=True``
+        or ``num_samples >> 1`` to get meaningful results.
 
-        Fine-tuning of Chronos-2 is not supported at the moment. Setting ``enable_finetuning=True`` will raise an error.
+        Fine-tuning of Chronos-2 is not supported at the moment.
 
         Chronos-2 is licensed under the Apache-2.0 License, copyright Amazon.com, Inc. or its affiliates. By using
         this model, you agree to the terms and conditions of the license.
