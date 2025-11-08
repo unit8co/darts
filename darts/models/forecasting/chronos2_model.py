@@ -48,7 +48,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
-from darts.utils.likelihood_models.torch import QuantileRegression, TorchLikelihood
+from darts.utils.likelihood_models.torch import QuantileRegression
 
 logger = get_logger(__name__)
 
@@ -75,7 +75,7 @@ class _Chronos2Module(PLForecastingModule):
 
     def __init__(
         self,
-        probabilistic: bool = True,
+        user_quantiles: list[float],
         d_model: int = 512,
         d_kv: int = 64,
         d_ff: int = 2048,
@@ -95,8 +95,9 @@ class _Chronos2Module(PLForecastingModule):
 
         Parameters
         ----------
-        probabilistic
-            Whether to output probabilistic forecasts (quantiles) or deterministic forecasts (median only).
+        user_quantiles
+            The quantiles to be predicted by the model. Must be a subset of the quantiles used during
+            Chronos-2 pre-training.
         d_model
             Dimension of the model embeddings, also called "model size" in Transformer.
         d_kv
@@ -125,7 +126,7 @@ class _Chronos2Module(PLForecastingModule):
         """
 
         super().__init__(**kwargs)
-        self.probabilistic = probabilistic
+        self.user_quantiles = user_quantiles
         self.d_model = d_model
         self.d_kv = d_kv
         self.d_ff = d_ff
@@ -204,10 +205,13 @@ class _Chronos2Module(PLForecastingModule):
             num_layers=self.num_layers,
         )
 
-        self.num_quantiles = len(self.chronos_config.quantiles)
-        quantiles = torch.tensor(self.chronos_config.quantiles)
-        self.register_buffer("quantiles", quantiles, persistent=False)
-        self.median_idx = self.chronos_config.quantiles.index(0.5)
+        quantiles = self.chronos_config.quantiles
+        self.num_quantiles = len(quantiles)
+        quantiles_tensor = torch.tensor(quantiles)
+        self.register_buffer("quantiles", quantiles_tensor, persistent=False)
+
+        # gather indices of user-specified quantiles
+        self.user_quantile_indices = [quantiles.index(q) for q in self.user_quantiles]
 
         self.output_patch_embedding = _ResidualBlock(
             in_dim=self.d_model,
@@ -553,13 +557,14 @@ class _Chronos2Module(PLForecastingModule):
             self.num_quantiles,
         )
 
-        # truncate to output_chunk_length and only target variables
-        quantile_preds = quantile_preds[
-            :, output_chunk_shift:future_length, : self.n_targets, :
-        ]
+        # truncate to output_chunk_length
+        quantile_preds = quantile_preds[:, output_chunk_shift:future_length, :, :]
 
-        if not self.probabilistic:
-            quantile_preds = quantile_preds[:, :, :, [self.median_idx]]
+        # select only target variables
+        quantile_preds = quantile_preds[:, :, : self.n_targets, :]
+
+        # select only user-specified quantiles or median if deterministic
+        quantile_preds = quantile_preds[:, :, :, self.user_quantile_indices]
 
         return quantile_preds
 
@@ -577,10 +582,8 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         input_chunk_length: int,
         output_chunk_length: int,
         output_chunk_shift: int = 0,
-        probabilistic: bool = True,
         enable_finetuning: bool = False,
-        loss_fn: Optional[nn.Module] = None,
-        likelihood: Optional[TorchLikelihood] = None,
+        likelihood: Optional[QuantileRegression] = None,
         local_dir: Optional[Union[str, os.PathLike]] = None,
         **kwargs,
     ):
@@ -605,10 +608,10 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         Alternatively, you can specify a local directory containing the model config and weights using the
         ``local_dir`` parameter.
 
-        By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
-        probabilistic; it is recommended to call :func`predict()` with ``num_samples >> 1`` to get meaningful results.
-        To make the model deterministic, set ``probabilistic=False`` in declaration and only the median (0.5 quantile)
-        will be predicted.
+        By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
+        forecasts, pass a :class:`darts.utils.likelihood_models.torch.QuantileRegression` instance to the ``likelihood``
+        parameter. The quantiles used must be a subset of those used during Chronos-2 pre-training, see below for
+        details. It is recommended to call :func`predict()` with ``num_samples >> 1`` to get meaningful results.
 
         Fine-tuning of Chronos-2 is not supported at the moment. Setting ``enable_finetuning=True`` will raise an error.
 
@@ -636,19 +639,15 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
             `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
             `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
             cannot generate autoregressive predictions (`n > output_chunk_length`).
-        probabilistic
-            Whether the model is probabilistic. By default, Chronos-2 is probabilistic and uses quantile regression.
-            Setting this to ``False`` makes the model deterministic and only predicts the median. Default: ``True``.
         enable_finetuning
-            Whether to enable fine-tuning of Chronos-2. If set to ``True``, calling :func:`fit()` will update the model
-            weights. Default: ``False``.
-        loss_fn
-            PyTorch loss function used for fine-tuning. By default, Chronos-2 is probabilistic and uses a ``likelihood``
-            instead (``QuantileRegression``). However, if Chronos-2 is made deterministic (``probabilistic=False``),
-            ``nn.MSELoss`` is used as the default loss function unless another is provided here.
+            Whether to enable fine-tuning of Chronos-2. Currently not supported and must be kept ``False``.
         likelihood
-            The likelihood model to be used for probabilistic forecasts. Must be ``None`` at all times to use the
-            default ``QuantileRegression`` likelihood with Chronos-2.
+            The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
+            :class:`darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
+            the quantiles must be a subset of those used during Chronos-2 pre-training:
+            [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
+            0.95, 0.99].
+            Default is ``None``, which will make Chronos-2 deterministic (median quantile only).
         local_dir
             Optional local directory to load the model config and weights from instead of downloading them from
             HuggingFace Hub.
@@ -656,6 +655,9 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
 
+        loss_fn
+            PyTorch loss function used for fine-tuning a deterministic Chronos-2 model. Ignored for probabilistic
+            Chronos-2 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -818,43 +820,45 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
             logger,
         )
 
-        # validate likelihood model
-        if probabilistic:
+        quantiles = chronos_config["quantiles"]
+        # by default (`likelihood=None`), model is deterministic
+        # otherwise, only QuantileRegression likelihood is supported and quantiles must be
+        # a subset of Chronos-2 quantiles
+        if likelihood is not None:
+            self._probabilistic = True
             raise_if_not(
-                likelihood is None,
-                f"Custom likelihood model is not supported for Chronos2Model in Darts. "
-                f"Please omit `likelihood` to use the default QuantileRegression likelihood "
-                f"with quantiles {chronos_config['quantiles']}.",
+                isinstance(likelihood, QuantileRegression),
+                f"Only QuantileRegression likelihood is supported for Chronos2Model in Darts. "
+                f"Got {type(likelihood)}.",
                 logger,
             )
-        else:
+            user_quantiles: list[float] = likelihood.quantiles
             raise_if_not(
-                likelihood is None,
-                "`likelihood` must be None for deterministic Chronos2Model.",
+                set(user_quantiles).issubset(quantiles),
+                f"The quantiles for QuantileRegression likelihood {user_quantiles} "
+                f"must be a subset of Chronos-2 quantiles {quantiles}.",
                 logger,
             )
 
-        super().__init__(
-            probabilistic=probabilistic, enable_finetuning=enable_finetuning, **kwargs
-        )
+        super().__init__(enable_finetuning=enable_finetuning, **kwargs)
+
+    @property
+    def user_quantiles(self) -> list[float]:
+        """The quantiles used by the model. If the model is probabilistic, these are taken from the likelihood.
+        If the model is deterministic, only the median (0.5 quantile) is used.
+        """
+        return (
+            self.likelihood.quantiles
+            if self.probabilistic and self.likelihood
+            else [0.5]
+        )  # pyright: ignore[reportAttributeAccessIssue]
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
 
-        if self.probabilistic:
-            # convert Chronos 2's quantiles into Darts' QuantileRegression likelihood model
-            pl_module_params["likelihood"] = QuantileRegression(
-                quantiles=self._load_config()["chronos_config"]["quantiles"]
-            )
-            pl_module_params["loss_fn"] = None
-        else:
-            pl_module_params["likelihood"] = None
-            if pl_module_params.get("loss_fn", None) is None:
-                pl_module_params["loss_fn"] = nn.MSELoss()
-
         # additional params
         additional_params = {
-            "probabilistic": self.probabilistic,
+            "user_quantiles": self.user_quantiles,
         }
 
         module = self._load_model(

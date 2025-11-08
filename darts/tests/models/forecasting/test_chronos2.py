@@ -15,6 +15,32 @@ if not TORCH_AVAILABLE:
     )
 
 from darts.models import Chronos2Model
+from darts.utils.likelihood_models import QuantileRegression
+
+# quantiles used during Chronos-2 pre-training
+all_quantiles = [
+    0.01,
+    0.05,
+    0.1,
+    0.15,
+    0.2,
+    0.25,
+    0.3,
+    0.35,
+    0.4,
+    0.45,
+    0.5,
+    0.55,
+    0.6,
+    0.65,
+    0.7,
+    0.75,
+    0.8,
+    0.85,
+    0.9,
+    0.95,
+    0.99,
+]
 
 
 def load_validation_inputs():
@@ -110,7 +136,9 @@ class TestChronos2Model:
         model = Chronos2Model(
             input_chunk_length=8192,  # maximum context length
             output_chunk_length=self.max_prediction_length,  # maximum prediction length w/o AR
-            probabilistic=probabilistic,
+            likelihood=(
+                QuantileRegression(quantiles=all_quantiles) if probabilistic else None
+            ),
             **tfm_kwargs,
         )
         # fit model w/o fine-tuning
@@ -137,3 +165,15 @@ class TestChronos2Model:
 
         # compare predictions to original
         np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
+
+    # def test_default_init(self):
+    #     # TODO: test that default Chronos2Model is deterministic
+    #     pass
+
+    # def test_finetuning_error(self):
+    #     # test that enabling fine-tuning raises an error
+    #     with pytest.raises(
+    #         ValueError,
+    #         match="Fine-tuning is not supported for Chronos2Model",
+    #     ):
+    #         pass
