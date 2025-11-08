@@ -349,7 +349,7 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
         # validate and set fine-tuning flag
-        if enable_finetuning and not self.allows_finetuning:
+        if enable_finetuning and not self._allows_finetuning:
             raise_log(
                 ValueError(
                     f"Fine-tuning is not supported for {self.__class__.__name__}."
@@ -384,16 +384,5 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             )
 
     @property
-    def allows_finetuning(self) -> bool:
-        """Whether fine-tuning is allowed for this foundation model."""
-        return self._allows_finetuning
-
-    @property
-    def enable_finetuning(self) -> bool:
-        """Whether fine-tuning is enabled for this foundation model. When enabled, calling `fit()`
-        will update the model weights. When disabled, calling `fit()` will not update the model weights."""
-        return self._enable_finetuning
-
-    @property
     def _requires_training(self) -> bool:
-        return self.enable_finetuning
+        return self._enable_finetuning
