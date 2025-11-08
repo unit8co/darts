@@ -1,6 +1,6 @@
 """
 Time Series Foundation Model (TSFM)
----------------------------------
+-----------------------------------
 
 This file contains several abstract classes:
 

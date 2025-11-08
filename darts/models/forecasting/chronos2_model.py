@@ -1,28 +1,6 @@
 """
-Amazon Chronos 2 Pre-trained Model for Time Series Forecasting
---------------------
-
-Apache-2.0 License from https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE,
-accessed on 4 November 2025:
-'
-Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
-SPDX-License-Identifier: Apache-2.0
-
-Authors: Abdul Fatir Ansari <ansarnd@amazon.com>
-'
-
-Ported from https://github.com/amazon-science/chronos-forecasting/commit/c23d34cd887b889c302ca7b6df3fa0bca96d78a9
-on 4 November 2025.
-
-Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integration:
-- Remove dependencies on `transformers` and `einops` libraries.
-- Load model config and weights from HuggingFace Hub using `HuggingFaceModelMixin`.
-- Remove `output_attentions` option from forward pass.
-- Integrate likelihood model and loss computation with Darts `QuantileRegression`, and
-    remove original loss computation in forward pass.
-- Replace `*Output` return type with direct `torch.Tensor` to comply with Darts
-    `PLForecastingModule` interface.
-- Replace `einops` rearrange operations with native PyTorch tensor operations.
+Chronos-2
+---------
 """
 
 import math
