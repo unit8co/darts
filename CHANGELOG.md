@@ -16,6 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 **Dependencies**
+- Raised the minimum PyTorch version to `torch>=2.0.0`. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
 - Changed `Timeseries.plot()` implementation to no longer rely on xarray under the hood while keeping the same functionality. [#2932](https://github.com/unit8co/darts/pull/2932) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
 ### For developers of the library:
