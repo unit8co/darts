@@ -17,7 +17,7 @@ from typing import Literal
 import torch
 from torch import nn
 
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
@@ -115,17 +115,17 @@ class _ResidualBlock(nn.Module):
 
         self.use_layer_norm = use_layer_norm
 
-        raise_if(
-            self.use_layer_norm,
-            "Layer norm should not be used in ResidualBlock.",
-            logger,
-        )
+        if self.use_layer_norm:
+            raise_log(
+                ValueError("Layer norm should not be used in ResidualBlock."),
+                logger,
+            )
 
-        raise_if_not(
-            act_fn_name == "relu",
-            "ReLU should be used in ResidualBlock",
-            logger,
-        )
+        if not act_fn_name == "relu":
+            raise_log(
+                ValueError("ReLU should be used in ResidualBlock"),
+                logger,
+            )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         hid = self.act(self.hidden_layer(x))
@@ -504,11 +504,11 @@ class _MLP(nn.Module):
         self.dropout = nn.Dropout(dropout_rate)
         self.act = nn.ReLU()
 
-        raise_if_not(
-            dense_act_fn == "relu",
-            "ReLU should be used in ResidualBlock",
-            logger,
-        )
+        if dense_act_fn != "relu":
+            raise_log(
+                ValueError("ReLU should be used in ResidualBlock"),
+                logger,
+            )
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         hidden_states = self.wi(hidden_states)
@@ -539,11 +539,11 @@ class _FeedForward(nn.Module):
         self.layer_norm = _Chronos2LayerNorm(d_model, eps=layer_norm_epsilon)
         self.dropout = nn.Dropout(dropout_rate)
 
-        raise_if(
-            is_gated_act,
-            "Gated activations are unsupported in FeedForward",
-            logger,
-        )
+        if is_gated_act:
+            raise_log(
+                ValueError("Gated activations are unsupported in FeedForward"),
+                logger,
+            )
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         forwarded_states = self.layer_norm(hidden_states)

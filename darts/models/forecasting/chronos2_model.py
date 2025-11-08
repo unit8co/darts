@@ -33,7 +33,7 @@ from typing import Any, Literal, Optional, Union, cast
 import torch
 from torch import nn
 
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.models.components.chronos2_submodels import (
     _Chronos2Encoder,
     _InstanceNorm,
@@ -130,19 +130,21 @@ class _Chronos2Module(PLForecastingModule):
         self.dense_act_fn = act_info[-1]
         self.is_gated_act = act_info[0] == "gated"
 
-        raise_if(
-            self.is_gated_act,
-            "gated activation is not supported",
-            logger,
-        )
+        if self.is_gated_act:
+            raise_log(
+                ValueError("gated activation is not supported"),
+                logger,
+            )
 
         # Attention implementation - default to "sdpa" if not specified
         self.attn_implementation = attn_implementation or "sdpa"
-        raise_if_not(
-            self.attn_implementation in ["eager", "sdpa"],
-            f"attn_implementation {self.attn_implementation} not supported",
-            logger,
-        )
+        if self.attn_implementation not in ["eager", "sdpa"]:
+            raise_log(
+                ValueError(
+                    f"attn_implementation {self.attn_implementation} is not supported"
+                ),
+                logger,
+            )
 
         # Chronos-2 forecasting specific config
         chronos_config = chronos_config or {}
@@ -152,13 +154,17 @@ class _Chronos2Module(PLForecastingModule):
         if self.chronos_config.use_reg_token:
             self.reg_token_id = 1
 
-        raise_if_not(
+        if (
             self.chronos_config.input_patch_size
-            == self.chronos_config.output_patch_size,
-            f"input_patch_size and output_patch_size sizes must be equal, "
-            f"but found {self.chronos_config.input_patch_size} and {self.chronos_config.output_patch_size}",
-            logger,
-        )
+            != self.chronos_config.output_patch_size
+        ):
+            raise_log(
+                ValueError(
+                    f"input_patch_size and output_patch_size sizes must be equal, "
+                    f"but found {self.chronos_config.input_patch_size} and {self.chronos_config.output_patch_size}"
+                ),
+                logger,
+            )
 
         self.vocab_size = 2 if self.chronos_config.use_reg_token else 1
         self.shared = nn.Embedding(self.vocab_size, self.d_model)
@@ -798,23 +804,27 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
 
         # validate `input_chunk_length` against model's context_length
         context_length = chronos_config["context_length"]
-        raise_if(
-            input_chunk_length > context_length,
-            f"`input_chunk_length` {input_chunk_length} cannot be greater than "
-            f"model's context_length {context_length}",
-            logger,
-        )
+        if input_chunk_length > context_length:
+            raise_log(
+                ValueError(
+                    f"`input_chunk_length` {input_chunk_length} cannot be greater than "
+                    f"model's context_length {context_length}"
+                ),
+                logger,
+            )
 
         # validate `output_chunk_length` and `output_chunk_shift` against model's prediction length
         prediction_length = (
             chronos_config["output_patch_size"] * chronos_config["max_output_patches"]
         )
-        raise_if(
-            output_chunk_length + output_chunk_shift > prediction_length,
-            f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
-            f"cannot be greater than model's maximum prediction length {prediction_length}",
-            logger,
-        )
+        if output_chunk_length + output_chunk_shift > prediction_length:
+            raise_log(
+                ValueError(
+                    f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
+                    f"cannot be greater than model's maximum prediction length {prediction_length}"
+                ),
+                logger,
+            )
 
         quantiles = chronos_config["quantiles"]
         # by default (`likelihood=None`), model is deterministic
@@ -822,19 +832,23 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         # a subset of Chronos-2 quantiles
         if likelihood is not None:
             self._probabilistic = True
-            raise_if_not(
-                isinstance(likelihood, QuantileRegression),
-                f"Only QuantileRegression likelihood is supported for Chronos2Model in Darts. "
-                f"Got {type(likelihood)}.",
-                logger,
-            )
+            if not isinstance(likelihood, QuantileRegression):
+                raise_log(
+                    ValueError(
+                        f"Only QuantileRegression likelihood is supported for Chronos2Model in Darts. "
+                        f"Got {type(likelihood)}."
+                    ),
+                    logger,
+                )
             user_quantiles: list[float] = likelihood.quantiles
-            raise_if_not(
-                set(user_quantiles).issubset(quantiles),
-                f"The quantiles for QuantileRegression likelihood {user_quantiles} "
-                f"must be a subset of Chronos-2 quantiles {quantiles}.",
-                logger,
-            )
+            if not set(user_quantiles).issubset(quantiles):
+                raise_log(
+                    ValueError(
+                        f"The quantiles for QuantileRegression likelihood {user_quantiles} "
+                        f"must be a subset of Chronos-2 quantiles {quantiles}."
+                    ),
+                    logger,
+                )
 
         super().__init__(enable_finetuning=enable_finetuning, **kwargs)
 

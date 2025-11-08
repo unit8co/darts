@@ -19,7 +19,7 @@ from typing import Optional, Union
 from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 
-from darts.logging import get_logger, raise_if, raise_if_not
+from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
 )
@@ -93,8 +93,10 @@ class HuggingFaceModelMixin:
         """Set the local directory where the pre-downloaded model files are stored."""
         if value is not None:
             path = Path(value)
-            raise_if_not(path.exists(), f"Directory {value} does not exist.", logger)
-            raise_if_not(path.is_dir(), f"Path {value} is not a directory.", logger)
+            if not path.exists():
+                raise_log(ValueError(f"Directory {value} does not exist."), logger)
+            if not path.is_dir():
+                raise_log(ValueError(f"Path {value} is not a directory."), logger)
             self._local_dir = path
 
     def _get_file_path(
@@ -348,12 +350,14 @@ class FoundationModel(MixedCovariatesTorchModel):
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
         # validate and set fine-tuning flag
-        raise_if(
-            enable_finetuning and not self.allows_finetuning,
-            f"Fine-tuning is not supported for {self.__class__.__name__}."
-            " Please set `enable_finetuning=False`.",
-            logger,
-        )
+        if enable_finetuning and not self.allows_finetuning:
+            raise_log(
+                ValueError(
+                    f"Fine-tuning is not supported for {self.__class__.__name__}."
+                    " Please set `enable_finetuning=False`."
+                ),
+                logger,
+            )
 
         self._enable_finetuning = enable_finetuning
 
@@ -371,11 +375,14 @@ class FoundationModel(MixedCovariatesTorchModel):
 
         invalid_kwargs = [kwarg for kwarg in kwargs if kwarg not in valid_kwargs]
 
-        raise_if(
-            len(invalid_kwargs) > 0,
-            f"Invalid model creation parameters. Model `{cls.__name__}` has no args/kwargs `{invalid_kwargs}`",
-            logger=logger,
-        )
+        if len(invalid_kwargs) > 0:
+            raise_log(
+                ValueError(
+                    f"Invalid model creation parameters. Model `{cls.__name__}` has no args/kwargs "
+                    f"`{invalid_kwargs}`"
+                ),
+                logger,
+            )
 
     @property
     def probabilistic(self) -> bool:
