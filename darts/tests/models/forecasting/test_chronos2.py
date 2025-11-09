@@ -5,11 +5,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
 from darts.utils.likelihood_models import GaussianLikelihood
-from darts.utils.timeseries_generation import linear_timeseries
+from darts.utils.timeseries_generation import (
+    gaussian_timeseries,
+    linear_timeseries,
+    sine_timeseries,
+)
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -81,6 +85,8 @@ class TestChronos2Model:
     dummy_max_context_length = 21
     dummy_max_prediction_length = 77
     series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
+    past_cov = linear_timeseries(length=200, dtype=np.float32, column_name="B")
+    future_cov = linear_timeseries(length=300, dtype=np.float32, column_name="C")
 
     @pytest.mark.slow
     @pytest.mark.parametrize("probabilistic", [True, False])
@@ -318,10 +324,91 @@ class TestChronos2Model:
         assert pred_ar.n_components == 1  # sampling yields single component
         assert pred_ar.n_samples == 10
 
-    # def test_finetuning_error(self):
-    #     # test that enabling fine-tuning raises an error
-    #     with pytest.raises(
-    #         ValueError,
-    #         match="Fine-tuning is not supported for Chronos2Model",
-    #     ):
-    #         pass
+    def test_multivariate(self):
+        # create multivariate time series
+        series_multi = concatenate(
+            [
+                linear_timeseries(length=200, dtype=np.float32, column_name="A"),
+                sine_timeseries(length=200, dtype=np.float32, column_name="B"),
+                gaussian_timeseries(length=200, dtype=np.float32, column_name="C"),
+            ],
+            axis=1,
+        )
+        # create model
+        model = Chronos2Model(
+            input_chunk_length=self.dummy_max_context_length,
+            output_chunk_length=self.dummy_max_prediction_length,
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
+        )
+        model.fit(series=series_multi)
+        pred = model.predict(n=15, series=series_multi)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 15
+        assert pred.n_components == 3
+
+        # create probabilistic model
+        model_prob = Chronos2Model(
+            input_chunk_length=self.dummy_max_context_length,
+            output_chunk_length=self.dummy_max_prediction_length,
+            likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
+        )
+        model_prob.fit(series=series_multi)
+        pred_prob = model_prob.predict(
+            n=15, series=series_multi, predict_likelihood_parameters=True
+        )
+        assert isinstance(pred_prob, TimeSeries)
+        assert len(pred_prob) == 15
+        assert pred_prob.n_components == 9  # 3 variables x 3 quantiles
+
+    def test_past_covariates(self):
+        model = Chronos2Model(
+            input_chunk_length=self.dummy_max_context_length,
+            output_chunk_length=self.dummy_max_prediction_length,
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series, past_covariates=self.past_cov)
+        pred = model.predict(n=10, series=self.series, past_covariates=self.past_cov)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 1
+
+    def test_future_covariates(self):
+        model = Chronos2Model(
+            input_chunk_length=self.dummy_max_context_length,
+            output_chunk_length=self.dummy_max_prediction_length,
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series, future_covariates=self.future_cov)
+        pred = model.predict(
+            n=10, series=self.series, future_covariates=self.future_cov
+        )
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 1
+
+    def test_past_and_future_covariates(self):
+        model = Chronos2Model(
+            input_chunk_length=self.dummy_max_context_length,
+            output_chunk_length=self.dummy_max_prediction_length,
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
+        )
+        model.fit(
+            series=self.series,
+            past_covariates=self.past_cov,
+            future_covariates=self.future_cov,
+        )
+        pred = model.predict(
+            n=10,
+            series=self.series,
+            past_covariates=self.past_cov,
+            future_covariates=self.future_cov,
+        )
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 1
