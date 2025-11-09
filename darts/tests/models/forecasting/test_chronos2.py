@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -7,6 +8,8 @@ import pytest
 from darts import TimeSeries
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.utils.likelihood_models import GaussianLikelihood
+from darts.utils.timeseries_generation import linear_timeseries
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -66,11 +69,18 @@ def load_validation_inputs():
 
 
 class TestChronos2Model:
+    # ---- Fidelity Tests ---- #
     # load validation inputs once for fidelity tests
     ts_energy_train, ts_energy_val, ts_weather, ts_other = load_validation_inputs()
     # maximum prediction length w/o triggering auto-regression where the results
     # would diverge from the original implementation due to different sampling methods
     max_prediction_length = 1024
+
+    # ---- Dummy Tests ---- #
+    dummy_local_dir = (Path(__file__).parent / "dummy" / "chronos2").absolute()
+    dummy_max_context_length = 21
+    dummy_max_prediction_length = 77
+    series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
 
     @pytest.mark.slow
     @pytest.mark.parametrize("probabilistic", [True, False])
@@ -179,9 +189,134 @@ class TestChronos2Model:
         # compare predictions to original
         np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
 
-    # def test_default_init(self):
-    #     # TODO: test that default Chronos2Model is deterministic
-    #     pass
+    def test_creation(self):
+        # can use shorter input/output chunk length than max
+        model = Chronos2Model(
+            input_chunk_length=self.dummy_max_context_length - 5,
+            output_chunk_length=self.dummy_max_prediction_length - 5,
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series)
+        pred = model.predict(n=10, series=self.series)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+
+        # cannot create longer input chunk length than max
+        with pytest.raises(
+            ValueError, match=r"`input_chunk_length` \d+ cannot be greater"
+        ):
+            Chronos2Model(
+                input_chunk_length=self.dummy_max_context_length + 1,
+                output_chunk_length=self.dummy_max_prediction_length,
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
+            )
+
+        # cannot create longer output chunk length than max
+        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
+            Chronos2Model(
+                input_chunk_length=self.dummy_max_context_length,
+                output_chunk_length=self.dummy_max_prediction_length + 1,
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
+            )
+
+        # cannot create longer output chunk length + output chunk shift than max
+        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
+            Chronos2Model(
+                input_chunk_length=self.dummy_max_context_length,
+                output_chunk_length=self.dummy_max_prediction_length - 1,
+                output_chunk_shift=3,
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
+            )
+
+        # cannot use likelihood others than QuantileRegression
+        with pytest.raises(ValueError, match="Only QuantileRegression likelihood is"):
+            Chronos2Model(
+                input_chunk_length=self.dummy_max_context_length,
+                output_chunk_length=self.dummy_max_prediction_length,
+                likelihood=GaussianLikelihood(),
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
+            )
+
+        # cannot use quantiles other than those used in pre-training
+        with pytest.raises(ValueError, match="must be a subset of Chronos-2 quantiles"):
+            Chronos2Model(
+                input_chunk_length=self.dummy_max_context_length,
+                output_chunk_length=self.dummy_max_prediction_length,
+                likelihood=QuantileRegression(quantiles=[0.23, 0.5, 0.77]),
+                local_dir=self.dummy_local_dir,
+                **tfm_kwargs,
+            )
+
+    def test_default(self):
+        # default model is deterministic
+        model = Chronos2Model(
+            input_chunk_length=self.dummy_max_context_length,
+            output_chunk_length=self.dummy_max_prediction_length,
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
+        )
+
+        # calling `fit()` should not use `trainer.fit()`
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(series=self.series)
+            mock_fit.assert_not_called()
+        assert model.model_created
+        assert not model.supports_probabilistic_prediction
+
+        # predictions should not be probabilistic
+        pred = model.predict(n=10, series=self.series)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 1
+
+        # default model allows autoregressive predictions
+        pred_ar = model.predict(
+            n=self.dummy_max_prediction_length + 10, series=self.series
+        )
+        assert isinstance(pred_ar, TimeSeries)
+        assert len(pred_ar) == self.dummy_max_prediction_length + 10
+        assert pred_ar.n_components == 1
+
+    def test_probabilistic(self):
+        # probabilistic model
+        model = Chronos2Model(
+            input_chunk_length=self.dummy_max_context_length,
+            output_chunk_length=self.dummy_max_prediction_length,
+            likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
+        )
+
+        # calling `fit()` should not use `trainer.fit()`
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(series=self.series)
+            mock_fit.assert_not_called()
+        assert model.model_created
+        assert model.supports_probabilistic_prediction
+
+        # predictions should be probabilistic
+        pred = model.predict(
+            n=10, series=self.series, predict_likelihood_parameters=True
+        )
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 3  # 3 quantiles
+
+        # probabilistic model allows autoregressive predictions
+        pred_ar = model.predict(
+            n=self.dummy_max_prediction_length + 10,
+            series=self.series,
+            num_samples=10,
+        )
+        assert isinstance(pred_ar, TimeSeries)
+        assert len(pred_ar) == self.dummy_max_prediction_length + 10
+        assert pred_ar.n_components == 1  # sampling yields single component
+        assert pred_ar.n_samples == 10
 
     # def test_finetuning_error(self):
     #     # test that enabling fine-tuning raises an error
