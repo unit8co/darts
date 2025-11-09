@@ -22,13 +22,44 @@ version = "0.38.0"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["autoapi.extension"]
+extensions = [
+    "autoapi.extension",
+    # "sphinx.ext.autodoc",
+    # "sphinx_autodoc_typehints",
+]
 
 templates_path = ["templates"]
 exclude_patterns = []
 
+# trail 2: type hints
+autodoc_typehints = "description"
+
+
+# -- Sphinx-AutoAPI Configuration Options ------------------------------------
+# https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html#confval-autoapi_options
 
 autoapi_dirs = ["../../darts"]
+# autoapi_template_dir
+# autoapi_file_patterns
+# autoapi_generate_api_docs
+
+autoapi_options = [
+    "members",  # validated
+    "undoc-members",  # validated
+    # 'private-members',  # validated
+    "show-inheritance",  # validated
+    "show-module-summary",  # validated
+    # 'special-members',  # validated
+    # 'imported-members',  # validated
+]
+# autoapi_ignore  # populate
+autoapi_root = "generated_api"  # validated
+# autoapi_add_toctree_entry=True  # validated
+autoapi_python_class_content = "both"  # validated
+# autoapi_member_order
+# autoapi_python_use_implicit_namespaces
+# autoapi_prepare_jinja_env
+# autoapi_own_page_level = "class"  # this could be nice on "class-level" instead of default "module"
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -46,5 +77,4 @@ html_static_path = ["static"]
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
     "twitter_url": "https://twitter.com/unit8co",
-    "search_bar_position": "navbar",
 }
