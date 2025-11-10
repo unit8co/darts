@@ -592,11 +592,6 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
         or ``num_samples >> 1`` to get meaningful results.
 
-        Fine-tuning of Chronos-2 is not supported at the moment.
-
-        Chronos-2 is licensed under the Apache-2.0 License, copyright Amazon.com, Inc. or its affiliates. By using
-        this model, you agree to the terms and conditions of the license.
-
         Parameters
         ----------
         input_chunk_length
@@ -796,6 +791,12 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         [[1005.69617]]]
 
         .. note::
+            Fine-tuning of Chronos-2 is not supported at the moment.
+        .. note::
+            Chronos-2 is licensed under the `Apache-2.0 License <https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE>`_,
+            copyright Amazon.com, Inc. or its affiliates. By using this model, you agree to the terms and conditions of
+            the license.
+        .. warning::
             Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
             those obtained using the original implementation when prediction horizon `n` is larger than 1024.
         """
