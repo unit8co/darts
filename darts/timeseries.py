@@ -64,7 +64,7 @@ from scipy.stats import kurtosis, skew
 
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
-from darts.utils.formatting import (
+from darts.utils._formatting import (
     format_bytes,
     format_dict,
     make_collapsible_section,
@@ -5476,12 +5476,19 @@ class TimeSeries:
     def __str__(self):
         # if one sample then print all values, otherwise print median of samples
         values_str = (
-            f"{self.to_dataframe()}"
+            f"{self.to_dataframe(copy=False)}"
             if self.n_samples == 1
-            else f"(displaying median of samples):\n{self.median().to_dataframe()}"
+            else f"(displaying median of samples):\n{self.median().to_dataframe(copy=False)}"
         )
 
         freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
+
+        # create a dict for consistent formatting with other sections
+        info_dict = {
+            "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
+            "Time frame": f"({self._time_index.min()}, {self._time_index.max()}, {freq_str})",
+            "Size": format_bytes(self._values.nbytes),
+        }
 
         # indentation, first line needs to be manual
         if self.static_covariates is not None:
@@ -5492,11 +5499,7 @@ class TimeSeries:
 
         return (
             f"{values_str}\n\n"
-            f"Shape: (times: {self.n_timesteps}, "
-            f"components: {self.n_components}, "
-            f"samples: {self.n_samples}) \n"
-            f"Time frame: ({self._time_index.min()}, {self._time_index.max()}, {freq_str})\n"
-            f"Size: {format_bytes(self._values.nbytes)}\n\n"
+            f"Properties:\n{format_dict(info_dict)}\n"
             f"Static covariates:\n{static_cov_str}\n\n"
             f"Hierarchy:\n{format_dict(self.hierarchy)}\n"
             f"Metadata:\n{format_dict(self.metadata)}\n"
@@ -5507,9 +5510,12 @@ class TimeSeries:
 
     def _repr_html_(self):
         values_str = (
-            f"{self.to_dataframe().to_html(max_rows=10, max_cols=15)}"
+            f"{self.to_dataframe(copy=False).to_html(max_rows=10, max_cols=15)}"
             if self.n_samples == 1
-            else f"(displaying median of samples):\n{self.median().to_dataframe().to_html(max_rows=10, max_cols=15)}"
+            else (
+                "(displaying median of samples):\n"
+                f"{self.median().to_dataframe(copy=False).to_html(max_rows=10, max_cols=15)}"
+            )
         )
         freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
 
@@ -5517,7 +5523,7 @@ class TimeSeries:
         hierarchy_empty = self.hierarchy is None or len(self.hierarchy) == 0
         metadata_empty = self.metadata is None or len(self.metadata) == 0
 
-        # Create a dict for consistent formatting with other sections
+        # create a dict for consistent formatting with other sections
         info_dict = {
             "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
             "Time frame": f"({self._time_index.min()}, {self._time_index.max()}, {freq_str})",
@@ -5527,10 +5533,8 @@ class TimeSeries:
         return (
             make_paragraph(values_str, bold=True, margin_left="0")
             + make_collapsible_section(
-                "Series Info",
-                format_dict(
-                    info_dict, render_html=True, max_items=20, pad=15, max_value_len=100
-                ),
+                "Properties",
+                format_dict(info_dict, render_html=True),
                 open_by_default=True,
             )
             + make_collapsible_section(
@@ -5542,12 +5546,12 @@ class TimeSeries:
             )
             + make_collapsible_section(
                 "Hierarchy",
-                f"{format_dict(self.hierarchy, render_html=True, max_items=10, pad=20, max_value_len=60)}",
+                f"{format_dict(self.hierarchy, render_html=True)}",
                 open_by_default=not hierarchy_empty,
             )
             + make_collapsible_section(
                 "Metadata",
-                f"{format_dict(self.metadata, render_html=True, max_items=10, pad=20, max_value_len=60)}",
+                f"{format_dict(self.metadata, render_html=True)}",
                 open_by_default=not metadata_empty,
             )
         )

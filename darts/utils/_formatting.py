@@ -34,7 +34,7 @@ def format_dict(
 
     items = list(d.items())
     show_all = len(items) <= max_items
-    items_to_show = items if show_all else items[: max_items // 2]
+    items_to_show = items if show_all else items[: max_items - 1]
 
     s = ""
 
@@ -49,21 +49,23 @@ def format_dict(
                 f"<div>{truncated_value}</div></div>\n"
             )
         else:
-            return f"      {truncated_key.ljust(pad)}  {truncated_value}\n"
+            return f"    {truncated_key.ljust(pad)}  {truncated_value}\n"
 
     for k, v in items_to_show:
         s += format_row(k, v)
 
-    # Add ellipsis and tail if truncated
+    # Add ellipsis row and last item if truncated
     if not show_all:
-        s += (
-            "    ...\n"
-            if not render_html
-            else '    <div style="margin-left: 1em;">...</div>\n'
-        )
-        tail = items[-(max_items - len(items_to_show)) :]
-        for k, v in tail:
-            s += format_row(k, v)
+        if render_html:
+            s += (
+                '      <div style="display: flex; margin-left: 1em;">'
+                '<div style="min-width: 10em;">...</div>'
+                "<div>...</div></div>\n"
+            )
+        else:
+            s += f"    {'...'.ljust(pad)}  ...\n"
+        last_k, last_v = items[-1]
+        s += format_row(last_k, last_v)
 
     return s
 
@@ -110,6 +112,5 @@ def make_paragraph(text: str, bold: bool = False, margin_left: str = "0.5em") ->
     """Creates an HTML paragraph with optional bold text and margin."""
     if bold:
         text = f"<strong>{text}</strong>"
-    # Use margin_left parameter in the style
     style = f"margin-left: {margin_left}; margin-bottom: 1em; text-align: left; font-family: inherit;"
     return f"<p style='{style}'>{text}</p>"
