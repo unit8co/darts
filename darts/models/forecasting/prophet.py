@@ -1,5 +1,6 @@
 import pandas as pd
 
+# from darts.timeseries import TimeSeries
 from darts import TimeSeries
 from darts.models.forecasting.arima import ARIMA
 
@@ -16,8 +17,14 @@ class Prophet(ARIMA):
             Dictionary of parameters to pass to the `Prophet` class
         """
 
-    def fit(self, **kwargs):
-        """Fit the Prophet model."""
+    def fit(self, series: TimeSeries):
+        """Fit the Prophet model.
+
+        Parameters
+        ----------
+        series
+            The series containing the time series data.
+        """
 
     def predict(self, **kwargs) -> TimeSeries:
         """Fit the Prophet model."""
