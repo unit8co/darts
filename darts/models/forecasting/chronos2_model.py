@@ -788,12 +788,12 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         >>> # or ``num_samples>>1`` to get meaningful results
         >>> pred = model.predict(6)
         >>> print(pred.all_values())
-            [[[1005.7576 ]]
-            [[1005.7418 ]]
-            [[1005.7186 ]]
-            [[1005.7074 ]]
-            [[1005.6928 ]]
-            [[1005.69617]]]
+        [[[1005.7576 ]]
+        [[1005.7418 ]]
+        [[1005.7186 ]]
+        [[1005.7074 ]]
+        [[1005.6928 ]]
+        [[1005.69617]]]
 
         .. note::
             Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
