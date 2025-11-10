@@ -771,7 +771,7 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         >>> series = WeatherDataset().load().astype("float32")
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
-        >>> # optionally, past observed rainfall (pretending to be unknown beyond index 100)
+        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
         >>> past_cov = series['rain (mm)'][:100]
         >>> # optionally, use future temperatures (pretending this component is a forecast)
         >>> future_cov = series['T (degC)'][:106]
