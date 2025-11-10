@@ -5517,30 +5517,37 @@ class TimeSeries:
         hierarchy_empty = self.hierarchy is None or len(self.hierarchy) == 0
         metadata_empty = self.metadata is None or len(self.metadata) == 0
 
+        # Create a dict for consistent formatting with other sections
+        info_dict = {
+            "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
+            "Time frame": f"({self._time_index.min()}, {self._time_index.max()}, {freq_str})",
+            "Size": format_bytes(self._values.nbytes),
+        }
+
         return (
-            make_paragraph(values_str, bold=True, size="1.2em", margin_left="0")
-            + make_paragraph(
-                f"Shape: (times: {self.n_timesteps}, "
-                f"components: {self.n_components}, "
-                f"samples: {self.n_samples})<br>"
-                f"Time frame: ({self._time_index.min()}, {self._time_index.max()}, {freq_str})<br>"
-                f"Size: {format_bytes(self._values.nbytes)}"
+            make_paragraph(values_str, bold=True, margin_left="0")
+            + make_collapsible_section(
+                "Series Info",
+                format_dict(
+                    info_dict, render_html=True, max_items=20, pad=15, max_value_len=100
+                ),
+                open_by_default=True,
             )
             + make_collapsible_section(
-                "Static covariates:",
+                "Static covariates",
                 self.static_covariates.to_html(max_rows=10, max_cols=15)
                 if self.static_covariates is not None
                 else "&lt;empty&gt;",
                 open_by_default=not static_covs_empty,
             )
             + make_collapsible_section(
-                "Hierarchy:",
-                f"{format_dict(self.hierarchy, render_html=True, max_items=10)}",
+                "Hierarchy",
+                f"{format_dict(self.hierarchy, render_html=True, max_items=10, pad=20, max_value_len=60)}",
                 open_by_default=not hierarchy_empty,
             )
             + make_collapsible_section(
-                "Metadata:",
-                f"{format_dict(self.metadata, render_html=True, max_items=10)}",
+                "Metadata",
+                f"{format_dict(self.metadata, render_html=True, max_items=10, pad=20, max_value_len=60)}",
                 open_by_default=not metadata_empty,
             )
         )

@@ -18,33 +18,52 @@ def truncate_key(key: str, max_len: int = 20) -> str:
 
 
 def format_dict(
-    d: dict, max_items: int = 5, pad: int = 12, render_html: bool = False
+    d: dict,
+    max_items: int = 5,
+    pad: int = 12,
+    render_html: bool = False,
+    max_value_len: int = 50,
 ) -> str:
     """Formats a dictionary as a string, showing at most `max_items` items.
-    Keys longer than `key_max_len` are truncated with '...'.
-    Pass `render_html=True` to escape '<' and '>' characters.
+    Keys longer than `pad` are truncated with '...'.
+    Values longer than `max_value_len` are truncated with '...'.
+    Pass `render_html=True` to use flexbox layout for proper alignment with proportional fonts.
     """
     if not d:
-        if render_html:
-            return "&lt;empty&gt;"
-        else:
-            return "    <empty>"
+        return "&lt;empty&gt;" if render_html else "    <empty>"
+
+    items = list(d.items())
+    show_all = len(items) <= max_items
+    items_to_show = items if show_all else items[: max_items // 2]
 
     s = ""
-    items = list(d.items())
 
-    if len(items) <= max_items:
-        for k, v in items:
-            s += f"    {truncate_key(k, pad).ljust(pad)}   {v}\n"
-    else:
-        head = items[: max_items // 2]
-        tail = items[-(max_items - len(head)) :]  # keep total items <= max_items
+    # Helper to format a single row
+    def format_row(k, v):
+        truncated_key = truncate_key(str(k), pad)
+        truncated_value = truncate_key(str(v), max_value_len)
+        if render_html:
+            return (
+                f'      <div style="display: flex; margin-left: 1em;">'
+                f'<div style="min-width: 10em;">{truncated_key}</div>'
+                f"<div>{truncated_value}</div></div>\n"
+            )
+        else:
+            return f"      {truncated_key.ljust(pad)}  {truncated_value}\n"
 
-        for k, v in head:
-            s += f"    {truncate_key(k, pad).ljust(pad)}   {v}\n"
-        s += "    ...\n"
+    for k, v in items_to_show:
+        s += format_row(k, v)
+
+    # Add ellipsis and tail if truncated
+    if not show_all:
+        s += (
+            "    ...\n"
+            if not render_html
+            else '    <div style="margin-left: 1em;">...</div>\n'
+        )
+        tail = items[-(max_items - len(items_to_show)) :]
         for k, v in tail:
-            s += f"    {truncate_key(k, pad).ljust(pad)}   {v}\n"
+            s += format_row(k, v)
 
     return s
 
@@ -76,20 +95,21 @@ def make_collapsible_section(
 ) -> str:
     """Creates a collapsible HTML section."""
     open_tag = " open" if open_by_default else ""
+    is_flexbox = '<div style="display: flex;' in content
+    wrapper_tag = "div" if is_flexbox else "pre"
+
     return f"""
-    <details{open_tag}>
-        <summary style="font-size: 1.2em;">{title}</summary>
-        <pre style="margin-left: 0.5em; font-family: inherit;">{content}</pre>
+    <details{open_tag} style="margin-bottom: 1em;">
+        <summary style="font-size: 1.2em; margin-bottom: 0.3em;">{title}</summary>
+        <{wrapper_tag} style="margin-left: 0.5em; font-family: inherit;">{content}</{wrapper_tag}>
     </details>
     """
 
 
-def make_paragraph(
-    text: str, bold: bool = False, size: str = "1.2em", margin_left: str = "0.5em"
-) -> str:
-    """Creates an HTML paragraph with optional bold text, custom font size, and margin."""
+def make_paragraph(text: str, bold: bool = False, margin_left: str = "0.5em") -> str:
+    """Creates an HTML paragraph with optional bold text and margin."""
     if bold:
         text = f"<strong>{text}</strong>"
     # Use margin_left parameter in the style
-    style = f"margin-left: {margin_left}; font-size: {size}; text-align: left;"
+    style = f"margin-left: {margin_left}; margin-bottom: 1em; text-align: left; font-family: inherit;"
     return f"<p style='{style}'>{text}</p>"
