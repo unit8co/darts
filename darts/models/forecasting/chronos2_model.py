@@ -18,9 +18,11 @@ from darts.models.components.chronos2_submodels import (
     _Patch,
     _ResidualBlock,
 )
+from darts.models.components.huggingface_connector import (
+    HuggingFaceConnector,
+)
 from darts.models.forecasting.foundation_model import (
     FoundationModel,
-    HuggingFaceModelMixin,
 )
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
@@ -81,7 +83,7 @@ class _Chronos2Module(PLForecastingModule):
         layer_norm_epsilon
             Epsilon value for layer normalization layers.
         feed_forward_proj
-            Acctivation of feed-forward network.
+            Activation of feed-forward network.
         rope_theta
             Base period for Rotary Position Embeddings (RoPE).
         attn_implementation
@@ -548,10 +550,7 @@ class _Chronos2Module(PLForecastingModule):
         return quantile_preds
 
 
-class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
-    _repo_id = "amazon/chronos-2"
-    _repo_commit = "18128c7b4f3fd286f06d6d4efe1d252f1d2a9a7c"
-
+class Chronos2Model(FoundationModel):
     # Fine-tuning is turned off for now pending proper fine-tuning support
     # and configuration.
     _allows_finetuning = False
@@ -562,6 +561,8 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         output_chunk_length: int,
         output_chunk_shift: int = 0,
         likelihood: Optional[QuantileRegression] = None,
+        hub_model_name: str = "amazon/chronos-2",
+        hub_model_revision: Optional[str] = None,
         local_dir: Optional[Union[str, os.PathLike]] = None,
         **kwargs,
     ):
@@ -582,7 +583,7 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
         This model supports past covariates (known for `input_chunk_length` points before prediction time),
         and future covariates (known for `output_chunk_length` points after prediction time).
 
-        By default, using this model will automatically download the pre-trained model from HuggingFace Hub
+        By default, using this model will automatically download and cache the pre-trained model from HuggingFace Hub
         (amazon/chronos-2). Alternatively, you can specify a local directory containing the model config and weights
         using the ``local_dir`` parameter.
 
@@ -620,9 +621,16 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
             [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
             0.95, 0.99].
             Default is ``None``, which will make Chronos-2 deterministic (median quantile only).
+        hub_model_name
+            The model ID on HuggingFace Hub. Default is ``"amazon/chronos-2"``.
+        hub_model_revision
+            The model version to use. This can be a branch name, tag name, or commit hash. Default is ``None``, which
+            will use the default branch from ``hub_model_name``.
         local_dir
-            Optional local directory to load the model config and weights from instead of downloading them from
-            HuggingFace Hub.
+            Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
+            model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
+            use a cache directory managed by ``huggingface_hub`` instead. Note that this is different from the
+            ``work_dir`` parameter used for saving model checkpoints during fine-tuning.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -800,10 +808,14 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
             Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
             those obtained using the original implementation when prediction horizon `n` is larger than 1024.
         """
-        self.local_dir = local_dir
+        hf_connector = HuggingFaceConnector(
+            model_name=hub_model_name,
+            model_revision=hub_model_revision,
+            local_dir=local_dir,
+        )
 
         # load model config for validation
-        config = self._load_config()
+        config = hf_connector.load_config()
         chronos_config = config["chronos_config"]
 
         # validate `input_chunk_length` against model's context_length
@@ -853,13 +865,12 @@ class Chronos2Model(FoundationModel, HuggingFaceModelMixin):
                     logger,
                 )
 
+        self.hf_connector = hf_connector
         super().__init__(enable_finetuning=False, **kwargs)
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
-
-        module = self._load_model(
+        return self.hf_connector.load_model(
             module_class=_Chronos2Module,
             pl_module_params=pl_module_params,
         )
-        return module
