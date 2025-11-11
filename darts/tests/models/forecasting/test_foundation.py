@@ -1,3 +1,5 @@
+import logging
+import shutil
 from pathlib import Path
 from unittest.mock import patch
 
@@ -36,9 +38,16 @@ def mock_download(
     repo_id: str,
     filename: str,
     revision: str | None,
+    local_dir: str | Path | None,
     **kwargs,
 ):
-    return str(dummy_local_dir / filename)
+    path = dummy_local_dir / filename
+    if local_dir is None:
+        return str(path)
+    else:
+        dest_path = Path(local_dir) / filename
+        shutil.copy(path, dest_path)
+        return str(dest_path)
 
 
 class TestFoundationModel:
@@ -78,7 +87,7 @@ class TestFoundationModel:
         assert pred.n_components == self.series.n_components
 
     @patch(
-        "darts.models.forecasting.foundation_model.hf_hub_download",
+        "darts.models.components.huggingface_connector.hf_hub_download",
         side_effect=mock_download,
     )
     def test_invalid_params(self, mock_method):
@@ -90,7 +99,11 @@ class TestFoundationModel:
                 **tfm_kwargs,
             )
 
-    def test_local_dir(self):
+    @patch(
+        "darts.models.components.huggingface_connector.hf_hub_download",
+        side_effect=mock_download,
+    )
+    def test_local_dir(self, mock_method, caplog):
         model = Chronos2Model(
             input_chunk_length=12,
             output_chunk_length=6,
@@ -115,6 +128,23 @@ class TestFoundationModel:
         assert isinstance(pred, TimeSeries)
         assert len(pred) == 10
         assert pred.n_components == self.series.n_components
+
+        # create an empty directory
+        empty_dir = dummy_local_dir / "empty_dir"
+        shutil.rmtree(empty_dir, ignore_errors=True)
+        empty_dir.mkdir(exist_ok=True)
+        # loading from an empty directory should trigger download
+        with caplog.at_level(logging.WARNING):
+            _ = Chronos2Model(
+                input_chunk_length=12,
+                output_chunk_length=6,
+                local_dir=empty_dir,
+                **tfm_kwargs,
+            )
+        assert "Attempting to download from HuggingFace Hub instead" in caplog.text
+        mock_method.assert_called()
+        # clean up
+        shutil.rmtree(empty_dir)
 
         # cannot load from non-existent directory
         with pytest.raises(ValueError, match=r"directory .* does not exist"):
