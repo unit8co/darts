@@ -31,7 +31,9 @@ def generate_series(n_variables: int, length: int, prefix: str):
     )
 
 
-dummy_local_dir = (Path(__file__).parent / "dummy" / "chronos2").absolute()
+dummy_local_dir = (
+    Path(__file__).parent / "artefacts" / "chronos2" / "tiny_chronos2"
+).absolute()
 
 
 def mock_download(
