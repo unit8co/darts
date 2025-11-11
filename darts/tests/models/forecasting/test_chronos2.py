@@ -81,7 +81,9 @@ class TestChronos2Model:
     max_prediction_length = 1024
 
     # ---- Dummy Tests ---- #
-    dummy_local_dir = (Path(__file__).parent / "dummy" / "chronos2").absolute()
+    dummy_local_dir = (
+        Path(__file__).parent / "artefacts" / "chronos2" / "tiny_chronos2"
+    ).absolute()
     dummy_max_context_length = 21
     dummy_max_prediction_length = 77
     series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
@@ -186,7 +188,13 @@ class TestChronos2Model:
         )
 
         # load the original predictions
-        path = Path(__file__).parent / "fidelity" / "chronos2.npz"
+        path = (
+            Path(__file__).parent
+            / "artefacts"
+            / "chronos2"
+            / "chronos2_prediction"
+            / "chronos2.npz"
+        )
         original = np.load(path)["pred"]
 
         if not probabilistic:
