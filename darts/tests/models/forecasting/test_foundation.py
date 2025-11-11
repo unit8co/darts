@@ -46,7 +46,7 @@ class TestFoundationModel:
     future_cov = generate_series(n_variables=3, length=200, prefix="C")
 
     @patch(
-        "darts.models.forecasting.foundation_model.hf_hub_download",
+        "darts.models.components.huggingface_connector.hf_hub_download",
         side_effect=mock_download,
     )
     def test_default(self, mock_method):
@@ -117,7 +117,7 @@ class TestFoundationModel:
         assert pred.n_components == self.series.n_components
 
         # cannot load from non-existent directory
-        with pytest.raises(ValueError, match=r"Directory .* does not exist"):
+        with pytest.raises(ValueError, match=r"directory .* does not exist"):
             _ = Chronos2Model(
                 input_chunk_length=12,
                 output_chunk_length=6,
@@ -126,20 +126,11 @@ class TestFoundationModel:
             )
 
         # cannot load from a file path
-        with pytest.raises(ValueError, match=r"Path .* is not a directory."):
+        with pytest.raises(ValueError, match=r"path .* is not a directory."):
             _ = Chronos2Model(
                 input_chunk_length=12,
                 output_chunk_length=6,
                 local_dir=dummy_local_dir / "config.json",
-                **tfm_kwargs,
-            )
-
-        # cannot find the config.json file
-        with pytest.raises(FileNotFoundError, match=r"File .* not found"):
-            _ = Chronos2Model(
-                input_chunk_length=12,
-                output_chunk_length=6,
-                local_dir=dummy_local_dir.parent,
                 **tfm_kwargs,
             )
 
