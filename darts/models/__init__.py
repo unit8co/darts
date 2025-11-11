@@ -46,7 +46,6 @@ from darts.models.forecasting.varima import VARIMA
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
-    from darts.models.forecasting.chronos2_model import Chronos2Model
     from darts.models.forecasting.dlinear import DLinearModel
     from darts.models.forecasting.global_baseline_models import (
         GlobalNaiveAggregate,
@@ -69,7 +68,6 @@ except ModuleNotFoundError:
         'or "u8darts-torch" or "u8darts-all" (with conda).'
     )
     BlockRNNModel = NotImportedModule(module_name="(Py)Torch", warn=False)
-    Chronos2Model = NotImportedModule(module_name="(Py)Torch", warn=False)
     DLinearModel = NotImportedModule(module_name="(Py)Torch", warn=False)
     GlobalNaiveAggregate = NotImportedModule(module_name="(Py)Torch", warn=False)
     GlobalNaiveDrift = NotImportedModule(module_name="(Py)Torch", warn=False)
@@ -83,6 +81,11 @@ except ModuleNotFoundError:
     TiDEModel = NotImportedModule(module_name="(Py)Torch", warn=False)
     TransformerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
     TSMixerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+
+try:
+    from darts.models.forecasting.chronos2_model import Chronos2Model
+except ModuleNotFoundError:
+    Chronos2Model = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 try:
     from darts.models.forecasting.prophet_model import Prophet
