@@ -412,3 +412,41 @@ class TestChronos2Model:
         assert isinstance(pred, TimeSeries)
         assert len(pred) == 10
         assert pred.n_components == 1
+
+    def test_multiple_series(self):
+        # create multivariate time series
+        series_multi = concatenate(
+            [
+                linear_timeseries(length=200, dtype=np.float32, column_name="A"),
+                sine_timeseries(length=200, dtype=np.float32, column_name="B"),
+                gaussian_timeseries(length=200, dtype=np.float32, column_name="C"),
+            ],
+            axis=1,
+        )
+        # create another multivariate time series
+        series_multi_2 = concatenate(
+            [
+                linear_timeseries(length=150, dtype=np.float32, column_name="A"),
+                sine_timeseries(length=150, dtype=np.float32, column_name="B"),
+                gaussian_timeseries(length=150, dtype=np.float32, column_name="C"),
+            ],
+            axis=1,
+        )
+        # create model
+        model = Chronos2Model(
+            input_chunk_length=self.dummy_max_context_length,
+            output_chunk_length=self.dummy_max_prediction_length,
+            local_dir=self.dummy_local_dir,
+            **tfm_kwargs,
+        )
+        model.fit(series=[series_multi, series_multi_2])
+        pred = model.predict(n=15, series=[series_multi, series_multi_2])
+
+        # check that we get a list of predictions
+        assert isinstance(pred, list) and len(pred) == 2
+        assert all(isinstance(p, TimeSeries) for p in pred)
+
+        # check that each prediction has correct length
+        assert all(len(p) == 15 for p in pred)
+        # check that each prediction is deterministic with 3 components
+        assert all(p.n_components == 3 for p in pred)
