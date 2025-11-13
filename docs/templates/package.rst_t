@@ -1,6 +1,3 @@
-{{ pkgname.split('.')|last }}
-{{ '=' * (pkgname.split('.')|last|length) }}
-
 .. automodule:: {{ pkgname }}
 
 .. toctree::

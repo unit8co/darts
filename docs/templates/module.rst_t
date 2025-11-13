@@ -1,6 +1,3 @@
-{{ qualname.split('.')|last }}
-{{ '=' * (qualname.split('.')|last|length) }}
-
 .. automodule:: {{ qualname }}
    :members:
    :undoc-members:
