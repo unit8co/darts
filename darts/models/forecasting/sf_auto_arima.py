@@ -19,11 +19,11 @@ class AutoARIMA(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-ARIMA based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-ARIMA based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
 
         Automatically selects the best AutoRegressive Integrated Moving Average (ARIMA) using an information criterion.
         We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima>`_ for the exhaustive documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima>`__ for the exhaustive documentation
         of the arguments.
 
         In addition to univariate deterministic forecasting, it comes with additional support:

@@ -1,3 +1,8 @@
+"""
+Optimized Historical Forecasts Utils
+------------------------------------
+"""
+
 import inspect
 from collections.abc import Sequence
 from types import SimpleNamespace

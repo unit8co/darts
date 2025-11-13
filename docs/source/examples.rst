@@ -4,7 +4,7 @@ Examples
 
 Here you will find some example notebooks to get more familiar with the Darts' API.
 All the notebooks are also available in ``ipynb`` format
-`directly on github <https://github.com/unit8co/darts/tree/master/examples>`_.
+`directly on github <https://github.com/unit8co/darts/tree/master/examples>`__.
 
 
 Multiple Time Series, Pre-trained Models and Covariates
@@ -97,7 +97,7 @@ Classification models example notebook:
    examples/24-SKLearnClassifierModel-examples.ipynb
 
 Conformal Prediction
-=================
+====================
 
 Conformal prediction example notebook:
 

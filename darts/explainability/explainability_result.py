@@ -1,6 +1,6 @@
 """
 Explainability Result
---------------------
+---------------------
 
 Contains the explainability results obtained from :func:`_ForecastingModelExplainer.explain()
 <darts.explainability.explainability._ForecastingModelExplainer.explain>`.
@@ -42,8 +42,8 @@ class ComponentBasedExplainabilityResult(_ExplainabilityResult):
     """Explainability result for general component objects.
     The explained components can describe anything.
 
-    Example
-    -------
+    Examples
+    --------
     >>> explainer = SomeComponentBasedExplainer(model)
     >>> explain_results = explainer.explain()
     >>> output = explain_results.get_explanation(component="some_component")
@@ -144,8 +144,8 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
       ``"target"``, ``"past_cov"`` or ``"future_cov"``.
     - ``{idx}`` is the lag index.
 
-    Example
-    -------
+    Examples
+    --------
 
     Say we have a model with 2 target components named ``"T_0"`` and ``"T_1"``,
     3 past covariates with default component names ``"0"``, ``"1"``, and ``"2"``,
@@ -169,19 +169,19 @@ class HorizonBasedExplainabilityResult(_ExplainabilityResult):
     Then the method returns a multivariate TimeSeries containing the *explanations* of
     the corresponding `_ForecastingModelExplainer`, with the following component names:
 
-         - T_0_target_lag-1
-         - T_0_target_lag-2
-         - T_0_target_lag-3
-         - T_1_target_lag-1
-         - T_1_target_lag-2
-         - T_1_target_lag-3
-         - 0_past_cov_lag-1
-         - 0_past_cov_lag-3
-         - 1_past_cov_lag-1
-         - 1_past_cov_lag-3
-         - 2_past_cov_lag-1
-         - 2_past_cov_lag-3
-         - 0_fut_cov_lag_0
+    - T_0_target_lag-1
+    - T_0_target_lag-2
+    - T_0_target_lag-3
+    - T_1_target_lag-1
+    - T_1_target_lag-2
+    - T_1_target_lag-3
+    - 0_past_cov_lag-1
+    - 0_past_cov_lag-3
+    - 1_past_cov_lag-1
+    - 1_past_cov_lag-3
+    - 2_past_cov_lag-1
+    - 2_past_cov_lag-3
+    - 0_fut_cov_lag_0
 
     This series has length 3, as the model can explain 5-3+1 forecasts
     (timestamp indexes 4, 5, and 6)

@@ -19,13 +19,13 @@ class AutoTBATS(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-TBATS based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-TBATS based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
 
         Automatically selects the best TBATS model from all feasible combinations of the parameters `use_boxcox`,
         `use_trend`, `use_damped_trend`, and `use_arma_errors`. Selection is made using the AIC.
         Default value for `use_arma_errors` is `True` since this enables the evaluation of models with
         and without ARMA errors. We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotbats>`_ for the exhaustive documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autotbats>`__ for the exhaustive documentation
         of the arguments.
 
         In addition to univariate deterministic forecasting, it comes with additional support:
@@ -34,7 +34,7 @@ class AutoTBATS(StatsForecastModel):
           Darts adds support by first regressing the series against the future covariates using a
           :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
           StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
-          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
 
         - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
           parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:

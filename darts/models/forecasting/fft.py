@@ -276,7 +276,7 @@ class FFT(LocalForecastingModel):
          [547.26720705]]
 
         .. note::
-            `FFT example notebook <https://unit8co.github.io/darts/examples/03-FFT-examples.html>`_ presents techniques
+            `FFT example notebook <https://unit8co.github.io/darts/examples/03-FFT-examples.html>`__ presents techniques
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
         super().__init__()

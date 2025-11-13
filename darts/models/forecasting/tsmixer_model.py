@@ -97,7 +97,7 @@ class _FeatureMixing(nn.Module):
         norm_type: nn.Module,
     ) -> None:
         """A module for feature mixing with flexibility in normalization and activation based on the
-        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
+        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`__.
 
         This module provides options for batch normalization before or after mixing
         features, uses dropout for regularization, and allows for different activation
@@ -170,7 +170,7 @@ class _TimeMixing(nn.Module):
         norm_type: nn.Module,
     ) -> None:
         """Applies a transformation over the time dimension of a sequence based on the
-        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
+        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`__.
 
         This module applies a linear transformation followed by an activation function
         and dropout over the sequence length of the input feature torch.Tensor after converting
@@ -234,7 +234,7 @@ class _ConditionalMixerLayer(nn.Module):
         norm_type: nn.Module,
     ) -> None:
         """Conditional mix layer combining time and feature mixing with static context based on the
-        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`_.
+        `PyTorch implementation of TSMixer <https://github.com/ditschuk/pytorch-tsmixer>`__.
 
         This module combines time mixing and conditional feature mixing, where the latter
         is influenced by static features. This allows the module to learn representations
@@ -536,7 +536,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         """Time-Series Mixer (TSMixer): An All-MLP Architecture for Time Series.
 
         This is an implementation of the TSMixer architecture, as outlined in [1]_. A major part of the architecture
-        was adopted from `this PyTorch implementation <https://github.com/ditschuk/pytorch-tsmixer>`_. Additional
+        was adopted from `this PyTorch implementation <https://github.com/ditschuk/pytorch-tsmixer>`__. Additional
         changes were applied to increase model performance and efficiency.
 
         TSMixer forecasts time series data by integrating historical time series data, future known inputs, and static
@@ -616,7 +616,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
-            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [2]_.
             It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
@@ -678,7 +678,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
             checkpointing, torch.Tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -697,7 +697,7 @@ class TSMixerModel(MixedCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -725,6 +725,8 @@ class TSMixerModel(MixedCovariatesTorchModel):
         References
         ----------
         .. [1] https://arxiv.org/abs/2303.06053
+        .. [2] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Examples
         --------

@@ -1,5 +1,6 @@
 """
-Detector Base Classes
+Base Detector
+-------------
 """
 
 # TODO:
