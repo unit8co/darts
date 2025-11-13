@@ -1,0 +1,21 @@
+{{ pkgname.split('.')|last }}
+{{ '=' * (pkgname.split('.')|last|length) }}
+
+.. automodule:: {{ pkgname }}
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+{% for docname in subpackages %}
+   {{ docname }}
+{%- endfor %}
+{% for docname in submodules %}
+   {{ docname }}
+{%- endfor %}
+
+{% for docname in subpackages %}
+- :doc:`{{ docname.split('.')|last }} <{{ docname }}>`
+{%- endfor %}
+{% for docname in submodules %}
+- :doc:`{{ docname.split('.')|last }} <{{ docname }}>`
+{%- endfor %}
