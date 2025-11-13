@@ -1,3 +1,9 @@
+"""
+Multi-Output Models for `SKLearnModel`
+--------------------------------------
+"""
+
+import inspect
 from typing import Optional
 
 from sklearn.base import is_classifier
@@ -98,6 +104,12 @@ class MultiOutputMixin:
                 logger=logger,
             )
 
+        if (
+            fit_params.get("verbose") is not None
+            and "verbose" not in inspect.signature(self.estimator.fit).parameters
+        ):
+            fit_params.pop("verbose")
+
         fit_params_validated = _check_method_params(X, fit_params)
         eval_set = fit_params_validated.pop(self.eval_set_name, None)
         eval_weight = fit_params_validated.pop(self.eval_weight_name, None)
@@ -138,7 +150,7 @@ class MultiOutputMixin:
 
 class MultiOutputRegressor(MultiOutputMixin, sk_MultiOutputRegressor):
     """
-    :class:`sklearn.utils.multioutput.MultiOutputClassifier` with a modified ``fit()`` method that also slices
+    :class:`sklearn.utils.multioutput.MultiOutputRegressor` with a modified ``fit()`` method that also slices
     validation data correctly. The validation data has to be passed as parameter ``eval_set`` in ``**fit_params``.
     """
 

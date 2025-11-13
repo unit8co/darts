@@ -5,7 +5,7 @@
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/darts)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg)](https://anaconda.org/conda-forge/u8darts-all)
-![Supported versions](https://img.shields.io/badge/python-3.9+-blue.svg)
+![Supported versions](https://img.shields.io/badge/python-3.10+-blue.svg)
 [![Docker Image Version (latest by date)](https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date)](https://hub.docker.com/r/unit8/darts)
 ![GitHub Release Date](https://img.shields.io/github/release-date/unit8co/darts)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master)
@@ -36,11 +36,11 @@ fledged anomaly detection models.
 * [API Reference](https://unit8co.github.io/darts/generated_api/darts.html)
 * [Examples](https://unit8co.github.io/darts/examples.html)
 
-##### High Level Introductions
+### High Level Introductions
 * [Introductory Blog Post](https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878)
 * [Introduction video (25 minutes)](https://youtu.be/g6OXDnXEtFA)
 
-##### Articles on Selected Topics
+### Articles on Selected Topics
 * [Training Models on Multiple Time Series](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844)
 * [Using Past and Future Covariates](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993)
 * [Temporal Convolutional Networks and Forecasting](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
@@ -50,7 +50,7 @@ fledged anomaly detection models.
 
 ## Quick Install
 
-We recommend to first setup a clean Python environment for your project with Python 3.9+ using your favorite tool
+We recommend to first setup a clean Python environment for your project with Python 3.10+ using your favorite tool
 ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"),
 [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with
 or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
@@ -83,6 +83,7 @@ train, val = series[:-36], series[-36:]
 ```
 
 Fit an exponential smoothing model, and make a (probabilistic) prediction over the validation series' duration:
+
 ```python
 from darts.models import ExponentialSmoothing
 
@@ -92,6 +93,7 @@ prediction = model.predict(len(val), num_samples=1000)
 ```
 
 Plot the median, 5th and 95th percentiles:
+
 ```python
 import matplotlib.pyplot as plt
 
@@ -235,7 +237,7 @@ Here's a breakdown of the forecasting models currently implemented in Darts. Our
 | [ARIMA](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA)                                                                                                                                             |                                                                                                                                                                                                                                   | ✅ 🔴                                                         | 🔴 ✅ 🔴                                                                  | ✅ 🔴                                                                     | 🔴                                        |
 | [VARIMA](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.varima.html#darts.models.forecasting.varima.VARIMA)                                                                                                                                         |                                                                                                                                                                                                                                   | 🔴 ✅                                                         | 🔴 ✅ 🔴                                                                  | ✅ 🔴                                                                     | 🔴                                        |
 | [ExponentialSmoothing](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.exponential_smoothing.html#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing)                                                                               |                                                                                                                                                                                                                                   | ✅ 🔴                                                         | 🔴 🔴 🔴                                                                 | ✅ 🔴                                                                     | 🔴                                        |
-| [Theta](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta) and [FourTheta](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta) | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)                                                                                          | ✅ 🔴                                                         | 🔴 🔴 🔴                                                                 | 🔴 🔴                                                                    | 🔴                                        |
+| [Theta](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta) and [FourTheta](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta) | [Theta paper](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta source](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)                                                                             | ✅ 🔴                                                         | 🔴 🔴 🔴                                                                 | 🔴 🔴                                                                    | 🔴                                        |
 | [Prophet](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet)                                                                                                                         | [Prophet repo](https://github.com/facebook/prophet)                                                                                                                                                                               | ✅ 🔴                                                         | 🔴 ✅ 🔴                                                                  | ✅ 🔴                                                                     | 🔴                                        |
 | [FFT](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT) (Fast Fourier Transform)                                                                                                                            |                                                                                                                                                                                                                                   | ✅ 🔴                                                         | 🔴 🔴 🔴                                                                 | 🔴 🔴                                                                    | 🔴                                        |
 | [KalmanForecaster](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.kalman_forecaster.html#darts.models.forecasting.kalman_forecaster.KalmanForecaster) using the Kalman filter and N4SID for system identification                                   | [N4SID paper](https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf)                                                                                                                              | ✅ ✅                                                          | 🔴 ✅ 🔴                                                                  | ✅ 🔴                                                                     | 🔴                                        |

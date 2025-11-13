@@ -49,7 +49,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     ):
         """Facebook Prophet
 
-        This class provides a basic wrapper around `Facebook Prophet <https://github.com/facebook/prophet>`_.
+        This class provides a basic wrapper around `Facebook Prophet <https://github.com/facebook/prophet>`__.
         It supports adding country holidays as well as custom seasonalities and adds support for stochastic
         forecasting and future covariates.
 
@@ -63,11 +63,11 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             .. code-block:: python
 
                 dict({
-                'name': str  # (name of the seasonality component),
-                'seasonal_periods': Union[int, float]  # (nr of steps composing a season),
-                'fourier_order': int  # (number of Fourier components to use),
-                'prior_scale': Optional[float]  # (a prior scale for this component),
-                'mode': Optional[str]  # ('additive' or 'multiplicative')
+                    'name': str  # (name of the seasonality component),
+                    'seasonal_periods': Union[int, float]  # (nr of steps composing a season),
+                    'fourier_order': int  # (number of Fourier components to use),
+                    'prior_scale': Optional[float]  # (a prior scale for this component),
+                    'mode': Optional[str]  # ('additive' or 'multiplicative')
                 })
             ..
 
@@ -113,7 +113,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
             - a number, for constant carrying capacities
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-            where each number indicates the carrying capacity at this index.
+              where each number indicates the carrying capacity at this index.
         floor
             Parameter specifying the minimum carrying capacity when predicting logistic growth.
             Optional when `growth = 'logistic'` (defaults to 0), otherwise ignored.
@@ -123,7 +123,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
             - a number, for constant carrying capacities
             - a function taking a DatetimeIndex or RangeIndex and returning a corresponding a Sequence of numbers,
-            where each number indicates the carrying capacity at this index.
+              where each number indicates the carrying capacity at this index.
         add_encoders
             A large number of future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -155,7 +155,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
-            `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
+            `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`__.
 
         Examples
         --------
@@ -175,13 +175,13 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         >>> )
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[472.26891239],
-               [467.56955721],
-               [494.47230467],
-               [493.10568429],
-               [497.54686113],
-               [539.11716811]])
+        >>> print(pred.values())
+        [[472.26891239]
+         [467.56955721]
+         [494.47230467]
+         [493.10568429]
+         [497.54686113]
+         [539.11716811]]
         """
 
         super().__init__(add_encoders=add_encoders)
@@ -226,8 +226,13 @@ class Prophet(FutureCovariatesLocalForecastingModel):
                 # Use 0 as default value
                 self._floor = 0
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
 
@@ -309,7 +314,12 @@ class Prophet(FutureCovariatesLocalForecastingModel):
     ) -> TimeSeries:
         _ = self._check_seasonality_conditions(future_covariates=future_covariates)
 
-        super()._predict(n, future_covariates, num_samples)
+        super()._predict(
+            n=n,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
+        )
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 
@@ -463,14 +473,17 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         return forecast["yhat"]
 
     def predict_raw(
-        self, n: int, future_covariates: Optional[TimeSeries] = None
+        self,
+        n: int,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
     ) -> pd.DataFrame:
         """Returns the output of the base Facebook Prophet model in form of a pandas DataFrame. Note however,
         that the output of this method is not supported for further processing with the Darts API.
 
         Methods of the base Prophet model can be accessed with self.model.method() (i.e. self.model.plot_components())
         """
-        super().predict(n, future_covariates, num_samples=1)
+        super().predict(n, future_covariates, num_samples=1, verbose=verbose)
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 

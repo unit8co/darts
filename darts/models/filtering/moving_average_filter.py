@@ -1,6 +1,6 @@
 """
-Moving Average
---------------
+Moving Average Filter
+---------------------
 """
 
 from darts import TimeSeries

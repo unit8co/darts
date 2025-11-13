@@ -61,20 +61,14 @@ class Mapper(BaseDataTransformer):
         --------
         >>> import numpy as np
         >>> from darts import TimeSeries
-        >>> from darts.dataprocessing.transformers import InvertibleMapper
-        >>> series = TimeSeries.from_values(np.array([1e0, 1e1, 1e2, 1e3]))
-        >>> transformer = InvertibleMapper(np.log10, lambda x: 10**x)
+        >>> from darts.dataprocessing.transformers import Mapper
+        >>> series = TimeSeries.from_values(np.array([1, 10, 100]))
+        >>> transformer = Mapper(np.log10)
         >>> series_transformed = transformer.transform(series)
-        >>> print(series_transformed)
-        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
-        array([[[0.]],
-            [[1.]],
-            [[2.]],
-            [[3.]]])
-        Coordinates:
-        * time       (time) int64 0 1 2 3
-        * component  (component) <U1 '0'
-        Dimensions without coordinates: sample
+        >>> print(series_transformed.values())
+        [[0.]
+         [1.]
+         [2.]]
         """
         # Define fixed params (i.e. attributes defined before calling `super().__init__`):
         self._fn = fn
@@ -128,31 +122,20 @@ class InvertibleMapper(InvertibleDataTransformer):
         --------
         >>> import numpy as np
         >>> from darts import TimeSeries
-        >>> from darts.dataprocessing.transformers import Mapper
-        >>> series = TimeSeries.from_values(np.array([1e0, 1e1, 1e2, 1e3]))
-        >>> transformer = Mapper(np.log10)
+        >>> from darts.dataprocessing.transformers import InvertibleMapper
+        >>> series = TimeSeries.from_values(np.array([1, 10, 100]))
+        >>> transformer = InvertibleMapper(np.log10, lambda x: 10 ** x)
         >>> series_transformed = transformer.transform(series)
-        >>> print(series_transformed)
-        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
-        array([[[0.]],
-            [[1.]],
-            [[2.]],
-            [[3.]]])
-        Coordinates:
-        * time       (time) int64 0 1 2 3
-        * component  (component) <U1 '0'
-        Dimensions without coordinates: sample
-        >>> series_restaured = transformer.inverse_transform(series_transformed)
-        >>> print(series_restaured)
-        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
-        array([[[   1.]],
-            [[  10.]],
-            [[ 100.]],
-            [[1000.]]])
-        Coordinates:
-        * time       (time) int64 0 1 2 3
-        * component  (component) <U1 '0'
-        Dimensions without coordinates: sample
+        >>> print(series_transformed.values())
+        [[0.]
+         [1.]
+         [2.]]
+         [3.]]
+        >>> series_restored = transformer.inverse_transform(series_transformed)
+        >>> print(series_restored.values())
+        [[  1.]
+         [ 10.]
+         [100.]]
         """
 
         self._fn = fn

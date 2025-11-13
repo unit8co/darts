@@ -30,7 +30,7 @@ PROJECT_URLS = {
 
 setup(
     name="darts",
-    version="0.37.1",
+    version="0.38.0",
     description="A python library for easy manipulation and forecasting of time series.",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
@@ -45,7 +45,7 @@ setup(
         "darts": ["py.typed"],
     },
     zip_safe=False,
-    python_requires=">=3.9",
+    python_requires=">=3.10",
     classifiers=[
         "Intended Audience :: Science/Research",
         "Intended Audience :: Developers",
@@ -57,9 +57,9 @@ setup(
         "Operating System :: Unix",
         "Operating System :: MacOS",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     keywords="time series forecasting",

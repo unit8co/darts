@@ -19,11 +19,11 @@ class AutoARIMA(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Auto-ARIMA based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """Auto-ARIMA based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
 
         Automatically selects the best AutoRegressive Integrated Moving Average (ARIMA) using an information criterion.
         We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima>`_ for the exhaustive documentation
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#autoarima>`__ for the exhaustive documentation
         of the arguments.
 
         In addition to univariate deterministic forecasting, it comes with additional support:
@@ -98,13 +98,13 @@ class AutoARIMA(StatsForecastModel):
         >>> model = AutoARIMA(season_length=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[445.4276575 ],
-               [420.04912881],
-               [448.7142377 ],
-               [491.23406559],
-               [502.67834069],
-               [566.04774778]])
+        >>> print(pred.values())
+        [[445.4276575 ]
+         [420.04912881]
+         [448.7142377 ]
+         [491.23406559]
+         [502.67834069]
+         [566.04774778]]
         """
         super().__init__(
             model=SFAutoARIMA(*args, **kwargs),

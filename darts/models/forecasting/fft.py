@@ -267,16 +267,16 @@ class FFT(LocalForecastingModel):
         >>> )
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[471.79323146],
-               [494.6381425 ],
-               [504.5659999 ],
-               [515.82463265],
-               [520.59404623],
-               [547.26720705]])
+        >>> print(pred.values())
+        [[471.79323146]
+         [494.6381425 ]
+         [504.5659999 ]
+         [515.82463265]
+         [520.59404623]
+         [547.26720705]]
 
         .. note::
-            `FFT example notebook <https://unit8co.github.io/darts/examples/03-FFT-examples.html>`_ presents techniques
+            `FFT example notebook <https://unit8co.github.io/darts/examples/03-FFT-examples.html>`__ presents techniques
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
         super().__init__()
@@ -303,9 +303,9 @@ class FFT(LocalForecastingModel):
         """Helper function, used to make FFT model pickable."""
         return 0
 
-    def fit(self, series: TimeSeries):
+    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
         series = fill_missing_values(series)
-        super().fit(series)
+        super().fit(series, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
 
@@ -371,11 +371,11 @@ class FFT(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
     ):
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
         trend_forecast = np.array([
             self.trend_function(i + len(self.training_series)) for i in range(n)
         ])

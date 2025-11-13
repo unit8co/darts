@@ -33,7 +33,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         """StatsForecast Model.
 
         Can be used to fit any `StatsForecast` base model. For more information on available models, see the
-        `StatsForecast package <https://nixtlaverse.nixtla.io/statsforecast/index.html>`_.
+        `StatsForecast package <https://nixtlaverse.nixtla.io/statsforecast/index.html>`__.
 
         In addition to univariate deterministic forecasting, our `StatsForecastModel` comes with additional support:
 
@@ -44,7 +44,7 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
           - It adds future covariates support by first regressing the series against the future covariates using a
             :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
             StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
-            `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+            `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
 
         - **Probabilstic forecasting:** Some base models might require setting `prediction_intervals` at `model`
           creation to support probabilistic forecasting. To generate probabilistic forecasts, you can set the following
@@ -116,13 +116,13 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         >>> model = StatsForecastModel(model=AutoARIMA(season_length=12))
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[445.4276575 ],
-               [420.04912881],
-               [448.7142377 ],
-               [491.23406559],
-               [502.67834069],
-               [566.04774778]])
+        >>> print(pred.values())
+        [[445.4276575 ]
+         [420.04912881]
+         [448.7142377 ]
+         [491.23406559]
+         [502.67834069]
+         [566.04774778]]
         """
         if not isinstance(model, _TS):
             raise ValueError(
@@ -135,8 +135,13 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         self._linreg: Optional[LinearRegressionModel] = None
         super().__init__(add_encoders=add_encoders)
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
 
@@ -148,7 +153,9 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
                 lags_future_covariates=[0],
                 use_static_covariates=False,
             )
-            self._linreg.fit(series, future_covariates=future_covariates)
+            self._linreg.fit(
+                series, future_covariates=future_covariates, verbose=verbose
+            )
             target = self._get_target_residuals(series, future_covariates)
 
         self.model.fit(
@@ -175,7 +182,12 @@ class StatsForecastModel(TransferableFutureCovariatesLocalForecastingModel):
         random_state: Optional[int] = None,
     ) -> TimeSeries:
         super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
         )
 
         if series is not None and not self._supports_native_transferable_series:

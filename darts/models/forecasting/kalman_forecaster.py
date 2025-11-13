@@ -97,16 +97,16 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         >>> model = KalmanForecaster(dim_x=12)
         >>> model.fit(series, future_covariates=future_cov)
         >>> pred = model.predict(6, future_covariates=future_cov)
-        >>> pred.values()
-        array([[474.40680728],
-               [440.51801726],
-               [461.94512461],
-               [494.42090089],
-               [528.6436328 ],
-               [590.30647185]])
+        >>> print(pred.values())
+        [[474.40680728]
+         [440.51801726]
+         [461.94512461]
+         [494.42090089]
+         [528.6436328 ]
+         [590.30647185]]
 
         .. note::
-            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`_
+            `Kalman example notebook <https://unit8co.github.io/darts/examples/10-Kalman-filter-examples.html>`__
             presents techniques that can be used to improve the forecasts quality compared to this simple usage
             example.
         """
@@ -115,8 +115,13 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         self.kf = kf
         self.darts_kf = KalmanFilter(dim_x, kf)
 
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super()._fit(series, future_covariates)
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+        verbose: Optional[bool] = None,
+    ):
+        super()._fit(series, future_covariates, verbose=verbose)
         if self.kf is None:
             self.darts_kf.fit(series=series, covariates=future_covariates)
 
@@ -129,7 +134,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
         **kwargs,
@@ -142,6 +147,7 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
             series,
             future_covariates,
             num_samples,
+            verbose=verbose,
             random_state=random_state,
             **kwargs,
         )
@@ -159,7 +165,12 @@ class KalmanForecaster(TransferableFutureCovariatesLocalForecastingModel):
         random_state: Optional[int] = None,
     ) -> TimeSeries:
         super()._predict(
-            n, series, historic_future_covariates, future_covariates, num_samples
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            verbose=verbose,
         )
         time_index = self._generate_new_dates(n, input_series=series)
         placeholder_vals = np.zeros((n, self.training_series.width)) * np.nan

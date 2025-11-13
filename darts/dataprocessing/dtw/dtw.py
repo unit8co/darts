@@ -166,12 +166,6 @@ class DTWAlignment:
         The `CostMatrix` for DTW.
     """
 
-    n: int
-    m: int
-    series1: TimeSeries
-    series2: TimeSeries
-    cost: CostMatrix
-
     def __init__(self, series1: TimeSeries, series2: TimeSeries, cost: CostMatrix):
         self.n = len(series1)
         self.m = len(series2)

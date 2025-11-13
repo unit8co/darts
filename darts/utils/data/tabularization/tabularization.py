@@ -1,3 +1,10 @@
+"""
+Data Tabularization Methods
+---------------------------
+
+Tabularization methods to convert time series data into tabular format for usage with SKLearn-like models.
+"""
+
 import warnings
 from collections.abc import Sequence
 from functools import reduce
@@ -50,7 +57,7 @@ def create_lagged_data(
     Optional[tuple[int, int]],
     Optional[ArrayOrArraySequence],
 ]:
-    """
+    r"""
     Creates the features array `X` and labels array `y` to train a lagged-variables `SKLearnModel` when
     `is_training = True`; alternatively, creates the features array `X` to produce a series of prediction from an
     already-trained model when `is_training = False`. In both cases, a list of time indices corresponding to
@@ -59,10 +66,12 @@ def create_lagged_data(
     Notes
     -----
     Instead of calling `create_lagged_data` directly, it is instead recommended that:
-        - `create_lagged_training_data` be called if one wishes to create the `X` and `y` arrays
-        to train an `SKLearnModel`.
-        - `create_lagged_prediction_data` be called if one wishes to create the `X` array required
-        to generate a prediction from an already-trained `SKLearnModel`.
+
+    - `create_lagged_training_data` be called if one wishes to create the `X` and `y` arrays
+      to train an `SKLearnModel`.
+    - `create_lagged_prediction_data` be called if one wishes to create the `X` array required
+      to generate a prediction from an already-trained `SKLearnModel`.
+
     This is because even though both of these functions are merely wrappers around `create_lagged_data`, their
     call signatures are more easily interpreted than `create_lagged_data`. For example,
     `create_lagged_prediction_data` does not accept `output_chunk_length` nor `multi_models` as inputs, since
@@ -70,34 +79,48 @@ def create_lagged_data(
     returns only `X` and `times` as outputs, as opposed to returning `y` as `None` along with `X` and `times`.
 
     The `X` array is constructed from the lagged values of up to three separate timeseries:
-        1. The `target_series`, which contains the values we're trying to predict. An `SKLearnModel` that
-        uses previous values of the target its predicting is referred to as *autoregressive*; please refer to
-        [1]_ for further details about autoregressive timeseries models.
-        2. The past covariates series, which contains values that are *not* known into the future. Unlike
-        the target series, however, past covariates are *not* to be predicted by the `SKLearnModel`.
-        3. The future covariates (AKA 'exogenous' covariates) series, which contains values that are known
-        into the future, even beyond the data in `target_series` and `past_covariates`.
+
+    1. The `target_series`, which contains the values we're trying to predict. An `SKLearnModel` that
+       uses previous values of the target its predicting is referred to as *autoregressive*; please refer to
+       [1]_ for further details about autoregressive timeseries models.
+    2. The past covariates series, which contains values that are *not* known into the future. Unlike
+       the target series, however, past covariates are *not* to be predicted by the `SKLearnModel`.
+    3. The future covariates (AKA 'exogenous' covariates) series, which contains values that are known
+       into the future, even beyond the data in `target_series` and `past_covariates`.
+
     See [2]_ for a more detailed discussion about target, past, and future covariates. Conversely, `y` is
     comprised only of the lagged values of `target_series`.
 
-    The shape of `X` is:
-        `X.shape = (n_observations, n_lagged_features, n_samples)`,
-    where `n_observations` equals either the number of time points shared between all specified series,
-    or `max_samples_per_ts`, whichever is smallest.
-    The shape of `y` is:
-        `y.shape = (n_observations, output_chunk_length, n_samples)`,
-    if `multi_models = True`, otherwise:
-        `y.shape = (n_observations, 1, n_samples)`.
+    The shape of `X` is: `(n_observations, n_lagged_features, n_samples)`, where `n_observations` equals either the
+    number of time points shared between all specified series, or `max_samples_per_ts`, whichever is smallest.
+    The shape of `y` is: `(n_observations, output_chunk_length, n_samples)`, if `multi_models = True`, otherwise:
+    `(n_observations, 1, n_samples)`.
 
-    Along the `n_lagged_features` axis, `X` has the following structure (for `*_lags=[-2,-1]` and
-    `*_series.n_components = 2`):
+    Along the `n_lagged_features` axis, `X` has the following structure (for `\*_lags=[-2,-1]` and
+    `\*_series.n_components = 2`):
+
+    .. highlight:: md
+    .. code-block:: md
+
         lagged_target | lagged_past_covariates | lagged_future_covariates
-    where each `lagged_*` has the following structure:
+    ..
+
+    where each `lagged_\*` has the following structure:
+
+    .. highlight:: md
+    .. code-block:: md
+
         lag_-2_comp_1_* | lag_-2_comp_2_* | lag_-1_comp_1_* | lag_-1_comp_2_*
+    ..
 
     Along the `n_lagged_labels` axis, `y` has the following structure (for `output_chunk_length=4` and
     `target_series.n_components=2`):
+
+    .. highlight:: md
+    .. code-block:: md
+
         lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
+    ..
 
     The `lags` and `lags_past_covariates` must contain only values less than or equal to -1. In other words, one
     cannot use the value of either of these series at time `t` to predict the value of the target series at the
@@ -108,11 +131,13 @@ def create_lagged_data(
 
     The exact method used to construct `X` and `y` depends on whether all specified timeseries are
     of the same frequency or not:
-        - If all specified timeseries are of the same frequency, `strided_moving_window` is used to extract
-        contiguous time blocks from each timeseries; the lagged variables are then extracted from each window.
-        - If all specified timeseries are *not* of the same frequency, then `find_shared_times` is first used
-        to find those times common to all three timeseries, after which the lagged features are extracted by
-        offsetting the time indices of these common times by the requested lags.
+
+    - If all specified timeseries are of the same frequency, `strided_moving_window` is used to extract
+      contiguous time blocks from each timeseries; the lagged variables are then extracted from each window.
+    - If all specified timeseries are *not* of the same frequency, then `find_shared_times` is first used
+      to find those times common to all three timeseries, after which the lagged features are extracted by
+      offsetting the time indices of these common times by the requested lags.
+
     In cases where it can be validly applied, the 'moving window' method is expected to be faster than the
     'intersecting time' method. However, in exceptional cases where only a small number of lags are being
     extracted, but the difference between the lag values is large (e.g. `lags = [-1, -1000]`), the 'moving
@@ -190,7 +215,7 @@ def create_lagged_data(
         If `False`, then the `SKLearnModel` is assumed to predict *only* the time step at `t+output_chunk_length`.
         This input is ignored if `is_training = False`.
     check_inputs
-        Optionally, specifies that the `lags_*` and `series_*` inputs should be checked for validity. Should be set
+        Optionally, specifies that the `lags_\*` and `series_\*` inputs should be checked for validity. Should be set
         to `False` if inputs have already been checked for validity (e.g. inside the `__init__` of a class), otherwise
         should be set to `True`.
     use_moving_windows
@@ -719,8 +744,13 @@ def add_static_covariates_to_lagged_data(
     covariates with identical dimensionality. Otherwise, will not consider static covariates.
 
     The static covariates are added to the right of the lagged features following the convention:
-    with a 2 component series, and 2 static covariates per component ->
-    scov_1_comp_1 | scov_1_comp_2 | scov_2_comp_1 | scov_2_comp_2
+    with a 2 component series, and 2 static covariates per component:
+
+    .. highlight:: md
+    .. code-block:: md
+
+        scov_1_comp_1 | scov_1_comp_2 | scov_2_comp_1 | scov_2_comp_2
+    ..
 
     Parameters
     ----------
@@ -812,41 +842,67 @@ def create_lagged_component_names(
     `create_lagged_data()`. The order of the features is the following:
 
     Along the `n_lagged_features` axis, `X` has the following structure:
+
+    .. highlight:: md
+    .. code-block:: md
+
         lagged_target | lagged_past_covariates | lagged_future_covariates | static covariates
+    ..
 
     For `*_lags=[-2,-1]` and `*_series.n_components = 2` (lags shared across all the components),
     each `lagged_*` has the following structure (grouped by lags):
+
+    .. highlight:: md
+    .. code-block:: md
+
         comp0_*_lag-2 | comp1_*_lag-2 | comp0_*_lag_-1 | comp1_*_lag-1
+    ..
+
     For `*_lags={'comp0':[-3, -1], 'comp1':[-5, -3]}` and `*_series.n_components = 2` (component-
     specific lags), each `lagged_*` has the following structure (sorted by lags, then by components):
+
+    .. highlight:: md
+    .. code-block:: md
+
         comp1_*_lag-5 | comp0_*_lag-3 | comp1_*_lag_-3 | comp0_*_lag-1
+    ..
 
     and for static covariates (2 static covariates acting on 2 target components):
+
+    .. highlight:: md
+    .. code-block:: md
+
         cov0_*_target_comp0 | cov0_*_target_comp1 | cov1_*_target_comp0 | cov1_*_target_comp1
+    ..
 
     Along the `n_lagged_labels` axis, `y` has the following structure (for `output_chunk_length=4` and
     `target_series.n_components=2`):
+
+    .. highlight:: md
+    .. code-block:: md
+
         comp0_target_lag0 | comp1_target_lag0 | ... | comp0_target_lag3 | comp1_target_lag3
+    ..
 
     Note : will only use the component names of the first series from `target_series`, `past_covariates`,
     `future_covariates`, and static_covariates.
 
     The naming convention for target, past and future covariates lags is: ``"{name}_{type}_lag{i}"``, where:
 
-        - ``{name}`` the component name of the (first) series
-        - ``{type}`` is the feature type, one of "target", "pastcov", and "futcov"
-        - ``{i}`` is the lag value
+    - ``{name}`` the component name of the (first) series
+    - ``{type}`` is the feature type, one of "target", "pastcov", and "futcov"
+    - ``{i}`` is the lag value
 
     The naming convention for static covariates is: ``"{name}_statcov_target_{comp}"``, where:
 
-        - ``{name}`` the static covariate name of the (first) series
-        - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
-            covariate acts globally on a multivariate target series, will show "global".
+    - ``{name}`` the static covariate name of the (first) series
+    - ``{comp}`` the target component name of the (first) that the static covariate act on. If the static
+      covariate acts globally on a multivariate target series, will show "global".
 
     The naming convention for labels is: ``"{name}_target_hrz{i}"``, where:
 
-        - ``{name}`` the component name of the (first) series
-        - ``{i}`` is the step in the forecast horizon
+    - ``{name}`` the component name of the (first) series
+    - ``{i}`` is the step in the forecast horizon
 
     Returns
     -------
@@ -1824,16 +1880,28 @@ def get_shared_times_bounds(
     returns tight `bounds` (i.e. the earliest and latest time within the intersection of all the timeseries
     is returned). To see this, suppose we have three equal-frequency series with observations made at different
     times:
+
+    .. highlight:: md
+    .. code-block:: md
+
         Series 1: ------
         Series 2:    ------
         Series 3:  ------
+    ..
+
     Here, each `-` denotes an observation at a specific time. In this example, `find_time_overlap_bounds` will
     return the times at `LB` and `UB`:
+
+    .. highlight:: md
+    .. code-block:: md
+
                     LB
         Series 1: ---|---|
         Series 2:    |---|---
         Series 3:  --|---|-
                          UB
+    ..
+
     If the specified timeseries are *not* of the same frequency, then the returned `bounds` is potentially non-tight
     (i.e. `LB <= intersection.start_time() < intersection.end_time() <= UB`, where `intersection` are the times shared
     by all specified timeseries)
@@ -1856,7 +1924,6 @@ def get_shared_times_bounds(
     TypeError
         If the series and/or times in `series_or_times` don't all share the same type of `time_index`
         (i.e. either all `pd.DatetimeIndex` or `pd.RangeIndex`).
-
     """
     start_times, end_times = [], []
     for val in series_or_times:
@@ -1901,10 +1968,12 @@ def strided_moving_window(
     Notes
     -----
     This function is similar to `sliding_window_view` in `np.lib.stride_tricks`, except that:
-        1. `strided_moving_window` allows for consecutive windows to be separated by a specified `stride`,
-        whilst `sliding_window_view` does not.
-        2. `strided_moving_window` can only operate along a single axis, whereas `sliding_window_view` can
-        operate along multiple axes.
+
+    - `strided_moving_window` allows for consecutive windows to be separated by a specified `stride`,
+      whilst `sliding_window_view` does not.
+    - `strided_moving_window` can only operate along a single axis, whereas `sliding_window_view` can
+      operate along multiple axes.
+
     Additionally, unlike `sliding_window_view`, using `strided_moving_window` doesn't require `numpy >= 1.20.0`.
 
     Parameters

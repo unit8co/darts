@@ -43,9 +43,9 @@ model = SomeTorchForecastingModel(input_chunk_length=7,
                                   **model_kwargs)
 ```
 
-All TFMs can be trained on single or multiple `target` series and, depending on their covariate support (covered in [this subsection](#torch-forecasting-model-covariates-support)), `past_covariates` and / or `future_covariates`. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.
+All TFMs can be trained on single or multiple `target` series and, depending on their covariate support (covered in [this subsection on covariates support](#torch-forecasting-model-covariates-support)), `past_covariates` and / or `future_covariates`. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.
 
-Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in [this subsection](#required-target-time-spans-for-training-validation-and-prediction))
+Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in [this subsection on time span requirements](#required-target-time-spans-for-training-validation-and-prediction))
 
 ```python
 # fit the model on a single target series with optional past and / or future covariates
@@ -213,7 +213,7 @@ model.fit(series=ice_cream_sales_train,
 ```
 
 If you split your data, you have to define a `training_cutoff` (a date or fraction at which to split the dataset) so that both the train and validation datasets satisfy the minimum length requirements
-from [this subsection](#required-target-time-spans-for-training-validation-and-prediction)
+from [this subsection on time span requirements](#required-target-time-spans-for-training-validation-and-prediction)
 
 Instead of splitting by time, you can also use another subset of time series as validation set.
 
@@ -245,12 +245,12 @@ prediction = model.predict(n=n,
 
 ![figure7](./images/covariates/prediction_once.png)
 
-**Figure 5: Forecast with a single sequence for `n <= output_chunk_length`**
+**Figure 5: Forecast with a single sequence for n <= output_chunk_length**
 
 
 ![figure8](./images/covariates/prediction_multi.png)
 
-**Figure 6: Auto-regressive forecast for `n > output_chunk_length`**
+**Figure 6: Auto-regressive forecast for n > output_chunk_length**
 
 
 ## Advanced Functionnalities

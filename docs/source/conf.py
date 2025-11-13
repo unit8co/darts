@@ -14,7 +14,7 @@ import os
 import sys
 from datetime import datetime
 
-sys.path.insert(0, os.path.abspath("../../.."))
+sys.path.insert(0, os.path.abspath("../.."))
 
 
 # -- Project information -----------------------------------------------------
@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.37.1"
+version = "0.38.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -40,23 +40,37 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
+    "sphinx_copybutton",
     "nbsphinx",
     "m2r2",
     "numpydoc",
 ]
 
+exclude_parent_classes = [
+    "Module",  # torch.nn.modules.module.Module
+    "LightningModule",  # pytorch_lightning.core.module.LightningModule
+    "TQDMProgressBar",  #
+    "_MultiOutputEstimator",  # sklearn.multioutput._MultiOutputEstimator
+    "MultiOutputClassifier",  # sklearn.multioutput.MultiOutputClassifier
+    "MultiOutputRegressor",  # sklearn.multioutput.MultiOutputRegressor
+    "ndarray",  # numpy.ndarray
+]
+
+exclude_members = [
+    "min_train_series_length",
+    "first_prediction_index",
+    "future_covariate_series",
+    "past_covariate_series",
+    "initialize_encoders",
+    "SplitTimeSeriesSequence",
+    "randint",
+]
+
 autodoc_default_options = {
-    "inherited-members": None,
+    "inherited-members": ",".join(exclude_parent_classes),
     "show-inheritance": None,
     "ignore-module-all": True,
-    "exclude-members": "LocalForecastingModel,FutureCovariatesLocalForecastingModel,"
-    + "TransferableFutureCovariatesLocalForecastingModel,GlobalForecastingModel,TorchForecastingModel,"
-    + "PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,MixedCovariatesTorchModel,"
-    + "SplitCovariatesTorchModel,"
-    + "min_train_series_length,"
-    + "first_prediction_index,future_covariate_series,past_covariate_series,"
-    + "initialize_encoders,register_datapipe_as_function,register_function,functions,"
-    + "SplitTimeSeriesSequence,randint,AnomalyModel",
+    "exclude-members": ",".join(exclude_members),
 }
 
 # In order to also have the docstrings of __init__() methods included
@@ -82,6 +96,30 @@ exclude_patterns = [
     "**/modules.rst",
     "**/darts.tests.*",
     "**/*logging.rst",
+    "**/darts.ad.aggregators.aggregators.rst",
+    "**/darts.ad.anomaly_model.anomaly_model.rst",
+    "**/darts.ad.detectors.detectors.rst",
+    "**/darts.ad.scorers.scorers.rst",
+    "**/darts.explainability.explainability.rst",
+    "**/darts.explainability.utils.rst",
+    "**/darts.models.components.*",
+    "**/darts.models.forecasting.ensemble_model.rst",
+    "**/darts.models.forecasting.forecasting_model.rst",
+    "**/darts.models.forecasting.torch_forecasting_model.rst",
+    "**/darts.models.forecasting.pl_forecasting_module.rst",
+    "**/darts.utils.data.tabularization.*",
+    "**/darts.utils.data.torch_datasets.dataset.rst",
+    "**/darts.utils.data.torch_datasets.utils.rst",
+    "**/darts.utils.data.utils.rst",
+    "**/darts.utils.historical_forecasts.*",
+    "**/darts.utils.likelihood_models.base.rst",
+    "**/darts.utils.multioutput.rst",
+    "**/darts.utils.onnx_utils.rst",
+    "**/darts.utils.ts_utils.rst",
+]
+
+suppress_warnings = [
+    "toc.excluded",  # Suppress warnings about excluded documents from above
 ]
 
 autosummary_generate = True
@@ -95,7 +133,7 @@ numpydoc_attributes_as_param_list = False
 numpydoc_show_class_members = True
 
 # This might be needed, see https://github.com/numpy/numpydoc/issues/69
-numpydoc_class_members_toctree = True
+numpydoc_class_members_toctree = False
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -121,6 +159,10 @@ html_static_path = ["static"]
 
 
 # -- Extension configuration -------------------------------------------------
+
+# ignore outputs code blocks when copying (see https://sphinx-copybutton.readthedocs.io/en/latest/use.html#strip-and-configure-input-prompts-for-code-cells)
+copybutton_prompt_text = r">>>\s?|\.\.\.\s?"
+copybutton_prompt_is_regexp = True
 
 # -- Options for todo extension ----------------------------------------------
 

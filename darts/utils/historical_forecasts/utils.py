@@ -1,19 +1,24 @@
+"""
+Optimized Historical Forecasts Utils
+------------------------------------
+"""
+
 import inspect
 from collections.abc import Sequence
 from types import SimpleNamespace
-from typing import Any, Callable, Literal, Optional, Union
+from typing import Any, Callable, Literal, Optional, TypeVar, Union
 
 import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike
 
-from darts import TimeSeries
 from darts.dataprocessing.pipeline import Pipeline
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
 )
 from darts.logging import get_logger, raise_log
+from darts.timeseries import TimeSeries, slice_intersect
 from darts.utils.ts_utils import (
     SeriesType,
     get_series_seq_type,
@@ -30,6 +35,8 @@ TimeIndex = Union[
     tuple[int, int],
     tuple[pd.Timestamp, pd.Timestamp],
 ]
+
+T = TypeVar("T")
 
 
 def _historical_forecasts_general_checks(
@@ -278,7 +285,12 @@ def _historical_forecasts_general_checks(
 
         if n.retrain:
             # if more than one series is passed and the pipelines are retrained, they cannot be global
-            if n.show_warnings and len(series) > 1 and len(global_fit_pipelines) > 0:
+            if (
+                n.show_warnings
+                and len(series) > 1
+                and len(global_fit_pipelines) > 0
+                and not n.apply_globally
+            ):
                 logger.warning(
                     "When `retrain=True` and multiple series are provided, the fittable `data_transformers` "
                     "are trained on each series independently (`global_fit=True` will be ignored)."
@@ -490,8 +502,8 @@ def _historical_forecasts_sanitize_kwargs(
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Convert kwargs to dictionary, check that their content is compatible with called methods."""
     hfc_args = set(inspect.signature(model.historical_forecasts).parameters)
-    # replace `forecast_horizon` with `n`
-    hfc_args = hfc_args - {"forecast_horizon"}
+    # replace `forecast_horizon` with `n` and allow some duplicate parameters
+    hfc_args = hfc_args - {"forecast_horizon", "verbose"}
     hfc_args = hfc_args.union({"n"})
 
     if fit_kwargs is None:
@@ -797,7 +809,7 @@ def _get_historical_forecasts_setup(
     # adjust the start of the series depending on whether we train (at some point), or predict only
     # must be performed after the operation on historical_forecasts_time_index
     if min_timestamp_series > series.start_time():
-        series = series.drop_before(min_timestamp_series - 1 * series.freq)
+        series = series.drop_before(min_timestamp_series, keep_point=True)
 
     return historical_forecasts_time_index, series, train_length, val_length
 
@@ -1278,11 +1290,6 @@ def _check_optimizable_historical_forecasts_global_models(
         return True
 
     if show_warnings:
-        if not retrain_off:
-            logger.warning(
-                "`enable_optimization=True` is ignored because `retrain` is not `False` or `0`. "
-                "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
-            )
         if is_autoregressive:
             logger.warning(
                 "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`. "
@@ -1294,16 +1301,15 @@ def _check_optimizable_historical_forecasts_global_models(
 
 def _process_historical_forecast_input(
     model,
-    series: Union[TimeSeries, Sequence[TimeSeries]],
-    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    series: Sequence[TimeSeries],
+    past_covariates: Optional[Sequence[TimeSeries]] = None,
+    future_covariates: Optional[Sequence[TimeSeries]] = None,
     forecast_horizon: int = 1,
     allow_autoregression: bool = False,
 ) -> Union[
     Sequence[TimeSeries],
     Optional[Sequence[TimeSeries]],
     Optional[Sequence[TimeSeries]],
-    int,
 ]:
     if not model._fit_called:
         raise_log(
@@ -1319,10 +1325,6 @@ def _process_historical_forecast_input(
             ),
             logger,
         )
-    series_seq_type = get_series_seq_type(series)
-    series = series2seq(series)
-    past_covariates = series2seq(past_covariates)
-    future_covariates = series2seq(future_covariates)
 
     # manage covariates, usually handled by SKLearnModel.predict()
     if past_covariates is None and model.past_covariate_series is not None:
@@ -1340,7 +1342,7 @@ def _process_historical_forecast_input(
             past_covariates=past_covariates,
             future_covariates=future_covariates,
         )
-    return series, past_covariates, future_covariates, series_seq_type
+    return series, past_covariates, future_covariates
 
 
 def _process_predict_start_points_bounds(
@@ -1394,37 +1396,32 @@ def _convert_data_transformers(
 
 
 def _apply_data_transformers(
-    series: Union[TimeSeries, list[TimeSeries]],
-    pred_series: Optional[Union[TimeSeries, list[TimeSeries]]],
-    past_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
-    future_covariates: Optional[Union[TimeSeries, list[TimeSeries]]],
+    series: Sequence[TimeSeries],
+    pred_series: Optional[Sequence[TimeSeries]],
+    past_covariates: Optional[Sequence[TimeSeries]],
+    future_covariates: Optional[Sequence[TimeSeries]],
     data_transformers: dict[str, Pipeline],
     max_future_cov_lag: int,
     fit_transformers: bool,
 ) -> tuple[
-    Optional[Union[TimeSeries, list[TimeSeries]]],
-    Optional[Union[TimeSeries, list[TimeSeries]]],
-    Optional[Union[TimeSeries, list[TimeSeries]]],
-    Optional[Union[TimeSeries, list[TimeSeries]]],
+    Sequence[TimeSeries],
+    Optional[Sequence[TimeSeries]],
+    Optional[Sequence[TimeSeries]],
+    Optional[Sequence[TimeSeries]],
 ]:
     """Transform each series using the corresponding Pipeline.
 
-    If the Pipeline is fittable and `fit_transformers=True`, the series are sliced to correspond
-    to the information available at model training time
+    If the Pipeline is fittable and `fit_transformers=True`, the series are sliced to correspond to the information
+    available at model training time.
+
+    If the sequences contain more than one series, the series are expected to have the same time index (e.g. when
+    running global historical forecasts with `apply_globally=True`). With this, we can avoid any look-ahead bias.
     """
-    # `global_fit`` is not supported, requires too complex time indexes manipulation across series (slice and align)
-    if fit_transformers and any(
-        not (isinstance(ts, TimeSeries) or ts is None)
-        for ts in [series, past_covariates, future_covariates]
-    ):
-        raise_log(
-            ValueError(
-                "Fitting the data transformers on multiple series is not supported, either provide trained "
-                "`data_transformers` or a single series (including for the covariates).",
-                logger,
-            )
-        )
     transformed_ts = []
+
+    series_0 = get_single_series(series)
+    freq = series_0.freq
+    series_end = series_0.end_time()
     for ts_type, apply_fit, ts in zip(
         ["series", "series", "past_covariates", "future_covariates"],
         [True, False, True, True],
@@ -1441,13 +1438,17 @@ def _apply_data_transformers(
             if fit_transformers and data_transformers[ts_type].fittable:
                 # must slice the ts to distinguish accessible information from future information
                 if ts_type == "past_covariates":
-                    # known information is aligned with the target series
-                    tmp_ts = ts.drop_after(series.end_time())
+                    # information is known until the end of the target series
+                    tmp_ts = [ts_.drop_after(series_end, keep_point=True) for ts_ in ts]
                 elif ts_type == "future_covariates":
-                    # known information goes up to the first forecasts iteration (in case of autoregression)
-                    tmp_ts = ts.drop_after(
-                        series.end_time() + max(0, max_future_cov_lag + 1) * series.freq
-                    )
+                    # information is known until `max_future_cov_lag` steps after the end of the target series
+                    tmp_ts = [
+                        ts_.drop_after(
+                            series_end + max(0, max_future_cov_lag + 1) * freq,
+                            keep_point=True,
+                        )
+                        for ts_ in ts
+                    ]
                 else:  # "series" and "pred_series"
                     # nothing to do, the target series is already sliced appropriately
                     tmp_ts = ts
@@ -1481,6 +1482,67 @@ def _apply_inverse_data_transformers(
         return forecasts[0] if called_with_single_series else forecasts
     else:
         return forecasts
+
+
+def _slice_intersect_series(
+    series: Sequence[TimeSeries],
+    past_covariates: Optional[Sequence[TimeSeries]],
+    future_covariates: Optional[Sequence[TimeSeries]],
+    sample_weight: Optional[Union[str, Sequence[TimeSeries]]],
+) -> tuple[
+    Sequence[TimeSeries],
+    Optional[Sequence[TimeSeries]],
+    Optional[Sequence[TimeSeries]],
+    Optional[Union[str, Sequence[TimeSeries]]],
+]:
+    """Computes the slice intersection of all series sequences.
+
+    Raises an error if the intersection is empty for any of the sequences.
+    """
+    series = slice_intersect(series)
+    past_covariates = (
+        slice_intersect(past_covariates) if past_covariates is not None else None
+    )
+    future_covariates = (
+        slice_intersect(future_covariates) if future_covariates is not None else None
+    )
+    if not isinstance(sample_weight, str):
+        sample_weight = (
+            slice_intersect(sample_weight) if sample_weight is not None else None
+        )
+
+    for s_, name in zip(
+        [series, past_covariates, future_covariates, sample_weight],
+        ["series", "past_covariates", "future_covariates", "sample_weight"],
+    ):
+        if s_ is not None and not isinstance(s_, str) and len(s_[0]) == 0:
+            raise_log(
+                ValueError(
+                    f"The slice intersection of the `{name}` is empty. "
+                    f"Cannot apply historical forecasts globally."
+                ),
+                logger=logger,
+            )
+    return series, past_covariates, future_covariates, sample_weight
+
+
+def _pack_series_in_list(
+    series: T, past_covariates: T, future_covariates: T, sample_weight: T
+) -> tuple[
+    Union[T, list[T]],
+    Union[T, list[T]],
+    Union[T, list[T]],
+    Union[T, list[T]],
+]:
+    """Packs each provided input into a list (or str in case of sample weight)."""
+    series = [series]
+    past_covariates = [past_covariates] if past_covariates else None
+    future_covariates = [future_covariates] if future_covariates else None
+    if isinstance(sample_weight, str):
+        sample_weight = sample_weight
+    else:
+        sample_weight = [sample_weight] if sample_weight else None
+    return series, past_covariates, future_covariates, sample_weight
 
 
 def _process_historical_forecast_for_backtest(

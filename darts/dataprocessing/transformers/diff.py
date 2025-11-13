@@ -81,27 +81,20 @@ class Diff(FittableDataTransformer, InvertibleDataTransformer):
         >>> from darts.dataprocessing.transformers import Diff
         >>> series = AirPassengersDataset().load()
         >>> first_order_diff = Diff(lags=1, dropna=True).fit_transform(series)
-        >>> print(first_order_diff.head())
-        <TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)>
-        array([[[ 6.]],
-            [[14.]],
-            [[-3.]],
-            [[-8.]],
-            [[14.]]])
-        Coordinates:
-        * Month      (Month) datetime64[ns] 1949-02-01 1949-03-01 ... 1949-06-01
-        * component  (component) object '#Passengers'
+        >>> print(first_order_diff.values()[:5])
+        [[ 6.]
+         [14.]
+         [-3.]
+         [-8.]
+         [14.]]
         >>> second_order_diff = Diff(lags=[1, 2], dropna=False).fit_transform(series)
-        >>> print(second_order_diff.head())
-        <TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)>
-        array([[[ nan]],
-            [[ nan]],
-            [[ nan]],
-            [[ -9.]],
-            [[-22.]]])
-        Coordinates:
-        * Month      (Month) datetime64[ns] 1949-01-01 1949-02-01 ... 1949-05-01
-        * component  (component) object '#Passengers'
+        >>> print(second_order_diff.values()[:5])
+        [[ nan]
+         [ nan]
+         [ nan]
+         [ -9.]
+         [-22.]]
+
         References
         ----------
         .. [1] https://otexts.com/fpp2/stationarity.html
