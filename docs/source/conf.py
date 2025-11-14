@@ -35,7 +35,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
-    "sphinx_automodapi.automodapi",
     "sphinx.ext.graphviz",
     "sphinx.ext.napoleon",
     "sphinx.ext.githubpages",
