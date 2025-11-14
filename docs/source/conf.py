@@ -150,6 +150,7 @@ html_theme_options = {
         "image_light": "static/darts-logo-trim.png",
         "image_dark": "static/darts-logo-dark.png",
     },
+    # "show_toc_level": 0,  # to only show the main level objects in right sidebar
 }
 
 
