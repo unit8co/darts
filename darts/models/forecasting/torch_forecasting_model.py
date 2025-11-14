@@ -26,6 +26,7 @@ import sys
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from glob import glob
+from pathlib import Path
 from typing import Any, Callable, Literal, Optional, Union
 
 if sys.version_info >= (3, 11):
@@ -1933,7 +1934,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def save(
         self,
-        path: Optional[str] = None,
+        path: Optional[Union[str, os.PathLike]] = None,
         clean: bool = False,
     ) -> None:
         """
@@ -1974,14 +1975,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         if path is None:
             # default path
-            path = self._default_save_path() + ".pt"
+            path = Path(self._default_save_path() + ".pt")
+        else:
+            # ensures that all os.PathLike are accepted
+            path = Path(path)
 
         # save the TorchForecastingModel (does not save the PyTorch LightningModule, and Trainer)
         with open(path, "wb") as f_out:
             torch.save(self if not clean else self._clean(), f_out)
 
         # save the LightningModule checkpoint (weights only with `clean=True`)
-        path_ptl_ckpt = path + ".ckpt"
+        path_ptl_ckpt = path.with_name(path.name + ".ckpt")
         if self.trainer is not None:
             self.trainer.save_checkpoint(path_ptl_ckpt, weights_only=clean)
 
@@ -2000,7 +2004,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def load(
-        path: str, pl_trainer_kwargs: Optional[dict] = None, **kwargs
+        path: Optional[Union[str, os.PathLike]] = None,
+        pl_trainer_kwargs: Optional[dict] = None,
+        **kwargs,
     ) -> "TorchForecastingModel":
         """
         Loads a model from a given file path.
@@ -2052,6 +2058,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
             common/lightning_module.html#load-from-checkpoint>`__.
         """
+        # Ensures all os.PathLike are accepted
+        path = Path(path)
+
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
         with open(path, "rb") as fin:
             model: TorchForecastingModel = torch.load(
@@ -2059,7 +2068,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
         # if a checkpoint was saved, we also load the PyTorch LightningModule from checkpoint
-        path_ptl_ckpt = path + ".ckpt"
+        path_ptl_ckpt = path.with_name(path.name + ".ckpt")
         if os.path.exists(path_ptl_ckpt):
             model.model = model._load_from_checkpoint(path_ptl_ckpt, **kwargs)
         else:
