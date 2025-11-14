@@ -1,22 +1,30 @@
-#!/usr/bin/env python3
 """
-Post-process generated RST files to replace package path titles with docstring titles.
+Package title and docstring extraction for Sphinx API documentation.
+
+This module provides utilities to:
+1. Replace package path titles (e.g., "darts.models.forecasting") with
+   descriptive titles from package docstrings (e.g., "Forecasting Models")
+2. Insert the full docstring content from package __init__.py files
+3. Fix inline :doc: link titles to use descriptive names
+
+Used by conf.py via Sphinx's 'source-read' event.
 """
 
 import re
-import sys
 from pathlib import Path
 
 
-def extract_docstring_title(module_path):
-    """Extract the title from a module's docstring."""
-    try:
-        # Read the __init__.py file
-        init_file = Path(module_path) / "__init__.py"
-        if not init_file.exists():
-            return None
+def extract_docstring_from_file(file_path):
+    """Extract the full docstring from a Python file.
 
-        with open(init_file, encoding="utf-8") as f:
+    Returns:
+        Tuple of (title, body) where body is the docstring content without the title section
+    """
+    try:
+        if not file_path.exists():
+            return None, None
+
+        with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
         # Extract docstring
@@ -25,61 +33,113 @@ def extract_docstring_title(module_path):
             docstring_match = re.match(r"^\s*'''(.*?)'''", content, re.DOTALL)
 
         if not docstring_match:
-            return None
+            return None, None
 
         docstring = docstring_match.group(1).strip()
-
-        # Extract title (first non-empty line)
         lines = docstring.split("\n")
-        for line in lines:
-            line = line.strip()
-            if line and not line.startswith("-") and not line.startswith("="):
-                return line
 
-        return None
-    except Exception as e:
-        print(f"Error extracting docstring from {module_path}: {e}", file=sys.stderr)
-        return None
+        # Find the title (first non-empty line)
+        title = None
+        title_line_idx = -1
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            if (
+                stripped
+                and not stripped.startswith("-")
+                and not stripped.startswith("=")
+            ):
+                title = stripped
+                title_line_idx = i
+                break
+
+        if not title:
+            return None, None
+
+        # Skip the title and its underline (if present)
+        body_start_idx = title_line_idx + 1
+
+        # Skip underline lines (lines with only = or -)
+        while body_start_idx < len(lines):
+            stripped = lines[body_start_idx].strip()
+            if stripped and not all(c in "=-" for c in stripped):
+                break
+            body_start_idx += 1
+
+        # Get the rest of the docstring as the body
+        body_lines = lines[body_start_idx:]
+        body = "\n".join(body_lines).strip()
+
+        return title, body if body else None
+
+    except Exception:
+        return None, None
 
 
-def fix_rst_file(rst_path, source_root):
-    """Replace package path title with docstring title in an RST file."""
-    with open(rst_path, encoding="utf-8") as f:
-        content = f.read()
+def get_module_info(module_name, source_root):
+    """Get the title and docstring body for a module or package.
+
+    Args:
+        module_name: Full module name like "darts.models.forecasting"
+        source_root: Path to the darts package directory
+
+    Returns:
+        Tuple of (title, body) where body is the docstring content without title
+    """
+    parts = module_name.split(".")
+    if parts[0] == "darts":
+        # Remove the 'darts' prefix since source_root is already the darts package
+        rel_path = "/".join(parts[1:]) if len(parts) > 1 else ""
+        base_path = source_root / rel_path if rel_path else source_root
+    else:
+        # Not a darts.* package, use full path
+        base_path = source_root / module_name.replace(".", "/")
+
+    # Check if it's a package (has __init__.py)
+    if (base_path / "__init__.py").exists():
+        return extract_docstring_from_file(base_path / "__init__.py")
+    # Check if it's a module (has .py file)
+    elif base_path.with_suffix(".py").exists():
+        return extract_docstring_from_file(base_path.with_suffix(".py"))
+
+    return None, None
+
+
+def process_package_docstrings(app, docname, source):
+    """Process package RST files to replace titles and add docstring content.
+
+    This is connected to the 'source-read' event in Sphinx.
+
+    Args:
+        app: Sphinx application object
+        docname: Name of the document being read
+        source: List with single string element containing the source RST content
+    """
+    # Only process files in generated_api directory
+    if not docname.startswith("generated_api/"):
+        return
+
+    content = source[0]
 
     # Check if this is a package RST file (contains ".. currentmodule::")
     if ".. currentmodule::" not in content:
-        return False
+        return
 
     # Extract package name from ".. currentmodule:: package.name"
     module_match = re.search(r"\.\. currentmodule:: (.+)", content)
     if not module_match:
-        return False
+        return
 
     pkg_name = module_match.group(1).strip()
 
-    # Convert package name to file path
-    # The package name is like "darts.models.forecasting"
-    # source_root is the darts package directory (../darts)
-    # So we need to strip the first "darts." from the package name
-    parts = pkg_name.split(".")
-    if parts[0] == "darts":
-        # Remove the 'darts' prefix since source_root is already the darts package
-        rel_path = "/".join(parts[1:]) if len(parts) > 1 else ""
-        pkg_path = Path(source_root) / rel_path if rel_path else Path(source_root)
-    else:
-        # Not a darts.* package, use full path
-        pkg_path = Path(source_root) / pkg_name.replace(".", "/")
+    # Get the source root (darts package directory)
+    source_root = Path(app.confdir).parent.parent / "darts"
 
-    # Extract docstring title
-    doc_title = extract_docstring_title(pkg_path)
+    # 1. Fix the main title and add docstring body
+    doc_title, doc_body = get_module_info(pkg_name, source_root)
     if not doc_title:
-        print(f"Could not extract title for {pkg_name}", file=sys.stderr)
-        return False
+        return
 
     # Find and replace the title
-    # Pattern: look for a line followed by a line of ===
-    # This pattern finds: pkg_name\n====
     title_pattern = re.compile(
         r"^(" + re.escape(pkg_name) + r")\n([=]+)\n", re.MULTILINE
     )
@@ -88,45 +148,26 @@ def fix_rst_file(rst_path, source_root):
     if match:
         # Calculate the underline length based on the new title
         underline = "=" * len(doc_title)
+
+        # Build the replacement with title and optional docstring body
         replacement = f"{doc_title}\n{underline}\n"
-        new_content = title_pattern.sub(replacement, content)
+        if doc_body:
+            replacement += f"\n{doc_body}\n"
 
-        with open(rst_path, "w", encoding="utf-8") as f:
-            f.write(new_content)
+        content = title_pattern.sub(replacement, content)
 
-        print(f"Fixed {rst_path}: {pkg_name} -> {doc_title}")
-        return True
+    # 2. Fix inline link titles
+    link_pattern = re.compile(r":doc:`([^`]+)\s*<([^>]+)>`")
 
-    return False
+    def replace_link(match):
+        target_module = match.group(2).strip()
+        # Get the proper title for the target module
+        target_title, _ = get_module_info(target_module, source_root)
+        if target_title:
+            return f":doc:`{target_title} <{target_module}>`"
+        return match.group(0)
 
+    content = link_pattern.sub(replace_link, content)
 
-def main():
-    if len(sys.argv) != 3:
-        print(
-            "Usage: fix_package_titles.py <generated_api_dir> <source_root>",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-
-    api_dir = Path(sys.argv[1])
-    source_root = Path(sys.argv[2])
-
-    if not api_dir.exists():
-        print(f"Directory not found: {api_dir}", file=sys.stderr)
-        sys.exit(1)
-
-    if not source_root.exists():
-        print(f"Source root not found: {source_root}", file=sys.stderr)
-        sys.exit(1)
-
-    # Process all RST files in the generated API directory
-    fixed_count = 0
-    for rst_file in api_dir.glob("*.rst"):
-        if fix_rst_file(rst_file, source_root):
-            fixed_count += 1
-
-    print(f"\nFixed {fixed_count} RST files")
-
-
-if __name__ == "__main__":
-    main()
+    # Update the source
+    source[0] = content

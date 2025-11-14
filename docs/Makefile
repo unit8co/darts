@@ -59,8 +59,6 @@ generate-api:
 	@echo "[Makefile] generating API using sphinx-apidoc..."
 	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../darts ../darts/logging.py ../darts/tests/*
 	@cp -r $(GENAPIDIR)/*.rst "$(SOURCEDIR)/generated_api/"
-	@echo "[Makefile] fixing package titles..."
-	@python fix_package_titles.py "$(SOURCEDIR)/generated_api" ../darts
 
 html:
 	# Note: this target has to be called "html" because its name is given as an argument to Sphinx

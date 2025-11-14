@@ -180,5 +180,22 @@ def skip(app, what, name, obj, skip, options):
     return skip
 
 
+# -- Package title and docstring extraction for API documentation ---------------
+#
+# Automatically process generated API documentation to:
+# 1. Replace package path titles (e.g., "darts.models.forecasting") with
+#    descriptive titles from package docstrings (e.g., "Forecasting Models")
+# 2. Insert the full docstring content from package __init__.py files
+# 3. Fix inline :doc: link titles to use descriptive names
+#
+# This runs automatically during the Sphinx build via the 'source-read' event.
+# Logic is in fix_package_titles.py for easier maintenance.
+# ---------------------------------------------------------------------------------
+
+sys.path.insert(0, os.path.abspath(".."))
+from fix_package_titles import process_package_docstrings
+
+
 def setup(app):
     app.connect("autodoc-skip-member", skip)
+    app.connect("source-read", process_package_docstrings)
