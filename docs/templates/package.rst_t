@@ -1,4 +1,7 @@
-.. automodule:: {{ pkgname }}
+{{ pkgname }}
+{{ '=' * (pkgname|length) }}
+
+.. currentmodule:: {{ pkgname }}
 
 .. toctree::
    :maxdepth: 1
