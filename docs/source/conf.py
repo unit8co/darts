@@ -141,12 +141,15 @@ numpydoc_class_members_toctree = False
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-html_logo = "static/darts-logo-trim.png"
 html_favicon = "static/docs-favicon.ico"
 
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
     "twitter_url": "https://twitter.com/unit8co",
+    "logo": {
+        "image_light": "static/darts-logo-trim.png",
+        "image_dark": "static/darts-logo-dark.png",
+    },
 }
 
 
@@ -181,11 +184,13 @@ def skip(app, what, name, obj, skip, options):
 
 # -- Package title and docstring extraction for API documentation ---------------
 #
-# Automatically process generated API documentation to:
+# This function uses the generated *.rst files and processes the generated API documentation to:
 # 1. Replace package path titles (e.g., "darts.models.forecasting") with
 #    descriptive titles from package docstrings (e.g., "Forecasting Models")
 # 2. Insert the full docstring content from package __init__.py files
 # 3. Fix inline :doc: link titles to use descriptive names
+#
+# Note: the *.rst files were generated using the templates in `docs/templates`.
 #
 # This runs automatically during the Sphinx build via the 'source-read' event.
 # Logic is in fix_package_titles.py for easier maintenance.

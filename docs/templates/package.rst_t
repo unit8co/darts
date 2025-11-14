@@ -14,8 +14,8 @@
 {%- endfor %}
 
 {% for docname in subpackages %}
-- :doc:`{{ docname.split('.')|last }} <{{ docname }}>`
+- :doc:`{{ docname }} <{{ docname }}>`
 {%- endfor %}
 {% for docname in submodules %}
-- :doc:`{{ docname.split('.')|last }} <{{ docname }}>`
+- :doc:`{{ docname }} <{{ docname }}>`
 {%- endfor %}

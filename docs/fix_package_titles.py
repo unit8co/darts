@@ -1,12 +1,13 @@
 """
 Package title and docstring extraction for Sphinx API documentation.
 
-This module provides utilities to:
+This module processes what is given by the *.rst files and provides utilities to:
 1. Replace package path titles (e.g., "darts.models.forecasting") with
    descriptive titles from package docstrings (e.g., "Forecasting Models")
 2. Insert the full docstring content from package __init__.py files
 3. Fix inline :doc: link titles to use descriptive names
 
+Note: the *.rst files for packages and modules are built using the templates in `docs/templates`
 Used by conf.py via Sphinx's 'source-read' event.
 """
 
@@ -27,7 +28,7 @@ def extract_docstring_from_file(file_path):
         with open(file_path, encoding="utf-8") as f:
             content = f.read()
 
-        # Extract docstring
+        # Extract docstring (enclosed by `"""lorem ipsum"""` or `'''lorem ipsum'''`)
         docstring_match = re.match(r'^\s*"""(.*?)"""', content, re.DOTALL)
         if not docstring_match:
             docstring_match = re.match(r"^\s*'''(.*?)'''", content, re.DOTALL)
@@ -39,6 +40,12 @@ def extract_docstring_from_file(file_path):
         lines = docstring.split("\n")
 
         # Find the title (first non-empty line)
+        # Titles are expected to be at the top of the module, and be underlined with `===` or `---`
+        # """
+        # Forecasting Models
+        # ==================
+        # """
+
         title = None
         title_line_idx = -1
         for i, line in enumerate(lines):
@@ -140,6 +147,11 @@ def process_package_docstrings(app, docname, source):
         return
 
     # Find and replace the title
+    # titles are given in package.rst with format:
+    # ```
+    # darts.models
+    # ============
+    # ```
     title_pattern = re.compile(
         r"^(" + re.escape(pkg_name) + r")\n([=]+)\n", re.MULTILINE
     )
@@ -157,6 +169,11 @@ def process_package_docstrings(app, docname, source):
         content = title_pattern.sub(replacement, content)
 
     # 2. Fix inline link titles
+    # links are given in package.rst with format:
+    # ```
+    # - :doc:`darts.models <darts.models>`
+    # - :doc:`darts.utils <darts.utils>`
+    # ```
     link_pattern = re.compile(r":doc:`([^`]+)\s*<([^>]+)>`")
 
     def replace_link(match):
