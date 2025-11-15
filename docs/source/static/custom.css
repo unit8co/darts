@@ -1,0 +1,73 @@
+/* Custom styling for landing page cards */
+
+/* Theme-aware logo display - show/hide based on light/dark mode */
+html[data-theme="light"] .only-dark {
+    display: none !important;
+}
+
+html[data-theme="dark"] .only-light {
+    display: none !important;
+}
+
+/* Change card button colors from purple to a more neutral blue/gray */
+.sd-card .sd-btn-secondary {
+    background-color: #007bff !important;
+    border-color: #007bff !important;
+    color: white !important;
+}
+
+.sd-card .sd-btn-secondary:hover {
+    background-color: #0056b3 !important;
+    border-color: #0056b3 !important;
+}
+
+/* Optional: Adjust card hover effects */
+.sd-card.intro-card:hover {
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+/* Make cards look more polished */
+.sd-card.intro-card {
+    transition: all 0.3s ease;
+}
+
+/* Style for card images at the top - constrain the container height */
+.sd-card-img-top {
+    padding: 0.8rem !important;
+    background-color: #f8f9fa;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: 64px !important;
+    max-height: 64px !important;
+    overflow: hidden !important;
+}
+
+/* Let images scale proportionally within the constrained container */
+.sd-card-img-top img,
+.sd-card-img-top svg {
+    max-width: 48px !important;
+    max-height: 48px !important;
+    width: auto !important;
+    height: auto !important;
+    object-fit: contain !important;
+}
+
+/* Also constrain picture element */
+.sd-card-img-top picture {
+    max-width: 48px !important;
+    max-height: 48px !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+.sd-card-img-top picture img,
+.sd-card-img-top picture svg {
+    max-width: 100% !important;
+    max-height: 100% !important;
+    width: auto !important;
+    height: auto !important;
+}
