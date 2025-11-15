@@ -15,46 +15,21 @@ Time Series Made Easy in Python
    :width: 100%
    :class: only-dark
 
-.. image:: https://badge.fury.io/py/u8darts.svg
-   :target: https://badge.fury.io/py/darts
-   :alt: PyPI version
+.. raw:: html
 
-.. image:: https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg
-   :target: https://anaconda.org/conda-forge/u8darts-all
-   :alt: Conda Version
-
-.. image:: https://img.shields.io/badge/python-3.10+-blue.svg
-   :alt: Supported versions
-
-.. image:: https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date
-   :target: https://hub.docker.com/r/unit8/darts
-   :alt: Docker Image Version
-
-.. image:: https://img.shields.io/github/release-date/unit8co/darts
-   :alt: GitHub Release Date
-
-.. image:: https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master
-   :alt: GitHub Workflow Status
-
-.. image:: https://pepy.tech/badge/darts
-   :target: https://pepy.tech/project/darts
-   :alt: Downloads
-
-.. image:: https://pepy.tech/badge/u8darts
-   :target: https://pepy.tech/project/u8darts
-   :alt: Downloads
-
-.. image:: https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW
-   :target: https://codecov.io/gh/unit8co/darts
-   :alt: codecov
-
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :target: https://github.com/psf/black
-   :alt: Code style: black
-
-.. image:: https://badges.gitter.im/u8darts/darts.svg
-   :target: https://gitter.im/u8darts/darts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
-   :alt: Join the chat at https://gitter.im/u8darts/darts
+   <p align="center" style="margin-top: 20px;">
+       <a href="https://badge.fury.io/py/darts"><img src="https://badge.fury.io/py/u8darts.svg" alt="PyPI version"></a>
+       <a href="https://anaconda.org/conda-forge/u8darts-all"><img src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" alt="Conda Version"></a>
+       <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Supported versions">
+       <a href="https://hub.docker.com/r/unit8/darts"><img src="https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date" alt="Docker Image Version"></a>
+       <img src="https://img.shields.io/github/release-date/unit8co/darts" alt="GitHub Release Date">
+       <img src="https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master" alt="GitHub Workflow Status">
+       <a href="https://pepy.tech/project/darts"><img src="https://pepy.tech/badge/darts" alt="Downloads"></a>
+       <a href="https://pepy.tech/project/u8darts"><img src="https://pepy.tech/badge/u8darts" alt="Downloads"></a>
+       <a href="https://codecov.io/gh/unit8co/darts"><img src="https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW" alt="codecov"></a>
+       <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code style: black"></a>
+       <a href="https://gitter.im/u8darts/darts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/u8darts/darts.svg" alt="Join the chat at https://gitter.im/u8darts/darts"></a>
+   </p>
 
 |
 
