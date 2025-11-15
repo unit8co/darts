@@ -24,7 +24,7 @@ on 4 November 2025.
 
 Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integration:
 - Remove dependencies on `transformers` and `einops` libraries.
-- Load model config and weights from HuggingFace Hub using `HuggingFaceModelMixin`.
+- Load model config and weights from HuggingFace Hub using `HuggingFaceConnector`.
 - Remove `output_attentions` option from forward pass.
 - Integrate likelihood model and loss computation with Darts `QuantileRegression`, and
     remove original loss computation in forward pass.
