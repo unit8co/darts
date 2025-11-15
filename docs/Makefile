@@ -14,7 +14,7 @@ BUILDDIR      = build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help clean copy-examples copy-quickstart generate-readme generate-userguide generate-api html Makefile
+.PHONY: help clean copy-examples copy-quickstart generate-userguide generate-api html Makefile
 
 clean:
 	@echo "[Makefile] cleaning..."
@@ -24,7 +24,6 @@ clean:
 	@rm -rf "./$(SOURCEDIR)/quickstart"
 	@rm -rf "./$(SOURCEDIR)/userguide"
 	@rm -rf "./$(SOURCEDIR)/release_notes"
-	@rm -rf "./$(SOURCEDIR)/README.rst"
 
 copy-examples:
 	@echo "[Makefile] copying examples..."
@@ -36,11 +35,6 @@ copy-quickstart:
 	@mkdir -p "$(SOURCEDIR)/quickstart"
 	@cp -r ../examples/00-quickstart.ipynb "$(SOURCEDIR)/quickstart/"
 	@cp -r ../examples/static "$(SOURCEDIR)/quickstart/"
-
-generate-readme:
-	@echo "[Makefile] generating README rst file..."
-	@m2r2 ../README.md
-	@mv ../README.rst "$(SOURCEDIR)"
 
 generate-release_notes:
 	@echo "[Makefile] generating RELEASE_NOTES rst file..."
@@ -64,7 +58,7 @@ html:
 	@echo "[Makefile] generating HTML pages using sphinx-build..."
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-build-all-docs: clean copy-examples copy-quickstart generate-readme generate-release_notes generate-userguide generate-api html
+build-all-docs: clean copy-examples copy-quickstart generate-release_notes generate-userguide generate-api html
 build-api: clean generate-api html
 
 # Catch-all target: route all unknown targets to Sphinx using the new

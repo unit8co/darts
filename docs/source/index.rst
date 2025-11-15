@@ -69,23 +69,6 @@ Darts supports both **univariate and multivariate** time series and models, and 
     :padding: 2 2 0 0
     :class-container: sd-text-center
 
-    .. grid-item-card:: Home
-        :img-top: static/icon-home.svg
-        :class-card: intro-card
-        :shadow: md
-
-        Features, installation, and usage examples.
-
-        +++
-
-        .. button-ref:: README
-            :ref-type: doc
-            :click-parent:
-            :color: secondary
-            :expand:
-
-            To the home page
-
     .. grid-item-card:: Quickstart
         :img-top: static/icon-quickstart.svg
         :class-card: intro-card
@@ -102,6 +85,23 @@ Darts supports both **univariate and multivariate** time series and models, and 
             :expand:
 
             To the quickstart guide
+
+    .. grid-item-card:: Models
+        :img-top: static/icon-models.svg
+        :class-card: intro-card
+        :shadow: md
+
+        Available models and supported features.
+
+        +++
+
+        .. button-ref:: forecasting-models
+            :ref-type: ref
+            :click-parent:
+            :color: secondary
+            :expand:
+
+            To the models table
 
     .. grid-item-card:: API Reference
         :img-top: static/icon-api.svg
@@ -341,6 +341,8 @@ Features
 * **Datasets:** The ``darts.datasets`` submodule contains some popular time series datasets for rapid and reproducible experimentation.
 
 * **Compatibility with Multiple Backends:** ``TimeSeries`` objects can be created from and exported to various backends such as pandas, polars, numpy, pyarrow, xarray, and more, facilitating seamless integration with different data processing libraries.
+
+.. _forecasting-models:
 
 Forecasting Models
 ------------------
@@ -750,11 +752,6 @@ Bibtex entry:
       pages   = {1-6},
       url     = {http://jmlr.org/papers/v23/21-1177.html}
     }
-
-.. toctree::
-   :hidden:
-
-   Home<README>
 
 .. toctree::
    :hidden:
