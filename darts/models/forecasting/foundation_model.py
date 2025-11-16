@@ -9,16 +9,11 @@ This file contains several abstract classes:
     * HuggingFaceModelMixin: mixin class for loading model configuration and weights from HuggingFace Hub.
 """
 
-import inspect
 from abc import ABC
 
 from darts.logging import get_logger, raise_log
-from darts.models.forecasting.pl_forecasting_module import (
-    PLForecastingModule,
-)
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
-    TorchForecastingModel,
 )
 
 logger = get_logger(__name__)
@@ -180,29 +175,6 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             )
 
         self._enable_finetuning = enable_finetuning
-
-    @classmethod
-    def _validate_model_params(cls, **kwargs):
-        """validate that parameters used at model creation are part of :class:`TorchForecastingModel`,
-        :class:`PLForecastingModule`, :class:`FoundationModel` or cls __init__ methods.
-        """
-        valid_kwargs = (
-            set(inspect.signature(TorchForecastingModel.__init__).parameters.keys())
-            | set(inspect.signature(PLForecastingModule.__init__).parameters.keys())
-            | set(inspect.signature(FoundationModel.__init__).parameters.keys())
-            | set(inspect.signature(cls.__init__).parameters.keys())
-        )
-
-        invalid_kwargs = [kwarg for kwarg in kwargs if kwarg not in valid_kwargs]
-
-        if len(invalid_kwargs) > 0:
-            raise_log(
-                ValueError(
-                    f"Invalid model creation parameters. Model `{cls.__name__}` has no args/kwargs "
-                    f"`{invalid_kwargs}`"
-                ),
-                logger,
-            )
 
     @property
     def _requires_training(self) -> bool:
