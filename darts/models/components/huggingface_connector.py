@@ -168,7 +168,10 @@ class HuggingFaceConnector:
                     f"save it to the `local_dir`."
                 )
             elif not path.is_file():
-                raise ValueError(f"Path {path} is not a file")
+                raise_log(
+                    ValueError(f"Path {path} is not a file"),
+                    logger,
+                )
             else:
                 return path
 
