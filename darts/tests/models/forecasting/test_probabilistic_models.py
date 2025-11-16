@@ -402,7 +402,7 @@ class TestProbabilisticModels:
         else:
             fit_kwargs = {}
         if issubclass(model_cls, VARIMA):
-            series = self.constant_noisy_multivar_ts_short
+            series = self.ts_ice_heater_short
         else:
             series = self.constant_noisy_ts_short
 
@@ -519,7 +519,7 @@ class TestProbabilisticModels:
         model_cls, model_kwargs, _, _ = config
         model_kwargs = {k: v for k, v in model_kwargs.items() if k != "random_state"}
         if issubclass(model_cls, VARIMA):
-            series = self.constant_noisy_multivar_ts_short
+            series = self.ts_ice_heater_short
         else:
             series = self.constant_noisy_ts_short
         if TORCH_AVAILABLE and issubclass(model_cls, TorchForecastingModel):
