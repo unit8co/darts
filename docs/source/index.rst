@@ -334,10 +334,10 @@ Our regression models are designed to predict continuous numerical values, makin
    :widths: 30 10 10 10 10 20
 
    * - Model
+     - Target Series Support: Univariate / Multivariate
      - Covariates Support: Past-observed / Future-known / Static
      - Probabilistic Forecasting: Sampled / Distribution Parameters
      - Training & Forecasting on Multiple Series
-     - Target Series Support: Univariate / Multivariate
      - Sources
    * - **Baseline Models** (`LocalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms>`_)
      -
@@ -609,6 +609,18 @@ Our regression models are designed to predict continuous numerical values, makin
      - ✅ ✅
      - ✅
      - `TSMixer paper <https://arxiv.org/pdf/2303.06053.pdf>`_, `PyTorch Implementation <https://github.com/ditschuk/pytorch-tsmixer>`_
+   * - **Foundation Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): No training required
+     -
+     -
+     -
+     -
+     -
+   * - `Chronos2Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html#darts.models.forecasting.chronos2_model.Chronos2Model>`_
+     - ✅ ✅
+     - ✅ ✅ 🔴
+     - ✅ ✅
+     - ✅
+     - `Chronos-2 report <https://arxiv.org/abs/2510.15821>`_, `Amazon blog post <https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting>`_
    * - **Ensemble Models** (`GlobalForecastingModel <https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms>`_): Model support is dependent on ensembled forecasting models and the ensemble model itself
      -
      -
