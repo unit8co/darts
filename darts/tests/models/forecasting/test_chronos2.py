@@ -5,15 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts import TimeSeries, concatenate
-from darts.datasets import ElectricityConsumptionZurichDataset
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
-from darts.utils.likelihood_models import GaussianLikelihood
-from darts.utils.timeseries_generation import (
-    gaussian_timeseries,
-    linear_timeseries,
-    sine_timeseries,
-)
+from darts.tests.conftest import TORCH_AVAILABLE
 
 if not TORCH_AVAILABLE:
     pytest.skip(
@@ -21,8 +13,16 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
+from darts import TimeSeries, concatenate
+from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import Chronos2Model
-from darts.utils.likelihood_models import QuantileRegression
+from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
+from darts.utils.timeseries_generation import (
+    gaussian_timeseries,
+    linear_timeseries,
+    sine_timeseries,
+)
 
 # quantiles used during Chronos-2 pre-training
 all_quantiles = [
@@ -73,6 +73,9 @@ def load_validation_inputs():
 
 
 class TestChronos2Model:
+    # set random seed
+    np.random.seed(42)
+
     # ---- Fidelity Tests ---- #
     # load validation inputs once for fidelity tests
     ts_energy_train, ts_energy_val, ts_weather, ts_other = load_validation_inputs()
