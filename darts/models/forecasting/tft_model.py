@@ -690,7 +690,7 @@ class TFTModel(MixedCovariatesTorchModel):
         :func:`predict()`.
 
         By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
-        probabilistic; it is recommended to call :func`predict()` with ``num_samples >> 1`` to get meaningful results.
+        probabilistic; it is recommended to call :func:`predict()` with ``num_samples >> 1`` to get meaningful results.
 
         Parameters
         ----------

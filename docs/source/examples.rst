@@ -206,6 +206,16 @@ TSMixer model example notebook:
 
    examples/21-TSMixer-examples.ipynb
 
+Chronos-2 Model
+=======================================
+
+Chronos-2 Foundation model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/25-Chronos-2-examples.ipynb
+
 Ensemble Models
 =============================
 
