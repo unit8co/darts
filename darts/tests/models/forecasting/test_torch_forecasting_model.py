@@ -473,11 +473,9 @@ class TestTorchForecastingModel:
             return
 
         model.fit(
-            series=(
-                self.series
-                if not use_sc
-                else self.series.with_static_covariates(pd.Series([12], ["loc"]))
-            ),
+            series=self.series
+            if not use_sc
+            else self.series.with_static_covariates(pd.Series([12], ["loc"])),
             past_covariates=self.series + 10 if use_pc else None,
             future_covariates=self.series - 5 if use_fc else None,
         )
