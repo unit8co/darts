@@ -1492,13 +1492,12 @@ class TestTorchForecastingModel:
         # test using inheritance class
         class RnnModelLambda(RNNModel):
             def __init__(self, positional_param, named_param=0, *args, **kwargs):
-                self.positional_param = positional_param
-                self.named_param = named_param
                 super().__init__(*args, **kwargs)
 
         valid_kwargs = {
             "pl_trainer_kwargs": {},
             "named_param": 1,
+            "positional_param": 1,
         }
         invalid_kwargs = {"some_invalid_kwarg": None}
 
