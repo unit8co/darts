@@ -21,6 +21,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For developers of the library:
 
 - Fixed all warnings when generating the documentation. Also, the documentation can now be generated without having to re-install Darts before every run. [#2936](https://github.com/unit8co/darts/pull/2936) by [Dennis Bader](https://github.com/dennisbader).
+ - Reworked the `_validate_model_params` function of `TorchForecastingModel` to support more complicated cases of class inheritance. [#2908](https://github.com/unit8co/darts/pull/2908) by [Tim Rosenflanz](https://github.com/trosenflanz).
+
 
 ## [0.38.0](https://github.com/unit8co/darts/tree/0.38.0) (2025-10-03)
 

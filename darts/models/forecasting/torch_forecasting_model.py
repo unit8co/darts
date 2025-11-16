@@ -363,14 +363,22 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
-        """validate that parameters used at model creation are part of :class:`TorchForecastingModel`,
-        :class:`PLForecastingModule` or cls __init__ methods.
+        """validate that parameters used at model creation are part of the model cls __init__,
+        its parents __init__ methods, or :class:`PLForecastingModule`
         """
-        valid_kwargs = (
-            set(inspect.signature(TorchForecastingModel.__init__).parameters.keys())
-            | set(inspect.signature(PLForecastingModule.__init__).parameters.keys())
-            | set(inspect.signature(cls.__init__).parameters.keys())
+        # initiate with PLForecastingModule params that isn't part of the base class
+        valid_kwargs = set(
+            inspect.signature(PLForecastingModule.__init__).parameters.keys()
         )
+        # add params from the full list of base classes
+        for base in inspect.getmro(cls):
+            if base is object:
+                break
+            sig = inspect.signature(base.__init__)
+            valid_kwargs.update(sig.parameters.keys())
+        # Remove 'self','args,'kwargs' from consideration
+        for generic_arg in ["self", "args", "kwargs"]:
+            valid_kwargs.discard(generic_arg)
 
         invalid_kwargs = [kwarg for kwarg in kwargs if kwarg not in valid_kwargs]
 
