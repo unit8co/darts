@@ -83,6 +83,11 @@ except ModuleNotFoundError:
     TSMixerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 try:
+    from darts.models.forecasting.chronos2_model import Chronos2Model
+except ModuleNotFoundError:
+    Chronos2Model = NotImportedModule(module_name="(Py)Torch", warn=False)
+
+try:
     from darts.models.forecasting.prophet_model import Prophet
 except ImportError:
     Prophet = NotImportedModule(module_name="Prophet", warn=False)
@@ -192,4 +197,5 @@ __all__ = [
     "EnsembleModel",
     "ConformalNaiveModel",
     "ConformalQRModel",
+    "Chronos2Model",
 ]
