@@ -473,9 +473,11 @@ class TestTorchForecastingModel:
             return
 
         model.fit(
-            series=self.series
-            if not use_sc
-            else self.series.with_static_covariates(pd.Series([12], ["loc"])),
+            series=(
+                self.series
+                if not use_sc
+                else self.series.with_static_covariates(pd.Series([12], ["loc"]))
+            ),
             past_covariates=self.series + 10 if use_pc else None,
             future_covariates=self.series - 5 if use_fc else None,
         )
@@ -1487,6 +1489,27 @@ class TestTorchForecastingModel:
         # invalid params should raise an error
         with pytest.raises(ValueError):
             _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)
+
+    def test_inherited_wrong_model_creation_params(self):
+        # test using inheritance class
+        class RnnModelLambda(RNNModel):
+            def __init__(self, positional_param, named_param=0, *args, **kwargs):
+                self.positional_param = positional_param
+                self.named_param = named_param
+                super().__init__(*args, **kwargs)
+
+        valid_kwargs = {
+            "pl_trainer_kwargs": {},
+            "named_param": 1,
+        }
+        invalid_kwargs = {"some_invalid_kwarg": None}
+
+        # valid params should not raise an error
+        _ = RnnModelLambda(0, input_chunk_length=12, **valid_kwargs)
+
+        # invalid params should raise an error
+        with pytest.raises(ValueError):
+            _ = RnnModelLambda(0, input_chunk_length=12, **invalid_kwargs)
 
     def test_metrics(self):
         metric = MeanAbsolutePercentageError()

@@ -371,13 +371,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         for base in inspect.getmro(cls):
             if base is object:
                 break
-            try:
-                sig = inspect.signature(base.__init__)
-                valid_kwargs.update(sig.parameters.keys())
-            except (ValueError, TypeError):
-                # In case a built-in class throws or __init__ is not introspectable
-                continue
-
+            sig = inspect.signature(base.__init__)
+            valid_kwargs.update(sig.parameters.keys())
         # Remove 'self','args,'kwargs' from consideration
         for generic_arg in ["self", "args", "kwargs"]:
             valid_kwargs.discard(generic_arg)
