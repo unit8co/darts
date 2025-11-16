@@ -363,6 +363,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
+        """validate that parameters used at model creation are part of the model cls __init__,
+        its parents __init__ methods, or :class:`PLForecastingModule`
+        """
         # initiate with PLForecastingModule params that isn't part of the base class
         valid_kwargs = set(
             inspect.signature(PLForecastingModule.__init__).parameters.keys()
