@@ -2004,7 +2004,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def load(
-        path: Optional[Union[str, os.PathLike]] = None,
+        path: Union[str, os.PathLike],
         pl_trainer_kwargs: Optional[dict] = None,
         **kwargs,
     ) -> "TorchForecastingModel":
