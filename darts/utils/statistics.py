@@ -334,7 +334,7 @@ def remove_seasonality(
         A new TimeSeries instance that corresponds to the seasonality-adjusted 'ts'.
 
     References
-    -------
+    ----------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     """
@@ -386,7 +386,7 @@ def remove_trend(
         A new TimeSeries instance that corresponds to the trend-adjusted 'ts'.
 
     References
-    -------
+    ----------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     """
