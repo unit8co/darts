@@ -3,13 +3,13 @@
 Time Series Made Easy in Python
 ===============================
 
-.. image:: _static/darts-logo-light.svg
+.. image:: _static/darts-logo-light-blue.svg
    :alt: darts
    :align: center
    :width: 100%
    :class: only-light
 
-.. image:: _static/darts-logo-light-bg.svg
+.. image:: _static/darts-logo-dark-yellow-new-copy.svg
    :alt: darts
    :align: center
    :width: 100%

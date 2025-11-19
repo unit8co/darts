@@ -149,8 +149,8 @@ html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
     "twitter_url": "https://twitter.com/unit8co",
     "logo": {
-        "image_light": "static/darts-logo-light.svg",
-        "image_dark": "static/darts-logo-light-bg.svg",
+        "image_light": "static/darts-logo-light-blue.svg",
+        "image_dark": "static/darts-logo-dark-yellow-new-copy.svg",
     },
     # "show_toc_level": 0,  # to only show the main level objects in right sidebar
 }
