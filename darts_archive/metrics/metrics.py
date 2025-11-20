@@ -12,6 +12,7 @@ import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
+from darts.dataprocessing import dtw
 from darts.logging import get_logger, raise_log
 from darts.metrics.utils import (
     METRIC_OUTPUT_TYPE,
@@ -2410,6 +2411,90 @@ def coefficient_of_variation(
         100
         * np.sqrt(np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX))
         / np.nanmean(y_true, axis=TIME_AX)
+    )
+
+
+# Dynamic Time Warping
+@multi_ts_support
+@multivariate_support
+def dtw_metric(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    metric: Callable[
+        [
+            Union[TimeSeries, Sequence[TimeSeries]],
+            Union[TimeSeries, Sequence[TimeSeries]],
+        ],
+        METRIC_OUTPUT_TYPE,
+    ] = mae,
+    *,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+    **kwargs,
+) -> METRIC_OUTPUT_TYPE:
+    """
+    Applies Dynamic Time Warping to `actual_series` and `pred_series` before passing it into the metric.
+    Enables comparison between series of different lengths, phases and time indices.
+
+    Defaults to using :func:`~darts.metrics.metrics.mae` as a metric.
+
+    See :func:`~darts.dataprocessing.dtw.dtw.dtw` for more supported parameters.
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    metric
+        The selected metric with signature '[[TimeSeries, TimeSeries], float]' to use. Default: `mae`.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+
+    Returns
+    -------
+    float
+        A single metric score (when `len(q) <= 1`) for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+    """
+
+    alignment = dtw.dtw(actual_series, pred_series, **kwargs)
+    warped_actual_series, warped_pred_series = alignment.warped()
+    return _get_wrapped_metric(metric)(
+        warped_actual_series,
+        warped_pred_series,
     )
 
 
