@@ -1488,6 +1488,26 @@ class TestTorchForecastingModel:
         with pytest.raises(ValueError):
             _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)
 
+    def test_inherited_wrong_model_creation_params(self):
+        # test using inheritance class
+        class RnnModelLambda(RNNModel):
+            def __init__(self, positional_param, named_param=0, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+
+        valid_kwargs = {
+            "pl_trainer_kwargs": {},
+            "named_param": 1,
+            "positional_param": 1,
+        }
+        invalid_kwargs = {"some_invalid_kwarg": None}
+
+        # valid params should not raise an error
+        _ = RnnModelLambda(0, input_chunk_length=12, **valid_kwargs)
+
+        # invalid params should raise an error
+        with pytest.raises(ValueError):
+            _ = RnnModelLambda(0, input_chunk_length=12, **invalid_kwargs)
+
     def test_metrics(self):
         metric = MeanAbsolutePercentageError()
         metric_collection = MetricCollection([

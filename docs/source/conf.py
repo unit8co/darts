@@ -105,6 +105,7 @@ exclude_patterns = [
     "**/darts.models.components.*",
     "**/darts.models.forecasting.ensemble_model.rst",
     "**/darts.models.forecasting.forecasting_model.rst",
+    "**/darts.models.forecasting.foundation_model.rst",
     "**/darts.models.forecasting.torch_forecasting_model.rst",
     "**/darts.models.forecasting.pl_forecasting_module.rst",
     "**/darts.utils.data.tabularization.*",
