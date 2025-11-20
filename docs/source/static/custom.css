@@ -31,43 +31,23 @@ html[data-theme="dark"] .only-light {
 /* Make cards look more polished */
 .sd-card.intro-card {
     transition: all 0.3s ease;
+    background-color: #f8f9fb !important;
 }
 
-/* Style for card images at the top - constrain the container height */
-.sd-card-img-top {
-    padding: 0.8rem !important;
-    background-color: #f8f9fa;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    height: 64px !important;
-    max-height: 64px !important;
-    overflow: hidden !important;
+/* Ensure the image area also has no background */
+.sd-card.intro-card .sd-card-img-top {
+    background-color: transparent !important;
 }
 
-/* Let images scale proportionally within the constrained container */
-.sd-card-img-top img,
-.sd-card-img-top svg {
-    max-width: 48px !important;
-    max-height: 48px !important;
+/* Style for card images at the top - simplified! */
+/* Override sphinx-design's width:100% to maintain aspect ratio */
+img.sd-card-img-top,
+svg.sd-card-img-top {
     width: auto !important;
-    height: auto !important;
+    max-width: 48px !important;
+    height: 48px !important;
+    max-height: 48px !important;
     object-fit: contain !important;
-}
-
-/* Also constrain picture element */
-.sd-card-img-top picture {
-    max-width: 48px !important;
-    max-height: 48px !important;
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-}
-
-.sd-card-img-top picture img,
-.sd-card-img-top picture svg {
-    max-width: 100% !important;
-    max-height: 100% !important;
-    width: auto !important;
-    height: auto !important;
+    display: block !important;
+    margin: 0.5rem auto !important;
 }

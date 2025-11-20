@@ -45,7 +45,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
     :class-container: sd-text-center
 
     .. grid-item-card:: Quickstart
-        :img-top: static/icons_svg/quickstart.svg
+        :img-top: static/grid_card_icons/quickstart.png
         :class-card: intro-card
         :shadow: md
 
@@ -62,7 +62,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the quickstart guide
 
     .. grid-item-card:: Models
-        :img-top: static/icons_svg/models.svg
+        :img-top: static/grid_card_icons/models.png
         :class-card: intro-card
         :shadow: md
 
@@ -79,7 +79,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the models table
 
     .. grid-item-card:: API Reference
-        :img-top: static/icons_svg/api.svg
+        :img-top: static/grid_card_icons/api.png
         :class-card: intro-card
         :shadow: md
 
@@ -96,7 +96,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the API reference
 
     .. grid-item-card:: Examples
-        :img-top: static/icons_svg/examples.svg
+        :img-top: static/grid_card_icons/examples.png
         :class-card: intro-card
         :shadow: md
 
@@ -113,7 +113,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the examples
 
     .. grid-item-card:: User Guide
-        :img-top: static/icons_svg/user-guide.svg
+        :img-top: static/grid_card_icons/user-guide.png
         :class-card: intro-card
         :shadow: md
 
@@ -130,7 +130,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the user guide
 
     .. grid-item-card:: How to Contribute
-        :img-top: static/icons_svg/contribute.svg
+        :img-top: static/grid_card_icons/contribute.png
         :class-card: intro-card
         :shadow: md
 
