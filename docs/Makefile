@@ -24,6 +24,7 @@ clean:
 	@rm -rf "./$(SOURCEDIR)/quickstart"
 	@rm -rf "./$(SOURCEDIR)/userguide"
 	@rm -rf "./$(SOURCEDIR)/release_notes"
+	@rm -rf "./$(SOURCEDIR)/README.rst"
 
 copy-examples:
 	@echo "[Makefile] copying examples..."

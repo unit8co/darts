@@ -3,13 +3,13 @@
 Time Series Made Easy in Python
 ===============================
 
-.. image:: _static/darts-logo-light-blue.svg
+.. image:: _static/darts-logo-light.png
    :alt: darts
    :align: center
    :width: 100%
    :class: only-light
 
-.. image:: _static/darts-logo-dark-yellow-new-copy.svg
+.. image:: _static/darts-logo-dark.png
    :alt: darts
    :align: center
    :width: 100%
@@ -45,7 +45,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
     :class-container: sd-text-center
 
     .. grid-item-card:: Quickstart
-        :img-top: static/icon-quickstart.svg
+        :img-top: static/icons_svg/quickstart.svg
         :class-card: intro-card
         :shadow: md
 
@@ -62,7 +62,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the quickstart guide
 
     .. grid-item-card:: Models
-        :img-top: static/icon-models.svg
+        :img-top: static/icons_svg/models.svg
         :class-card: intro-card
         :shadow: md
 
@@ -79,7 +79,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the models table
 
     .. grid-item-card:: API Reference
-        :img-top: static/icon-api.svg
+        :img-top: static/icons_svg/api.svg
         :class-card: intro-card
         :shadow: md
 
@@ -96,7 +96,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the API reference
 
     .. grid-item-card:: Examples
-        :img-top: static/icon-examples.svg
+        :img-top: static/icons_svg/examples.svg
         :class-card: intro-card
         :shadow: md
 
@@ -113,7 +113,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the examples
 
     .. grid-item-card:: User Guide
-        :img-top: static/icon-userguide.svg
+        :img-top: static/icons_svg/user-guide.svg
         :class-card: intro-card
         :shadow: md
 
@@ -130,7 +130,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the user guide
 
     .. grid-item-card:: How to Contribute
-        :img-top: static/icon-contribute.svg
+        :img-top: static/icons_svg/contribute.svg
         :class-card: intro-card
         :shadow: md
 
