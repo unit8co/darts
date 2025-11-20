@@ -49,6 +49,7 @@ extensions = [
 exclude_parent_classes = [
     "Module",  # torch.nn.modules.module.Module
     "LightningModule",  # pytorch_lightning.core.module.LightningModule
+    "PLForecastingModule",  # darts.models.forecasting.pl_forecasting_module.PLForecastingModule
     "TQDMProgressBar",  #
     "_MultiOutputEstimator",  # sklearn.multioutput._MultiOutputEstimator
     "MultiOutputClassifier",  # sklearn.multioutput.MultiOutputClassifier

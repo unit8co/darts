@@ -1,6 +1,6 @@
 """
-Time Series Statistics
-----------------------
+TimeSeries Statistics
+---------------------
 """
 
 import math

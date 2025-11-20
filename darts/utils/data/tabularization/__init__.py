@@ -1,3 +1,8 @@
+"""
+Tabularization for SKLearnModel
+-------------------------------
+"""
+
 from darts.utils.data.tabularization.tabularization import (
     _create_lagged_data_autoregression,
     _extend_time_index,
