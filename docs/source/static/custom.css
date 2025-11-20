@@ -9,7 +9,7 @@ html[data-theme="dark"] .only-light {
     display: none !important;
 }
 
-/* Light mode: card button colors - neutral blue */
+/* Light mode: card button colors - blue to match icons */
 html[data-theme="light"] .sd-card .sd-btn-secondary {
     background-color: #007bff !important;
     border-color: #007bff !important;
@@ -21,7 +21,7 @@ html[data-theme="light"] .sd-card .sd-btn-secondary:hover {
     border-color: #0027cc !important;
 }
 
-/* Dark mode: card button colors - vibrant yellow to match icons */
+/* Dark mode: card button colors - yellow to match icons */
 html[data-theme="dark"] .sd-card .sd-btn-secondary {
     background-color: #d4e157 !important;
     border-color: #d4e157 !important;

@@ -56,7 +56,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
            :class: sd-card-img-top only-dark
            :alt: Quickstart
 
-        Introduction to Darts' main concepts and workflow.
+        Introduction to Darts' main concepts and workflow
 
         +++
 
@@ -80,7 +80,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
            :class: sd-card-img-top only-dark
            :alt: Models
 
-        Available models and supported features.
+        Available models and supported features
 
         +++
 
@@ -104,7 +104,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
            :class: sd-card-img-top only-dark
            :alt: API Reference
 
-        Detailed API documentation with methods and parameters.
+        Detailed API documentation with methods and parameters
 
         +++
 
@@ -128,7 +128,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
            :class: sd-card-img-top only-dark
            :alt: Examples
 
-        Jupyter notebooks with basic and advanced tutorials.
+        Jupyter notebooks with basic and advanced tutorials
 
         +++
 
@@ -152,7 +152,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
            :class: sd-card-img-top only-dark
            :alt: User Guide
 
-        In-depth information on key concepts and features.
+        In-depth information on key concepts and features
 
         +++
 
@@ -176,7 +176,7 @@ Darts supports both **univariate and multivariate** time series and models, and 
            :class: sd-card-img-top only-dark
            :alt: Contribute
 
-        Guidelines for contributing to the Darts library.
+        Guidelines for contributing to the Darts library
 
         +++
 
