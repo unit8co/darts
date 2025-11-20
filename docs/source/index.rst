@@ -45,9 +45,16 @@ Darts supports both **univariate and multivariate** time series and models, and 
     :class-container: sd-text-center
 
     .. grid-item-card:: Quickstart
-        :img-top: static/grid_card_icons/quickstart.png
         :class-card: intro-card
         :shadow: md
+
+        .. image:: static/grid_card_icons/quickstart.png
+           :class: sd-card-img-top only-light
+           :alt: Quickstart
+
+        .. image:: static/grid_card_icons_dark/quickstart.png
+           :class: sd-card-img-top only-dark
+           :alt: Quickstart
 
         Introduction to Darts' main concepts and workflow.
 
@@ -62,9 +69,16 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the quickstart guide
 
     .. grid-item-card:: Models
-        :img-top: static/grid_card_icons/models.png
         :class-card: intro-card
         :shadow: md
+
+        .. image:: static/grid_card_icons/models.png
+           :class: sd-card-img-top only-light
+           :alt: Models
+
+        .. image:: static/grid_card_icons_dark/models.png
+           :class: sd-card-img-top only-dark
+           :alt: Models
 
         Available models and supported features.
 
@@ -79,9 +93,16 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the models table
 
     .. grid-item-card:: API Reference
-        :img-top: static/grid_card_icons/api.png
         :class-card: intro-card
         :shadow: md
+
+        .. image:: static/grid_card_icons/api.png
+           :class: sd-card-img-top only-light
+           :alt: API Reference
+
+        .. image:: static/grid_card_icons_dark/api.png
+           :class: sd-card-img-top only-dark
+           :alt: API Reference
 
         Detailed API documentation with methods and parameters.
 
@@ -96,9 +117,16 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the API reference
 
     .. grid-item-card:: Examples
-        :img-top: static/grid_card_icons/examples.png
         :class-card: intro-card
         :shadow: md
+
+        .. image:: static/grid_card_icons/examples.png
+           :class: sd-card-img-top only-light
+           :alt: Examples
+
+        .. image:: static/grid_card_icons_dark/examples.png
+           :class: sd-card-img-top only-dark
+           :alt: Examples
 
         Jupyter notebooks with basic and advanced tutorials.
 
@@ -113,9 +141,16 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the examples
 
     .. grid-item-card:: User Guide
-        :img-top: static/grid_card_icons/user-guide.png
         :class-card: intro-card
         :shadow: md
+
+        .. image:: static/grid_card_icons/user-guide.png
+           :class: sd-card-img-top only-light
+           :alt: User Guide
+
+        .. image:: static/grid_card_icons_dark/user-guide.png
+           :class: sd-card-img-top only-dark
+           :alt: User Guide
 
         In-depth information on key concepts and features.
 
@@ -130,9 +165,16 @@ Darts supports both **univariate and multivariate** time series and models, and 
             To the user guide
 
     .. grid-item-card:: How to Contribute
-        :img-top: static/grid_card_icons/contribute.png
         :class-card: intro-card
         :shadow: md
+
+        .. image:: static/grid_card_icons/contribute.png
+           :class: sd-card-img-top only-light
+           :alt: Contribute
+
+        .. image:: static/grid_card_icons_dark/contribute.png
+           :class: sd-card-img-top only-dark
+           :alt: Contribute
 
         Guidelines for contributing to the Darts library.
 

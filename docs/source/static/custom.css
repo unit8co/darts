@@ -9,29 +9,53 @@ html[data-theme="dark"] .only-light {
     display: none !important;
 }
 
-/* Change card button colors from purple to a more neutral blue/gray */
-.sd-card .sd-btn-secondary {
+/* Light mode: card button colors - neutral blue */
+html[data-theme="light"] .sd-card .sd-btn-secondary {
     background-color: #007bff !important;
     border-color: #007bff !important;
     color: white !important;
 }
 
-.sd-card .sd-btn-secondary:hover {
+html[data-theme="light"] .sd-card .sd-btn-secondary:hover {
     background-color: #0027cc !important;
     border-color: #0027cc !important;
 }
 
-/* Optional: Adjust card hover effects */
-.sd-card.intro-card:hover {
-    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
-    transform: translateY(-2px);
-    transition: all 0.3s ease;
+/* Dark mode: card button colors - vibrant yellow to match icons */
+html[data-theme="dark"] .sd-card .sd-btn-secondary {
+    background-color: #d4e157 !important;
+    border-color: #d4e157 !important;
+    color: #1a1a1a !important;
+    font-weight: 500 !important;
 }
 
-/* Make cards look more polished */
-.sd-card.intro-card {
-    transition: all 0.3s ease;
+html[data-theme="dark"] .sd-card .sd-btn-secondary:hover {
+    background-color: #c0ca33 !important;
+    border-color: #c0ca33 !important;
+}
+
+/* Light mode: card styling */
+html[data-theme="light"] .sd-card.intro-card {
     background-color: #f8f9fb !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+html[data-theme="light"] .sd-card.intro-card:hover {
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15) !important;
+    transform: translateY(-2px);
+}
+
+/* Dark mode: card styling - darker background */
+html[data-theme="dark"] .sd-card.intro-card {
+    background-color: #1e1e1e !important;
+    border: 1px solid #2d2d2d !important;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+html[data-theme="dark"] .sd-card.intro-card:hover {
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.3) !important;
+    transform: translateY(-2px);
+    border-color: #3d3d3d !important;
 }
 
 /* Ensure the image area also has no background */
