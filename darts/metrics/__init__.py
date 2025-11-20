@@ -101,6 +101,7 @@ from darts.metrics.metrics import (
     ase,
     coefficient_of_variation,
     confusion_matrix,
+    dtw_metric,
     err,
     f1,
     ic,

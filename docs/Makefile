@@ -52,7 +52,32 @@ generate-userguide:
 
 generate-api:
 	@echo "[Makefile] generating API using sphinx-apidoc..."
-	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../darts ../darts/logging.py ../darts/tests/*
+	# note all paths after "$(SOURCEDIR)/generated_api" will be excluded from rst generation
+	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" \
+	    ../darts \
+	    ../darts/logging.py \
+	    ../darts/tests/* \
+        ../darts/ad/aggregators/aggregators.py \
+        ../darts/ad/anomaly_model/anomaly_model.py \
+        ../darts/ad/detectors/detectors.py \
+        ../darts/ad/scorers/scorers.py \
+        ../darts/explainability/explainability.py \
+        ../darts/explainability/utils.py \
+        ../darts/models/components/* \
+        ../darts/models/forecasting/ensemble_model.py \
+        ../darts/models/forecasting/forecasting_model.py \
+        ../darts/models/forecasting/foundation_model.py \
+        ../darts/models/forecasting/torch_forecasting_model.py \
+        ../darts/models/forecasting/pl_forecasting_module.py \
+        ../darts/utils/data/tabularization/* \
+        ../darts/utils/data/torch_datasets/dataset.py \
+        ../darts/utils/data/torch_datasets/utils.py \
+        ../darts/utils/data/utils.py \
+        ../darts/utils/historical_forecasts/* \
+        ../darts/utils/likelihood_models/base.py \
+        ../darts/utils/multioutput.py \
+        ../darts/utils/onnx_utils.py \
+        ../darts/utils/ts_utils.py
 
 html:
 	# Note: this target has to be called "html" because its name is given as an argument to Sphinx
