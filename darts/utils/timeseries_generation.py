@@ -1,6 +1,6 @@
 """
-Utils for time series generation
---------------------------------
+Utils for TimeSeries generation
+-------------------------------
 """
 
 from collections.abc import Sequence

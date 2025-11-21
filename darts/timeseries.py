@@ -3407,7 +3407,7 @@ class TimeSeries:
         """Return a new series with dropped components (columns).
 
         Parameters
-        -------
+        ----------
         col_names
             String or list of strings corresponding to the columns to be dropped.
 
@@ -4559,7 +4559,7 @@ class TimeSeries:
         It also adapts the names in the hierarchy, if any.
 
         Parameters
-        -------
+        ----------
         col_names
             String or list of strings corresponding the the column names to be changed.
         col_names_new

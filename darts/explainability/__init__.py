@@ -1,6 +1,9 @@
 """
 Explainability
 --------------
+
+Tools for explaining and interpreting forecasting model predictions, including SHAP-based explainers and
+model-specific explainability methods.
 """
 
 from darts.explainability.explainability_result import (
