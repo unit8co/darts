@@ -1,6 +1,8 @@
 """
 Utils for Historical Forecasting
 --------------------------------
+
+Utilities for generating and optimizing historical forecasts.
 """
 
 from darts.utils.historical_forecasts.optimized_historical_forecasts_regression import (

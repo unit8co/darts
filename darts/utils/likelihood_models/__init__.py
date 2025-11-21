@@ -1,6 +1,8 @@
 """
 Likelihood Models
 -----------------
+
+Likelihood models for producing probablistic forecasts.
 """
 
 from darts.logging import get_logger

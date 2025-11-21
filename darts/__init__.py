@@ -1,6 +1,8 @@
 """
 Darts
 -----
+
+A Python library for user-friendly forecasting and anomaly detection on time series.
 """
 
 import os
