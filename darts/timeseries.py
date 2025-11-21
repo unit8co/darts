@@ -40,6 +40,7 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 """
 
 import itertools
+import math
 import pickle
 import re
 import sys
@@ -63,6 +64,12 @@ from scipy.stats import kurtosis, skew
 
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils._formatting import (
+    format_bytes,
+    format_dict,
+    make_collapsible_section,
+    make_paragraph,
+)
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
     dataframe_col_to_time_index,
@@ -5482,23 +5489,122 @@ class TimeSeries:
         return np.greater_equal(self._values, other)
 
     def __str__(self):
-        return str(self.data_array(copy=False)).replace(
-            "xarray.DataArray", "TimeSeries (DataArray)"
+        max_rows, max_cols = 10, 10
+        df = self._repr_dataframe(max_rows, max_cols)
+
+        # if one sample then print all values, otherwise print median of samples
+        values_str = f"{df.to_string(max_rows=max_rows, max_cols=max_cols)}"
+        if self.n_samples > 1:
+            values_str += "\n\nInfo: only sample median was displayed"
+
+        freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
+
+        # create a dict for consistent formatting with other sections
+        info_dict = {
+            "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
+            "Time frame": f"({self.start_time()}, {self.end_time()}, {freq_str})",
+            "Size": format_bytes(self._values.nbytes),
+        }
+
+        # indentation, first line needs to be manual
+        if self.static_covariates is not None:
+            df_str = str(self.static_covariates)
+            static_cov_str = "    " + df_str.replace("\n", "\n    ")
+        else:
+            static_cov_str = "    <empty>"
+
+        return (
+            f"{values_str}\n\n"
+            f"Properties:\n{format_dict(info_dict)}\n"
+            f"Static covariates:\n{static_cov_str}\n"
+            f"Hierarchy:\n{format_dict(self.hierarchy)}\n"
+            f"Metadata:\n{format_dict(self.metadata)}\n"
         )
 
     def __repr__(self):
-        return (
-            self.data_array(copy=False)
-            .__repr__()
-            .replace("xarray.DataArray", "TimeSeries")
-        )
+        return str(self)
 
     def _repr_html_(self):
+        max_rows, max_cols = 10, 10
+        df = self._repr_dataframe(max_rows, max_cols)
+
+        values_str = f"{df.to_html(max_rows=max_rows, max_cols=max_cols)}"
+        if self.n_samples > 1:
+            values_str += "\nInfo: only sample median was displayed\n"
+
+        freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
+
+        static_covs_empty = self.static_covariates is None
+        hierarchy_empty = self.hierarchy is None or len(self.hierarchy) == 0
+        metadata_empty = self.metadata is None or len(self.metadata) == 0
+
+        # create a dict for consistent formatting with other sections
+        info_dict = {
+            "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
+            "Time frame": f"({self.start_time()}, {self.end_time()}, {freq_str})",
+            "Size": format_bytes(self._values.nbytes),
+        }
+
         return (
-            self.data_array(copy=False)
-            ._repr_html_()
-            .replace("xarray.DataArray", "TimeSeries")
+            make_paragraph(values_str, bold=True, margin_left="0")
+            + make_collapsible_section(
+                "Properties",
+                format_dict(info_dict, render_html=True),
+                open_by_default=True,
+            )
+            + make_collapsible_section(
+                "Static covariates",
+                self.static_covariates.to_html(max_rows=max_rows, max_cols=max_cols)
+                if self.static_covariates is not None
+                else "&lt;empty&gt;",
+                open_by_default=not static_covs_empty,
+            )
+            + make_collapsible_section(
+                "Hierarchy",
+                f"{format_dict(self.hierarchy, render_html=True)}",
+                open_by_default=not hierarchy_empty,
+            )
+            + make_collapsible_section(
+                "Metadata",
+                f"{format_dict(self.metadata, render_html=True)}",
+                open_by_default=not metadata_empty,
+            )
         )
+
+    def _repr_dataframe(self, max_rows: int, max_cols: int) -> pd.DataFrame:
+        """Create a minimal DataFrame of the TimeSeries for efficient representation.
+
+        The returned dimensions respect the maximum allowed items to be displayed
+
+        Parameters
+        ----------
+        max_rows
+            The maximum number of rows to display.
+        max_cols
+            The maximum number of columns to display.
+        """
+        margin = 2
+        values = self.all_values(copy=False)
+        times = self.time_index
+        columns = self.columns
+
+        # limit the number of rows
+        if self.n_timesteps > max_rows + 2 * margin:
+            n_rows = math.ceil(max_rows / 2) + margin
+            values = np.concatenate([values[:n_rows], values[-n_rows:]], axis=0)
+            times = times[:n_rows].union(times[-n_rows:])
+        # limit the number of columns
+        if self.n_components > max_cols + 2 * margin:
+            n_cols = math.ceil(max_cols / 2) + margin
+            values = np.concatenate([values[:, n_cols:], values[:, -n_cols:]], axis=0)
+            columns = columns[:n_cols].union(columns[-n_cols:])
+        # aggregate samples
+        if self.n_samples > 1:
+            values = np.median(values, axis=2)
+        else:
+            values = values[:, :, 0]
+
+        return pd.DataFrame(data=values, index=times, columns=columns, copy=False)
 
     def __copy__(self, deep: bool = True):
         return self.copy()
