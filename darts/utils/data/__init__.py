@@ -3,7 +3,7 @@ TimeSeries Datasets
 -------------------
 
 Datasets and utilities for preparing time series data for training and inference with Darts models,
-including torch-based datasets and tabularization methods for SKLearn-Like models.
+including torch-based datasets and tabularization methods for SKLearn-like models.
 """
 
 try:

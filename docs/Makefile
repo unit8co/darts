@@ -61,9 +61,11 @@ generate-api:
         ../darts/ad/anomaly_model/anomaly_model.py \
         ../darts/ad/detectors/detectors.py \
         ../darts/ad/scorers/scorers.py \
+        ../darts/datasets/dataset_loaders.py \
         ../darts/explainability/explainability.py \
         ../darts/explainability/utils.py \
         ../darts/models/components/* \
+        ../darts/models/filtering/filtering_model.py \
         ../darts/models/forecasting/ensemble_model.py \
         ../darts/models/forecasting/forecasting_model.py \
         ../darts/models/forecasting/foundation_model.py \

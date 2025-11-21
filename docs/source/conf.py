@@ -90,6 +90,8 @@ language = "en"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
+# Note: some source files are excluded from rst generation in the
+# darts/docs/Makefile `generate-api` command
 exclude_patterns = [
     "_build",
     "Thumbs.db",
@@ -130,7 +132,6 @@ html_theme_options = {
         "image_light": "static/darts-logo-light.png",
         "image_dark": "static/darts-logo-dark.png",
     },
-    # "show_toc_level": 0,  # to only show the main level objects in right sidebar
 }
 
 
@@ -140,9 +141,7 @@ html_theme_options = {
 html_static_path = ["static"]
 
 # Add custom CSS files
-html_css_files = [
-    "custom.css",
-]
+html_css_files = ["custom.css"]
 
 
 # -- Extension configuration -------------------------------------------------

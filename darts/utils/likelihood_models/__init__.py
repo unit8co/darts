@@ -2,7 +2,7 @@
 Likelihood Models
 -----------------
 
-Likelihood models for producing probablistic forecasts.
+Likelihood models for producing probabilistic forecasts.
 """
 
 from darts.logging import get_logger
