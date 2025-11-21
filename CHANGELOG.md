@@ -26,7 +26,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Added `FoundationModel` as a new base class for foundation models in Darts. It inherits from `TorchForecastingModel` and therefore uses the same PyTorch Lightning backend as other torch models. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
 - Added `HuggingFaceConnector` utility class for downloading and loading model configurations and weights from Hugging Face Hub. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
 - Fixed all warnings when generating the documentation. Also, the documentation can now be generated without having to re-install Darts before every run. [#2936](https://github.com/unit8co/darts/pull/2936) by [Dennis Bader](https://github.com/dennisbader).
- - Reworked the `_validate_model_params` function of `TorchForecastingModel` to support more complicated cases of class inheritance. [#2908](https://github.com/unit8co/darts/pull/2908) by [Tim Rosenflanz](https://github.com/trosenflanz).
+- Reworked the `_validate_model_params` function of `TorchForecastingModel` to support more complicated cases of class inheritance. [#2908](https://github.com/unit8co/darts/pull/2908) by [Tim Rosenflanz](https://github.com/tRosenflanz)
 
 
 ## [0.38.0](https://github.com/unit8co/darts/tree/0.38.0) (2025-10-03)
