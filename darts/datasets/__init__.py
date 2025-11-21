@@ -1,6 +1,6 @@
 """
 Datasets
---------
+========
 
 A few popular time series datasets.
 
@@ -14,7 +14,7 @@ Overall usage of this package:
 ..
 
 Univariate Datasets
-===================
+-------------------
 
 - :class:`~darts.datasets.datasets.AirPassengersDataset` - Monthly air passengers (1949-1960)
 - :class:`~darts.datasets.datasets.AusBeerDataset` - Quarterly beer production in Australia (1956-2008)
@@ -31,7 +31,7 @@ Univariate Datasets
 - :class:`~darts.datasets.datasets.WoolyDataset` - Quarterly woollen yarn production in Australia (1965-1994)
 
 Multivariate Datasets
-=====================
+---------------------
 
 - :class:`~darts.datasets.datasets.AustralianTourismDataset` - Monthly tourism numbers by region/reason in Australia
 - :class:`~darts.datasets.datasets.ElectricityDataset` - Electric power consumption (370 households, 15-min sampling)
