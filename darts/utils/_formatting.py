@@ -67,6 +67,8 @@ def format_dict(
         last_k, last_v = items[-1]
         s += format_row(last_k, last_v)
 
+    # remove last new line
+    s = s.removesuffix("\n")
     return s
 
 

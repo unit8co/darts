@@ -47,7 +47,7 @@ class TestTimeSeriesReprFormatting:
             in lines[props_idx + 1]
         )
 
-        assert "(displaying median of samples):" in result
+        assert "Info: only sample median was displayed" in result
 
     def test_str_multivariate_series(self):
         """Test __str__ for multivariate time series."""
@@ -207,7 +207,7 @@ class TestTimeSeriesReprFormatting:
         result = series._repr_html_()
         assert isinstance(result, str)
         assert "(times: 10, components: 1, samples: 3)" in result
-        assert "displaying median of samples" in result
+        assert "Info: only sample median was displayed" in result
 
     def test_repr_html_includes_sections(self):
         """Test _repr_html_ includes all required sections."""

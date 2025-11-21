@@ -40,6 +40,7 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 """
 
 import itertools
+import math
 import pickle
 import re
 import sys
@@ -5488,19 +5489,20 @@ class TimeSeries:
         return np.greater_equal(self._values, other)
 
     def __str__(self):
+        max_rows, max_cols = 10, 10
+        df = self._repr_dataframe(max_rows, max_cols)
+
         # if one sample then print all values, otherwise print median of samples
-        values_str = (
-            f"{self.to_dataframe(copy=False)}"
-            if self.n_samples == 1
-            else f"(displaying median of samples):\n{self.median().to_dataframe(copy=False)}"
-        )
+        values_str = f"{df.to_string(max_rows=max_rows, max_cols=max_cols)}"
+        if self.n_samples > 1:
+            values_str += "\n\nInfo: only sample median was displayed"
 
         freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
 
         # create a dict for consistent formatting with other sections
         info_dict = {
             "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
-            "Time frame": f"({self._time_index.min()}, {self._time_index.max()}, {freq_str})",
+            "Time frame": f"({self.start_time()}, {self.end_time()}, {freq_str})",
             "Size": format_bytes(self._values.nbytes),
         }
 
@@ -5514,7 +5516,7 @@ class TimeSeries:
         return (
             f"{values_str}\n\n"
             f"Properties:\n{format_dict(info_dict)}\n"
-            f"Static covariates:\n{static_cov_str}\n\n"
+            f"Static covariates:\n{static_cov_str}\n"
             f"Hierarchy:\n{format_dict(self.hierarchy)}\n"
             f"Metadata:\n{format_dict(self.metadata)}\n"
         )
@@ -5523,14 +5525,13 @@ class TimeSeries:
         return str(self)
 
     def _repr_html_(self):
-        values_str = (
-            f"{self.to_dataframe(copy=False).to_html(max_rows=10, max_cols=15)}"
-            if self.n_samples == 1
-            else (
-                "(displaying median of samples):\n"
-                f"{self.median().to_dataframe(copy=False).to_html(max_rows=10, max_cols=15)}"
-            )
-        )
+        max_rows, max_cols = 10, 10
+        df = self._repr_dataframe(max_rows, max_cols)
+
+        values_str = f"{df.to_html(max_rows=max_rows, max_cols=max_cols)}"
+        if self.n_samples > 1:
+            values_str += "\nInfo: only sample median was displayed\n"
+
         freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
 
         static_covs_empty = self.static_covariates is None
@@ -5540,7 +5541,7 @@ class TimeSeries:
         # create a dict for consistent formatting with other sections
         info_dict = {
             "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
-            "Time frame": f"({self._time_index.min()}, {self._time_index.max()}, {freq_str})",
+            "Time frame": f"({self.start_time()}, {self.end_time()}, {freq_str})",
             "Size": format_bytes(self._values.nbytes),
         }
 
@@ -5569,6 +5570,41 @@ class TimeSeries:
                 open_by_default=not metadata_empty,
             )
         )
+
+    def _repr_dataframe(self, max_rows: int, max_cols: int) -> pd.DataFrame:
+        """Create a minimal DataFrame of the TimeSeries for efficient representation.
+
+        The returned dimensions respect the maximum allowed items to be displayed
+
+        Parameters
+        ----------
+        max_rows
+            The maximum number of rows to display.
+        max_cols
+            The maximum number of columns to display.
+        """
+        margin = 2
+        values = self.all_values(copy=False)
+        times = self.time_index
+        columns = self.columns
+
+        # limit the number of rows
+        if self.n_timesteps > max_rows + 2 * margin:
+            n_rows = math.ceil(max_rows / 2) + margin
+            values = np.concatenate([values[:n_rows], values[-n_rows:]], axis=0)
+            times = times[:n_rows].union(times[-n_rows:])
+        # limit the number of columns
+        if self.n_components > max_cols + 2 * margin:
+            n_cols = math.ceil(max_cols / 2) + margin
+            values = np.concatenate([values[:, n_cols:], values[:, -n_cols:]], axis=0)
+            columns = columns[:n_cols].union(columns[-n_cols:])
+        # aggregate samples
+        if self.n_samples > 1:
+            values = np.median(values, axis=2)
+        else:
+            values = values[:, :, 0]
+
+        return pd.DataFrame(data=values, index=times, columns=columns, copy=False)
 
     def __copy__(self, deep: bool = True):
         return self.copy()
