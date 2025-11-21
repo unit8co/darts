@@ -5554,7 +5554,7 @@ class TimeSeries:
             )
             + make_collapsible_section(
                 "Static covariates",
-                self.static_covariates.to_html(max_rows=10, max_cols=15)
+                self.static_covariates.to_html(max_rows=max_rows, max_cols=max_cols)
                 if self.static_covariates is not None
                 else "&lt;empty&gt;",
                 open_by_default=not static_covs_empty,

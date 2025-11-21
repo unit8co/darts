@@ -103,8 +103,8 @@ def make_collapsible_section(
     wrapper_tag = "div" if is_flexbox else "pre"
 
     return f"""
-    <details{open_tag} style="margin-bottom: 1em;">
-        <summary style="font-size: 1.2em; margin-bottom: 0.3em;">{title}</summary>
+    <details{open_tag} style="margin-bottom: 0em;">
+        <summary style="font-size: 1em; font-weight: bold; margin-bottom: 0em;">{title}</summary>
         <{wrapper_tag} style="margin-left: 0.5em; font-family: inherit;">{content}</{wrapper_tag}>
     </details>
     """
