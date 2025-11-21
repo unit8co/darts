@@ -1,6 +1,6 @@
 """
-Callbacks for `TorchForecastingModel`
--------------------------------------
+Callbacks for TorchForecastingModel
+-----------------------------------
 """
 
 import sys

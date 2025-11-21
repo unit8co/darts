@@ -14,7 +14,7 @@ BUILDDIR      = build
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help clean copy-examples copy-quickstart generate-readme generate-userguide generate-api html Makefile
+.PHONY: help clean copy-examples copy-quickstart generate-userguide generate-api html Makefile
 
 clean:
 	@echo "[Makefile] cleaning..."
@@ -37,11 +37,6 @@ copy-quickstart:
 	@cp -r ../examples/00-quickstart.ipynb "$(SOURCEDIR)/quickstart/"
 	@cp -r ../examples/static "$(SOURCEDIR)/quickstart/"
 
-generate-readme:
-	@echo "[Makefile] generating README rst file..."
-	@m2r2 ../README.md
-	@mv ../README.rst "$(SOURCEDIR)"
-
 generate-release_notes:
 	@echo "[Makefile] generating RELEASE_NOTES rst file..."
 	@mkdir -p "$(SOURCEDIR)/release_notes"
@@ -57,15 +52,41 @@ generate-userguide:
 
 generate-api:
 	@echo "[Makefile] generating API using sphinx-apidoc..."
-	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" ../darts ../darts/logging.py ../darts/tests/*
-	@cp -r $(GENAPIDIR)/*.rst "$(SOURCEDIR)/generated_api/"
+	# note all paths after "$(SOURCEDIR)/generated_api" will be excluded from rst generation
+	@sphinx-apidoc -e -f --templatedir templates -o "$(SOURCEDIR)/generated_api" \
+	    ../darts \
+	    ../darts/logging.py \
+	    ../darts/tests/* \
+        ../darts/ad/aggregators/aggregators.py \
+        ../darts/ad/anomaly_model/anomaly_model.py \
+        ../darts/ad/detectors/detectors.py \
+        ../darts/ad/scorers/scorers.py \
+        ../darts/datasets/dataset_loaders.py \
+        ../darts/explainability/explainability.py \
+        ../darts/explainability/utils.py \
+        ../darts/models/components/* \
+        ../darts/models/filtering/filtering_model.py \
+        ../darts/models/forecasting/ensemble_model.py \
+        ../darts/models/forecasting/forecasting_model.py \
+        ../darts/models/forecasting/foundation_model.py \
+        ../darts/models/forecasting/torch_forecasting_model.py \
+        ../darts/models/forecasting/pl_forecasting_module.py \
+        ../darts/utils/data/tabularization/* \
+        ../darts/utils/data/torch_datasets/dataset.py \
+        ../darts/utils/data/torch_datasets/utils.py \
+        ../darts/utils/data/utils.py \
+        ../darts/utils/historical_forecasts/* \
+        ../darts/utils/likelihood_models/base.py \
+        ../darts/utils/multioutput.py \
+        ../darts/utils/onnx_utils.py \
+        ../darts/utils/ts_utils.py
 
 html:
 	# Note: this target has to be called "html" because its name is given as an argument to Sphinx
 	@echo "[Makefile] generating HTML pages using sphinx-build..."
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-build-all-docs: clean copy-examples copy-quickstart generate-readme generate-release_notes generate-userguide generate-api html
+build-all-docs: clean copy-examples copy-quickstart generate-release_notes generate-userguide generate-api html
 build-api: clean generate-api html
 
 # Catch-all target: route all unknown targets to Sphinx using the new

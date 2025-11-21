@@ -1,6 +1,6 @@
 """
-Likelihoods for `SKLearnModel`
-------------------------------
+Likelihoods for SKLearnModel
+----------------------------
 """
 
 from abc import ABC, abstractmethod

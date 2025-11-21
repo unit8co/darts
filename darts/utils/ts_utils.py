@@ -1,5 +1,5 @@
 """
-Additional TimeSeries-related util functions
+Additional TimeSeries related util functions
 --------------------------------------------
 """
 

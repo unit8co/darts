@@ -1,6 +1,11 @@
 """
 Models
 ------
+
+A comprehensive collection of forecasting and filtering models, including baseline models
+(NaiveSeasonal, NaiveMovingAverage, ...), statistical models (ARIMA, exponential smoothing, ...),
+machine learning models (LightGBM, CatBoost, sklearn-based, ...), neural network models (RNN,
+N-BEATS, TiDE...), and foundation models (Chronos2).
 """
 
 from darts.logging import get_logger

@@ -1,6 +1,6 @@
 """
-Multi-Output Models for `SKLearnModel`
---------------------------------------
+Multi-Output Models for SKLearnModel
+------------------------------------
 """
 
 import inspect
