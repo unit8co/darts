@@ -451,8 +451,14 @@ class TestTimeSeriesGeneration:
                 "day",
                 to_offset("B"),
                 pd.Timestamp(year=2025, month=1, day=1),
-                ValueError,
-                id="business_day_value_error",
+                np.arange(31),
+                id="day_business_daily",
+            ),
+            pytest.param(
+                "nanosecond",
+                to_offset("999999ns"),
+                pd.Timestamp(year=2000, month=1, day=1),
+                np.arange(1000),
             ),
         ],
     )
