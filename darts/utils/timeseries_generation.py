@@ -10,6 +10,7 @@ from typing import Any, Callable, Optional, Union
 import holidays
 import numpy as np
 import pandas as pd
+from pandas.tseries.offsets import Tick
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.timeseries import (
@@ -57,24 +58,30 @@ MAX_DATETIME_VALUES = {
     "weekofyear": 52 + 1,
     "week_of_year": 52 + 1,
 }
-PERIOD_BY_ATTRIBTUE = {
-    "month": pd.Timedelta(days=366),
-    "day": pd.Timedelta(days=31),
-    "weekday": pd.Timedelta(days=7),
-    "dayofweek": pd.Timedelta(days=7),
-    "day_of_week": pd.Timedelta(days=7),
-    "hour": pd.Timedelta(hours=24),
-    "minute": pd.Timedelta(minutes=60),
-    "second": pd.Timedelta(seconds=60),
-    "microsecond": pd.Timedelta(microseconds=1000000),
-    "nanosecond": pd.Timedelta(nanoseconds=1000),
-    "quarter": pd.Timedelta(days=366),  # approx
-    "dayofyear": pd.Timedelta(days=366),
-    "day_of_year": pd.Timedelta(days=366),
-    "week": pd.Timedelta(weeks=53),
-    "weekofyear": pd.Timedelta(weeks=53),
-    "week_of_year": pd.Timedelta(weeks=53),
+FULL_CALENDAR_CYCLE = pd.Timedelta(days=365 * 28 + 7)  # ~28 years
+"""The solar calendar cycle (https://en.wikipedia.org/wiki/Solar_cycle_(calendar)) of the Julian calendar."""
+
+MAX_GENERATION_STEPS = 100000
+"""Threshold to prevent generating too massive arrays when calculating unique datetime attribute values."""
+
+ATTRIBUTE_PERIODS = {
+    "microsecond": pd.Timedelta("1s"),
+    "nanosecond": pd.Timedelta("1us"),
+    "second": pd.Timedelta("1min"),
+    "minute": pd.Timedelta("1h"),
+    "hour": pd.Timedelta("1D"),
+    "weekday": pd.Timedelta("1W"),
+    "day_of_week": pd.Timedelta("1W"),
+    "day": FULL_CALENDAR_CYCLE,
+    "month": FULL_CALENDAR_CYCLE,
+    "dayofyear": FULL_CALENDAR_CYCLE,
+    "week": FULL_CALENDAR_CYCLE,
 }
+"""The time is takes for an attribute to naturally reset/wrap around.
+
+For example, minutes wrap around every hour, hours wrap around every day, etc.
+"""
+
 DATETIME_ATT_WITH_VARIABLE_MAX = [
     "day",
     "dayofyear",
@@ -83,6 +90,7 @@ DATETIME_ATT_WITH_VARIABLE_MAX = [
     "weekofyear",
     "week_of_year",
 ]
+"""Time index attributes whose maximum value varies (e.g., day of month (´28, 30 or 31), week of year (52 or 53))."""
 
 
 def constant_timeseries(
@@ -685,8 +693,8 @@ def _timedelta_lcm(td1: pd.Timedelta, td2: pd.Timedelta) -> pd.Timedelta:
 
 
 def unique_datetime_value_freq_aware(
-    attribute: str, freq: pd.tseries.offsets.BaseOffset, start: pd.Timestamp
-) -> np.ndarray[int]:
+    attribute: str, freq: Union[str, pd.tseries.offsets.BaseOffset], start: pd.Timestamp
+) -> np.ndarray[tuple[int], int]:
     """Returns a sorted array of unqiue values that the given datetime attribute can take, based on `freq` and `start`.
 
     Parameters
@@ -702,18 +710,27 @@ def unique_datetime_value_freq_aware(
 
     Returns
     -------
-    np.ndarray[int]
         Sorted array of all the unique values that the given datetime attribute can take.
 
     See Also
     --------
     unique_datetime_values: When all possible values for the attribute are to be returned.
 
-    Warnings
-    --------
-    For attributes with a variable number of maximum values (day, dayofyear, day_of_year, week, weekofyear,
-    week_of_year), this function will return all possible values as fallback, since actually computing the values
-    would be inefficient.
+    Notes
+    -----
+    This function determines unique values using one of three strategies:
+
+    1. **Exact Synchronization:** For fixed frequencies, it simulates the exact period where the frequency and attribute
+    cycle align (LCM).
+       * *Example:* ``attribute="hour", freq="2H"`` -> Returns even hours ``[0, 2, ..., 22]``.
+
+    2. **Calendar Simulation:** For variable frequencies (e.g., Business Days), it simulates a 28-year cycle to
+    guarantee capturing leap years and weekday shifts.
+       * *Example:* ``attribute="day", freq="B"`` -> Returns ``[1..31]`` (ensures Feb 29th is eventually captured).
+
+    3. **Heuristic Fallback:** If the simulation requires generating an excessive number of points (e.g., high-frequency
+    data for low-frequency attributes), it assumes all theoretically possible values occur.
+       * *Example:* ``attribute="month", freq="1min"`` -> Returns ``[1..12]`` immediately to save memory.
 
     Examples
     --------
@@ -725,75 +742,65 @@ def unique_datetime_value_freq_aware(
     >>> unique_datetime_values("minute", "15min", pd.Timestamp("2020-01-01"))
     array([0, 15, 30, 45])
     """
-    raise_if_not(
-        attribute in MAX_DATETIME_VALUES,
-        f"Can't determine unique  values for attribute `{attribute}`, required for cyclic and one-hot encodings. "
-        f"Supported datetime attribute: {list(MAX_DATETIME_VALUES.keys())}",
-        logger,
-    )
-    # Common frequencies, which are not convertable to pd.Timedelta
-    fixed_yearly = {
-        "month",
-        "day",
-        "hour",
-        "minute",
-        "second",
-        "microsecond",
-        "nanosecond",
-        "quarter",
-    }
-    fixed_monthly = {"day", "hour", "minute", "second", "microsecond", "nanosecond"}
-    fixed_attributes = {
-        pd.tseries.offsets.YearBegin: fixed_yearly,
-        pd.tseries.offsets.YearEnd: fixed_yearly,
-        pd.tseries.offsets.MonthBegin: fixed_monthly,
-        pd.tseries.offsets.MonthEnd: fixed_monthly,
-    }
-    if type(freq) in fixed_attributes:
-        if attribute in fixed_attributes[type(freq)]:
-            val = np.array([getattr(start, attribute)])
-            if attribute in ONE_INDEXED_FREQS:
-                val -= 1
-            return val
-        else:
-            return unique_datetime_values(attribute)
-    # Handle other frequencies
-    freq_delta = None
+    # 1. Get the Natural Period of the attribute (~28 years as safe default)
+    natural_period = ATTRIBUTE_PERIODS.get(attribute, FULL_CALENDAR_CYCLE)
+
+    # 2. Try to convert frequency to Timedelta
+    freq_td: Optional[pd.Timedelta] = None
     try:
-        freq_delta = pd.Timedelta(freq.freqstr)
-    except ValueError as e:
-        if e.args and "unit abbreviation w/o a number" in e.args[0]:
-            try:
-                freq_delta = pd.Timedelta(1, unit=freq.freqstr)
-            except ValueError:
-                pass
-    finally:
-        if freq_delta is None:
-            raise_log(
-                ValueError(
-                    f"Can't convert freq `{freq.freqstr}` to pd.Timedelta, required for computing unique values for "
-                    f"attribute `{attribute}`. Please provide a frequency that can be converted to pd.Timedelta, "
-                    f"e.g. '15min', '1H', '3D', '1W'. Alternatively, use a frequency unaware encoding or omit the "
-                    "attribute."
-                ),
-                logger,
-            )
-    if attribute in DATETIME_ATT_WITH_VARIABLE_MAX:
-        # For these attributes, periods must be really long to capture all possible values
-        #
-        logger.warning(
-            "Finding unique values for attribute `%s` based on frequency uses all possible values as fallback.",
-            attribute,
-        )
-        return unique_datetime_values(attribute)
-    lcm = _timedelta_lcm(freq_delta, PERIOD_BY_ATTRIBTUE[attribute])
-    num_unique = lcm // freq_delta
-    idx = pd.date_range(start=start, freq=freq_delta, periods=num_unique)
-    values: pd.Index = _get_datetime_attribute_values(attribute, idx).sort_values()
-    return values.unique().to_numpy()
+        offset = pd.tseries.frequencies.to_offset(freq)
+        if isinstance(offset, Tick):
+            freq_td = pd.Timedelta(offset)
+
+    except (ValueError, TypeError):
+        # Handle raw strings that to_offset might not like, but to_timedelta might
+        # e.g., "15min" is fine, but sometimes complex strings fail to_offset
+        pass
+
+    # Fallback: Try direct string-to-timedelta conversion if the above failed
+    # This handles strings like "10us" if to_offset failed
+    if freq_td is None:
+        try:
+            freq_td = pd.to_timedelta(freq)
+        except (ValueError, TypeError):
+            # If this fails, it is truly a variable frequency (e.g. 'M', 'B')
+            pass
+
+    # 3. Dynamic Duration Calculation
+    if freq_td is not None:
+        # How long until the Freq and the Attribute Period sync up?
+        total_duration = _timedelta_lcm(freq_td, natural_period)
+        # Check how many points this requires
+        num_points = total_duration // freq_td
+
+        # Safety fallback: If the interference pattern requires a large number of points
+        if num_points > MAX_GENERATION_STEPS:
+            return unique_datetime_values(attribute)
+
+        # Otherwise, simulate exact LCM duration
+        idx = pd.date_range(start=start, periods=num_points, freq=freq_td)
+
+    else:
+        # Variable frequency (e.g. 'BusinessDay')
+        # We cannot calculate LCM easily. We fallback to the Safe Horizon (28 years).
+        # 28 Years covers the synchronization of Weekdays, Leap Years, and Days.
+        end_date = start + FULL_CALENDAR_CYCLE
+
+        # Heuristic check for variable freqs:
+        # If we are doing 'BusinessHour' over 28 years, that is too huge.
+        # Estimate points: 28 years / rough estimate of freq.
+        # If freq is unknown, we just run generation with a cap.
+        idx = pd.date_range(start=start, end=end_date, freq=freq)
+
+        if len(idx) > MAX_GENERATION_STEPS:
+            return unique_datetime_values(attribute)
+
+    # 4. Return unique values
+    values = _get_datetime_attribute_values(attribute, idx)
+    return np.unique(values).astype(int)
 
 
-def unique_datetime_values(attribute: str) -> np.ndarray[int]:
+def unique_datetime_values(attribute: str) -> np.ndarray[tuple[int], int]:
     """Returns a sorted array of all the unique values that the given datetime attribute can take.
 
     Parameters
@@ -805,7 +812,7 @@ def unique_datetime_values(attribute: str) -> np.ndarray[int]:
 
     Returns
     -------
-    np.ndarray[int]
+    np.ndarray[tuple[int], int]
         Sorted array of all the unique values that the given datetime attribute can take.
 
     See Also
