@@ -3049,7 +3049,7 @@ class TestSKLearnModels:
         ocl = 7
         series = tg.linear_timeseries(
             length=28, start=pd.Timestamp("2000-01-01"), freq="d"
-        ).with_static_covariates(pd.Series([1.0]))
+        ).with_static_covariates(pd.Series([1.0, 2.0, 3.0]))
 
         model = LinearRegressionModel(
             lags=None,
@@ -3964,6 +3964,105 @@ class TestSKLearnModels:
             past_cov = [past_cov, past_cov] if past_cov else None
             future_cov = [future_cov, future_cov] if future_cov else None
         return series, past_cov, future_cov
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            (
+                [(LinearRegressionModel, {})]
+                + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+                + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
+                + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
+            ),
+            [True, False],  # multi_models
+            [True, False],  # last_points_only
+            [1, 3, 5],  # forecast_horizon
+            [1, 2, 3],  # output_chunk_length
+            [1, 2],  # stride
+            [0, 1, 2],  # start
+        ),
+    )
+    def test_optimized_historical_forecasts(self, config):
+        """This test ensures that the optimized historical_forecasts method produces the same output as
+        the non-optimized version. It runs the historical_forecasts method twice, once with optimization
+        disabled and once with it enabled, and compares the results."""
+        (
+            (model_cls, model_kwargs),
+            multi_models,
+            last_points_only,
+            forecast_horizon,
+            output_chunk_length,
+            stride,
+            start,
+        ) = config
+
+        random_state = 42
+        model_kwargs = dict(model_kwargs)  # make a copy
+        model_kwargs["lags"] = 2
+        model_kwargs["multi_models"] = multi_models
+        model_kwargs["output_chunk_length"] = output_chunk_length
+
+        model = model_cls(
+            lags_past_covariates=2,
+            lags_future_covariates=[-2, -1, 0],
+            **model_kwargs,
+        )
+
+        series = tg.sine_timeseries(length=10).with_static_covariates(
+            pd.DataFrame({"static_cov": [1]})
+        )
+        past_cov = series + 2
+        future_cov = series + 3
+
+        model.fit(
+            series[:8], past_covariates=past_cov[:8], future_covariates=future_cov[:8]
+        )
+
+        hfc_non_optimized = model.historical_forecasts(
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+            retrain=False,
+            forecast_horizon=forecast_horizon,
+            start=start,
+            last_points_only=last_points_only,
+            enable_optimization=False,
+            num_samples=1,
+            stride=stride,
+            random_state=random_state,
+        )
+
+        hfc_optimized = model.historical_forecasts(
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+            forecast_horizon=forecast_horizon,
+            retrain=False,
+            start=start,
+            enable_optimization=True,
+            last_points_only=last_points_only,
+            num_samples=1,
+            random_state=random_state,
+            stride=stride,
+        )
+
+        assert len(hfc_non_optimized) == len(hfc_optimized)
+        if not last_points_only:
+            [
+                hfc_non_optimized[i].time_index.equals(hfc_optimized[i].time_index)
+                for i in range(len(hfc_non_optimized))
+            ]
+            [
+                np.testing.assert_array_almost_equal(
+                    hfc_non_optimized[i].values(), hfc_optimized[i].values()
+                )
+                for i in range(len(hfc_non_optimized))
+            ]
+        else:
+            hfc_non_optimized.time_index.equals(hfc_optimized.time_index)
+            np.testing.assert_array_almost_equal(
+                hfc_non_optimized.values(), hfc_optimized.values()
+            )
 
 
 class TestProbabilisticSKLearnModels:

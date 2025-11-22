@@ -19,6 +19,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Added a right navigation sidebar on API pages for easier navigation.
 - 🔴 Improved the performance of the `TimeSeries.map()` method for functions that take two arguments. The mapping is now applied on the entire time index and values array which requires users to reshape the time index explicitly within the function. See more information in the `TimeSeries.map()` method documentation. [#2911](https://github.com/unit8co/darts/pull/2911) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
+- Modification of SKLearn Optimized Historical Forecasts to handle autoregression (when `forecast_horizon > output_chunk_length`). [#2901](https://github.com/unit8co/darts/issues/2901) by [Alain Gysi](https://github.com/Kurokabe)
+
 **Fixed**
 
 **Dependencies**
