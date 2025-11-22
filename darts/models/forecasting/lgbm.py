@@ -55,6 +55,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        dir_rec: Optional[bool] = False,
         **kwargs,
     ):
         """LGBM Model
@@ -165,6 +166,10 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
             by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as categorical
             must be integer-encoded.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
 
@@ -222,6 +227,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
 
     @staticmethod
@@ -384,6 +390,7 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
         categorical_past_covariates: Optional[Union[str, list[str]]] = None,
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
+        dir_rec: Optional[bool] = False,
         **kwargs,
     ):
         """LGBM Model for classification forecasting
@@ -494,6 +501,10 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
             Optionally, string or list of strings specifying the static covariates that should be treated as categorical
             by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as categorical
             must be integer-encoded.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBClassifier`.
 
@@ -545,6 +556,7 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
             categorical_past_covariates=categorical_past_covariates,
             categorical_future_covariates=categorical_future_covariates,
             categorical_static_covariates=categorical_static_covariates,
+            dir_rec=dir_rec,
             **kwargs,
         )
 
