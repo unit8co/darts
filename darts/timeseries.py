@@ -355,7 +355,7 @@ class TimeSeries:
             freq_str: Optional[str] = freq.freqstr
         else:
             freq: int = times.step
-            freq_str = None
+            freq_str = str(freq)
 
         # how the dimensions are named; we convert hashable to string
         self._time_dim = str(times.name) if times.name is not None else DIMS[TIME_AX]
@@ -5489,64 +5489,54 @@ class TimeSeries:
         return np.greater_equal(self._values, other)
 
     def __str__(self):
-        values_repr, info_dict = self._get_values_repr("string")
+        values_str, info_str = self._get_values_repr("string")
 
-        if self.n_samples > 1:
-            # info that samples were aggregated
-            values_repr += "\n\nInfo: only sample median was displayed"
+        representation = f"{values_str}\n\n{info_str}\n\n"
 
-        # indentation, first line needs to be manual
         if self.static_covariates is not None:
-            df_str = str(self.static_covariates)
-            static_cov_str = "    " + df_str.replace("\n", "\n    ")
-        else:
-            static_cov_str = "    <empty>"
+            static_cov_str = self.static_covariates.to_string(max_rows=10, max_cols=10)
+            # indentation, first line needs to be manual
+            static_cov_str = "    " + static_cov_str.replace("\n", "\n    ")
+            representation += f"Static covariates:\n{static_cov_str}\n"
+        if self.hierarchy is not None:
+            representation += f"Hierarchy:\n{format_dict(self.hierarchy)}\n"
+        if self.metadata is not None:
+            representation += f"Metadata:\n{format_dict(self.metadata)}\n"
 
-        return (
-            f"{values_repr}\n\n"
-            f"Properties:\n{format_dict(info_dict)}\n"
-            f"Static covariates:\n{static_cov_str}\n"
-            f"Hierarchy:\n{format_dict(self.hierarchy)}\n"
-            f"Metadata:\n{format_dict(self.metadata)}\n"
-        )
+        return representation.rstrip()
 
     def __repr__(self):
         return str(self)
 
     def _repr_html_(self):
-        values_repr, info_dict = self._get_values_repr("html")
+        values_str, info_str = self._get_values_repr("html")
 
-        if self.n_samples > 1:
-            # info that samples were aggregated
-            values_repr += make_paragraph("Info: only sample median was displayed")
-
-        return (
-            make_paragraph(values_repr, margin_left="0")
-            + make_collapsible_section(
-                "Properties",
-                format_dict(info_dict, render_html=True),
-                open_by_default=True,
-            )
-            + make_collapsible_section(
+        representation = make_paragraph(values_str, margin_left="0") + make_paragraph(
+            info_str
+        )
+        if self.static_covariates is not None:
+            representation += make_collapsible_section(
                 "Static covariates",
                 self.static_covariates.to_html(max_rows=10, max_cols=10)
                 if self.static_covariates is not None
                 else "&lt;empty&gt;",
-                open_by_default=self.has_static_covariates,
+                open_by_default=True,
             )
-            + make_collapsible_section(
+        if self.hierarchy is not None:
+            representation += make_collapsible_section(
                 "Hierarchy",
                 f"{format_dict(self.hierarchy, render_html=True)}",
-                open_by_default=self.has_hierarchy,
+                open_by_default=True,
             )
-            + make_collapsible_section(
+        if self.metadata is not None:
+            representation += make_collapsible_section(
                 "Metadata",
                 f"{format_dict(self.metadata, render_html=True)}",
-                open_by_default=self.has_metadata,
+                open_by_default=True,
             )
-        )
+        return representation
 
-    def _get_values_repr(self, repr_type: str) -> tuple[str, dict[str, str]]:
+    def _get_values_repr(self, repr_type: str) -> tuple[str, str]:
         """Create a representation of the TimeSeries values.
 
         The returned dimensions respect the maximum allowed items to be displayed
@@ -5564,16 +5554,18 @@ class TimeSeries:
         # limit the number of rows
         if self.n_timesteps > max_rows + 2 * margin:
             n_rows = math.ceil(max_rows / 2) + margin
-            values = np.concatenate([values[:n_rows], values[-n_rows:]], axis=0)
-            times = times[:n_rows].union(times[-n_rows:])
+            values = np.concatenate([values[:n_rows], values[-n_rows:]], axis=TIME_AX)
+            times = times[:n_rows].append(times[-n_rows:])
         # limit the number of columns
         if self.n_components > max_cols + 2 * margin:
             n_cols = math.ceil(max_cols / 2) + margin
-            values = np.concatenate([values[:, n_cols:], values[:, -n_cols:]], axis=0)
-            columns = columns[:n_cols].union(columns[-n_cols:])
+            values = np.concatenate(
+                [values[:, :n_cols], values[:, -n_cols:]], axis=COMP_AX
+            )
+            columns = columns[:n_cols].append(columns[-n_cols:])
         # aggregate samples
         if self.n_samples > 1:
-            values = np.median(values, axis=2)
+            values = np.median(values, axis=SMPL_AX)
         else:
             values = values[:, :, 0]
 
@@ -5581,15 +5573,14 @@ class TimeSeries:
         values_repr = getattr(df, f"to_{repr_type}")(
             max_rows=max_rows, max_cols=max_cols
         )
-        freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
 
-        # create a dict for consistent formatting with other sections
-        info_dict = {
-            "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
-            "Time frame": f"({self.start_time()}, {self.end_time()}, {freq_str})",
-            "Size": format_bytes(self._values.nbytes),
-        }
-        return values_repr, info_dict
+        # additional information
+        info_str = f"shape: {self.shape}, freq: {self.freq_str}, size: {format_bytes(self._values.nbytes)}"
+
+        # notify when samples were aggregated
+        if self.n_samples > 1:
+            info_str += f"{'<br>' if repr_type == 'html' else '\n'}info: only sample median was displayed"
+        return values_repr, info_str
 
     def __copy__(self, deep: bool = True):
         return self.copy()

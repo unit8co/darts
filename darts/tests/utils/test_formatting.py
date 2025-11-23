@@ -1,3 +1,5 @@
+import textwrap
+
 from darts.utils._formatting import (
     format_bytes,
     format_dict,
@@ -35,18 +37,34 @@ class TestFormatting:
     def test_format_dict_items(self):
         """Test format_dict with items."""
         d = {"key1": "value1", "key2": "value2"}
-        result = format_dict(d)
-        assert "    key1" in result
-        assert "value1" in result
-        assert "\n" in result
+        expected = textwrap.indent(
+            textwrap.dedent(
+                """\
+                key1          value1
+                key2          value2
+                """
+            ).rstrip(),
+            prefix="    ",
+        )
+        assert format_dict(d) == expected
 
     def test_format_dict_truncation(self):
         """Test format_dict truncates long dicts."""
         d = {f"key{i}": f"value{i}" for i in range(10)}
-        result = format_dict(d, max_items=5)
-        assert "    ..." in result
-        assert "key9" in result
-        assert result.count("...") == 2
+        expected = textwrap.indent(
+            textwrap.dedent(
+                """\
+                key0          value0
+                key1          value1
+                key2          value2
+                key3          value3
+                ...           ...
+                key9          value9
+                """
+            ).rstrip(),
+            prefix="    ",
+        )
+        assert format_dict(d) == expected
 
     def test_format_dict_html(self):
         """Test format_dict HTML rendering."""
