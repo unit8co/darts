@@ -40,6 +40,7 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 """
 
 import itertools
+import math
 import pickle
 import re
 import sys
@@ -63,6 +64,12 @@ from scipy.stats import kurtosis, skew
 
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils._formatting import (
+    format_bytes,
+    format_dict,
+    make_collapsible_section,
+    make_paragraph,
+)
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
     dataframe_col_to_time_index,
@@ -348,7 +355,7 @@ class TimeSeries:
             freq_str: Optional[str] = freq.freqstr
         else:
             freq: int = times.step
-            freq_str = None
+            freq_str = str(freq)
 
         # how the dimensions are named; we convert hashable to string
         self._time_dim = str(times.name) if times.name is not None else DIMS[TIME_AX]
@@ -5482,23 +5489,100 @@ class TimeSeries:
         return np.greater_equal(self._values, other)
 
     def __str__(self):
-        return str(self.data_array(copy=False)).replace(
-            "xarray.DataArray", "TimeSeries (DataArray)"
-        )
+        values_str, info_str = self._get_values_repr("string")
+
+        representation = f"{values_str}\n\n{info_str}\n\n"
+
+        if self.static_covariates is not None:
+            static_cov_str = self.static_covariates.to_string(max_rows=10, max_cols=10)
+            # indentation, first line needs to be manual
+            static_cov_str = "    " + static_cov_str.replace("\n", "\n    ")
+            representation += f"Static covariates:\n{static_cov_str}\n"
+        if self.hierarchy is not None:
+            representation += f"Hierarchy:\n{format_dict(self.hierarchy)}\n"
+        if self.metadata is not None:
+            representation += f"Metadata:\n{format_dict(self.metadata)}\n"
+
+        return representation.rstrip()
 
     def __repr__(self):
-        return (
-            self.data_array(copy=False)
-            .__repr__()
-            .replace("xarray.DataArray", "TimeSeries")
-        )
+        return str(self)
 
     def _repr_html_(self):
-        return (
-            self.data_array(copy=False)
-            ._repr_html_()
-            .replace("xarray.DataArray", "TimeSeries")
+        values_str, info_str = self._get_values_repr("html")
+
+        representation = make_paragraph(values_str, margin_left="0") + make_paragraph(
+            info_str
         )
+        if self.static_covariates is not None:
+            representation += make_collapsible_section(
+                "Static covariates",
+                self.static_covariates.to_html(max_rows=10, max_cols=10)
+                if self.static_covariates is not None
+                else "&lt;empty&gt;",
+                open_by_default=True,
+            )
+        if self.hierarchy is not None:
+            representation += make_collapsible_section(
+                "Hierarchy",
+                f"{format_dict(self.hierarchy, render_html=True)}",
+                open_by_default=True,
+            )
+        if self.metadata is not None:
+            representation += make_collapsible_section(
+                "Metadata",
+                f"{format_dict(self.metadata, render_html=True)}",
+                open_by_default=True,
+            )
+        return representation
+
+    def _get_values_repr(self, repr_type: str) -> tuple[str, str]:
+        """Create a representation of the TimeSeries values.
+
+        The returned dimensions respect the maximum allowed items to be displayed
+
+        Parameters
+        ----------
+        repr_type
+            The type of representation to use ("html" or "string").
+        """
+        max_rows, max_cols, margin = 10, 10, 2
+        values = self.all_values(copy=False)
+        times = self.time_index
+        columns = self.columns
+
+        # limit the number of rows
+        if self.n_timesteps > max_rows + 2 * margin:
+            n_rows = math.ceil(max_rows / 2) + margin
+            values = np.concatenate([values[:n_rows], values[-n_rows:]], axis=TIME_AX)
+            times = times[:n_rows].append(times[-n_rows:])
+        # limit the number of columns
+        if self.n_components > max_cols + 2 * margin:
+            n_cols = math.ceil(max_cols / 2) + margin
+            values = np.concatenate(
+                [values[:, :n_cols], values[:, -n_cols:]], axis=COMP_AX
+            )
+            columns = columns[:n_cols].append(columns[-n_cols:])
+        # aggregate samples
+        if self.n_samples > 1:
+            values = np.median(values, axis=SMPL_AX)
+        else:
+            values = values[:, :, 0]
+
+        df = pd.DataFrame(data=values, index=times, columns=columns, copy=False)
+        values_repr = getattr(df, f"to_{repr_type}")(
+            max_rows=max_rows, max_cols=max_cols
+        )
+
+        # additional information
+        info_str = f"shape: {self.shape}, freq: {self.freq_str}, size: {format_bytes(self._values.nbytes)}"
+
+        # notify when samples were aggregated
+        if self.n_samples > 1:
+            info_str += (
+                "<br>" if repr_type == "html" else "\n"
+            ) + "info: only sample median was displayed"
+        return values_repr, info_str
 
     def __copy__(self, deep: bool = True):
         return self.copy()
