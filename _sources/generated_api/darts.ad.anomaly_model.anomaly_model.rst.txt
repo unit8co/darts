@@ -1,3 +1,0 @@
-.. automodule:: darts.ad.anomaly_model.anomaly_model
-   :members:
-   :undoc-members:

@@ -1,13 +1,17 @@
+darts.utils.data.torch_datasets
+===============================
+
+.. currentmodule:: darts.utils.data.torch_datasets
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.utils.data.torch_datasets.inference_dataset
+   darts.utils.data.torch_datasets.training_dataset
 
 
 
-.. automodule:: darts.utils.data.torch_datasets
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.utils.data.torch_datasets.dataset
-        darts.utils.data.torch_datasets.inference_dataset
-        darts.utils.data.torch_datasets.training_dataset
-        darts.utils.data.torch_datasets.utils
+- :doc:`darts.utils.data.torch_datasets.inference_dataset <darts.utils.data.torch_datasets.inference_dataset>`
+- :doc:`darts.utils.data.torch_datasets.training_dataset <darts.utils.data.torch_datasets.training_dataset>`

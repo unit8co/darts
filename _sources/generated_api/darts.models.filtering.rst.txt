@@ -1,13 +1,19 @@
+darts.models.filtering
+======================
+
+.. currentmodule:: darts.models.filtering
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.models.filtering.gaussian_process_filter
+   darts.models.filtering.kalman_filter
+   darts.models.filtering.moving_average_filter
 
 
 
-.. automodule:: darts.models.filtering
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.models.filtering.filtering_model
-        darts.models.filtering.gaussian_process_filter
-        darts.models.filtering.kalman_filter
-        darts.models.filtering.moving_average_filter
+- :doc:`darts.models.filtering.gaussian_process_filter <darts.models.filtering.gaussian_process_filter>`
+- :doc:`darts.models.filtering.kalman_filter <darts.models.filtering.kalman_filter>`
+- :doc:`darts.models.filtering.moving_average_filter <darts.models.filtering.moving_average_filter>`

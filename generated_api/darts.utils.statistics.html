@@ -1,927 +1,903 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Time Series Statistics &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+    <title>TimeSeries Statistics &#8212; darts  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated_api/darts.utils.statistics';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Utils for time series generation" href="darts.utils.timeseries_generation.html" />
-    <link rel="prev" title="&lt;no title&gt;" href="darts.utils.onnx_utils.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+    <link rel="next" title="Utils for TimeSeries generation" href="darts.utils.timeseries_generation.html" />
+    <link rel="prev" title="Model selection utilities" href="darts.utils.model_selection.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-    </nav>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
     
+      <div class="navbar-item">
 
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="current nav bd-sidenav">
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.ad.html">
-   Anomaly Detection
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
-  <label for="toctree-checkbox-1">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.aggregators.html">
-     Anomaly Aggregators
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
-    <label for="toctree-checkbox-2">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">
-       AND Aggregator
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">
-       Ensemble scikit-learn aggregator
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">
-       OR Aggregator
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.anomaly_model.html">
-     Anomaly Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
-    <label for="toctree-checkbox-3">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">
-       Filtering Anomaly Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">
-       Forecasting Anomaly Model
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.detectors.html">
-     Anomaly Detectors
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
-    <label for="toctree-checkbox-4">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
-       Interquartile Range (IQR) Detector
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
-       Quantile Detector
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.detectors.threshold_detector.html">
-       Threshold Detector
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.scorers.html">
-     Anomaly Scorers
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-    <label for="toctree-checkbox-5">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.difference_scorer.html">
-       Difference Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">
-       k-means Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">
-       NLL Cauchy Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">
-       NLL Exponential Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">
-       NLL Gamma Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">
-       NLL Gaussian Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">
-       NLL Laplace Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">
-       NLL Poisson Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.norm_scorer.html">
-       Norm Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyOD Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       Wasserstein Scorer
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.ad.utils.html">
-     Utils for Anomaly Detection
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.dataprocessing.html">
-   Data Processing
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-  <label for="toctree-checkbox-6">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.dtw.html">
-     Dynamic Time Warping (DTW)
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
-       Dynamic Time Warping (DTW)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.dtw.window.html">
-       DTW Windows
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.encoders.html">
-     Time Axis Encoders
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-    <label for="toctree-checkbox-8">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">
-       Encoder Base Classes
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">
-       Time Axes Encoders
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.transformers.html">
-     Data Transformers
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Data Transformer Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
-       Box-Cox Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
-       Differencing Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mapper and InvertibleMapper
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
-       Mixed-data sampling (MIDAS) Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
-       Missing Values Filler
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
-       Hierarchical Reconciliation
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
-       Scaler
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
-       Static Covariates Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">
-       Window Transformer
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
-     Pipeline
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.datasets.html">
-   Datasets
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
-  <label for="toctree-checkbox-10">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul class="simple">
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.explainability.html">
-   Explainability
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
-  <label for="toctree-checkbox-11">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.explainability.explainability_result.html">
-     Explainability Result
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for SKLearnModels
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.explainability.tft_explainer.html">
-     TFT Explainer for Temporal Fusion Transformer (TFTModel)
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
-  <label for="toctree-checkbox-12">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.metrics.metrics.html">
-     Metrics
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.models.html">
-   Models
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
-  <label for="toctree-checkbox-13">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.models.filtering.html">
-     Filtering Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
-    <label for="toctree-checkbox-14">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
-       Gaussian Processes
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
-       Kalman Filter
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
-       Moving Average
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.models.forecasting.html">
-     Forecasting Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
-    <label for="toctree-checkbox-15">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.arima.html">
-       ARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.baselines.html">
-       Baseline Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
-       Block Recurrent Neural Networks
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
-       CatBoost Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
-       Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.dlinear.html">
-       D-Linear
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
-       Exponential Smoothing
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.fft.html">
-       Fast Fourier Transform
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
-       Global Baseline Models (Naive)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
-       Kalman Filter Forecaster
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
-       LightGBM Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
-       Linear Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
-       N-BEATS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.nhits.html">
-       N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.nlinear.html">
-       N-Linear
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
-       Random Forest
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
-       Regression Ensemble Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
-       Recurrent Neural Networks
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       AutoCES
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       AutoETS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
-       AutoMFLES
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       AutoTBATS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       AutoTheta
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
-       Croston Method
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
-       StatsForecastModel
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
-       TBATS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
-       SKLearn-Like Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
-       Temporal Convolutional Network
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
-       Temporal Fusion Transformer (TFT)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.theta.html">
-       Theta Method
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
-       Time-series Dense Encoder (TiDE)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
-       Transformer Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
-       Time-Series Mixer (TSMixer)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.varima.html">
-       VARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.xgboost.html">
-       XGBoost Models
-      </a>
-     </li>
-    </ul>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 current active has-children">
-  <a class="reference internal" href="darts.utils.html">
-   Utils
-  </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
-  <label for="toctree-checkbox-16">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul class="current">
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.utils.data.html">
-     TimeSeries Datasets
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
-    <label for="toctree-checkbox-17">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
-       Dataset Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
-       Inference Datasets
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
-       Training Datasets
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.utils.likelihood_models.html">
-     Likelihood Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
-    <label for="toctree-checkbox-18">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
-       Likelihoods for
-       <cite>
-        SKLearnModel
-       </cite>
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
-       Likelihoods for
-       <cite>
-        StatsForecast
-       </cite>
-       Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
-       Likelihoods for
-       <cite>
-        TorchForecastingModel
-       </cite>
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.losses.html">
-     PyTorch Loss Functions
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.missing_values.html">
-     Utils for filling missing values
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.model_selection.html">
-     Model selection utilities
-    </a>
-   </li>
-   <li class="toctree-l2 current active">
-    <a class="current reference internal" href="#">
-     Time Series Statistics
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.timeseries_generation.html">
-     Utils for time series generation
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.torch.html">
-     Utils for Pytorch and its usage
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.ts_utils.html">
-     Additional util functions
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.utils.html">
-     Additional util functions
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="darts.timeseries.html">
-   Timeseries
-  </a>
- </li>
-</ul>
+  
+    
+  
 
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
   </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-
-<nav id="bd-toc-nav">
+  
+  <div class="col-lg-9 navbar-header-items">
     
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
           
 
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
           
           
-            
           
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.ad.html">Anomaly Detection</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.aggregators.html">Anomaly Aggregators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">AND Aggregator</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">Ensemble scikit-learn aggregator</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">OR Aggregator</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.anomaly_model.html">Anomaly Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">Filtering Anomaly Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">Forecasting Anomaly Model</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.detectors.html">Anomaly Detectors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.detectors.iqr_detector.html">Interquartile Range (IQR) Detector</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.detectors.quantile_detector.html">Quantile Detector</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.detectors.threshold_detector.html">Threshold Detector</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.scorers.html">Anomaly Scorers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.difference_scorer.html">Difference Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">k-means Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">NLL Cauchy Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">NLL Exponential Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">NLL Gamma Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">NLL Gaussian Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">NLL Laplace Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">NLL Poisson Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.norm_scorer.html">Norm Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">PyOD Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">Wasserstein Scorer</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.ad.utils.html">Utils for Anomaly Detection</a></li>
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.dataprocessing.html">Data Processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.dataprocessing.dtw.html">Dynamic Time Warping (DTW)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.dtw.cost_matrix.html">DTW Cost Matrix</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">Dynamic Time Warping (DTW)</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.dtw.window.html">DTW Windows</a></li>
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.dataprocessing.encoders.html">Time Axis Encoders</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">Encoder Base Classes</a></li>
+
+
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">Time Axes Encoders</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.dataprocessing.transformers.html">Data Transformers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">Data Transformer Base Class</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">Box-Cox Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.diff.html">Differencing Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">Fittable Data Transformer Base Class</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">Invertible Data Transformer Base Class</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">Mapper and InvertibleMapper</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.midas.html">Mixed-data sampling (MIDAS) Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">Missing Values Filler</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">Hierarchical Reconciliation</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">Scaler</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">Static Covariates Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">Window Transformer</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.dataprocessing.pipeline.html">Pipeline</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.datasets.html">Datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="darts.datasets.datasets.html">Datasets</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.explainability.html">Explainability</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="darts.explainability.explainability_result.html">Explainability Result</a></li>
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.explainability.shap_explainer.html">Shap Explainer for SKLearnModels</a></li>
+
+<li class="toctree-l2"><a class="reference internal" href="darts.explainability.tft_explainer.html">TFTModel Explainer</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.metrics.html">Metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="darts.metrics.metrics.html">Metrics</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.models.html">Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.models.filtering.html">Filtering Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">Gaussian Process Filter</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.filtering.kalman_filter.html">Kalman Filter</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.filtering.moving_average_filter.html">Moving Average Filter</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.models.forecasting.html">Forecasting Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
+
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">Block Recurrent Neural Networks</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.catboost_model.html">CatBoost Models</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.chronos2_model.html">Chronos-2</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.conformal_models.html">Conformal Models</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.dlinear.html">D-Linear</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">Exponential Smoothing</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.fft.html">Fast Fourier Transform</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">Global Baseline Models (Naive)</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">Kalman Filter Forecaster</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.lgbm.html">LightGBM Models</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nhits.html">N-HiTS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nlinear.html">N-Linear</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.prophet_model.html">Facebook Prophet</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.random_forest.html">Random Forest</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">Regression Ensemble Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.rnn_model.html">Recurrent Neural Networks</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">AutoARIMA</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">AutoCES</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">AutoETS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">AutoMFLES</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">AutoTBATS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">AutoTheta</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_croston.html">Croston Method</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_model.html">StatsForecastModel</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_tbats.html">TBATS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sklearn_model.html">SKLearn-Like Models</a></li>
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tcn_model.html">Temporal Convolutional Network</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tft_model.html">Temporal Fusion Transformer (TFT)</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tft_submodels.html">TFTModel Sub-Modules</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.theta.html">Theta Method</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tide_model.html">Time-series Dense Encoder (TiDE)</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.varima.html">VARIMA</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.xgboost.html">XGBoost Models</a></li>
+
+
+
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="darts.utils.html">Utils</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.data.html">TimeSeries Datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="darts.utils.data.torch_datasets.html">Datasets for TorchForecastingModel</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">Inference Datasets</a></li>
+
+
+<li class="toctree-l4"><a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">Training Datasets</a></li>
+
+
+
+
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">Likelihoods for StatsForecastModel</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.torch.html">Likelihoods for TorchForecastingModel</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.callbacks.html">Callbacks for TorchForecastingModel</a></li>
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.losses.html">PyTorch Loss Functions</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.missing_values.html">Utils for filling missing values</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.model_selection.html">Model selection utilities</a></li>
+
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">TimeSeries Statistics</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.timeseries_generation.html">Utils for TimeSeries generation</a></li>
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.torch.html">Utils for Pytorch and its usage</a></li>
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.utils.html">Additional util functions</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
+
+
+
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
               
-              <div>
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="darts.html" class="nav-link">Darts</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="darts.utils.html" class="nav-link">Utils</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">TimeSeries Statistics</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
                 
-  <span class="target" id="module-darts.utils.statistics"></span><section id="time-series-statistics">
-<h1>Time Series Statistics<a class="headerlink" href="#time-series-statistics" title="Permalink to this heading">¶</a></h1>
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="timeseries-statistics">
+<span id="module-darts.utils.statistics"></span><h1>TimeSeries Statistics<a class="headerlink" href="#timeseries-statistics" title="Link to this heading">#</a></h1>
+</section>
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.check_seasonality">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">check_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#check_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.check_seasonality" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">check_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#check_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.check_seasonality" title="Link to this definition">#</a></dt>
 <dd><p>Checks whether the TimeSeries <cite>ts</cite> is seasonal with period <cite>m</cite> or not.</p>
 <p>If <cite>m</cite> is None, we work under the assumption that there is a unique seasonality period, which is inferred
 from the Auto-correlation Function (ACF).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The time series to check for seasonality.</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The seasonality period to check.</p></li>
-<li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag allowed in the ACF.</p></li>
-<li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The desired confidence level (default 5%).</p></li>
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The time series to check for seasonality.</p></li>
+<li><p><strong>m</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The seasonality period to check.</p></li>
+<li><p><strong>max_lag</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The maximal lag allowed in the ACF.</p></li>
+<li><p><strong>alpha</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The desired confidence level (default 5%).</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A tuple <cite>(season, m)</cite>, where season is a boolean indicating whether the series has seasonality or not
 and <cite>m</cite> is the seasonality period.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tuple[bool, int]</p>
 </dd>
 </dl>
@@ -929,18 +905,18 @@ and <cite>m</cite> is the seasonality period.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.extract_trend_and_seasonality">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">extract_trend_and_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'naive'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#extract_trend_and_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.extract_trend_and_seasonality" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">extract_trend_and_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'naive'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#extract_trend_and_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.extract_trend_and_seasonality" title="Link to this definition">#</a></dt>
 <dd><p>Extracts trend and seasonality from a TimeSeries instance using <cite>statsmodels.tsa</cite>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The series to decompose</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – The seasonality period to use.</p></li>
-<li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>, <a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – The type of decomposition to use.
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The series to decompose</p></li>
+<li><p><strong>freq</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</span>) – The seasonality period to use.</p></li>
+<li><p><strong>model</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>, <a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]</span>) – The type of decomposition to use.
 Must be <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.utils.utils</span> <span class="pre">import</span> <span class="pre">ModelMode,</span> <span class="pre">SeasonalityMode</span></code> Enum member.
 Either <code class="docutils literal notranslate"><span class="pre">MULTIPLICATIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code>.
 Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.</p></li>
-<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The method to be used to decompose the series.
+<li><p><strong>method</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The method to be used to decompose the series.
 - “naive” : Seasonal decomposition using moving averages <a class="reference internal" href="#rbe1076d57ddf-1" id="id1">[1]</a>.
 - “STL” : Season-Trend decomposition using LOESS <a class="reference internal" href="#rbe1076d57ddf-2" id="id2">[2]</a>. Only compatible with <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code> model type.
 - “MSTL” : Season-Trend decomposition using LOESS with multiple seasonalities <a class="reference internal" href="#rbe1076d57ddf-3" id="id3">[3]</a>.
@@ -948,216 +924,209 @@ Only compatible with <code class="docutils literal notranslate"><span class="pre
 <li><p><strong>kwargs</strong> – Other keyword arguments are passed down to the decomposition method.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A tuple of (trend, seasonal) time series.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Tuple[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
 </dd>
 </dl>
 <p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="rbe1076d57ddf-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</a></p>
-</dd>
-<dt class="label" id="rbe1076d57ddf-2"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</a></p>
-</dd>
-<dt class="label" id="rbe1076d57ddf-3"><span class="brackets"><a class="fn-backref" href="#id3">3</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html</a></p>
-</dd>
-</dl>
+<div role="list" class="citation-list">
+<div class="citation" id="rbe1076d57ddf-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</a></p>
+</div>
+<div class="citation" id="rbe1076d57ddf-2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</a></p>
+</div>
+<div class="citation" id="rbe1076d57ddf-3" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">3</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.MSTL.html</a></p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.granger_causality_tests">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">granger_causality_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts_cause</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts_effect</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addconst</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#granger_causality_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.granger_causality_tests" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">granger_causality_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts_cause</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts_effect</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addconst</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#granger_causality_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.granger_causality_tests" title="Link to this definition">#</a></dt>
 <dd><p>Provides four tests for granger non causality of 2 time series using
 <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.grangercausalitytests()</span></code>.
 See <a class="reference internal" href="#r11379780e7c2-1" id="id4">[1]</a>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts_cause</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – A univariate deterministic time series. The statistical test determines if this time series
+<li><p><strong>ts_cause</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – A univariate deterministic time series. The statistical test determines if this time series
 ‘Granger causes’ the time series ts_effect (second parameter). Missing values are not supported.
 if H_0 (non causality) is rejected (p near 0), then there is a ‘granger causality’.</p></li>
-<li><p><strong>ts_effect</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – Univariate time series ‘Granger caused’ by ts_cause.</p></li>
-<li><p><strong>maxlag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – If an integer, computes the test for all lags up to maxlag.
+<li><p><strong>ts_effect</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – Univariate time series ‘Granger caused’ by ts_cause.</p></li>
+<li><p><strong>maxlag</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – If an integer, computes the test for all lags up to maxlag.
 If an iterable, computes the tests only for the lags in maxlag.</p></li>
-<li><p><strong>addconst</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Include a constant in the model.</p></li>
+<li><p><strong>addconst</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Include a constant in the model.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>All test results, dictionary keys are the number of lags. For each lag the values are a tuple,
 with the first element a dictionary with test statistic, pvalues, degrees of freedom, the second element are
 the OLS estimation results for the restricted model, the unrestricted model and the restriction (contrast)
 matrix for the parameter f_test.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Dict</p>
 </dd>
 </dl>
 <p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="r11379780e7c2-1"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html</a></p>
-</dd>
-</dl>
+<div role="list" class="citation-list">
+<div class="citation" id="r11379780e7c2-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id4">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html</a></p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_acf">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_acf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bartlett_confint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_acf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_acf" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_acf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bartlett_confint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_acf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_acf" title="Link to this definition">#</a></dt>
 <dd><p>Plots the Autocorrelation Function (ACF) of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding significance
 interval. Uses <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.acf()</span></code> <a class="reference internal" href="#rafdb152b6caa-1" id="id5">[1]</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries whose ACF should be plotted.</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
-<li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag order to consider.</p></li>
-<li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
-<li><p><strong>bartlett_confint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – The boolean value indicating whether the confidence interval should be
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries whose ACF should be plotted.</p></li>
+<li><p><strong>m</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, a time lag to highlight on the plot.</p></li>
+<li><p><strong>max_lag</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The maximal lag order to consider.</p></li>
+<li><p><strong>alpha</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The confidence interval to display.</p></li>
+<li><p><strong>bartlett_confint</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – The boolean value indicating whether the confidence interval should be
 calculated using Bartlett’s formula. If set to <cite>True</cite>, the confidence interval
 can be used in the model identification stage for fitting ARIMA models.
 If set to <cite>False</cite>, the confidence interval can be used to test for randomness
 (i.e. there is no time dependence in the data) of the data.</p></li>
-<li><p><strong>fig_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
-<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
-<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
+<li><p><strong>fig_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The size of the figure to be displayed.</p></li>
+<li><p><strong>axis</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]</span>) – Optionally, an axis object to plot the ACF on.</p></li>
+<li><p><strong>default_formatting</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to use the darts default scheme.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
 </dd>
 </dl>
 <p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="rafdb152b6caa-1"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html</a></p>
-</dd>
-</dl>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<div role="list" class="citation-list">
+<div class="citation" id="rafdb152b6caa-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id5">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html</a></p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_ccf">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_ccf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts_other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bartlett_confint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_ccf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_ccf" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_ccf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts_other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bartlett_confint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_ccf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_ccf" title="Link to this definition">#</a></dt>
 <dd><p>Plots the Cross Correlation Function (CCF) between <cite>ts</cite> and <cite>ts_other</cite>, highlighting it at lag <cite>m</cite>, with
 corresponding significance interval. Uses <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.ccf()</span></code> <a class="reference internal" href="#r98919319cd4f-1" id="id6">[1]</a></p>
 <p>This can be used to find the cross correlation between the target and different covariates lags.
 If <cite>ts_other</cite> is identical <cite>ts</cite>, it corresponds to <cite>plot_acf()</cite>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries whose CCF with <cite>ts_other</cite> should be plotted.</p></li>
-<li><p><strong>ts_other</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries which to compare against <cite>ts</cite> in the CCF. E.g. check the cross correlation of different
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries whose CCF with <cite>ts_other</cite> should be plotted.</p></li>
+<li><p><strong>ts_other</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries which to compare against <cite>ts</cite> in the CCF. E.g. check the cross correlation of different
 covariate lags with the target.</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
-<li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag order to consider.</p></li>
-<li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
-<li><p><strong>bartlett_confint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – The boolean value indicating whether the confidence interval should be
+<li><p><strong>m</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, a time lag to highlight on the plot.</p></li>
+<li><p><strong>max_lag</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The maximal lag order to consider.</p></li>
+<li><p><strong>alpha</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The confidence interval to display.</p></li>
+<li><p><strong>bartlett_confint</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – The boolean value indicating whether the confidence interval should be
 calculated using Bartlett’s formula.</p></li>
-<li><p><strong>fig_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
-<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis object to plot the CCF on.</p></li>
-<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
+<li><p><strong>fig_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The size of the figure to be displayed.</p></li>
+<li><p><strong>axis</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]</span>) – Optionally, an axis object to plot the CCF on.</p></li>
+<li><p><strong>default_formatting</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to use the darts default scheme.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
 </dd>
 </dl>
 <p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="r98919319cd4f-1"><span class="brackets"><a class="fn-backref" href="#id6">1</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.ccf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.ccf.html</a></p>
-</dd>
-</dl>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<div role="list" class="citation-list">
+<div class="citation" id="r98919319cd4f-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id6">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.ccf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.ccf.html</a></p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_hist">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_hist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_hist" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_hist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_hist" title="Link to this definition">#</a></dt>
 <dd><p>This function plots the histogram of values in a TimeSeries instance or an array-like.</p>
 <p>All types of TimeSeries are supported (uni-, multivariate, deterministic, stochastic).
 Depending on the number of components in <cite>data</cite>, up to four histograms can be plotted on one figure.
 All stochastic samples will be displayed with the corresponding component.</p>
 <p>If <cite>data</cite> is an array-like, ALL values will be displayed in the same histogram.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – TimeSeries instance or an array-like from which to plot the histogram.</p></li>
-<li><p><strong>bins</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, either an integer value for the number of bins to be displayed
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span>) – TimeSeries instance or an array-like from which to plot the histogram.</p></li>
+<li><p><strong>bins</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, either an integer value for the number of bins to be displayed
 or an array-like of floats determining the position of bins.</p></li>
-<li><p><strong>density</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – bool, if <cite>density</cite> is set to <cite>True</cite>, the bin counts will be converted to probability density</p></li>
-<li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The title of the figure to be displayed</p></li>
-<li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The size of the figure to be displayed.</p></li>
-<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis object to plot the histogram on.</p></li>
+<li><p><strong>density</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – bool, if <cite>density</cite> is set to <cite>True</cite>, the bin counts will be converted to probability density</p></li>
+<li><p><strong>title</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The title of the figure to be displayed</p></li>
+<li><p><strong>fig_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</span>) – The size of the figure to be displayed.</p></li>
+<li><p><strong>ax</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]</span>) – Optionally, an axis object to plot the histogram on.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_pacf">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_pacf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ywadjusted'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_pacf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_pacf" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_pacf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ywadjusted'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_pacf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_pacf" title="Link to this definition">#</a></dt>
 <dd><p>Plots the Partial Autocorrelation Function (PACF) of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding
 significance interval. Uses <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.pacf()</span></code> <a class="reference internal" href="#rb31bb5f8a25c-1" id="id7">[1]</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries whose ACF should be plotted.</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
-<li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag order to consider.</p></li>
-<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>The method to be used for the PACF calculation.
-- | “yw” or “ywadjusted” : Yule-Walker with sample-size adjustment in</p>
-<blockquote>
-<div><div class="line-block">
-<div class="line">denominator for acovf. Default.</div>
-</div>
-</div></blockquote>
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries whose ACF should be plotted.</p></li>
+<li><p><strong>m</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, a time lag to highlight on the plot.</p></li>
+<li><p><strong>max_lag</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The maximal lag order to consider.</p></li>
+<li><p><strong>method</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – <p>The method to be used for the PACF calculation.</p>
 <ul>
+<li><p>”yw” or “ywadjusted” : Yule-Walker with sample-size adjustment in denominator for acovf. Default.</p></li>
 <li><p>”ywm” or “ywmle” : Yule-Walker without adjustment.</p></li>
 <li><p>”ols” : regression of time series on lags of it and on constant.</p></li>
-<li><p>”ols-inefficient” : regression of time series on lags using a single
-common sample to estimate all pacf coefficients.</p></li>
-<li><p>”ols-adjusted” : regression of time series on lags with a bias
-adjustment.</p></li>
-<li><p>”ld” or “ldadjusted” : Levinson-Durbin recursion with bias
-correction.</p></li>
-<li><p>”ldb” or “ldbiased” : Levinson-Durbin recursion without bias
-correction.</p></li>
+<li><p>”ols-inefficient” : regression of time series on lags using a single common sample to estimate all pacf
+coefficients.</p></li>
+<li><p>”ols-adjusted” : regression of time series on lags with a bias adjustment.</p></li>
+<li><p>”ld” or “ldadjusted” : Levinson-Durbin recursion with bias correction.</p></li>
+<li><p>”ldb” or “ldbiased” : Levinson-Durbin recursion without bias correction.</p></li>
 </ul>
 </p></li>
-<li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
-<li><p><strong>fig_size</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
-<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
-<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
+<li><p><strong>alpha</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The confidence interval to display.</p></li>
+<li><p><strong>fig_size</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The size of the figure to be displayed.</p></li>
+<li><p><strong>axis</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]</span>) – Optionally, an axis object to plot the ACF on.</p></li>
+<li><p><strong>default_formatting</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to use the darts default scheme.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
 </dd>
 </dl>
 <p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="rb31bb5f8a25c-1"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html</a></p>
-</dd>
-</dl>
-<dl class="field-list simple">
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
-</dd>
-</dl>
+<div role="list" class="citation-list">
+<div class="citation" id="rb31bb5f8a25c-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id7">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html</a></p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_residuals_analysis">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_residuals_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">residuals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_nan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">acf_max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_residuals_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_residuals_analysis" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_residuals_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">residuals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_nan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default_formatting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">acf_max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_residuals_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_residuals_analysis" title="Link to this definition">#</a></dt>
 <dd><p>Plots data relevant to residuals.</p>
 <p>This function takes a univariate TimeSeries instance of residuals and plots their values,
 their distribution and their ACF.
@@ -1165,41 +1134,41 @@ Please note that if the residual TimeSeries instance contains NaN values, the pl
 might be displayed incorrectly. If <cite>fill_nan</cite> is set to <cite>True</cite>, the missing values will
 be interpolated.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>residuals</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – Univariate TimeSeries instance representing residuals.</p></li>
-<li><p><strong>num_bins</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer value determining the number of bins in the histogram.</p></li>
-<li><p><strong>fill_nan</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – A boolean value indicating whether NaN values should be filled in the residuals.</p></li>
-<li><p><strong>default_formatting</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the darts default scheme.</p></li>
-<li><p><strong>acf_max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximum lag to be displayed in the ACF plot. Must be less than residuals length.</p></li>
+<li><p><strong>residuals</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – Univariate TimeSeries instance representing residuals.</p></li>
+<li><p><strong>num_bins</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Optionally, an integer value determining the number of bins in the histogram.</p></li>
+<li><p><strong>fill_nan</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – A boolean value indicating whether NaN values should be filled in the residuals.</p></li>
+<li><p><strong>default_formatting</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to use the darts default scheme.</p></li>
+<li><p><strong>acf_max_lag</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The maximum lag to be displayed in the ACF plot. Must be less than residuals length.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.remove_from_series">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_from_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_from_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_from_series" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_from_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_from_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_from_series" title="Link to this definition">#</a></dt>
 <dd><p>Removes the TimeSeries <cite>other</cite> from the TimeSeries <cite>ts</cite> as specified by <cite>model</cite>.
 Use e.g. to remove an additive or multiplicative trend from a series.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to be modified.</p></li>
-<li><p><strong>other</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to remove.</p></li>
-<li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>, <a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – The type of model considered.
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries to be modified.</p></li>
+<li><p><strong>other</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries to remove.</p></li>
+<li><p><strong>model</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>, <a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]</span>) – The type of model considered.
 Must be <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.utils.utils</span> <span class="pre">import</span> <span class="pre">ModelMode,</span> <span class="pre">SeasonalityMode</span></code> Enums member.
 Either <code class="docutils literal notranslate"><span class="pre">MULTIPLICATIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code>.
 Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A TimeSeries defined by removing <cite>other</cite> from <cite>ts</cite>.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
@@ -1207,93 +1176,106 @@ Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.remove_seasonality">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'naive'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_seasonality" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'naive'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_seasonality" title="Link to this definition">#</a></dt>
 <dd><p>Adjusts the TimeSeries <cite>ts</cite> for a seasonality of order <cite>frequency</cite> using the <cite>model</cite> decomposition.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to adjust.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The seasonality period to use.</p></li>
-<li><p><strong>model</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>) – The type of decomposition to use.
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries to adjust.</p></li>
+<li><p><strong>freq</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The seasonality period to use.</p></li>
+<li><p><strong>model</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a></span>) – The type of decomposition to use.
 Must be a <cite>from darts import SeasonalityMode</cite> Enum member.
 Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
 Defaults SeasonalityMode.MULTIPLICATIVE.</p></li>
-<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The method to be used to decompose the series.
+<li><p><strong>method</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The method to be used to decompose the series.
 - “naive” : Seasonal decomposition using moving averages <a class="reference internal" href="#rf4f084a62862-1" id="id8">[1]</a>.
 - “STL” : Season-Trend decomposition using LOESS <a class="reference internal" href="#rf4f084a62862-2" id="id9">[2]</a>. Only compatible with <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code> model type.
 Defaults to “naive”</p></li>
 <li><p><strong>kwargs</strong> – Other keyword arguments are passed down to the decomposition method.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A new TimeSeries instance that corresponds to the seasonality-adjusted ‘ts’.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
 <p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="rf4f084a62862-1"><span class="brackets"><a class="fn-backref" href="#id8">1</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</a></p>
-</dd>
-<dt class="label" id="rf4f084a62862-2"><span class="brackets"><a class="fn-backref" href="#id9">2</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</a></p>
-</dd>
-</dl>
+<div role="list" class="citation-list">
+<div class="citation" id="rf4f084a62862-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id8">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</a></p>
+</div>
+<div class="citation" id="rf4f084a62862-2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id9">2</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</a></p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.remove_trend">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_trend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'naive'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_trend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_trend" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_trend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'naive'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_trend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_trend" title="Link to this definition">#</a></dt>
 <dd><p>Adjusts the TimeSeries <cite>ts</cite> for a trend using the <cite>model</cite> decomposition.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to adjust.</p></li>
-<li><p><strong>model</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>) – The type of decomposition to use.
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries to adjust.</p></li>
+<li><p><strong>model</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a></span>) – The type of decomposition to use.
 Must be a <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts.utils.utils</span> <span class="pre">import</span> <span class="pre">ModelMode</span></code> Enum member.
 Either <code class="docutils literal notranslate"><span class="pre">MULTIPLICATIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code>.
 Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.</p></li>
-<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The method to be used to decompose the series.
-- “naive” : Seasonal decomposition using moving averages <a href="#id18"><span class="problematic" id="id10">[1]_</span></a>.
-- “STL” : Season-Trend decomposition using LOESS <a href="#id19"><span class="problematic" id="id11">[2]_</span></a>. Only compatible with <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code> model type.
+<li><p><strong>method</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The method to be used to decompose the series.
+- “naive” : Seasonal decomposition using moving averages <a class="reference internal" href="#r501dffa6c9b2-1" id="id10">[1]</a>.
+- “STL” : Season-Trend decomposition using LOESS <a class="reference internal" href="#r501dffa6c9b2-2" id="id11">[2]</a>. Only compatible with <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code> model type.
 Defaults to “naive”</p></li>
 <li><p><strong>kwargs</strong> – Other keyword arguments are passed down to the decomposition method.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A new TimeSeries instance that corresponds to the trend-adjusted ‘ts’.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
+<p class="rubric">References</p>
+<div role="list" class="citation-list">
+<div class="citation" id="r501dffa6c9b2-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id10">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</a></p>
+</div>
+<div class="citation" id="r501dffa6c9b2-2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id11">2</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</a></p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_test_adf">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_adf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autolag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AIC'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_adf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_adf" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_adf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autolag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AIC'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_adf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_adf" title="Link to this definition">#</a></dt>
 <dd><p>Provides Augmented Dickey-Fuller unit root test for a time series,
 using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.adfuller()</span></code>. See <a class="reference internal" href="#ref511d402b22-1" id="id12">[1]</a>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The time series to test.</p></li>
-<li><p><strong>maxlag</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.</p></li>
-<li><p><strong>regression</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Constant and trend order to include in regression.
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The time series to test.</p></li>
+<li><p><strong>maxlag</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.</p></li>
+<li><p><strong>regression</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Constant and trend order to include in regression.
 “c” : constant only (default).
 “ct” : constant and trend.
 “ctt” : constant, and linear and quadratic trend.
 “n” : no constant, no trend.</p></li>
-<li><p><strong>autolag</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
+<li><p><strong>autolag</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
 If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding
 information criterion. “t-stat” based choice of maxlag. Starts with maxlag and drops a lag
 until the t-statistic on the last lag length is significant using a 5%-sized test.
 If None, then the number of included lags is set to maxlag.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><div class="line-block">
 <div class="line">adf: The test statistic.</div>
 <div class="line">pvalue: MacKinnon’s approximate p-value based on <a class="reference internal" href="#ref511d402b22-2" id="id13">[2]</a>.</div>
@@ -1304,39 +1286,42 @@ If None, then the number of included lags is set to maxlag.</p></li>
 </div>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>set</p>
 </dd>
 </dl>
 <p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="ref511d402b22-1"><span class="brackets"><a class="fn-backref" href="#id12">1</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html</a></p>
-</dd>
-<dt class="label" id="ref511d402b22-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id13">1</a>,<a href="#id14">2</a>)</span></dt>
-<dd><p>MacKinnon (1994, 2010)</p>
-</dd>
-</dl>
+<div role="list" class="citation-list">
+<div class="citation" id="ref511d402b22-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id12">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html</a></p>
+</div>
+<div class="citation" id="ref511d402b22-2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id13">1</a>,<a role="doc-backlink" href="#id14">2</a>)</span>
+<p>MacKinnon (1994, 2010)</p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_test_kpss">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_kpss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_kpss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_kpss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_kpss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_kpss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_kpss" title="Link to this definition">#</a></dt>
 <dd><p>Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
 using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.kpss()</span></code>. See <a class="reference internal" href="#r8df52d521c0a-1" id="id15">[1]</a>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The time series to test.</p></li>
-<li><p><strong>regression</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The null hypothesis for the KPSS test.
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The time series to test.</p></li>
+<li><p><strong>regression</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The null hypothesis for the KPSS test.
 ‘c’ : The data is stationary around a constant (default).
 ‘ct’ : The data is stationary around a trend.</p></li>
-<li><p><strong>nlags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Indicates the number of lags to be used. If ‘auto’ (default), lags is calculated using the data-dependent method
+<li><p><strong>nlags</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Indicates the number of lags to be used. If ‘auto’ (default), lags is calculated using the data-dependent method
 of Hobijn et al. (1998). See also Andrews (1991), Newey &amp; West (1994), and Schwert (1989). If set to ‘legacy’,
 uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p><div class="line-block">
 <div class="line">kpss_stat: The test statistic.</div>
 <div class="line">pvalue: The p-value of the test. The p-value is interpolated from Table 1 in <a class="reference internal" href="#r8df52d521c0a-2" id="id16">[2]</a>,</div>
@@ -1347,24 +1332,27 @@ uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</p></li>
 </div>
 </p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>set</p>
 </dd>
 </dl>
 <p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="r8df52d521c0a-1"><span class="brackets"><a class="fn-backref" href="#id15">1</a></span></dt>
-<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html</a></p>
-</dd>
-<dt class="label" id="r8df52d521c0a-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id16">1</a>,<a href="#id17">2</a>)</span></dt>
-<dd><p>Kwiatkowski et al. (1992)</p>
-</dd>
-</dl>
+<div role="list" class="citation-list">
+<div class="citation" id="r8df52d521c0a-1" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id15">1</a><span class="fn-bracket">]</span></span>
+<p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html</a></p>
+</div>
+<div class="citation" id="r8df52d521c0a-2" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></span>
+<span class="backrefs">(<a role="doc-backlink" href="#id16">1</a>,<a role="doc-backlink" href="#id17">2</a>)</span>
+<p>Kwiatkowski et al. (1992)</p>
+</div>
+</div>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_tests">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_value_threshold_adfuller</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_value_threshold_kpss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_tests" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_value_threshold_adfuller</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_value_threshold_kpss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_tests" title="Link to this definition">#</a></dt>
 <dd><p>Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented
 Dickey-Fuller statistical tests.</p>
 <p>WARNING
@@ -1375,69 +1363,153 @@ It seems reasonable to keep them both at 0.05.
 If other threshold has to be tested, they have to go in opposite direction (for example,
 p_value_threshold_adfuller = 0.01 and p_value_threshold_kpss = 0.1).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to test.</p></li>
-<li><p><strong>p_value_threshold_adfuller</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – p_value threshold to reject stationarity for Augmented Dickey-Fuller test.</p></li>
-<li><p><strong>p_value_threshold_kpss</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – p_value threshold to reject non-stationarity for Kwiatkowski-Phillips-Schmidt-Shin test.</p></li>
+<li><p><strong>ts</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></span>) – The TimeSeries to test.</p></li>
+<li><p><strong>p_value_threshold_adfuller</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – p_value threshold to reject stationarity for Augmented Dickey-Fuller test.</p></li>
+<li><p><strong>p_value_threshold_kpss</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – p_value threshold to reject non-stationarity for Kwiatkowski-Phillips-Schmidt-Shin test.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>If ts is stationary or not.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>
 
-</section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.utils.onnx_utils.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">&lt;no title&gt;</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="darts.utils.model_selection.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Model selection utilities</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.utils.timeseries_generation.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="darts.utils.timeseries_generation.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Utils for time series generation</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+        <p class="prev-next-title">Utils for TimeSeries generation</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">TimeSeries Statistics</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.check_seasonality"><code class="docutils literal notranslate"><span class="pre">check_seasonality()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.extract_trend_and_seasonality"><code class="docutils literal notranslate"><span class="pre">extract_trend_and_seasonality()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.granger_causality_tests"><code class="docutils literal notranslate"><span class="pre">granger_causality_tests()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.plot_acf"><code class="docutils literal notranslate"><span class="pre">plot_acf()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.plot_ccf"><code class="docutils literal notranslate"><span class="pre">plot_ccf()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.plot_hist"><code class="docutils literal notranslate"><span class="pre">plot_hist()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.plot_pacf"><code class="docutils literal notranslate"><span class="pre">plot_pacf()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.plot_residuals_analysis"><code class="docutils literal notranslate"><span class="pre">plot_residuals_analysis()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.remove_from_series"><code class="docutils literal notranslate"><span class="pre">remove_from_series()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.remove_seasonality"><code class="docutils literal notranslate"><span class="pre">remove_seasonality()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.remove_trend"><code class="docutils literal notranslate"><span class="pre">remove_trend()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.stationarity_test_adf"><code class="docutils literal notranslate"><span class="pre">stationarity_test_adf()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.stationarity_test_kpss"><code class="docutils literal notranslate"><span class="pre">stationarity_test_kpss()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.statistics.stationarity_tests"><code class="docutils literal notranslate"><span class="pre">stationarity_tests()</span></code></a></li>
+</ul>
+
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_api/darts.utils.statistics.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

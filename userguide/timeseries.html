@@ -1,302 +1,439 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>TimeSeries &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'userguide/timeseries';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Overview of Forecasting Models" href="forecasting_overview.html" />
     <link rel="prev" title="User Guide" href="../userguide.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
-</div>
-    </nav>
-    
-
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="current nav bd-sidenav">
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     TimeSeries
-    </span>
-   </code>
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="forecasting_overview.html">
-   Overview of Forecasting Models
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="torch_forecasting_models.html">
-   Torch Forecasting Models
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="gpu_and_tpu_usage.html">
-   Using Torch Models with GPUs and TPUs
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="covariates.html">
-   Covariates
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="hyperparameter_optimization.html">
-   Hyperparameter Optimization in Darts
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="faq.html">
-   Frequently Asked Questions
-  </a>
- </li>
-</ul>
-
-  </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
 
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#multivariate-time-series-vs-multiple-time-series">
-   Multivariate time series -vs- multiple time series
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#should-i-use-a-multivariate-series-or-multiple-series-for-my-problem">
-     Should I use a multivariate series or multiple series for my problem?
-    </a>
-   </li>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
   </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#probabilistic-and-deterministic-series">
-   Probabilistic and deterministic series
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#creating-timeseries">
-   Creating
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     TimeSeries
-    </span>
-   </code>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#implementation">
-   Implementation
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#exporting-data-from-a-timeseries">
-   Exporting data from a
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     TimeSeries
-    </span>
-   </code>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#static-covariates">
-   Static Covariates
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#hierarchical-time-series">
-   Hierarchical Time Series
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#more-information-and-documentation">
-   More information and documentation
-  </a>
- </li>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active"><a class="current reference internal" href="#"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="forecasting_overview.html">Overview of Forecasting Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torch_forecasting_models.html">Torch Forecasting Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gpu_and_tpu_usage.html">Using Torch Models with GPUs and TPUs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="covariates.html">Covariates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hyperparameter_optimization.html">Hyperparameter Optimization in Darts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 </ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
 
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../userguide.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></span></li>
+  </ul>
 </nav>
-              </div>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
               
-              <div class="toc-item">
+              
+              
                 
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
   <section id="timeseries">
-<h1><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#timeseries" title="Permalink to this heading">¶</a></h1>
+<h1><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#timeseries" title="Link to this heading">#</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is the main data class in Darts. A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> represents a univariate or multivariate time series, with a proper time index. The time index can either be of type <code class="docutils literal notranslate"><span class="pre">pandas.DatetimeIndex</span></code> (containing datetimes), or of type <code class="docutils literal notranslate"><span class="pre">pandas.RangeIndex</span></code> (containing integers; useful for representing sequential data without specific timestamps). In some cases, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can even represent <em>probabilistic</em> series, in order for instance to obtain confidence intervals.</p>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> are used in Darts in order to offer a consistent API dedicated to time series:</p>
 <ul class="simple">
@@ -307,7 +444,7 @@
 </ul>
 <p>Using a dedicated type to represent time series (instead of say, Pandas DataFrame, NumPy array, …) removes the need to rely on conventions about the formats expected by the different models and functions.</p>
 <section id="multivariate-time-series-vs-multiple-time-series">
-<h2>Multivariate time series -vs- multiple time series<a class="headerlink" href="#multivariate-time-series-vs-multiple-time-series" title="Permalink to this heading">¶</a></h2>
+<h2>Multivariate time series -vs- multiple time series<a class="headerlink" href="#multivariate-time-series-vs-multiple-time-series" title="Link to this heading">#</a></h2>
 <p>We distinguish univariate from multivariate series:</p>
 <ul class="simple">
 <li><p>A <strong>multivariate</strong> series contain multiple dimensions (i.e. multiple values per time step).</p></li>
@@ -316,21 +453,23 @@
 <p>Sometimes the dimensions are called <em>components</em>. A single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object can be either univariate (if it has a single component), or multivariate (if it has multiple components). In a multivariate series, all components share the same time axis. I.e., they all share the same time stamps.</p>
 <p>Some models in Darts (and all machine learning models) support multivariate series. This means that they can take multivariate series in inputs (either as targets or as covariates), and the forecasts they produce will have a dimensionality matching that of the targets.</p>
 <p>In addition, some models can work on <em>multiple time series</em>, meaning that they can be trained on multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects, and used to forecasts multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects in one go. This is sometimes referred to as panel data. In such cases, the different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> need not share the same time index – for instance, some series might be in 1990 and others in 2000. In fact, the series need not even have the same frequency. The models handling multiple series expect Python <code class="docutils literal notranslate"><span class="pre">Sequence</span></code>s of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> in inputs (for example, a simple list of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>).</p>
-<a class="reference external image-reference" href="./images/timeseries/multivariate.png"><img alt="figure1" src="../_images/multivariate.png" /></a>
+<a class="reference external image-reference" href="./images/timeseries/multivariate.png"><img alt="figure1" src="../_images/multivariate.png" />
+</a>
 <p><strong>Figure 1:</strong> A single multivariate series. In Darts this is represented by a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object.</p>
-<a class="reference external image-reference" href="./images/timeseries/multiple-ts.png"><img alt="figure2" src="../_images/multiple-ts.png" /></a>
+<a class="reference external image-reference" href="./images/timeseries/multiple-ts.png"><img alt="figure2" src="../_images/multiple-ts.png" />
+</a>
 <p><strong>Figure 2:</strong> Multiple time series. In Darts this is represented by multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects. The series may or may not share the same time axis, and may or may not be multivariate.</p>
 <ul class="simple">
 <li><p><strong>Example of a multivariate series:</strong> The blood pressure and heart rate of a single patient over time (one multivariate series with 2 components).</p></li>
 <li><p><strong>Example of multiple series:</strong> The blood pressure and heart rate of multiple patients; potentially measured at different times for different patients (one multivariate series with 2 components per patient).</p></li>
 </ul>
 <section id="should-i-use-a-multivariate-series-or-multiple-series-for-my-problem">
-<h3>Should I use a multivariate series or multiple series for my problem?<a class="headerlink" href="#should-i-use-a-multivariate-series-or-multiple-series-for-my-problem" title="Permalink to this heading">¶</a></h3>
+<h3>Should I use a multivariate series or multiple series for my problem?<a class="headerlink" href="#should-i-use-a-multivariate-series-or-multiple-series-for-my-problem" title="Link to this heading">#</a></h3>
 <p>Using multivariate series will provide an opportunity for models to capture the dimensions jointly, whereas using multiple series will expose the models to multiple observations. So which representation is right is problem-dependent, and in some cases might not even be clear beforehand and require experimentation. Nevertheless, if you are in a situation where you are trying to model several “correlated” components varying together across time (e.g. the coordinates of a moving object, or multiple measurements related to a single entity), it is often natural to capture those as multiple components in single series. If on the other hand you have several instance of such measurements (e.g., obtained in different experiments or observations), this can mean that you have multiple time series. Furthermore, if your values do not share the same time spans, they should probably be represented as different series.</p>
 </section>
 </section>
 <section id="probabilistic-and-deterministic-series">
-<h2>Probabilistic and deterministic series<a class="headerlink" href="#probabilistic-and-deterministic-series" title="Permalink to this heading">¶</a></h2>
+<h2>Probabilistic and deterministic series<a class="headerlink" href="#probabilistic-and-deterministic-series" title="Link to this heading">#</a></h2>
 <p>In Darts, probabilistic forecasts are represented by drawing Monte Carlo samples from the underlying probabilistic models. This representation allows <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> to represent arbitrary joint distributions (over time and components) without relying on any pre-defined parametric form. Based on this, we define two types of time series:</p>
 <ul class="simple">
 <li><p>A <strong>Probabilistic</strong> (or <strong>stochastic</strong>) series contains multiple samples.</p></li>
@@ -338,7 +477,7 @@
 </ul>
 </section>
 <section id="creating-timeseries">
-<h2>Creating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#creating-timeseries" title="Permalink to this heading">¶</a></h2>
+<h2>Creating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#creating-timeseries" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can be created using factory methods, for example:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_dataframe">TimeSeries.from_dataframe()</a> can create <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> from a Pandas Dataframe having one or several columns representing values (columns correspond to components, and several columns would correspond to a multivariate series).</p></li>
@@ -355,11 +494,11 @@
 <p>produces a multivariate series from some series that share the same time axis.</p>
 </section>
 <section id="implementation">
-<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this heading">¶</a></h2>
+<h2>Implementation<a class="headerlink" href="#implementation" title="Link to this heading">#</a></h2>
 <p>Behind the scenes, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is wrapping around a 3-dimensional <code class="docutils literal notranslate"><span class="pre">xarray.DataArray</span></code> object. The dimensions are <em>(time, component, sample)</em>, where the size of the <em>component</em> dimension is larger than 1 for multivariate series and the size of the <em>sample</em> dimension is larger than 1 for stochastic series. The <code class="docutils literal notranslate"><span class="pre">DataArray</span></code> is itself backed by a 3-dimensional NumPy array, and it has a time index (either <code class="docutils literal notranslate"><span class="pre">pandas.DatetimeIndex</span></code> or <code class="docutils literal notranslate"><span class="pre">pandas.RangeIndex</span></code>) on the <em>time</em> dimension and another <code class="docutils literal notranslate"><span class="pre">pandas.Index</span></code> on the <em>component</em> (or “columns”) dimension. <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is intended to be immutable and most operations return new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects.</p>
 </section>
 <section id="exporting-data-from-a-timeseries">
-<h2>Exporting data from a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#exporting-data-from-a-timeseries" title="Permalink to this heading">¶</a></h2>
+<h2>Exporting data from a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#exporting-data-from-a-timeseries" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects offer a few ways to export the data, for example:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.pd_dataframe">TimeSeries.to_dataframe()</a> to export a Dataframe (for deterministic series)</p></li>
@@ -369,7 +508,7 @@
 </ul>
 </section>
 <section id="static-covariates">
-<h2>Static Covariates<a class="headerlink" href="#static-covariates" title="Permalink to this heading">¶</a></h2>
+<h2>Static Covariates<a class="headerlink" href="#static-covariates" title="Link to this heading">#</a></h2>
 <p>Optionally, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can contain static data (referred to as <em>static covariates</em>), which can be exploited by some models. Example of static covariates can be:</p>
 <ul class="simple">
 <li><p>Store location - for instance for each store (component) in a multivariate series</p></li>
@@ -380,7 +519,7 @@
 <p>The static covariates have to be specified by a pandas DataFrame whose rows match the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>‘s components, and whose columns represent the dimensions of the static covariates. They can be added to a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> when using most factory methods, using the <code class="docutils literal notranslate"><span class="pre">static_covariates</span></code> parameter. They can also be added to an existing <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> using the <code class="docutils literal notranslate"><span class="pre">with_static_covariates()</span></code> method.</p>
 </section>
 <section id="hierarchical-time-series">
-<h2>Hierarchical Time Series<a class="headerlink" href="#hierarchical-time-series" title="Permalink to this heading">¶</a></h2>
+<h2>Hierarchical Time Series<a class="headerlink" href="#hierarchical-time-series" title="Link to this heading">#</a></h2>
 <p>Optionally, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can contain a hierarchy, which specifies how its different components are grouped together. The hierarchy itself is specified as a Python dictionary, mapping the components’ names to a list of names of their parent(s) in the hierarchy.</p>
 <p>For instance, the following hierarchy means that the two components <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;b&quot;</span></code> add up to <code class="docutils literal notranslate"><span class="pre">&quot;total&quot;</span></code>:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">hierarchy</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">],</span> <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">]}</span>
@@ -389,56 +528,136 @@
 <p>Hierarchies can be used for posthoc forecast reconciliation. Darts offers several reconciliation transformers (usable with <code class="docutils literal notranslate"><span class="pre">fit()</span></code>/<code class="docutils literal notranslate"><span class="pre">transform()</span></code>) - see the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html">corresponding API documentation</a>.</p>
 </section>
 <section id="more-information-and-documentation">
-<h2>More information and documentation<a class="headerlink" href="#more-information-and-documentation" title="Permalink to this heading">¶</a></h2>
+<h2>More information and documentation<a class="headerlink" href="#more-information-and-documentation" title="Link to this heading">#</a></h2>
 <p>The full list of attributes and methods of the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> class is listed in the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html">API Documentation</a>. In addition, the <a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html#Building-and-manipulating-TimeSeries">Quickstart</a> contains some examples of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> manipulation.</p>
 </section>
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="../userguide.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">User Guide</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../userguide.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">User Guide</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="forecasting_overview.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="forecasting_overview.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Overview of Forecasting Models</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multivariate-time-series-vs-multiple-time-series">Multivariate time series -vs- multiple time series</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#should-i-use-a-multivariate-series-or-multiple-series-for-my-problem">Should I use a multivariate series or multiple series for my problem?</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#probabilistic-and-deterministic-series">Probabilistic and deterministic series</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-timeseries">Creating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#implementation">Implementation</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#exporting-data-from-a-timeseries">Exporting data from a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#static-covariates">Static Covariates</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#hierarchical-time-series">Hierarchical Time Series</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#more-information-and-documentation">More information and documentation</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/userguide/timeseries.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

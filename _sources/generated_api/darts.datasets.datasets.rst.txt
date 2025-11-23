@@ -1,0 +1,3 @@
+.. automodule:: darts.datasets.datasets
+   :members:
+   :undoc-members:

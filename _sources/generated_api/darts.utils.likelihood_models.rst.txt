@@ -1,13 +1,19 @@
+darts.utils.likelihood_models
+=============================
+
+.. currentmodule:: darts.utils.likelihood_models
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.utils.likelihood_models.sklearn
+   darts.utils.likelihood_models.statsforecast
+   darts.utils.likelihood_models.torch
 
 
 
-.. automodule:: darts.utils.likelihood_models
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.utils.likelihood_models.base
-        darts.utils.likelihood_models.sklearn
-        darts.utils.likelihood_models.statsforecast
-        darts.utils.likelihood_models.torch
+- :doc:`darts.utils.likelihood_models.sklearn <darts.utils.likelihood_models.sklearn>`
+- :doc:`darts.utils.likelihood_models.statsforecast <darts.utils.likelihood_models.statsforecast>`
+- :doc:`darts.utils.likelihood_models.torch <darts.utils.likelihood_models.torch>`

@@ -1,907 +1,882 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>TFT Explainer for Temporal Fusion Transformer (TFTModel) &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+    <title>TFTModel Explainer &#8212; darts  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated_api/darts.explainability.tft_explainer';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="darts.explainability.utils.html" />
+    <link rel="next" title="Metrics" href="darts.metrics.html" />
     <link rel="prev" title="Shap Explainer for SKLearnModels" href="darts.explainability.shap_explainer.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-    </nav>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
     
+      <div class="navbar-item">
 
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="current nav bd-sidenav">
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.ad.html">
-   Anomaly Detection
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
-  <label for="toctree-checkbox-1">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.aggregators.html">
-     Anomaly Aggregators
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
-    <label for="toctree-checkbox-2">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">
-       AND Aggregator
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">
-       Ensemble scikit-learn aggregator
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">
-       OR Aggregator
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.anomaly_model.html">
-     Anomaly Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
-    <label for="toctree-checkbox-3">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">
-       Filtering Anomaly Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">
-       Forecasting Anomaly Model
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.detectors.html">
-     Anomaly Detectors
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
-    <label for="toctree-checkbox-4">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
-       Interquartile Range (IQR) Detector
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
-       Quantile Detector
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.detectors.threshold_detector.html">
-       Threshold Detector
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.scorers.html">
-     Anomaly Scorers
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-    <label for="toctree-checkbox-5">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.difference_scorer.html">
-       Difference Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">
-       k-means Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">
-       NLL Cauchy Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">
-       NLL Exponential Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">
-       NLL Gamma Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">
-       NLL Gaussian Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">
-       NLL Laplace Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">
-       NLL Poisson Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.norm_scorer.html">
-       Norm Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyOD Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       Wasserstein Scorer
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.ad.utils.html">
-     Utils for Anomaly Detection
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.dataprocessing.html">
-   Data Processing
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-  <label for="toctree-checkbox-6">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.dtw.html">
-     Dynamic Time Warping (DTW)
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
-       Dynamic Time Warping (DTW)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.dtw.window.html">
-       DTW Windows
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.encoders.html">
-     Time Axis Encoders
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-    <label for="toctree-checkbox-8">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">
-       Encoder Base Classes
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">
-       Time Axes Encoders
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.transformers.html">
-     Data Transformers
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Data Transformer Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
-       Box-Cox Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
-       Differencing Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mapper and InvertibleMapper
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
-       Mixed-data sampling (MIDAS) Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
-       Missing Values Filler
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
-       Hierarchical Reconciliation
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
-       Scaler
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
-       Static Covariates Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">
-       Window Transformer
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
-     Pipeline
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.datasets.html">
-   Datasets
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
-  <label for="toctree-checkbox-10">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul class="simple">
-  </ul>
- </li>
- <li class="toctree-l1 current active has-children">
-  <a class="reference internal" href="darts.explainability.html">
-   Explainability
-  </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
-  <label for="toctree-checkbox-11">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul class="current">
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.explainability.explainability_result.html">
-     Explainability Result
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for SKLearnModels
-    </a>
-   </li>
-   <li class="toctree-l2 current active">
-    <a class="current reference internal" href="#">
-     TFT Explainer for Temporal Fusion Transformer (TFTModel)
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
-  <label for="toctree-checkbox-12">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.metrics.metrics.html">
-     Metrics
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.models.html">
-   Models
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
-  <label for="toctree-checkbox-13">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.models.filtering.html">
-     Filtering Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
-    <label for="toctree-checkbox-14">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
-       Gaussian Processes
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
-       Kalman Filter
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
-       Moving Average
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.models.forecasting.html">
-     Forecasting Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
-    <label for="toctree-checkbox-15">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.arima.html">
-       ARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.baselines.html">
-       Baseline Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
-       Block Recurrent Neural Networks
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
-       CatBoost Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
-       Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.dlinear.html">
-       D-Linear
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
-       Exponential Smoothing
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.fft.html">
-       Fast Fourier Transform
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
-       Global Baseline Models (Naive)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
-       Kalman Filter Forecaster
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
-       LightGBM Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
-       Linear Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
-       N-BEATS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.nhits.html">
-       N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.nlinear.html">
-       N-Linear
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
-       Random Forest
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
-       Regression Ensemble Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
-       Recurrent Neural Networks
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       AutoCES
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       AutoETS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
-       AutoMFLES
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       AutoTBATS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       AutoTheta
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
-       Croston Method
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
-       StatsForecastModel
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
-       TBATS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
-       SKLearn-Like Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
-       Temporal Convolutional Network
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
-       Temporal Fusion Transformer (TFT)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.theta.html">
-       Theta Method
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
-       Time-series Dense Encoder (TiDE)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
-       Transformer Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
-       Time-Series Mixer (TSMixer)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.varima.html">
-       VARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.xgboost.html">
-       XGBoost Models
-      </a>
-     </li>
-    </ul>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.utils.html">
-   Utils
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
-  <label for="toctree-checkbox-16">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.utils.data.html">
-     TimeSeries Datasets
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
-    <label for="toctree-checkbox-17">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
-       Dataset Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
-       Inference Datasets
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
-       Training Datasets
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.utils.likelihood_models.html">
-     Likelihood Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
-    <label for="toctree-checkbox-18">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
-       Likelihoods for
-       <cite>
-        SKLearnModel
-       </cite>
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
-       Likelihoods for
-       <cite>
-        StatsForecast
-       </cite>
-       Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
-       Likelihoods for
-       <cite>
-        TorchForecastingModel
-       </cite>
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.losses.html">
-     PyTorch Loss Functions
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.missing_values.html">
-     Utils for filling missing values
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.model_selection.html">
-     Model selection utilities
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.statistics.html">
-     Time Series Statistics
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.timeseries_generation.html">
-     Utils for time series generation
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.torch.html">
-     Utils for Pytorch and its usage
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.ts_utils.html">
-     Additional util functions
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.utils.html">
-     Additional util functions
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="darts.timeseries.html">
-   Timeseries
-  </a>
- </li>
-</ul>
+  
+    
+  
 
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
   </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-
-<nav id="bd-toc-nav">
+  
+  <div class="col-lg-9 navbar-header-items">
     
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
           
 
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
           
           
-            
           
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.ad.html">Anomaly Detection</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.aggregators.html">Anomaly Aggregators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">AND Aggregator</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">Ensemble scikit-learn aggregator</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">OR Aggregator</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.anomaly_model.html">Anomaly Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">Filtering Anomaly Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">Forecasting Anomaly Model</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.detectors.html">Anomaly Detectors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.detectors.iqr_detector.html">Interquartile Range (IQR) Detector</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.detectors.quantile_detector.html">Quantile Detector</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.detectors.threshold_detector.html">Threshold Detector</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.scorers.html">Anomaly Scorers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.difference_scorer.html">Difference Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">k-means Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">NLL Cauchy Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">NLL Exponential Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">NLL Gamma Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">NLL Gaussian Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">NLL Laplace Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">NLL Poisson Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.norm_scorer.html">Norm Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">PyOD Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">Wasserstein Scorer</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.ad.utils.html">Utils for Anomaly Detection</a></li>
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.dataprocessing.html">Data Processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.dataprocessing.dtw.html">Dynamic Time Warping (DTW)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.dtw.cost_matrix.html">DTW Cost Matrix</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">Dynamic Time Warping (DTW)</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.dtw.window.html">DTW Windows</a></li>
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.dataprocessing.encoders.html">Time Axis Encoders</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">Encoder Base Classes</a></li>
+
+
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">Time Axes Encoders</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.dataprocessing.transformers.html">Data Transformers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">Data Transformer Base Class</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">Box-Cox Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.diff.html">Differencing Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">Fittable Data Transformer Base Class</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">Invertible Data Transformer Base Class</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">Mapper and InvertibleMapper</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.midas.html">Mixed-data sampling (MIDAS) Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">Missing Values Filler</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">Hierarchical Reconciliation</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">Scaler</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">Static Covariates Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">Window Transformer</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.dataprocessing.pipeline.html">Pipeline</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.datasets.html">Datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="darts.datasets.datasets.html">Datasets</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="darts.explainability.html">Explainability</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="darts.explainability.explainability_result.html">Explainability Result</a></li>
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.explainability.shap_explainer.html">Shap Explainer for SKLearnModels</a></li>
+
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">TFTModel Explainer</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.metrics.html">Metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="darts.metrics.metrics.html">Metrics</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.models.html">Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.models.filtering.html">Filtering Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">Gaussian Process Filter</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.filtering.kalman_filter.html">Kalman Filter</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.filtering.moving_average_filter.html">Moving Average Filter</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.models.forecasting.html">Forecasting Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
+
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">Block Recurrent Neural Networks</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.catboost_model.html">CatBoost Models</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.chronos2_model.html">Chronos-2</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.conformal_models.html">Conformal Models</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.dlinear.html">D-Linear</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">Exponential Smoothing</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.fft.html">Fast Fourier Transform</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">Global Baseline Models (Naive)</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">Kalman Filter Forecaster</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.lgbm.html">LightGBM Models</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nhits.html">N-HiTS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nlinear.html">N-Linear</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.prophet_model.html">Facebook Prophet</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.random_forest.html">Random Forest</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">Regression Ensemble Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.rnn_model.html">Recurrent Neural Networks</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">AutoARIMA</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">AutoCES</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">AutoETS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">AutoMFLES</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">AutoTBATS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">AutoTheta</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_croston.html">Croston Method</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_model.html">StatsForecastModel</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_tbats.html">TBATS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sklearn_model.html">SKLearn-Like Models</a></li>
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tcn_model.html">Temporal Convolutional Network</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tft_model.html">Temporal Fusion Transformer (TFT)</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tft_submodels.html">TFTModel Sub-Modules</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.theta.html">Theta Method</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tide_model.html">Time-series Dense Encoder (TiDE)</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.varima.html">VARIMA</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.xgboost.html">XGBoost Models</a></li>
+
+
+
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.utils.html">Utils</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.data.html">TimeSeries Datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="darts.utils.data.torch_datasets.html">Datasets for TorchForecastingModel</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">Inference Datasets</a></li>
+
+
+<li class="toctree-l4"><a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">Training Datasets</a></li>
+
+
+
+
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">Likelihoods for StatsForecastModel</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.torch.html">Likelihoods for TorchForecastingModel</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.callbacks.html">Callbacks for TorchForecastingModel</a></li>
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.losses.html">PyTorch Loss Functions</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.missing_values.html">Utils for filling missing values</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.model_selection.html">Model selection utilities</a></li>
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.statistics.html">TimeSeries Statistics</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.timeseries_generation.html">Utils for TimeSeries generation</a></li>
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.torch.html">Utils for Pytorch and its usage</a></li>
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.utils.html">Additional util functions</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
+
+
+
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
               
-              <div>
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="darts.html" class="nav-link">Darts</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="darts.explainability.html" class="nav-link">Explainability</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">TFTModel Explainer</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
                 
-  <span class="target" id="module-darts.explainability.tft_explainer"></span><section id="tft-explainer-for-temporal-fusion-transformer-tftmodel">
-<h1>TFT Explainer for Temporal Fusion Transformer (TFTModel)<a class="headerlink" href="#tft-explainer-for-temporal-fusion-transformer-tftmodel" title="Permalink to this heading">¶</a></h1>
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="tftmodel-explainer">
+<span id="module-darts.explainability.tft_explainer"></span><h1>TFTModel Explainer<a class="headerlink" href="#tftmodel-explainer" title="Link to this heading">#</a></h1>
 <p>The <cite>TFTExplainer</cite> uses a trained <a class="reference internal" href="darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel" title="darts.models.forecasting.tft_model.TFTModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTModel</span></code></a> and extracts the
 explainability information from the model.</p>
 <ul class="simple">
@@ -916,9 +891,10 @@ on the given past and future input. The attention is aggregated over all attenti
 <p>The attention and feature importance values can be extracted using the <a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTExplainabilityResult</span></code></a> returned by
 <a class="reference internal" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="darts.explainability.tft_explainer.TFTExplainer.explain"><code class="xref py py-func docutils literal notranslate"><span class="pre">explain()</span></code></a>. An example of this is shown in the method description.</p>
 <p>We also show how to use the <cite>TFTExplainer</cite> in the example notebook of the <cite>TFTModel</cite> <a class="reference external" href="https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability">here</a>.</p>
+</section>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.explainability.tft_explainer.TFTExplainer">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.explainability.tft_explainer.</span></span><span class="sig-name descname"><span class="pre">TFTExplainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.explainability.tft_explainer.</span></span><span class="sig-name descname"><span class="pre">TFTExplainer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">_ForecastingModelExplainer</span></code></p>
 <p>Explainer class for the <cite>TFTModel</cite>.</p>
 <p><strong>Definitions</strong></p>
@@ -929,16 +905,16 @@ on the given past and future input. The attention is aggregated over all attenti
 instead of the background for generating the explainability result.</p></li>
 </ul>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<a class="reference internal" href="darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel" title="darts.models.forecasting.tft_model.TFTModel"><em>darts.models.forecasting.tft_model.TFTModel</em></a>) – The fitted <cite>TFTModel</cite> to be explained.</p></li>
-<li><p><strong>background_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a series or list of series to use as a default target series for the explanations.
+<li><p><strong>model</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel" title="darts.models.forecasting.tft_model.TFTModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTModel</span></code></a></span>) – The fitted <cite>TFTModel</cite> to be explained.</p></li>
+<li><p><strong>background_series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, a series or list of series to use as a default target series for the explanations.
 Optional if <cite>model</cite> was trained on a single target series. By default, it is the <cite>series</cite> used at fitting
 time.
 Mandatory if <cite>model</cite> was trained on multiple (sequence of) target series.</p></li>
-<li><p><strong>background_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a past covariates series or list of series to use as a default past covariates series
+<li><p><strong>background_past_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, a past covariates series or list of series to use as a default past covariates series
 for the explanations. The same requirements apply as for <cite>background_series</cite> .</p></li>
-<li><p><strong>background_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a future covariates series or list of series to use as a default future covariates series
+<li><p><strong>background_future_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, a future covariates series or list of series to use as a default future covariates series
 for the explanations. The same requirements apply as for <cite>background_series</cite>.</p></li>
 </ul>
 </dd>
@@ -963,11 +939,7 @@ for the explanations. The same requirements apply as for <cite>background_series
 </pre></div>
 </div>
 <p class="rubric">Methods</p>
-<table class="autosummary longtable table autosummary">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table autosummary">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="darts.explainability.tft_explainer.TFTExplainer.explain"><code class="xref py py-obj docutils literal notranslate"><span class="pre">explain</span></code></a>([foreground_series, ...])</p></td>
 <td><p>Returns the <a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTExplainabilityResult</span></code></a> result for all series in <cite>foreground_series</cite>.</p></td>
@@ -980,9 +952,10 @@ for the explanations. The same requirements apply as for <cite>background_series
 </tr>
 </tbody>
 </table>
+</div>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.explainability.tft_explainer.TFTExplainer.explain">
-<span class="sig-name descname"><span class="pre">explain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">foreground_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">foreground_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">foreground_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer.explain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">explain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">foreground_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">foreground_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">foreground_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">horizons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target_components</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer.explain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="Link to this definition">#</a></dt>
 <dd><p>Returns the <a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTExplainabilityResult</span></code></a> result for all series in
 <cite>foreground_series</cite>. If <cite>foreground_series</cite> is <cite>None</cite>, will use the <cite>background</cite> input
 from <cite>TFTExplainer</cite> creation (either the <cite>background</cite> passed to creation, or the series stored in the
@@ -990,21 +963,21 @@ from <cite>TFTExplainer</cite> creation (either the <cite>background</cite> pass
 For each series, the results contain the attention heads, encoder variable importances, decoder variable
 importances, and static covariates importances.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>foreground_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of target <cite>TimeSeries</cite> to be explained. Can be multivariate.
+<li><p><strong>foreground_series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, one or a sequence of target <cite>TimeSeries</cite> to be explained. Can be multivariate.
 If not provided, the background <cite>TimeSeries</cite> will be explained instead.</p></li>
-<li><p><strong>foreground_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of past covariates <cite>TimeSeries</cite> if required by the forecasting model.</p></li>
-<li><p><strong>foreground_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of future covariates <cite>TimeSeries</cite> if required by the forecasting model.</p></li>
-<li><p><strong>horizons</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This parameter is not used by the <cite>TFTExplainer</cite>.</p></li>
-<li><p><strong>target_components</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – This parameter is not used by the <cite>TFTExplainer</cite>.</p></li>
+<li><p><strong>foreground_past_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, one or a sequence of past covariates <cite>TimeSeries</cite> if required by the forecasting model.</p></li>
+<li><p><strong>foreground_future_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, one or a sequence of future covariates <cite>TimeSeries</cite> if required by the forecasting model.</p></li>
+<li><p><strong>horizons</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]</span>) – This parameter is not used by the <cite>TFTExplainer</cite>.</p></li>
+<li><p><strong>target_components</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</span>) – This parameter is not used by the <cite>TFTExplainer</cite>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>The explainability result containing the attention heads, encoder variable importances, decoder variable
 importances, and static covariates importances.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult">TFTExplainabilityResult</a></p>
 </dd>
 </dl>
@@ -1027,42 +1000,42 @@ Otherwise, leave it empty to compute the explanation on the background from <cit
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.explainability.tft_explainer.TFTExplainer.model">
-<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel" title="darts.models.forecasting.tft_model.TFTModel"><span class="pre">TFTModel</span></a></em><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.model" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">model</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel" title="darts.models.forecasting.tft_model.TFTModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTModel</span></code></a></em><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.model" title="Link to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.explainability.tft_explainer.TFTExplainer.plot_attention">
-<span class="sig-name descname"><span class="pre">plot_attention</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expl_result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_index_as</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'relative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer.plot_attention"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.plot_attention" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">plot_attention</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expl_result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'all'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_index_as</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'relative'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_plot</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer.plot_attention"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.plot_attention" title="Link to this definition">#</a></dt>
 <dd><p>Plots the attention heads of the <cite>TFTModel</cite>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>expl_result</strong> (<a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTExplainabilityResult</span></code></a>) – A <cite>TFTExplainabilityResult</cite> object. Corresponds to the output of <a class="reference internal" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="darts.explainability.tft_explainer.TFTExplainer.explain"><code class="xref py py-func docutils literal notranslate"><span class="pre">explain()</span></code></a>.</p></li>
-<li><p><strong>plot_type</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘all’, ‘time’, ‘heatmap’], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The type of attention head plot. One of (“all”, “time”, “heatmap”).
+<li><p><strong>expl_result</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTExplainabilityResult</span></code></a></span>) – A <cite>TFTExplainabilityResult</cite> object. Corresponds to the output of <a class="reference internal" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="darts.explainability.tft_explainer.TFTExplainer.explain"><code class="xref py py-func docutils literal notranslate"><span class="pre">explain()</span></code></a>.</p></li>
+<li><p><strong>plot_type</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[<code class="docutils literal notranslate"><span class="pre">'all'</span></code>, <code class="docutils literal notranslate"><span class="pre">'time'</span></code>, <code class="docutils literal notranslate"><span class="pre">'heatmap'</span></code>]]</span>) – The type of attention head plot. One of (“all”, “time”, “heatmap”).
 If “all”, will plot the attention per horizon (given the horizons in the <cite>TFTExplainabilityResult</cite>).
 The maximum horizon corresponds to the <cite>output_chunk_length</cite> of the trained <cite>TFTModel</cite>.
 If “time”, will plot the mean attention over all horizons.
 If “heatmap”, will plot the attention per horizon on a heat map. The horizons are shown on the y-axis,
 and times / relative indices on the x-axis.</p></li>
-<li><p><strong>show_index_as</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[‘relative’, ‘time’]) – The type of index to be shown. One of (“relative”, “time”).
+<li><p><strong>show_index_as</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[<code class="docutils literal notranslate"><span class="pre">'relative'</span></code>, <code class="docutils literal notranslate"><span class="pre">'time'</span></code>]</span>) – The type of index to be shown. One of (“relative”, “time”).
 If “relative”, will plot the x-axis from <cite>(-input_chunk_length, output_chunk_length - 1)</cite>. <cite>0</cite> corresponds
 to the first prediction point.
 If “time”, will plot the x-axis with the actual time index (or range index) of the corresponding
 <cite>TFTExplainabilityResult</cite>.</p></li>
-<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, an axis to plot on. Only effective on a single <cite>expl_result</cite>.</p></li>
-<li><p><strong>max_nr_series</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximum number of plots to show in case <cite>expl_result</cite> was computed on multiple series.</p></li>
-<li><p><strong>show_plot</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to show the plot.</p></li>
+<li><p><strong>ax</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code>]</span>) – Optionally, an axis to plot on. Only effective on a single <cite>expl_result</cite>.</p></li>
+<li><p><strong>max_nr_series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The maximum number of plots to show in case <cite>expl_result</cite> was computed on multiple series.</p></li>
+<li><p><strong>show_plot</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to show the plot.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code></p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Axes</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.explainability.tft_explainer.TFTExplainer.plot_variable_selection">
-<span class="sig-name descname"><span class="pre">plot_variable_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expl_result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer.plot_variable_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.plot_variable_selection" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">plot_variable_selection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expl_result</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_nr_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/explainability/tft_explainer.html#TFTExplainer.plot_variable_selection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.explainability.tft_explainer.TFTExplainer.plot_variable_selection" title="Link to this definition">#</a></dt>
 <dd><p>Plots the variable selection / feature importances of the <cite>TFTModel</cite> based on the input.
 The figure includes three subplots:</p>
 <ul class="simple">
@@ -1072,11 +1045,11 @@ on the encoder (input chunk)</p></li>
 <li><p>static covariates importances: contains the numeric and / or categorical static covariates importance</p></li>
 </ul>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>expl_result</strong> (<a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTExplainabilityResult</span></code></a>) – A <cite>TFTExplainabilityResult</cite> object. Corresponds to the output of <a class="reference internal" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="darts.explainability.tft_explainer.TFTExplainer.explain"><code class="xref py py-func docutils literal notranslate"><span class="pre">explain()</span></code></a>.</p></li>
+<li><p><strong>expl_result</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="darts.explainability.explainability_result.html#darts.explainability.explainability_result.TFTExplainabilityResult" title="darts.explainability.explainability_result.TFTExplainabilityResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">TFTExplainabilityResult</span></code></a></span>) – A <cite>TFTExplainabilityResult</cite> object. Corresponds to the output of <a class="reference internal" href="#darts.explainability.tft_explainer.TFTExplainer.explain" title="darts.explainability.tft_explainer.TFTExplainer.explain"><code class="xref py py-func docutils literal notranslate"><span class="pre">explain()</span></code></a>.</p></li>
 <li><p><strong>fig_size</strong> – The size of the figure to be plotted.</p></li>
-<li><p><strong>max_nr_series</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximum number of plots to show in case <cite>expl_result</cite> was computed on multiple series.</p></li>
+<li><p><strong>max_nr_series</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – The maximum number of plots to show in case <cite>expl_result</cite> was computed on multiple series.</p></li>
 </ul>
 </dd>
 </dl>
@@ -1084,53 +1057,130 @@ on the encoder (input chunk)</p></li>
 
 </dd></dl>
 
-</section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.explainability.shap_explainer.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Shap Explainer for SKLearnModels</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="darts.explainability.shap_explainer.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Shap Explainer for SKLearnModels</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.explainability.utils.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="darts.metrics.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">&lt;no title&gt;</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+        <p class="prev-next-title">Metrics</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">TFTModel Explainer</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.explainability.tft_explainer.TFTExplainer"><code class="docutils literal notranslate"><span class="pre">TFTExplainer</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.explainability.tft_explainer.TFTExplainer.explain"><code class="docutils literal notranslate"><span class="pre">TFTExplainer.explain()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.explainability.tft_explainer.TFTExplainer.model"><code class="docutils literal notranslate"><span class="pre">TFTExplainer.model</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.explainability.tft_explainer.TFTExplainer.plot_attention"><code class="docutils literal notranslate"><span class="pre">TFTExplainer.plot_attention()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.explainability.tft_explainer.TFTExplainer.plot_variable_selection"><code class="docutils literal notranslate"><span class="pre">TFTExplainer.plot_variable_selection()</span></code></a></li>
+</ul>
+</li>
+</ul>
+
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_api/darts.explainability.tft_explainer.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

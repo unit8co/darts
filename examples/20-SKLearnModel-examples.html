@@ -1,750 +1,523 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Regression Models &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/20-SKLearnModel-examples';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Classification Models" href="24-SKLearnClassifierModel-examples.html" />
     <link rel="prev" title="Hyper-parameters Optimization for Electricity Load Forecasting" href="17-hyperparameter-optimization.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-    </nav>
-    
 
-    <div class="container-xl">
-      <div class="row">
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
           
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="01-multi-time-series-and-covariates.html">
-   Multiple Time Series, Pre-trained Models and Covariates
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="02-data-processing.html">
-   Data (pre) processing using
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     DataTransformer
-    </span>
-   </code>
-   and
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     Pipeline
-    </span>
-   </code>
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="02-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="15-static-covariates.html">
-   Static Covariates
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="15-static-covariates.html">Static Covariates</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="14-transfer-learning.html">
-   Transfer Learning for Time Series Forecasting with Darts
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="14-transfer-learning.html">Transfer Learning for Time Series Forecasting with Darts</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="16-hierarchical-reconciliation.html">
-   Hierarchical Reconciliation - Example on the Australian Tourism Dataset
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="16-hierarchical-reconciliation.html">Hierarchical Reconciliation - Example on the Australian Tourism Dataset</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="17-hyperparameter-optimization.html">
-   Hyper-parameters Optimization for Electricity Load Forecasting
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="17-hyperparameter-optimization.html">Hyper-parameters Optimization for Electricity Load Forecasting</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   Regression Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="24-SKLearnClassifierModel-examples.html">
-   Classification Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="23-Conformal-Prediction-examples.html">
-   Conformal Prediction Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="03-FFT-examples.html">
-   Fast Fourier Transform Forecasting Model (FFT)
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="04-RNN-examples.html">
-   Recurrent Neural Networks Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="05-TCN-examples.html">
-   Temporal Convolutional Network
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="06-Transformer-examples.html">
-   Transformer Model
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="07-NBEATS-examples.html">
-   N-BEATS
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="08-DeepAR-examples.html">
-   Probabilistic RNN
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="09-DeepTCN-examples.html">
-   DeepTCN model
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="13-TFT-examples.html">
-   Temporal Fusion Transformer
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="18-TiDE-examples.html">
-   TimeSeries Deep Encoder
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="21-TSMixer-examples.html">
-   Time Series Mixer (TSMixer)
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="19-EnsembleModel-examples.html">
-   Ensembling Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="10-Kalman-filter-examples.html">
-   Filtering and predicting using the darts filters
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="11-GP-filter-examples.html">
-   Filtering and predicting using the Gaussian Process filter
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="22-anomaly-detection-examples.html">
-   Anomaly Detection Darts Module
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="12-Dynamic-Time-Warping-example.html">
-   Dynamic Time Warping (DTW)
-  </a>
- </li>
-</ul>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Regression Models</a></li>
 
-  </div>
-</nav>
-            </div>
-            
-          
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="24-SKLearnClassifierModel-examples.html">Classification Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="23-Conformal-Prediction-examples.html">Conformal Prediction Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="03-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="04-RNN-examples.html">Recurrent Neural Networks Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="05-TCN-examples.html">Temporal Convolutional Network</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="06-Transformer-examples.html">Transformer Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="07-NBEATS-examples.html">N-BEATS</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="08-DeepAR-examples.html">Probabilistic RNN</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="09-DeepTCN-examples.html">DeepTCN model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="13-TFT-examples.html">Temporal Fusion Transformer</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="18-TiDE-examples.html">TimeSeries Deep Encoder</a></li>
 
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="21-TSMixer-examples.html">Time Series Mixer (TSMixer)</a></li>
+
+
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="25-Chronos-2-examples.html">Chronos-2 Foundation Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="19-EnsembleModel-examples.html">Ensembling Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="10-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="11-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="22-anomaly-detection-examples.html">Anomaly Detection Darts Module</a></li>
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="12-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
+</ul>
 </div>
-
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#">
-   Regression Models
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Input-Dataset">
-     Input Dataset
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Darts-Regression-Models">
-       Darts Regression Models
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Target-and-covariates-lags">
-     Target and covariates lags
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Lagged-data-extraction">
-     Lagged data extraction
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Examples">
-       Examples
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Covariates-based-forecasting">
-     Covariates-based forecasting
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Using-only-covariates">
-     Using only covariates
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Component-specific-lags">
-     Component-specific lags
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Model’s-output-chunk-length">
-     Model’s output chunk length
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Multi-model-forecasting">
-     Multi-model forecasting
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Single-model-forecasting">
-     Single-model forecasting
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Visualization">
-     Visualization
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Probabilistic-forecasting">
-     Probabilistic forecasting
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#MultiOutputRegressor-wrapper">
-     MultiOutputRegressor wrapper
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Explainability">
-       Explainability
-      </a>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Conclusion">
-       Conclusion
-      </a>
-     </li>
-    </ul>
-   </li>
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Appendix">
-   Appendix
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#SKLearnModel">
-     SKLearnModel
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Custom-model">
-       Custom model
-      </a>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Example-of-the-boosted-tree-models">
-       Example of the boosted tree models
-      </a>
-     </li>
-    </ul>
-   </li>
-  </ul>
- </li>
-</ul>
-
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+</nav></div>
+    </div>
   
-<style>
-/* CSS for nbsphinx extension */
-
-/* remove conflicting styling from Sphinx themes */
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt *,
-div.nbinput.container div.input_area pre,
-div.nboutput.container div.output_area pre,
-div.nbinput.container div.input_area .highlight,
-div.nboutput.container div.output_area .highlight {
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-}
-
-div.nbinput.container > div[class*=highlight],
-div.nboutput.container > div[class*=highlight] {
-    margin: 0;
-}
-
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt * {
-    background: none;
-}
-
-div.nboutput.container div.output_area .highlight,
-div.nboutput.container div.output_area pre {
-    background: unset;
-}
-
-div.nboutput.container div.output_area div.highlight {
-    color: unset;  /* override Pygments text color */
-}
-
-/* avoid gaps between output lines */
-div.nboutput.container div[class*=highlight] pre {
-    line-height: normal;
-}
-
-/* input/output containers */
-div.nbinput.container,
-div.nboutput.container {
-    display: -webkit-flex;
-    display: flex;
-    align-items: flex-start;
-    margin: 0;
-    width: 100%;
-}
-@media (max-width: 540px) {
-    div.nbinput.container,
-    div.nboutput.container {
-        flex-direction: column;
-    }
-}
-
-/* input container */
-div.nbinput.container {
-    padding-top: 5px;
-}
-
-/* last container */
-div.nblast.container {
-    padding-bottom: 5px;
-}
-
-/* input prompt */
-div.nbinput.container div.prompt pre {
-    color: #307FC1;
-}
-
-/* output prompt */
-div.nboutput.container div.prompt pre {
-    color: #BF5B3D;
-}
-
-/* all prompts */
-div.nbinput.container div.prompt,
-div.nboutput.container div.prompt {
-    width: 4.5ex;
-    padding-top: 5px;
-    position: relative;
-    user-select: none;
-}
-
-div.nbinput.container div.prompt > div,
-div.nboutput.container div.prompt > div {
-    position: absolute;
-    right: 0;
-    margin-right: 0.3ex;
-}
-
-@media (max-width: 540px) {
-    div.nbinput.container div.prompt,
-    div.nboutput.container div.prompt {
-        width: unset;
-        text-align: left;
-        padding: 0.4em;
-    }
-    div.nboutput.container div.prompt.empty {
-        padding: 0;
-    }
-
-    div.nbinput.container div.prompt > div,
-    div.nboutput.container div.prompt > div {
-        position: unset;
-    }
-}
-
-/* disable scrollbars on prompts */
-div.nbinput.container div.prompt pre,
-div.nboutput.container div.prompt pre {
-    overflow: hidden;
-}
-
-/* input/output area */
-div.nbinput.container div.input_area,
-div.nboutput.container div.output_area {
-    -webkit-flex: 1;
-    flex: 1;
-    overflow: auto;
-}
-@media (max-width: 540px) {
-    div.nbinput.container div.input_area,
-    div.nboutput.container div.output_area {
-        width: 100%;
-    }
-}
-
-/* input area */
-div.nbinput.container div.input_area {
-    border: 1px solid #e0e0e0;
-    border-radius: 2px;
-    /*background: #f5f5f5;*/
-}
-
-/* override MathJax center alignment in output cells */
-div.nboutput.container div[class*=MathJax] {
-    text-align: left !important;
-}
-
-/* override sphinx.ext.imgmath center alignment in output cells */
-div.nboutput.container div.math p {
-    text-align: left;
-}
-
-/* standard error */
-div.nboutput.container div.output_area.stderr {
-    background: #fdd;
-}
-
-/* ANSI colors */
-.ansi-black-fg { color: #3E424D; }
-.ansi-black-bg { background-color: #3E424D; }
-.ansi-black-intense-fg { color: #282C36; }
-.ansi-black-intense-bg { background-color: #282C36; }
-.ansi-red-fg { color: #E75C58; }
-.ansi-red-bg { background-color: #E75C58; }
-.ansi-red-intense-fg { color: #B22B31; }
-.ansi-red-intense-bg { background-color: #B22B31; }
-.ansi-green-fg { color: #00A250; }
-.ansi-green-bg { background-color: #00A250; }
-.ansi-green-intense-fg { color: #007427; }
-.ansi-green-intense-bg { background-color: #007427; }
-.ansi-yellow-fg { color: #DDB62B; }
-.ansi-yellow-bg { background-color: #DDB62B; }
-.ansi-yellow-intense-fg { color: #B27D12; }
-.ansi-yellow-intense-bg { background-color: #B27D12; }
-.ansi-blue-fg { color: #208FFB; }
-.ansi-blue-bg { background-color: #208FFB; }
-.ansi-blue-intense-fg { color: #0065CA; }
-.ansi-blue-intense-bg { background-color: #0065CA; }
-.ansi-magenta-fg { color: #D160C4; }
-.ansi-magenta-bg { background-color: #D160C4; }
-.ansi-magenta-intense-fg { color: #A03196; }
-.ansi-magenta-intense-bg { background-color: #A03196; }
-.ansi-cyan-fg { color: #60C6C8; }
-.ansi-cyan-bg { background-color: #60C6C8; }
-.ansi-cyan-intense-fg { color: #258F8F; }
-.ansi-cyan-intense-bg { background-color: #258F8F; }
-.ansi-white-fg { color: #C5C1B4; }
-.ansi-white-bg { background-color: #C5C1B4; }
-.ansi-white-intense-fg { color: #A1A6B2; }
-.ansi-white-intense-bg { background-color: #A1A6B2; }
-
-.ansi-default-inverse-fg { color: #FFFFFF; }
-.ansi-default-inverse-bg { background-color: #000000; }
-
-.ansi-bold { font-weight: bold; }
-.ansi-underline { text-decoration: underline; }
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
 
 
-div.nbinput.container div.input_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight].math,
-div.nboutput.container div.output_area.rendered_html,
-div.nboutput.container div.output_area > div.output_javascript,
-div.nboutput.container div.output_area:not(.rendered_html) > img{
-    padding: 5px;
-    margin: 0;
-}
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
 
-/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
-div.nbinput.container div.input_area > div[class^='highlight'],
-div.nboutput.container div.output_area > div[class^='highlight']{
-    overflow-y: hidden;
-}
-
-/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
-.prompt a.copybtn {
-    display: none;
-}
-
-/* Some additional styling taken form the Jupyter notebook CSS */
-div.rendered_html table {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: black;
-  font-size: 12px;
-  table-layout: fixed;
-}
-div.rendered_html thead {
-  border-bottom: 1px solid black;
-  vertical-align: bottom;
-}
-div.rendered_html tr,
-div.rendered_html th,
-div.rendered_html td {
-  text-align: right;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
-}
-div.rendered_html th {
-  font-weight: bold;
-}
-div.rendered_html tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-div.rendered_html tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
-</style>
-<section id="Regression-Models">
-<h1>Regression Models<a class="headerlink" href="#Regression-Models" title="Permalink to this heading">¶</a></h1>
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Regression Models</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Regression-Models">
+<h1>Regression Models<a class="headerlink" href="#Regression-Models" title="Link to this heading">#</a></h1>
 <p>The following is a in depth demonstration of the regression models in Darts - from basic to advanced features, including:</p>
 <ul class="simple">
 <li><p>Darts’ regression models</p></li>
@@ -761,8 +534,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># fix python path if working locally</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># fix python path if working locally</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
@@ -823,8 +595,7 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -846,17 +617,24 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
 </div>
 </div>
 <section id="Input-Dataset">
-<h2>Input Dataset<a class="headerlink" href="#Input-Dataset" title="Permalink to this heading">¶</a></h2>
+<h2>Input Dataset<a class="headerlink" href="#Input-Dataset" title="Link to this heading">#</a></h2>
 <p>For this notebook, we use the Electricity Consumption Dataset from households in Zurich, Switzerland.</p>
 <p>The dataset has a quarter-hourly frequency (15 Min time intervals), but we resample it to hourly frequency to keep things simple.</p>
-<p><strong>Target series</strong> (the series we want to forecast): - <strong>Value_NE5</strong>: Electricity consumption by households on grid level 5 (in kWh).</p>
-<p><strong>Covariates</strong> (external data to help improve forecasts): The dataset also comes with weather measurements that we can use as covariates. For simplicity, we use: - <strong>T [°C]</strong>: Measured temperature - <strong>StrGlo [W/m2]</strong>: Measured solar irradation - <strong>RainDur [min]</strong>: Measured raining duration</p>
+<p><strong>Target series</strong> (the series we want to forecast):</p>
+<ul class="simple">
+<li><p><strong>Value_NE5</strong>: Electricity consumption by households on grid level 5 (in kWh).</p></li>
+</ul>
+<p><strong>Covariates</strong> (external data to help improve forecasts): The dataset also comes with weather measurements that we can use as covariates. For simplicity, we use:</p>
+<ul class="simple">
+<li><p><strong>T [°C]</strong>: Measured temperature</p></li>
+<li><p><strong>StrGlo [W/m2]</strong>: Measured solar irradation</p></li>
+<li><p><strong>RainDur [min]</strong>: Measured raining duration</p></li>
+</ul>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ts_energy</span> <span class="o">=</span> <span class="n">ElectricityConsumptionZurichDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ts_energy</span> <span class="o">=</span> <span class="n">ElectricityConsumptionZurichDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="c1"># extract values recorded between 2017 and 2019</span>
 <span class="n">start_date</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2017-01-01&quot;</span><span class="p">)</span>
@@ -899,24 +677,40 @@ n===t._wrapperState.initialValue&&(e.value=n)}});t.exports=l},function(t,e,n){"u
 </div>
 </div>
 <section id="Darts-Regression-Models">
-<h3>Darts Regression Models<a class="headerlink" href="#Darts-Regression-Models" title="Permalink to this heading">¶</a></h3>
+<h3>Darts Regression Models<a class="headerlink" href="#Darts-Regression-Models" title="Link to this heading">#</a></h3>
 <p>Regression is a statistical method used in data science and machine learning to model the relationship between a dependent variable (target <code class="docutils literal notranslate"><span class="pre">y</span></code>) and one or more independent variables (features <code class="docutils literal notranslate"><span class="pre">X</span></code>).</p>
-<p>For convenience, the core Darts package ships with a couple of regression models: - <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">RandomForestModel</span></code>: fully integrated sklearn models - <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code>: wrap the Darts Model API around any sklearn-like model - <code class="docutils literal notranslate"><span class="pre">XGBModel</span></code>: wrapper around <a class="reference external" href="https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor">XGBoost’s</a> <code class="docutils literal notranslate"><span class="pre">XGBRegressor</span></code></p>
+<p>For convenience, the core Darts package ships with a couple of regression models:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">RandomForestModel</span></code>: fully integrated sklearn models</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code>: wrap the Darts Model API around any sklearn-like model</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">XGBModel</span></code>: wrapper around <a class="reference external" href="https://xgboost.readthedocs.io/en/stable/python/python_api.html#xgboost.XGBRegressor">XGBoost’s</a> <code class="docutils literal notranslate"><span class="pre">XGBRegressor</span></code></p></li>
+</ul>
 <p>In addition to these, we also offer a unified API for some state of the art regression models that can be installed following our <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">installation guide</a>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>: wrapper around <a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/pythonapi/lightgbm.LGBMRegressor.html#lightgbm-lgbmregressor">LightGBM’s</a> <code class="docutils literal notranslate"><span class="pre">LightGBMRegressor</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">CatBoostModel</span></code>: wrapper around <a class="reference external" href="https://catboost.ai/en/docs/concepts/python-reference_catboostregressor">CatBoost’s</a> <code class="docutils literal notranslate"><span class="pre">CatBoostRegressor</span></code>.</p></li>
 </ul>
-<p>In Darts, the forecasting problem is translated into a regression problem by converting the time series into two tabular arrays: - <code class="docutils literal notranslate"><span class="pre">X</span></code>: features or input array with the shape (number of samples/observations, number of features) - The number of features is given by the total number of (feature specific) target, past, and future covariates lags. - <code class="docutils literal notranslate"><span class="pre">y</span></code>: target or label array with the shape (number of samples/observations, number of targets) - The number of targets is given by the model
-parameters <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">multi_models</span></code> (we’ll explain this later on).</p>
+<p>In Darts, the forecasting problem is translated into a regression problem by converting the time series into two tabular arrays:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">X</span></code>: features or input array with the shape (number of samples/observations, number of features)</p>
+<ul>
+<li><p>The number of features is given by the total number of (feature specific) target, past, and future covariates lags.</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">y</span></code>: target or label array with the shape (number of samples/observations, number of targets)</p>
+<ul>
+<li><p>The number of targets is given by the model parameters <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">multi_models</span></code> (we’ll explain this later on).</p></li>
+</ul>
+</li>
+</ul>
 </section>
 </section>
 <section id="Target-and-covariates-lags">
-<h2>Target and covariates lags<a class="headerlink" href="#Target-and-covariates-lags" title="Permalink to this heading">¶</a></h2>
+<h2>Target and covariates lags<a class="headerlink" href="#Target-and-covariates-lags" title="Link to this heading">#</a></h2>
 <p>A lagged feature is the value of a feature at a previous or future time step compared to some reference point.</p>
 <p>In Darts, the value of the lag specifies the position of the feature value relative to the first predicted target time step <code class="docutils literal notranslate"><span class="pre">y_t0</span></code> for each observation/sample (a row in <code class="docutils literal notranslate"><span class="pre">X</span></code>).</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">lag</span> <span class="pre">==</span> <span class="pre">0</span></code>: position of the first predicted time step <code class="docutils literal notranslate"><span class="pre">t0</span></code>, e.g. position of <code class="docutils literal notranslate"><span class="pre">y_t0</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">lag</span> <span class="pre">==</span> <span class="pre">0</span></code>: position of the first predicted time step <code class="docutils literal notranslate"><span class="pre">t0</span></code>, e.g. position of <code class="docutils literal notranslate"><span class="pre">y_t0</span></code></p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">lag</span> <span class="pre">&lt;</span> <span class="pre">0</span></code>: all positions in the past of the first predicted time step <code class="docutils literal notranslate"><span class="pre">t-1</span></code>, <code class="docutils literal notranslate"><span class="pre">t-2</span></code>, …</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">lag</span> <span class="pre">&gt;</span> <span class="pre">0</span></code>: all positions in the future of the first predicted time step <code class="docutils literal notranslate"><span class="pre">t+1</span></code>, <code class="docutils literal notranslate"><span class="pre">t+2</span></code>, …</p></li>
 </ul>
@@ -930,7 +724,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <p>There are multiple ways to define your lags <code class="docutils literal notranslate"><span class="pre">(int,</span> <span class="pre">List[int],</span> <span class="pre">Tuple[int,</span> <span class="pre">int],</span> <span class="pre">...)</span></code>. You can find out more about this in the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel">SKLearnModel docs</a>.</p>
 </section>
 <section id="Lagged-data-extraction">
-<h2>Lagged data extraction<a class="headerlink" href="#Lagged-data-extraction" title="Permalink to this heading">¶</a></h2>
+<h2>Lagged data extraction<a class="headerlink" href="#Lagged-data-extraction" title="Link to this heading">#</a></h2>
 <p>Now, let’s have a look at how <code class="docutils literal notranslate"><span class="pre">X</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> is extracted for training using the scenario from below:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">lags=[-4,-3,-2,-1]</span></code>: use the last 4 target values (green) before the first predicted time step (orange) as <code class="docutils literal notranslate"><span class="pre">X</span></code> features.</p></li>
@@ -940,15 +734,14 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <p><em>Note: This example only shows target ``lags`` extraction, but the same is applied to ``lags_past/future_covariates``.</em></p>
 <img alt="forecast_single_model_ocl3" src="../_images/regression_model_train.png" />
 <section id="Examples">
-<h3>Examples<a class="headerlink" href="#Examples" title="Permalink to this heading">¶</a></h3>
+<h3>Examples<a class="headerlink" href="#Examples" title="Link to this heading">#</a></h3>
 <p>Let’s try to apply this to our electricity dataset. Assume, we want to predict the consumption of the next couple of hours after the end of our training set.</p>
 <p>As input features we give it the consumption at the same hour from one and two days ago -&gt; <code class="docutils literal notranslate"><span class="pre">lags=[-24,</span> <span class="pre">-48]</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">24</span><span class="p">,</span> <span class="o">-</span><span class="mi">48</span><span class="p">])</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="mi">24</span><span class="p">,</span> <span class="o">-</span><span class="mi">48</span><span class="p">])</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">ts_energy_train</span><span class="p">)</span>
 <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
 
@@ -977,7 +770,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </section>
 </section>
 <section id="Covariates-based-forecasting">
-<h2>Covariates-based forecasting<a class="headerlink" href="#Covariates-based-forecasting" title="Permalink to this heading">¶</a></h2>
+<h2>Covariates-based forecasting<a class="headerlink" href="#Covariates-based-forecasting" title="Link to this heading">#</a></h2>
 <p>To use external data next to the history of our target series, we specify past and/or future covariates lags and then pass <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and/or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.</p>
 <p>Let’s assume that instead of having weather measurements, we actually have weather forecasts. Then we could use them as future_covariates. <strong>We only do this here for demonstration purposes!</strong></p>
 <p>Below is an example that uses the last 24 hours (<code class="docutils literal notranslate"><span class="pre">24</span></code>) from hour target series (electricity consumption) and the values at the predicted time step (<code class="docutils literal notranslate"><span class="pre">[0]</span></code>) of our weather “forecasts”.</p>
@@ -985,8 +778,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">ts_energy_train</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">ts_weather</span><span class="p">)</span>
 <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
 
@@ -1014,7 +806,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </section>
 <section id="Using-only-covariates">
-<h2>Using only covariates<a class="headerlink" href="#Using-only-covariates" title="Permalink to this heading">¶</a></h2>
+<h2>Using only covariates<a class="headerlink" href="#Using-only-covariates" title="Link to this heading">#</a></h2>
 <p>Sometimes, we might also be interested in a forecasting model that purely relies on the covariates values.</p>
 <p>To do this, specify at least one of <code class="docutils literal notranslate"><span class="pre">lags_past_covariates</span></code> or <code class="docutils literal notranslate"><span class="pre">lags_future_covariates</span></code> and set <code class="docutils literal notranslate"><span class="pre">lags=None</span></code>. Darts regression models are trained in a supervised manner, so we still have to provide the target series for training.</p>
 <p>How well can we predict the electricity consumption using only the weather “forecasts” as input?</p>
@@ -1023,8 +815,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">ts_energy_train</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">ts_weather</span><span class="p">)</span>
 <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
 
@@ -1055,8 +846,7 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
     <span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span>
@@ -1083,15 +873,14 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </section>
 <section id="Component-specific-lags">
-<h2>Component-specific lags<a class="headerlink" href="#Component-specific-lags" title="Permalink to this heading">¶</a></h2>
+<h2>Component-specific lags<a class="headerlink" href="#Component-specific-lags" title="Link to this heading">#</a></h2>
 <p>If the target or any of the covariates is multivariate (has multiple components/columns), we can use dedicated lags for each component. Just pass a dictionary to the <code class="docutils literal notranslate"><span class="pre">lags*</span></code> parameters with the component name as key and the lags as value.</p>
 <p>In the example below, we set the default lags to <code class="docutils literal notranslate"><span class="pre">(24,1)</span></code> (used for the covariates components <code class="docutils literal notranslate"><span class="pre">'T</span> <span class="pre">[°C]'</span></code> and <code class="docutils literal notranslate"><span class="pre">'StrGlo</span> <span class="pre">[W/ms]'</span></code>) and give feature <code class="docutils literal notranslate"><span class="pre">'RainDur</span> <span class="pre">[min]'</span></code> a dedicated lag <code class="docutils literal notranslate"><span class="pre">[0]</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;default_lags&quot;</span><span class="p">:</span> <span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;RainDur [min]&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">]}</span>
 <span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">ts_energy_train</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">ts_weather</span><span class="p">)</span>
@@ -1120,17 +909,20 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </div>
 </section>
-<section id="Model’s-output-chunk-length">
-<h2>Model’s output chunk length<a class="headerlink" href="#Model’s-output-chunk-length" title="Permalink to this heading">¶</a></h2>
+<section id="Model's-output-chunk-length">
+<h2>Model’s output chunk length<a class="headerlink" href="#Model's-output-chunk-length" title="Link to this heading">#</a></h2>
 <p>This key parameter sets the <em>number of time steps that can be predicted at once by the internal regression model</em>.</p>
-<p>It is not the same as forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> from <code class="docutils literal notranslate"><span class="pre">predict()</span></code> which is the <strong>desired</strong> the number of generated prediction points, that is achieved either with: - a single shot forecast (if <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&lt;=</span> <span class="pre">output_chunk_length</span></code>), or - an auto-regressive forecast, consuming its own forecast (and future values of covariates) as input for additional predictions (otherwise)</p>
+<p>It is not the same as forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> from <code class="docutils literal notranslate"><span class="pre">predict()</span></code> which is the <strong>desired</strong> the number of generated prediction points, that is achieved either with:</p>
+<ul class="simple">
+<li><p>a single shot forecast (if <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&lt;=</span> <span class="pre">output_chunk_length</span></code>), or</p></li>
+<li><p>an auto-regressive forecast, consuming its own forecast (and future values of covariates) as input for additional predictions (otherwise)</p></li>
+</ul>
 <p>For example, if we want our model to forecast the next 24 hours of electricity consumption based on the last day of consumption, setting <code class="docutils literal notranslate"><span class="pre">output_chunk_length=24</span></code> ensures that the model will not consume its forecasts or future values of our covariates to predict the entire day.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_auto_regression</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_auto_regression</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">model_single_shot</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
 
 <span class="n">model_auto_regression</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">ts_energy_train</span><span class="p">)</span>
@@ -1164,20 +956,19 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </section>
 <section id="Multi-model-forecasting">
-<h2>Multi-model forecasting<a class="headerlink" href="#Multi-model-forecasting" title="Permalink to this heading">¶</a></h2>
+<h2>Multi-model forecasting<a class="headerlink" href="#Multi-model-forecasting" title="Link to this heading">#</a></h2>
 <p>When <code class="docutils literal notranslate"><span class="pre">output_chunk_length&gt;1</span></code>, the model behavior can be further parametrized by modifying the <code class="docutils literal notranslate"><span class="pre">multi_models</span></code> argument.</p>
 <p><code class="docutils literal notranslate"><span class="pre">multi_models=True</span></code> is the default behavior in Darts and was shown above. We create <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> copies of the model, and train each of them to predict one of the <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> time steps (using the same inputs). This approach is more computationally and memory intensive but tends to yield better results.</p>
 </section>
 <section id="Single-model-forecasting">
-<h2>Single-model forecasting<a class="headerlink" href="#Single-model-forecasting" title="Permalink to this heading">¶</a></h2>
+<h2>Single-model forecasting<a class="headerlink" href="#Single-model-forecasting" title="Link to this heading">#</a></h2>
 <p>When <code class="docutils literal notranslate"><span class="pre">multi_model=False</span></code>, we use a single model and train it to predict only the last point in <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>. This reduces model complexity as only a single set of coefficients will be trained and stored.</p>
 <p>We are still able to predict all points from 1 until <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> by shifting the lags during tabularization. This means that a new set of input values is used for each forecasted value. Due to the shifting, the minimum length requirement for the training series will also be increased.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">multi_models</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">multi_models</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">multi_models</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">multi_models</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">single_model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">multi_models</span><span class="o">=</span><span class="kc">False</span>
 <span class="p">)</span>
@@ -1213,28 +1004,33 @@ parameters <code class="docutils literal notranslate"><span class="pre">output_c
 </div>
 </section>
 <section id="Visualization">
-<h2>Visualization<a class="headerlink" href="#Visualization" title="Permalink to this heading">¶</a></h2>
+<h2>Visualization<a class="headerlink" href="#Visualization" title="Link to this heading">#</a></h2>
 <p>To vizualize what is happening under the hood, let’s simplify the model a bit and show the process for different parameters.</p>
+<p><strong>Multi models with auto-regression</strong></p>
 <p>Model setup: <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel(lags=[-4,</span> <span class="pre">-3,</span> <span class="pre">-2,</span> <span class="pre">-1],</span> <span class="pre">output_chunk_length=2,</span> <span class="pre">multi_models=True)</span></code>.</p>
 <p>When calling <code class="docutils literal notranslate"><span class="pre">predict(n=4)</span></code>, the input series is processed as follows:</p>
 <img alt="forecast_multi_model_ocl2" src="../_images/multi_model_ocl2.png" />
 <p>Since <code class="docutils literal notranslate"><span class="pre">n&gt;output_chunk_length</span></code>, the model had to use auto-regression and the forecasted period is composed of two chunks of size <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>. There was no lags shift per output chunk because <code class="docutils literal notranslate"><span class="pre">multi_models=True</span></code>.</p>
+<p><strong>Single model with auto-regression</strong></p>
 <p>Model setup: <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel(lags=[-4,</span> <span class="pre">-3,</span> <span class="pre">-2,</span> <span class="pre">-1],</span> <span class="pre">output_chunk_length=2,</span> <span class="pre">multi_models=False)</span></code>.</p>
 <img alt="forecast_single_model_ocl2" src="../_images/single_model_ocl2.png" />
 <p>Apart from the auto-regressive prediction, we can see the lags shift per predicted time step because <code class="docutils literal notranslate"><span class="pre">multi_models=False</span></code>.</p>
 <p>The same process also occurs during tabularizion for training the model: each green chunk is paired with an orange value, constituting the training dataset.</p>
 </section>
 <section id="Probabilistic-forecasting">
-<h2>Probabilistic forecasting<a class="headerlink" href="#Probabilistic-forecasting" title="Permalink to this heading">¶</a></h2>
-<p>To make a model probablistic, set parameter <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> to <code class="docutils literal notranslate"><span class="pre">quantile</span></code> or <code class="docutils literal notranslate"><span class="pre">poisson</span></code> when creating a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>. At prediction time, probabilistic models can either : - use Monte Carlo sampling to generate samples based on the fitted distribution parameters when <code class="docutils literal notranslate"><span class="pre">num_samples</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> - return the fitted distribution parameters when <code class="docutils literal notranslate"><span class="pre">predict_likelihood_parameters=True</span></code></p>
+<h2>Probabilistic forecasting<a class="headerlink" href="#Probabilistic-forecasting" title="Link to this heading">#</a></h2>
+<p>To make a model probablistic, set parameter <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> to <code class="docutils literal notranslate"><span class="pre">quantile</span></code> or <code class="docutils literal notranslate"><span class="pre">poisson</span></code> when creating a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>. At prediction time, probabilistic models can either :</p>
+<ul class="simple">
+<li><p>use Monte Carlo sampling to generate samples based on the fitted distribution parameters when <code class="docutils literal notranslate"><span class="pre">num_samples</span> <span class="pre">&gt;</span> <span class="pre">1</span></code></p></li>
+<li><p>return the fitted distribution parameters when <code class="docutils literal notranslate"><span class="pre">predict_likelihood_parameters=True</span></code></p></li>
+</ul>
 <p>Note that when using the <code class="docutils literal notranslate"><span class="pre">quantile</span></code> regressor, each quantile will be fitted by a different model.</p>
 <p>Probabilistic models will generate different forecasts each time <code class="docutils literal notranslate"><span class="pre">predict()</span></code> is called with <code class="docutils literal notranslate"><span class="pre">num_samples</span> <span class="pre">&gt;</span> <span class="pre">1</span></code>. To get reproducible results, set the random seed when creating the model and call the methods in the exact same order.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">XGBModel</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">XGBModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">likelihood</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="n">quantiles</span><span class="o">=</span><span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">]</span>
 <span class="p">)</span>
 
@@ -1272,18 +1068,22 @@ Value_NE5_q0.95 : 20418.7421875
 </div>
 </section>
 <section id="MultiOutputRegressor-wrapper">
-<h2>MultiOutputRegressor wrapper<a class="headerlink" href="#MultiOutputRegressor-wrapper" title="Permalink to this heading">¶</a></h2>
-<p>Some regression models support native multi-output support. This is required to fit and predict: - multiple outputs/multiple target steps (with <code class="docutils literal notranslate"><span class="pre">output_chunk_length&gt;1</span></code> and <code class="docutils literal notranslate"><span class="pre">multi_models=True</span></code>) - probabilistic models using quantile regression - multivariates series</p>
+<h2>MultiOutputRegressor wrapper<a class="headerlink" href="#MultiOutputRegressor-wrapper" title="Link to this heading">#</a></h2>
+<p>Some regression models support native multi-output support. This is required to fit and predict:</p>
+<ul class="simple">
+<li><p>multiple outputs/multiple target steps (with <code class="docutils literal notranslate"><span class="pre">output_chunk_length&gt;1</span></code> and <code class="docutils literal notranslate"><span class="pre">multi_models=True</span></code>)</p></li>
+<li><p>probabilistic models using quantile regression</p></li>
+<li><p>multivariates series</p></li>
+</ul>
 <p>For models that don’t support it, Darts wraps sklearn’s <code class="docutils literal notranslate"><span class="pre">MultiOutputRegressor</span></code> around them to handle the logic under the hood.</p>
 <section id="Explainability">
-<h3>Explainability<a class="headerlink" href="#Explainability" title="Permalink to this heading">¶</a></h3>
+<h3>Explainability<a class="headerlink" href="#Explainability" title="Link to this heading">#</a></h3>
 <p>We offer explainability for the regression models with Darts’ <code class="docutils literal notranslate"><span class="pre">ShapExplainer</span></code>. The explainer uses <a class="reference external" href="https://github.com/shap/shap">shap</a>, a library based on game theory, to give insights into feature importances over time for our forecast horizon.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">24</span><span class="p">))</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">(</span><span class="mi">24</span><span class="p">,</span> <span class="mi">24</span><span class="p">))</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">ts_energy_train</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">ts_weather</span><span class="p">)</span>
 <span class="n">shap_explainer</span> <span class="o">=</span> <span class="n">ShapExplainer</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
 <span class="n">shap_values</span> <span class="o">=</span> <span class="n">shap_explainer</span><span class="o">.</span><span class="n">summary_plot</span><span class="p">()</span>
@@ -1309,8 +1109,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># extracting the end of each series to reduce computation time</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># extracting the end of each series to reduce computation time</span>
 <span class="n">foreground_target</span> <span class="o">=</span> <span class="n">ts_energy_train</span><span class="p">[</span><span class="o">-</span><span class="mi">24</span> <span class="o">*</span> <span class="mi">2</span> <span class="p">:]</span>
 <span class="n">foreground_future_cov</span> <span class="o">=</span> <span class="n">ts_weather</span><span class="p">[</span><span class="n">foreground_target</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="p">:]</span>
 
@@ -1345,24 +1144,23 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 </div>
 </section>
 <section id="Conclusion">
-<h3>Conclusion<a class="headerlink" href="#Conclusion" title="Permalink to this heading">¶</a></h3>
+<h3>Conclusion<a class="headerlink" href="#Conclusion" title="Link to this heading">#</a></h3>
 <p>By tabularizing the data and unifying the API across libraries, Darts closes the gap between traditional regression problems and timeseries forecasting.</p>
 <p><code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> and its sub-classes offer a wide range of functionalities which can be used to build strong models in just a few lines of codes.</p>
 </section>
 </section>
 </section>
 <section id="Appendix">
-<h1>Appendix<a class="headerlink" href="#Appendix" title="Permalink to this heading">¶</a></h1>
+<h1>Appendix<a class="headerlink" href="#Appendix" title="Link to this heading">#</a></h1>
 <section id="SKLearnModel">
-<h2>SKLearnModel<a class="headerlink" href="#SKLearnModel" title="Permalink to this heading">¶</a></h2>
+<h2>SKLearnModel<a class="headerlink" href="#SKLearnModel" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> wraps the Darts API around any sklearn regression model. With this we can use the model in the same way as any other Darts forecasting models.</p>
 <p>As an examnple, fitting a Bayesian ridge regression on the example dataset takes only a few lines:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">(</span><span class="mi">48</span><span class="p">,</span> <span class="mi">24</span><span class="p">),</span>
     <span class="n">model</span><span class="o">=</span><span class="n">BayesianRidge</span><span class="p">(),</span>
@@ -1399,8 +1197,7 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># extract the coefficients of the first timestemp estimator</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># extract the coefficients of the first timestemp estimator</span>
 <span class="n">coef_values</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">estimators_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">coef_</span>
 <span class="c1"># get the lagged features name</span>
 <span class="n">coef_names</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">lagged_feature_names</span>
@@ -1426,14 +1223,13 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 </div>
 <p>One of the limitation of the <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> class is that it does not provide probabilistic forecasting out of the box but it is possible to implement it by creating a new class inheriting from both <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> and <code class="docutils literal notranslate"><span class="pre">_LikelihoodMixin</span></code> and implementing the missing methods (the <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> class can be use as a template).</p>
 <section id="Custom-model">
-<h3>Custom model<a class="headerlink" href="#Custom-model" title="Permalink to this heading">¶</a></h3>
+<h3>Custom model<a class="headerlink" href="#Custom-model" title="Link to this heading">#</a></h3>
 <p>You can even implement your own model as long as it works with tabular data and provides the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">class</span><span class="w"> </span><span class="nc">CustomRegressionModel</span><span class="p">:</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">CustomRegressionModel</span><span class="p">:</span>
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weights</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Barebone weighted average&quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span>
@@ -1486,14 +1282,13 @@ No data for colormapping provided via &#39;c&#39;. Parameters &#39;vmin&#39;, &#
 </div>
 </section>
 <section id="Example-of-the-boosted-tree-models">
-<h3>Example of the boosted tree models<a class="headerlink" href="#Example-of-the-boosted-tree-models" title="Permalink to this heading">¶</a></h3>
+<h3>Example of the boosted tree models<a class="headerlink" href="#Example-of-the-boosted-tree-models" title="Link to this heading">#</a></h3>
 <p>Make sure to have the dependencies for lightgbm and catboost installed. You can check out our installation guide <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">here</a></p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lgbm_model</span> <span class="o">=</span> <span class="n">LightGBMModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">lgbm_model</span> <span class="o">=</span> <span class="n">LightGBMModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">xgboost_model</span> <span class="o">=</span> <span class="n">XGBModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
 <span class="n">catboost_model</span> <span class="o">=</span> <span class="n">CatBoostModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
 
@@ -1548,50 +1343,153 @@ CatboostModel MAPE: 2.373275454432286
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="17-hyperparameter-optimization.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Hyper-parameters Optimization for Electricity Load Forecasting</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="17-hyperparameter-optimization.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Hyper-parameters Optimization for Electricity Load Forecasting</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="24-SKLearnClassifierModel-examples.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="24-SKLearnClassifierModel-examples.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Classification Models</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Regression Models</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Input-Dataset">Input Dataset</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Darts-Regression-Models">Darts Regression Models</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Target-and-covariates-lags">Target and covariates lags</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Lagged-data-extraction">Lagged data extraction</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Examples">Examples</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Covariates-based-forecasting">Covariates-based forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Using-only-covariates">Using only covariates</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Component-specific-lags">Component-specific lags</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Model's-output-chunk-length">Model’s output chunk length</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Multi-model-forecasting">Multi-model forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Single-model-forecasting">Single-model forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Visualization">Visualization</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Probabilistic-forecasting">Probabilistic forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#MultiOutputRegressor-wrapper">MultiOutputRegressor wrapper</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Explainability">Explainability</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Conclusion">Conclusion</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Appendix">Appendix</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#SKLearnModel">SKLearnModel</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Custom-model">Custom model</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Example-of-the-boosted-tree-models">Example of the boosted tree models</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples/20-SKLearnModel-examples.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

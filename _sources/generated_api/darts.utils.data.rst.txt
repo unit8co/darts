@@ -1,12 +1,14 @@
+darts.utils.data
+================
+
+.. currentmodule:: darts.utils.data
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   darts.utils.data.torch_datasets
 
 
 
-.. automodule:: darts.utils.data
-
-    .. toctree::
-        :maxdepth: 1
-        
-        darts.utils.data.tabularization
-        darts.utils.data.torch_datasets
-        
-        darts.utils.data.utils
+- :doc:`darts.utils.data.torch_datasets <darts.utils.data.torch_datasets>`

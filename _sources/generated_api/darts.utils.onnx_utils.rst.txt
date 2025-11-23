@@ -1,3 +1,0 @@
-.. automodule:: darts.utils.onnx_utils
-   :members:
-   :undoc-members:

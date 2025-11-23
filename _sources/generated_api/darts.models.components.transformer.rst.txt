@@ -1,3 +1,0 @@
-.. automodule:: darts.models.components.transformer
-   :members:
-   :undoc-members:

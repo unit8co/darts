@@ -1,51 +1,91 @@
+darts.models.forecasting
+========================
+
+.. currentmodule:: darts.models.forecasting
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.models.forecasting.arima
+   darts.models.forecasting.baselines
+   darts.models.forecasting.block_rnn_model
+   darts.models.forecasting.catboost_model
+   darts.models.forecasting.chronos2_model
+   darts.models.forecasting.conformal_models
+   darts.models.forecasting.dlinear
+   darts.models.forecasting.exponential_smoothing
+   darts.models.forecasting.fft
+   darts.models.forecasting.global_baseline_models
+   darts.models.forecasting.kalman_forecaster
+   darts.models.forecasting.lgbm
+   darts.models.forecasting.linear_regression_model
+   darts.models.forecasting.nbeats
+   darts.models.forecasting.nhits
+   darts.models.forecasting.nlinear
+   darts.models.forecasting.prophet_model
+   darts.models.forecasting.random_forest
+   darts.models.forecasting.regression_ensemble_model
+   darts.models.forecasting.rnn_model
+   darts.models.forecasting.sf_auto_arima
+   darts.models.forecasting.sf_auto_ces
+   darts.models.forecasting.sf_auto_ets
+   darts.models.forecasting.sf_auto_mfles
+   darts.models.forecasting.sf_auto_tbats
+   darts.models.forecasting.sf_auto_theta
+   darts.models.forecasting.sf_croston
+   darts.models.forecasting.sf_model
+   darts.models.forecasting.sf_tbats
+   darts.models.forecasting.sklearn_model
+   darts.models.forecasting.tcn_model
+   darts.models.forecasting.tft_model
+   darts.models.forecasting.tft_submodels
+   darts.models.forecasting.theta
+   darts.models.forecasting.tide_model
+   darts.models.forecasting.transformer_model
+   darts.models.forecasting.tsmixer_model
+   darts.models.forecasting.varima
+   darts.models.forecasting.xgboost
 
 
 
-.. automodule:: darts.models.forecasting
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.models.forecasting.arima
-        darts.models.forecasting.baselines
-        darts.models.forecasting.block_rnn_model
-        darts.models.forecasting.catboost_model
-        darts.models.forecasting.conformal_models
-        darts.models.forecasting.dlinear
-        darts.models.forecasting.ensemble_model
-        darts.models.forecasting.exponential_smoothing
-        darts.models.forecasting.fft
-        darts.models.forecasting.forecasting_model
-        darts.models.forecasting.global_baseline_models
-        darts.models.forecasting.kalman_forecaster
-        darts.models.forecasting.lgbm
-        darts.models.forecasting.linear_regression_model
-        darts.models.forecasting.nbeats
-        darts.models.forecasting.nhits
-        darts.models.forecasting.nlinear
-        darts.models.forecasting.pl_forecasting_module
-        darts.models.forecasting.prophet_model
-        darts.models.forecasting.random_forest
-        darts.models.forecasting.regression_ensemble_model
-        darts.models.forecasting.rnn_model
-        darts.models.forecasting.sf_auto_arima
-        darts.models.forecasting.sf_auto_ces
-        darts.models.forecasting.sf_auto_ets
-        darts.models.forecasting.sf_auto_mfles
-        darts.models.forecasting.sf_auto_tbats
-        darts.models.forecasting.sf_auto_theta
-        darts.models.forecasting.sf_croston
-        darts.models.forecasting.sf_model
-        darts.models.forecasting.sf_tbats
-        darts.models.forecasting.sklearn_model
-        darts.models.forecasting.tcn_model
-        darts.models.forecasting.tft_model
-        darts.models.forecasting.tft_submodels
-        darts.models.forecasting.theta
-        darts.models.forecasting.tide_model
-        darts.models.forecasting.torch_forecasting_model
-        darts.models.forecasting.transformer_model
-        darts.models.forecasting.tsmixer_model
-        darts.models.forecasting.varima
-        darts.models.forecasting.xgboost
+- :doc:`darts.models.forecasting.arima <darts.models.forecasting.arima>`
+- :doc:`darts.models.forecasting.baselines <darts.models.forecasting.baselines>`
+- :doc:`darts.models.forecasting.block_rnn_model <darts.models.forecasting.block_rnn_model>`
+- :doc:`darts.models.forecasting.catboost_model <darts.models.forecasting.catboost_model>`
+- :doc:`darts.models.forecasting.chronos2_model <darts.models.forecasting.chronos2_model>`
+- :doc:`darts.models.forecasting.conformal_models <darts.models.forecasting.conformal_models>`
+- :doc:`darts.models.forecasting.dlinear <darts.models.forecasting.dlinear>`
+- :doc:`darts.models.forecasting.exponential_smoothing <darts.models.forecasting.exponential_smoothing>`
+- :doc:`darts.models.forecasting.fft <darts.models.forecasting.fft>`
+- :doc:`darts.models.forecasting.global_baseline_models <darts.models.forecasting.global_baseline_models>`
+- :doc:`darts.models.forecasting.kalman_forecaster <darts.models.forecasting.kalman_forecaster>`
+- :doc:`darts.models.forecasting.lgbm <darts.models.forecasting.lgbm>`
+- :doc:`darts.models.forecasting.linear_regression_model <darts.models.forecasting.linear_regression_model>`
+- :doc:`darts.models.forecasting.nbeats <darts.models.forecasting.nbeats>`
+- :doc:`darts.models.forecasting.nhits <darts.models.forecasting.nhits>`
+- :doc:`darts.models.forecasting.nlinear <darts.models.forecasting.nlinear>`
+- :doc:`darts.models.forecasting.prophet_model <darts.models.forecasting.prophet_model>`
+- :doc:`darts.models.forecasting.random_forest <darts.models.forecasting.random_forest>`
+- :doc:`darts.models.forecasting.regression_ensemble_model <darts.models.forecasting.regression_ensemble_model>`
+- :doc:`darts.models.forecasting.rnn_model <darts.models.forecasting.rnn_model>`
+- :doc:`darts.models.forecasting.sf_auto_arima <darts.models.forecasting.sf_auto_arima>`
+- :doc:`darts.models.forecasting.sf_auto_ces <darts.models.forecasting.sf_auto_ces>`
+- :doc:`darts.models.forecasting.sf_auto_ets <darts.models.forecasting.sf_auto_ets>`
+- :doc:`darts.models.forecasting.sf_auto_mfles <darts.models.forecasting.sf_auto_mfles>`
+- :doc:`darts.models.forecasting.sf_auto_tbats <darts.models.forecasting.sf_auto_tbats>`
+- :doc:`darts.models.forecasting.sf_auto_theta <darts.models.forecasting.sf_auto_theta>`
+- :doc:`darts.models.forecasting.sf_croston <darts.models.forecasting.sf_croston>`
+- :doc:`darts.models.forecasting.sf_model <darts.models.forecasting.sf_model>`
+- :doc:`darts.models.forecasting.sf_tbats <darts.models.forecasting.sf_tbats>`
+- :doc:`darts.models.forecasting.sklearn_model <darts.models.forecasting.sklearn_model>`
+- :doc:`darts.models.forecasting.tcn_model <darts.models.forecasting.tcn_model>`
+- :doc:`darts.models.forecasting.tft_model <darts.models.forecasting.tft_model>`
+- :doc:`darts.models.forecasting.tft_submodels <darts.models.forecasting.tft_submodels>`
+- :doc:`darts.models.forecasting.theta <darts.models.forecasting.theta>`
+- :doc:`darts.models.forecasting.tide_model <darts.models.forecasting.tide_model>`
+- :doc:`darts.models.forecasting.transformer_model <darts.models.forecasting.transformer_model>`
+- :doc:`darts.models.forecasting.tsmixer_model <darts.models.forecasting.tsmixer_model>`
+- :doc:`darts.models.forecasting.varima <darts.models.forecasting.varima>`
+- :doc:`darts.models.forecasting.xgboost <darts.models.forecasting.xgboost>`

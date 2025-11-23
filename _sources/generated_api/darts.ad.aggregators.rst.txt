@@ -1,13 +1,19 @@
+darts.ad.aggregators
+====================
+
+.. currentmodule:: darts.ad.aggregators
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.ad.aggregators.and_aggregator
+   darts.ad.aggregators.ensemble_sklearn_aggregator
+   darts.ad.aggregators.or_aggregator
 
 
 
-.. automodule:: darts.ad.aggregators
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.ad.aggregators.aggregators
-        darts.ad.aggregators.and_aggregator
-        darts.ad.aggregators.ensemble_sklearn_aggregator
-        darts.ad.aggregators.or_aggregator
+- :doc:`darts.ad.aggregators.and_aggregator <darts.ad.aggregators.and_aggregator>`
+- :doc:`darts.ad.aggregators.ensemble_sklearn_aggregator <darts.ad.aggregators.ensemble_sklearn_aggregator>`
+- :doc:`darts.ad.aggregators.or_aggregator <darts.ad.aggregators.or_aggregator>`

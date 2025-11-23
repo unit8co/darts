@@ -1,0 +1,3 @@
+.. automodule:: darts.models.forecasting.chronos2_model
+   :members:
+   :undoc-members:

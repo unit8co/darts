@@ -1,14 +1,19 @@
+darts.explainability
+====================
+
+.. currentmodule:: darts.explainability
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.explainability.explainability_result
+   darts.explainability.shap_explainer
+   darts.explainability.tft_explainer
 
 
 
-.. automodule:: darts.explainability
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.explainability.explainability
-        darts.explainability.explainability_result
-        darts.explainability.shap_explainer
-        darts.explainability.tft_explainer
-        darts.explainability.utils
+- :doc:`darts.explainability.explainability_result <darts.explainability.explainability_result>`
+- :doc:`darts.explainability.shap_explainer <darts.explainability.shap_explainer>`
+- :doc:`darts.explainability.tft_explainer <darts.explainability.tft_explainer>`

@@ -1,3 +1,0 @@
-.. automodule:: darts.models.forecasting.forecasting_model
-   :members:
-   :undoc-members:

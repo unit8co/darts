@@ -1,764 +1,523 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Conformal Prediction Models &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/23-Conformal-Prediction-examples';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Fast Fourier Transform Forecasting Model (FFT)" href="03-FFT-examples.html" />
     <link rel="prev" title="Classification Models" href="24-SKLearnClassifierModel-examples.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-    </nav>
-    
 
-    <div class="container-xl">
-      <div class="row">
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
           
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="01-multi-time-series-and-covariates.html">
-   Multiple Time Series, Pre-trained Models and Covariates
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="02-data-processing.html">
-   Data (pre) processing using
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     DataTransformer
-    </span>
-   </code>
-   and
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     Pipeline
-    </span>
-   </code>
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="02-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="15-static-covariates.html">
-   Static Covariates
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="15-static-covariates.html">Static Covariates</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="14-transfer-learning.html">
-   Transfer Learning for Time Series Forecasting with Darts
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="14-transfer-learning.html">Transfer Learning for Time Series Forecasting with Darts</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="16-hierarchical-reconciliation.html">
-   Hierarchical Reconciliation - Example on the Australian Tourism Dataset
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="16-hierarchical-reconciliation.html">Hierarchical Reconciliation - Example on the Australian Tourism Dataset</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="17-hyperparameter-optimization.html">
-   Hyper-parameters Optimization for Electricity Load Forecasting
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="17-hyperparameter-optimization.html">Hyper-parameters Optimization for Electricity Load Forecasting</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="20-SKLearnModel-examples.html">
-   Regression Models
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="20-SKLearnModel-examples.html">Regression Models</a></li>
+
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="24-SKLearnClassifierModel-examples.html">
-   Classification Models
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="24-SKLearnClassifierModel-examples.html">Classification Models</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   Conformal Prediction Models
-  </a>
- </li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Conformal Prediction Models</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="03-FFT-examples.html">
-   Fast Fourier Transform Forecasting Model (FFT)
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="03-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="04-RNN-examples.html">
-   Recurrent Neural Networks Models
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="04-RNN-examples.html">Recurrent Neural Networks Models</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="05-TCN-examples.html">
-   Temporal Convolutional Network
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="05-TCN-examples.html">Temporal Convolutional Network</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="06-Transformer-examples.html">
-   Transformer Model
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="06-Transformer-examples.html">Transformer Model</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="07-NBEATS-examples.html">
-   N-BEATS
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="07-NBEATS-examples.html">N-BEATS</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="08-DeepAR-examples.html">
-   Probabilistic RNN
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="08-DeepAR-examples.html">Probabilistic RNN</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="09-DeepTCN-examples.html">
-   DeepTCN model
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="09-DeepTCN-examples.html">DeepTCN model</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="13-TFT-examples.html">
-   Temporal Fusion Transformer
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="13-TFT-examples.html">Temporal Fusion Transformer</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="18-TiDE-examples.html">
-   TimeSeries Deep Encoder
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="21-TSMixer-examples.html">
-   Time Series Mixer (TSMixer)
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="19-EnsembleModel-examples.html">
-   Ensembling Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="10-Kalman-filter-examples.html">
-   Filtering and predicting using the darts filters
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="11-GP-filter-examples.html">
-   Filtering and predicting using the Gaussian Process filter
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="22-anomaly-detection-examples.html">
-   Anomaly Detection Darts Module
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="12-Dynamic-Time-Warping-example.html">
-   Dynamic Time Warping (DTW)
-  </a>
- </li>
-</ul>
+<li class="toctree-l1"><a class="reference internal" href="18-TiDE-examples.html">TimeSeries Deep Encoder</a></li>
 
-  </div>
-</nav>
-            </div>
-            
-          
 
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="21-TSMixer-examples.html">Time Series Mixer (TSMixer)</a></li>
+
+
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="25-Chronos-2-examples.html">Chronos-2 Foundation Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="19-EnsembleModel-examples.html">Ensembling Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="10-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="11-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="22-anomaly-detection-examples.html">Anomaly Detection Darts Module</a></li>
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="12-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
+</ul>
 </div>
-
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Conformal-Prediction-for-Time-Series-Forecasting">
-   Conformal Prediction for Time Series Forecasting
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Split-Conformal-Prediction">
-     Split Conformal Prediction
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Advantages">
-       Advantages
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Disadvantages">
-       Disadvantages
-      </a>
-     </li>
-    </ul>
-   </li>
-  </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Darts-Conformal-Models">
-   Darts Conformal Models
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Model-support">
-     Model support
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Direct-Interval-Predictions-or-Sampled-Predictions">
-     Direct Interval Predictions or Sampled Predictions
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Workflow-behind-the-hood">
-     Workflow behind the hood
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Available-Conformal-Models">
-     Available Conformal Models
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#ConformalNaiveModel">
-       <code class="docutils literal notranslate">
-        <span class="pre">
-         ConformalNaiveModel
-        </span>
-       </code>
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#ConformalQRModel-(Conformalized-Quantile-Regression-Model)">
-       <code class="docutils literal notranslate">
-        <span class="pre">
-         ConformalQRModel
-        </span>
-       </code>
-       (Conformalized Quantile Regression Model)
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Darts-features-to-make-your-Conformal-Models-more-adaptive">
-     Darts features to make your Conformal Models more adaptive
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Examples">
-   Examples
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Input-Dataset">
-     Input Dataset
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Example-1:-Compare-different-models-on-single-step-horizon-forecasts">
-     Example 1: Compare different models on single step horizon forecasts
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Train-the-base-forecaster">
-       Train the base forecaster
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Apply-Conformal-Prediction">
-       Apply Conformal Prediction
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Evaluate-Conformal-Prediction">
-       Evaluate Conformal Prediction
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Comparison-with-another-model">
-       Comparison with another model
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Example-2:-Multi-horizon-forecasts">
-     Example 2: Multi-horizon forecasts
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Example-3:-Multi-horizon-Forecasts-on-a-Scheduled-Basis-with-valid-Coverage">
-     Example 3: Multi-horizon Forecasts on a Scheduled Basis with valid Coverage
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Example-4:-Conformalized-Quantile-Regression">
-     Example 4: Conformalized Quantile Regression
-    </a>
-   </li>
-  </ul>
- </li>
-</ul>
-
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+</nav></div>
+    </div>
   
-<style>
-/* CSS for nbsphinx extension */
-
-/* remove conflicting styling from Sphinx themes */
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt *,
-div.nbinput.container div.input_area pre,
-div.nboutput.container div.output_area pre,
-div.nbinput.container div.input_area .highlight,
-div.nboutput.container div.output_area .highlight {
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-}
-
-div.nbinput.container > div[class*=highlight],
-div.nboutput.container > div[class*=highlight] {
-    margin: 0;
-}
-
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt * {
-    background: none;
-}
-
-div.nboutput.container div.output_area .highlight,
-div.nboutput.container div.output_area pre {
-    background: unset;
-}
-
-div.nboutput.container div.output_area div.highlight {
-    color: unset;  /* override Pygments text color */
-}
-
-/* avoid gaps between output lines */
-div.nboutput.container div[class*=highlight] pre {
-    line-height: normal;
-}
-
-/* input/output containers */
-div.nbinput.container,
-div.nboutput.container {
-    display: -webkit-flex;
-    display: flex;
-    align-items: flex-start;
-    margin: 0;
-    width: 100%;
-}
-@media (max-width: 540px) {
-    div.nbinput.container,
-    div.nboutput.container {
-        flex-direction: column;
-    }
-}
-
-/* input container */
-div.nbinput.container {
-    padding-top: 5px;
-}
-
-/* last container */
-div.nblast.container {
-    padding-bottom: 5px;
-}
-
-/* input prompt */
-div.nbinput.container div.prompt pre {
-    color: #307FC1;
-}
-
-/* output prompt */
-div.nboutput.container div.prompt pre {
-    color: #BF5B3D;
-}
-
-/* all prompts */
-div.nbinput.container div.prompt,
-div.nboutput.container div.prompt {
-    width: 4.5ex;
-    padding-top: 5px;
-    position: relative;
-    user-select: none;
-}
-
-div.nbinput.container div.prompt > div,
-div.nboutput.container div.prompt > div {
-    position: absolute;
-    right: 0;
-    margin-right: 0.3ex;
-}
-
-@media (max-width: 540px) {
-    div.nbinput.container div.prompt,
-    div.nboutput.container div.prompt {
-        width: unset;
-        text-align: left;
-        padding: 0.4em;
-    }
-    div.nboutput.container div.prompt.empty {
-        padding: 0;
-    }
-
-    div.nbinput.container div.prompt > div,
-    div.nboutput.container div.prompt > div {
-        position: unset;
-    }
-}
-
-/* disable scrollbars on prompts */
-div.nbinput.container div.prompt pre,
-div.nboutput.container div.prompt pre {
-    overflow: hidden;
-}
-
-/* input/output area */
-div.nbinput.container div.input_area,
-div.nboutput.container div.output_area {
-    -webkit-flex: 1;
-    flex: 1;
-    overflow: auto;
-}
-@media (max-width: 540px) {
-    div.nbinput.container div.input_area,
-    div.nboutput.container div.output_area {
-        width: 100%;
-    }
-}
-
-/* input area */
-div.nbinput.container div.input_area {
-    border: 1px solid #e0e0e0;
-    border-radius: 2px;
-    /*background: #f5f5f5;*/
-}
-
-/* override MathJax center alignment in output cells */
-div.nboutput.container div[class*=MathJax] {
-    text-align: left !important;
-}
-
-/* override sphinx.ext.imgmath center alignment in output cells */
-div.nboutput.container div.math p {
-    text-align: left;
-}
-
-/* standard error */
-div.nboutput.container div.output_area.stderr {
-    background: #fdd;
-}
-
-/* ANSI colors */
-.ansi-black-fg { color: #3E424D; }
-.ansi-black-bg { background-color: #3E424D; }
-.ansi-black-intense-fg { color: #282C36; }
-.ansi-black-intense-bg { background-color: #282C36; }
-.ansi-red-fg { color: #E75C58; }
-.ansi-red-bg { background-color: #E75C58; }
-.ansi-red-intense-fg { color: #B22B31; }
-.ansi-red-intense-bg { background-color: #B22B31; }
-.ansi-green-fg { color: #00A250; }
-.ansi-green-bg { background-color: #00A250; }
-.ansi-green-intense-fg { color: #007427; }
-.ansi-green-intense-bg { background-color: #007427; }
-.ansi-yellow-fg { color: #DDB62B; }
-.ansi-yellow-bg { background-color: #DDB62B; }
-.ansi-yellow-intense-fg { color: #B27D12; }
-.ansi-yellow-intense-bg { background-color: #B27D12; }
-.ansi-blue-fg { color: #208FFB; }
-.ansi-blue-bg { background-color: #208FFB; }
-.ansi-blue-intense-fg { color: #0065CA; }
-.ansi-blue-intense-bg { background-color: #0065CA; }
-.ansi-magenta-fg { color: #D160C4; }
-.ansi-magenta-bg { background-color: #D160C4; }
-.ansi-magenta-intense-fg { color: #A03196; }
-.ansi-magenta-intense-bg { background-color: #A03196; }
-.ansi-cyan-fg { color: #60C6C8; }
-.ansi-cyan-bg { background-color: #60C6C8; }
-.ansi-cyan-intense-fg { color: #258F8F; }
-.ansi-cyan-intense-bg { background-color: #258F8F; }
-.ansi-white-fg { color: #C5C1B4; }
-.ansi-white-bg { background-color: #C5C1B4; }
-.ansi-white-intense-fg { color: #A1A6B2; }
-.ansi-white-intense-bg { background-color: #A1A6B2; }
-
-.ansi-default-inverse-fg { color: #FFFFFF; }
-.ansi-default-inverse-bg { background-color: #000000; }
-
-.ansi-bold { font-weight: bold; }
-.ansi-underline { text-decoration: underline; }
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
 
 
-div.nbinput.container div.input_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight].math,
-div.nboutput.container div.output_area.rendered_html,
-div.nboutput.container div.output_area > div.output_javascript,
-div.nboutput.container div.output_area:not(.rendered_html) > img{
-    padding: 5px;
-    margin: 0;
-}
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
 
-/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
-div.nbinput.container div.input_area > div[class^='highlight'],
-div.nboutput.container div.output_area > div[class^='highlight']{
-    overflow-y: hidden;
-}
-
-/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
-.prompt a.copybtn {
-    display: none;
-}
-
-/* Some additional styling taken form the Jupyter notebook CSS */
-div.rendered_html table {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: black;
-  font-size: 12px;
-  table-layout: fixed;
-}
-div.rendered_html thead {
-  border-bottom: 1px solid black;
-  vertical-align: bottom;
-}
-div.rendered_html tr,
-div.rendered_html th,
-div.rendered_html td {
-  text-align: right;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
-}
-div.rendered_html th {
-  font-weight: bold;
-}
-div.rendered_html tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-div.rendered_html tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
-</style>
-<section id="Conformal-Prediction-Models">
-<h1>Conformal Prediction Models<a class="headerlink" href="#Conformal-Prediction-Models" title="Permalink to this heading">¶</a></h1>
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Conformal Prediction Models</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Conformal-Prediction-Models">
+<h1>Conformal Prediction Models<a class="headerlink" href="#Conformal-Prediction-Models" title="Link to this heading">#</a></h1>
 <p>The following is a demonstration of the conformal prediction models in Darts.</p>
 <p>TLDR;</p>
 <ul class="simple">
@@ -774,8 +533,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># fix python path if working locally</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># fix python path if working locally</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
@@ -786,8 +544,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
@@ -801,15 +558,15 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Conformal-Prediction-for-Time-Series-Forecasting">
-<h2>Conformal Prediction for Time Series Forecasting<a class="headerlink" href="#Conformal-Prediction-for-Time-Series-Forecasting" title="Permalink to this heading">¶</a></h2>
+<h2>Conformal Prediction for Time Series Forecasting<a class="headerlink" href="#Conformal-Prediction-for-Time-Series-Forecasting" title="Link to this heading">#</a></h2>
 <p><em>Conformal prediction is a technique for constructing prediction intervals that try to achieve valid coverage in finite samples, without making distributional assumptions.</em> <a class="reference external" href="https://arxiv.org/pdf/1905.03222">(source)</a></p>
 <p>In other words: If we want a prediction interval that includes 80% of all actual values over some period of time, then a conformal model attempts to generate such intervals that actually have 80% of points inside.</p>
 <p>There are different techniques to perform conformal prediction. In Darts, we currently use <strong>Split Conformal Prediction</strong> <a class="reference external" href="https://www.stat.cmu.edu/~ryantibs/papers/conformal.pdf">(SCP, Lei et al., 2018)</a> (with some nice adaptions) due to its simplicity and efficiency.</p>
 <section id="Split-Conformal-Prediction">
-<h3>Split Conformal Prediction<a class="headerlink" href="#Split-Conformal-Prediction" title="Permalink to this heading">¶</a></h3>
+<h3>Split Conformal Prediction<a class="headerlink" href="#Split-Conformal-Prediction" title="Link to this heading">#</a></h3>
 <p>SCP adds calibrated prediction intervals with a specified confidence level to a base model’s forecasts. It involves splitting the data into a training (+ optional validation) set and a calibration (+ test) set. The model is trained on the training set, and the calibration set is used to compute the prediction intervals to ensure they contain the true values with the desired probability.</p>
 <section id="Advantages">
-<h4>Advantages<a class="headerlink" href="#Advantages" title="Permalink to this heading">¶</a></h4>
+<h4>Advantages<a class="headerlink" href="#Advantages" title="Link to this heading">#</a></h4>
 <ul class="simple">
 <li><p><strong>Valid Coverage</strong>: Provides valid prediction intervals that are guaranteed to contain the true value with a specified confidence level on finite samples.</p></li>
 <li><p><strong>Model-agnostic</strong>: Can be applied to any predictive model:</p>
@@ -818,34 +575,34 @@ div.rendered_html tbody tr:hover {
 <li><p>Or calibrates the predicted intervals in case of probabilistic forecasting models</p></li>
 </ul>
 </li>
-<li><p><strong>Distribution-free</strong>: No distributional assumptions about the data except that the errors on the calibration set are exchangeable (e.g. we don’t need to assume that our data is normally distributed and then fit a model with a <code class="docutils literal notranslate"><span class="pre">GaussianLikelihood</span></code>).</p></li>
+<li><p><strong>Distribution-free</strong>: No distributional assumptions about the data except that the errors on the calibration set are exchangeable (e.g. we don’t need to assume that our data is normally distributed and then fit a model with a <code class="docutils literal notranslate"><span class="pre">GaussianLikelihood</span></code>).</p></li>
 <li><p><strong>Efficient</strong>: Split Conformal Prediction is efficient since it does not require model re-training.</p></li>
 <li><p><strong>Interpretable</strong>: The method is interpretable due to its simplicity.</p></li>
 <li><p><strong>Useful Applications</strong>: It’s used to provide more reliable and informative predictions to help decision-making in several industries. See this <a class="reference external" href="https://medium.com/&#64;data-overload/conformal-prediction-a-critic-to-predictive-models-27501dcc76d4">article on conformal prediction</a></p></li>
 </ul>
 </section>
 <section id="Disadvantages">
-<h4>Disadvantages<a class="headerlink" href="#Disadvantages" title="Permalink to this heading">¶</a></h4>
+<h4>Disadvantages<a class="headerlink" href="#Disadvantages" title="Link to this heading">#</a></h4>
 <ul class="simple">
 <li><p><strong>Requires a Calibration Set</strong>: Conformal prediction requires another data / hold-out set that is used solely to compute the calibrated prediction intervals. This can be inefficient for small datasets.</p></li>
-<li><p><strong>Exchangeability of Calibration Data</strong> (a): The accuracy of the prediction intervals depends on the representativeness of the calibration data (or rather the forecast errors produced on the calibration set). The coverage is not guaranteed anymore if there is a <strong>distribution shift</strong> in forecast errors (e.g. series with a trend but forecasting model is not able to predict the trend).</p></li>
+<li><p><strong>Exchangeability of Calibration Data</strong> (a): The accuracy of the prediction intervals depends on the representativeness of the calibration data (or rather the forecast errors produced on the calibration set). The coverage is not guaranteed anymore if there is a <strong>distribution shift</strong> in forecast errors (e.g. series with a trend but forecasting model is not able to predict the trend).</p></li>
 <li><p><strong>Conservativeness</strong> (a): May produce wider intervals than necessary, leading to conservative predictions.</p></li>
 </ul>
 <ol class="loweralpha simple">
-<li><p>Darts conformal models have some parameters to control the extraction of the calibration set for more adaptiveness (see more infos <a class="reference external" href="#Darts-features-to-make-your-Conformal-Models-more-adaptive">here</a>).</p></li>
+<li><p>Darts conformal models have some parameters to control the extraction of the calibration set for more adaptiveness (see more infos <a class="reference internal" href="#Darts-features-to-make-your-Conformal-Models-more-adaptive"><span class="std std-ref">here</span></a>).</p></li>
 </ol>
 </section>
 </section>
 </section>
 <section id="Darts-Conformal-Models">
-<h2>Darts Conformal Models<a class="headerlink" href="#Darts-Conformal-Models" title="Permalink to this heading">¶</a></h2>
-<p>Darts’ conformal models add calibrated prediction intervals to the forecasts of any <strong>pre-trained global forecasting model</strong>. There is no need to train the conformal models themselves (e.g. no <code class="docutils literal notranslate"><span class="pre">fit()</span></code> required) and you can directly call <code class="docutils literal notranslate"><span class="pre">predict()</span></code> or <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code>. Behind the hood, Darts will automatically extract the calibration set from the past of your input series and use it to generate the calibrated prediction intervals (see <a class="reference external" href="#Workflow-behind-the-hood">here</a> for more
+<h2>Darts Conformal Models<a class="headerlink" href="#Darts-Conformal-Models" title="Link to this heading">#</a></h2>
+<p>Darts’ conformal models add calibrated prediction intervals to the forecasts of any <strong>pre-trained global forecasting model</strong>. There is no need to train the conformal models themselves (e.g. no <code class="docutils literal notranslate"><span class="pre">fit()</span></code> required) and you can directly call <code class="docutils literal notranslate"><span class="pre">predict()</span></code> or <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code>. Behind the hood, Darts will automatically extract the calibration set from the past of your input series and use it to generate the calibrated prediction intervals (see <a class="reference internal" href="#Workflow-behind-the-hood"><span class="std std-ref">here</span></a> for more
 detail).</p>
 <blockquote>
 <div><p><strong>Important</strong>: The <code class="docutils literal notranslate"><span class="pre">series</span></code> passed to the forecast methods <strong>should not have any overlap</strong> with the series used to <strong>train</strong> the forecasting model, since this will lead to overly optimistic prediction intervals.</p>
 </div></blockquote>
 <section id="Model-support">
-<h3>Model support<a class="headerlink" href="#Model-support" title="Permalink to this heading">¶</a></h3>
+<h3>Model support<a class="headerlink" href="#Model-support" title="Link to this heading">#</a></h3>
 <p>All conformal models in Darts support:</p>
 <ul class="simple">
 <li><p>any <strong>pre-trained global forecasting model</strong> as the base forecaster (you can find a list <a class="reference external" href="https://unit8co.github.io/darts/#forecasting-models">here</a>)</p></li>
@@ -858,7 +615,7 @@ detail).</p>
 </ul>
 </section>
 <section id="Direct-Interval-Predictions-or-Sampled-Predictions">
-<h3>Direct Interval Predictions or Sampled Predictions<a class="headerlink" href="#Direct-Interval-Predictions-or-Sampled-Predictions" title="Permalink to this heading">¶</a></h3>
+<h3>Direct Interval Predictions or Sampled Predictions<a class="headerlink" href="#Direct-Interval-Predictions-or-Sampled-Predictions" title="Link to this heading">#</a></h3>
 <p>Conformal models are probabilistic, so you can forecast in two ways (when calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code>, <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code>, …):</p>
 <ul class="simple">
 <li><p>Forecast the calibrated quantile interval bounds directly (example <a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html#Direct-Parameter-Predicitons">here</a>).</p>
@@ -874,9 +631,9 @@ detail).</p>
 </ul>
 </section>
 <section id="Workflow-behind-the-hood">
-<h3>Workflow behind the hood<a class="headerlink" href="#Workflow-behind-the-hood" title="Permalink to this heading">¶</a></h3>
+<h3>Workflow behind the hood<a class="headerlink" href="#Workflow-behind-the-hood" title="Link to this heading">#</a></h3>
 <blockquote>
-<div><p>Note: <code class="docutils literal notranslate"><span class="pre">cal_length</span></code> and <code class="docutils literal notranslate"><span class="pre">cal_stride</span></code> will be further explained <a class="reference external" href="#Darts-features-to-make-your-Conformal-Models-more-adaptive">below</a>.</p>
+<div><p>Note: <code class="docutils literal notranslate"><span class="pre">cal_length</span></code> and <code class="docutils literal notranslate"><span class="pre">cal_stride</span></code> will be further explained <a class="reference internal" href="#Darts-features-to-make-your-Conformal-Models-more-adaptive"><span class="std std-ref">below</span></a>.</p>
 </div></blockquote>
 <p>In general, the workflow of the models to produce one calibrated forecast/prediction is as follows (using <code class="docutils literal notranslate"><span class="pre">predict()</span></code>):</p>
 <ul class="simple">
@@ -890,10 +647,10 @@ detail).</p>
 <p>When computing <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code>, <code class="docutils literal notranslate"><span class="pre">backtest()</span></code>, <code class="docutils literal notranslate"><span class="pre">residuals()</span></code>, … the above is applied for each forecast (the forecasting model’s historical forecasts are only generated once for efficiency).</p>
 </section>
 <section id="Available-Conformal-Models">
-<h3>Available Conformal Models<a class="headerlink" href="#Available-Conformal-Models" title="Permalink to this heading">¶</a></h3>
+<h3>Available Conformal Models<a class="headerlink" href="#Available-Conformal-Models" title="Link to this heading">#</a></h3>
 <p>At the time of writing (Darts version 0.32.0), we have two conformal models:</p>
 <section id="ConformalNaiveModel">
-<h4><code class="docutils literal notranslate"><span class="pre">ConformalNaiveModel</span></code><a class="headerlink" href="#ConformalNaiveModel" title="Permalink to this heading">¶</a></h4>
+<h4><code class="docutils literal notranslate"><span class="pre">ConformalNaiveModel</span></code><a class="headerlink" href="#ConformalNaiveModel" title="Link to this heading">#</a></h4>
 <p>Adds calibrated intervals around the median forecast of <strong>any pre-trained global forecasting model</strong>. It supports two symmetry modes:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">symmetric=True</span></code>:</p>
@@ -911,7 +668,7 @@ detail).</p>
 </ul>
 </section>
 <section id="ConformalQRModel-(Conformalized-Quantile-Regression-Model)">
-<h4><code class="docutils literal notranslate"><span class="pre">ConformalQRModel</span></code> (Conformalized Quantile Regression Model)<a class="headerlink" href="#ConformalQRModel-(Conformalized-Quantile-Regression-Model)" title="Permalink to this heading">¶</a></h4>
+<h4><code class="docutils literal notranslate"><span class="pre">ConformalQRModel</span></code> (Conformalized Quantile Regression Model)<a class="headerlink" href="#ConformalQRModel-(Conformalized-Quantile-Regression-Model)" title="Link to this heading">#</a></h4>
 <p>Calibrates the quantile predictions of a <strong>pre-trained probabilistic global forecasting model</strong>. It supports two symmetry modes:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">symmetric=True</span></code>:</p>
@@ -930,8 +687,8 @@ detail).</p>
 </section>
 </section>
 <section id="Darts-features-to-make-your-Conformal-Models-more-adaptive">
-<h3>Darts features to make your Conformal Models more adaptive<a class="headerlink" href="#Darts-features-to-make-your-Conformal-Models-more-adaptive" title="Permalink to this heading">¶</a></h3>
-<p>As mentioned in <a class="reference external" href="#Disadvantages">Split Conformal Prediction - Disadvantages</a>, the calibration set has a large impact on the effectiveness of our conformal prediction technique.</p>
+<h3>Darts features to make your Conformal Models more adaptive<a class="headerlink" href="#Darts-features-to-make-your-Conformal-Models-more-adaptive" title="Link to this heading">#</a></h3>
+<p>As mentioned in <a class="reference internal" href="#Disadvantages"><span class="std std-ref">Split Conformal Prediction - Disadvantages</span></a>, the calibration set has a large impact on the effectiveness of our conformal prediction technique.</p>
 <p>We implemented some cool features to make our automatic extraction of the calibration set even more powerful for you.</p>
 <p>All our conformal models have the following two parameters at model creation:</p>
 <ul class="simple">
@@ -950,7 +707,7 @@ detail).</p>
 </li>
 <li><p><code class="docutils literal notranslate"><span class="pre">cal_stride</span></code>: (default=1) The stride (number of time steps between two consecutive forecasts) to apply when computing the historical forecasts and non-conformity scores on the calibration set.</p>
 <ul>
-<li><p>This is useful if we want to run our models on a scheduled basis (e.g. once every 24 hours) and are only interested in the NCS that were produced on this schedule.</p></li>
+<li><p>This is useful if we want to run our models on a scheduled basis (e.g. once every 24 hours) and are only interested in the NCS that were produced on this schedule.</p></li>
 <li><p>Caution: <code class="docutils literal notranslate"><span class="pre">cal_stride&gt;1</span></code> requires a longer <code class="docutils literal notranslate"><span class="pre">series</span></code> history (roughly <code class="docutils literal notranslate"><span class="pre">cal_length</span> <span class="pre">*</span> <span class="pre">stride</span></code> points).</p></li>
 </ul>
 </li>
@@ -958,7 +715,7 @@ detail).</p>
 </section>
 </section>
 <section id="Examples">
-<h2>Examples<a class="headerlink" href="#Examples" title="Permalink to this heading">¶</a></h2>
+<h2>Examples<a class="headerlink" href="#Examples" title="Link to this heading">#</a></h2>
 <p>We will show four examples:</p>
 <ol class="arabic simple">
 <li><p>How to perform conformal prediction and compare different models based on the quantified uncertainty. For simplicity, we will use a single step horizon <code class="docutils literal notranslate"><span class="pre">n=1</span></code>.</p></li>
@@ -967,17 +724,19 @@ detail).</p>
 <li><p>An example of conformalized quantile regression.</p></li>
 </ol>
 <section id="Input-Dataset">
-<h3>Input Dataset<a class="headerlink" href="#Input-Dataset" title="Permalink to this heading">¶</a></h3>
+<h3>Input Dataset<a class="headerlink" href="#Input-Dataset" title="Link to this heading">#</a></h3>
 <p>For both examples, we use the Electricity Consumption Dataset from households in Zurich, Switzerland.</p>
 <p>The dataset has a quarter-hourly frequency (15 Min time intervals), but we resample it to hourly frequency to keep things simple.</p>
 <p>To keep it simple, we will not use any covariates and only concentrate on the electricity consumption as the target we want to predict. The conformal model’s covariate support and API is identical to the base-forecaster.</p>
-<p><strong>Target series</strong> (the series we want to forecast): - <strong>Value_NE5</strong>: Electricity consumption by households on grid level 5 (in kWh).</p>
+<p><strong>Target series</strong> (the series we want to forecast):</p>
+<ul class="simple">
+<li><p><strong>Value_NE5</strong>: Electricity consumption by households on grid level 5 (in kWh).</p></li>
+</ul>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">ElectricityConsumptionZurichDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series</span> <span class="o">=</span> <span class="n">ElectricityConsumptionZurichDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
 <span class="c1"># extract target and resample to hourly frequency</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="s2">&quot;Value_NE5&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">freq</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">)</span>
@@ -1001,8 +760,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train_start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2015-01-01&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train_start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2015-01-01&quot;</span><span class="p">)</span>
 <span class="n">cal_start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2016-01-01&quot;</span><span class="p">)</span>
 <span class="n">test_start</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2017-01-01&quot;</span><span class="p">)</span>
 <span class="n">test_end</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;2018-01-01&quot;</span><span class="p">)</span>
@@ -1029,7 +787,7 @@ detail).</p>
 </div>
 </section>
 <section id="Example-1:-Compare-different-models-on-single-step-horizon-forecasts">
-<h3>Example 1: Compare different models on single step horizon forecasts<a class="headerlink" href="#Example-1:-Compare-different-models-on-single-step-horizon-forecasts" title="Permalink to this heading">¶</a></h3>
+<h3>Example 1: Compare different models on single step horizon forecasts<a class="headerlink" href="#Example-1:-Compare-different-models-on-single-step-horizon-forecasts" title="Link to this heading">#</a></h3>
 <p>Let’s see how we can use conformal prediction in Darts. We’ll show how to:</p>
 <ul class="simple">
 <li><p>use conformal prediction (predict and historical forecasts)</p></li>
@@ -1038,7 +796,7 @@ detail).</p>
 </ul>
 <p>To demonstrate the process, we focus first only on one base forecasting model.</p>
 <section id="Train-the-base-forecaster">
-<h4>Train the base forecaster<a class="headerlink" href="#Train-the-base-forecaster" title="Permalink to this heading">¶</a></h4>
+<h4>Train the base forecaster<a class="headerlink" href="#Train-the-base-forecaster" title="Link to this heading">#</a></h4>
 <p>Let’s use a <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> as our base forecasting model. We configure it to use the last two hours as lookback to forecast the next hour (single step horizon; multi horizon will be covered in Example 2).</p>
 <ul class="simple">
 <li><p>train it on the <code class="docutils literal notranslate"><span class="pre">train</span></code> set</p></li>
@@ -1048,8 +806,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">horizon</span> <span class="o">=</span> <span class="mi">1</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">horizon</span> <span class="o">=</span> <span class="mi">1</span>
 
 <span class="c1"># train the model</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">horizon</span><span class="p">)</span>
@@ -1077,23 +834,26 @@ detail).</p>
 <p>Great, we have our single step forecast. But without knowing the actual target value at that time, we wouldn’t have any estimate of the uncertainty.</p>
 </section>
 <section id="Apply-Conformal-Prediction">
-<h4>Apply Conformal Prediction<a class="headerlink" href="#Apply-Conformal-Prediction" title="Permalink to this heading">¶</a></h4>
+<h4>Apply Conformal Prediction<a class="headerlink" href="#Apply-Conformal-Prediction" title="Link to this heading">#</a></h4>
 <p>Now let’s apply conformal prediction to quantify the uncertainty. We use the symmetric (default) naive model, including the quantile levels we want to forecast. Also:</p>
 <ul class="simple">
 <li><p>we don’t need to train / fit the conformal model</p></li>
 <li><p>we should supply a <code class="docutils literal notranslate"><span class="pre">series</span></code> to <code class="docutils literal notranslate"><span class="pre">predict()</span></code> that does not have an overlap with the series used to train the model. In our case <code class="docutils literal notranslate"><span class="pre">cal</span></code> has no overlap with <code class="docutils literal notranslate"><span class="pre">train</span></code>.</p></li>
 <li><p>the API is identical to Darts’ forecasting models.</p></li>
 </ul>
-<p>Let’s configure the conformal model: - add a 90% quantile interval (quantiles 0.05 - 0.95) (<code class="docutils literal notranslate"><span class="pre">quantiles</span></code>). - consider only the last 4 weeks of non-conformity scores to calibrate the prediction intervals (<code class="docutils literal notranslate"><span class="pre">cal_length</span></code>).</p>
+<p>Let’s configure the conformal model:</p>
+<ul class="simple">
+<li><p>add a 90% quantile interval (quantiles 0.05 - 0.95) (<code class="docutils literal notranslate"><span class="pre">quantiles</span></code>).</p></li>
+<li><p>consider only the last 4 weeks of non-conformity scores to calibrate the prediction intervals (<code class="docutils literal notranslate"><span class="pre">cal_length</span></code>).</p></li>
+</ul>
 <blockquote>
-<div><p>Note: you can add any number of intervals, e.g. <code class="docutils literal notranslate"><span class="pre">[0.10,</span> <span class="pre">0.20,</span> <span class="pre">0.50,</span> <span class="pre">0.80,</span> <span class="pre">0.90]</span></code> would add the 80% (0.10 - 0.90) and 60% (0.20 - 0.80) intervals</p>
+<div><p>Note: you can add any number of intervals, e.g. <code class="docutils literal notranslate"><span class="pre">[0.10,</span> <span class="pre">0.20,</span> <span class="pre">0.50,</span> <span class="pre">0.80,</span> <span class="pre">0.90]</span></code> would add the 80% (0.10 - 0.90) and 60% (0.20 - 0.80) intervals</p>
 </div></blockquote>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">quantiles</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">quantiles</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.50</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">]</span>
 <span class="n">four_weeks</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">7</span> <span class="o">*</span> <span class="mi">24</span>
 <span class="n">pred_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;predict_likelihood_parameters&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;verbose&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
 
@@ -1134,7 +894,7 @@ detail).</p>
 <p>Great, we can see the added prediction interval (turquoise, dark blue) around the base model’s forecast (purple). It’s clear that the predicted interval contains the actual value. Let’s look at how to evaluate this forecast.</p>
 </section>
 <section id="Evaluate-Conformal-Prediction">
-<h4>Evaluate Conformal Prediction<a class="headerlink" href="#Evaluate-Conformal-Prediction" title="Permalink to this heading">¶</a></h4>
+<h4>Evaluate Conformal Prediction<a class="headerlink" href="#Evaluate-Conformal-Prediction" title="Link to this heading">#</a></h4>
 <p>Darts has dedicated metrics for prediction intervals. You can find them on <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.metrics.html">our metrics page</a> under the <em>Quantile interval metrics</em>. You can use them as standalone metrics or for backtesting.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">(m)ic</span></code>: (Mean) Interval Coverage</p></li>
@@ -1150,8 +910,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">q_interval</span> <span class="o">=</span> <span class="n">cp_model</span><span class="o">.</span><span class="n">q_interval</span>  <span class="c1"># [(0.05, 0.95)]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">q_interval</span> <span class="o">=</span> <span class="n">cp_model</span><span class="o">.</span><span class="n">q_interval</span>  <span class="c1"># [(0.05, 0.95)]</span>
 <span class="n">q_range</span> <span class="o">=</span> <span class="n">cp_model</span><span class="o">.</span><span class="n">interval_range</span>  <span class="c1"># [0.9]</span>
 
 
@@ -1209,8 +968,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># concatenate cal and test set to be able to start forecasting at the `test` start time</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># concatenate cal and test set to be able to start forecasting at the `test` start time</span>
 <span class="n">cal_test</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">([</span><span class="n">cal</span><span class="p">,</span> <span class="n">test</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 <span class="n">hfcs</span> <span class="o">=</span> <span class="n">cp_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
@@ -1239,8 +997,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_historical_forecasts</span><span class="p">(</span><span class="n">hfcs_</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_historical_forecasts</span><span class="p">(</span><span class="n">hfcs_</span><span class="p">):</span>
     <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">16</span><span class="p">,</span> <span class="mf">4.3</span><span class="p">))</span>
     <span class="n">test</span><span class="p">[:</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">7</span> <span class="o">*</span> <span class="mi">24</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">)</span>
     <span class="n">hfcs_</span><span class="p">[:</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">7</span> <span class="o">*</span> <span class="mi">24</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">ax1</span><span class="p">)</span>
@@ -1269,8 +1026,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">bt</span> <span class="o">=</span> <span class="n">cp_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bt</span> <span class="o">=</span> <span class="n">cp_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
     <span class="n">cal_test</span><span class="p">,</span>
     <span class="n">historical_forecasts</span><span class="o">=</span><span class="n">hfcs</span><span class="p">,</span>
     <span class="n">last_points_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -1328,8 +1084,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span><span class="w"> </span><span class="nf">compute_moving_average_metrics</span><span class="p">(</span><span class="n">hfcs_</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metrics</span><span class="o">.</span><span class="n">ic</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">compute_moving_average_metrics</span><span class="p">(</span><span class="n">hfcs_</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metrics</span><span class="o">.</span><span class="n">ic</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Computes the moving 4-week average of a specific time-dependent metric.&quot;&quot;&quot;</span>
     <span class="c1"># compute metric on each time step</span>
     <span class="n">residuals</span> <span class="o">=</span> <span class="n">cp_model</span><span class="o">.</span><span class="n">residuals</span><span class="p">(</span>
@@ -1352,8 +1107,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">covs</span> <span class="o">=</span> <span class="n">compute_moving_average_metrics</span><span class="p">(</span><span class="n">hfcs</span><span class="p">,</span> <span class="n">metrics</span><span class="o">.</span><span class="n">ic</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">covs</span> <span class="o">=</span> <span class="n">compute_moving_average_metrics</span><span class="p">(</span><span class="n">hfcs</span><span class="p">,</span> <span class="n">metrics</span><span class="o">.</span><span class="n">ic</span><span class="p">)</span>
 <span class="n">widths</span> <span class="o">=</span> <span class="n">compute_moving_average_metrics</span><span class="p">(</span><span class="n">hfcs</span><span class="p">,</span> <span class="n">metrics</span><span class="o">.</span><span class="n">iw</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mf">4.3</span><span class="p">))</span>
@@ -1378,7 +1132,7 @@ detail).</p>
 <p>The interval widths range from 2.5 - 3.5 MWh. The adaptivity/responsiveness of the widths to changes in model performance is mainly controlled by the value of <code class="docutils literal notranslate"><span class="pre">cal_length</span></code>.</p>
 </section>
 <section id="Comparison-with-another-model">
-<h4>Comparison with another model<a class="headerlink" href="#Comparison-with-another-model" title="Permalink to this heading">¶</a></h4>
+<h4>Comparison with another model<a class="headerlink" href="#Comparison-with-another-model" title="Link to this heading">#</a></h4>
 <p>Okay now let’s compare the uncertainty of our first model with a more powerful regression model.</p>
 <ul class="simple">
 <li><p>Use the last week (7*24) of consumption as lookback window</p></li>
@@ -1389,8 +1143,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">add_encoders</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cyclic&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;hour&quot;</span><span class="p">,</span> <span class="s2">&quot;dayofweek&quot;</span><span class="p">]}}</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">add_encoders</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cyclic&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;future&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;hour&quot;</span><span class="p">,</span> <span class="s2">&quot;dayofweek&quot;</span><span class="p">]}}</span>
 <span class="n">input_length</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">*</span> <span class="mi">24</span>
 <span class="n">model2</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="n">input_length</span><span class="p">,</span>
@@ -1488,8 +1241,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">covs2</span> <span class="o">=</span> <span class="n">compute_moving_average_metrics</span><span class="p">(</span><span class="n">hfcs2</span><span class="p">,</span> <span class="n">metrics</span><span class="o">.</span><span class="n">ic</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">covs2</span> <span class="o">=</span> <span class="n">compute_moving_average_metrics</span><span class="p">(</span><span class="n">hfcs2</span><span class="p">,</span> <span class="n">metrics</span><span class="o">.</span><span class="n">ic</span><span class="p">)</span>
 <span class="n">widths2</span> <span class="o">=</span> <span class="n">compute_moving_average_metrics</span><span class="p">(</span><span class="n">hfcs2</span><span class="p">,</span> <span class="n">metrics</span><span class="o">.</span><span class="n">iw</span><span class="p">)</span>
 
 <span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mf">4.3</span><span class="p">))</span>
@@ -1565,14 +1317,13 @@ detail).</p>
 </section>
 </section>
 <section id="Example-2:-Multi-horizon-forecasts">
-<h3>Example 2: Multi-horizon forecasts<a class="headerlink" href="#Example-2:-Multi-horizon-forecasts" title="Permalink to this heading">¶</a></h3>
+<h3>Example 2: Multi-horizon forecasts<a class="headerlink" href="#Example-2:-Multi-horizon-forecasts" title="Link to this heading">#</a></h3>
 <p>Multi-horizon forecasts are supported out of the box. Simply set <code class="docutils literal notranslate"><span class="pre">n&gt;1</span></code> (or <code class="docutils literal notranslate"><span class="pre">forecast_horizon</span></code>), and the model generates calibrated prediction intervals for each step.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">multi_horizon</span> <span class="o">=</span> <span class="mi">24</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">multi_horizon</span> <span class="o">=</span> <span class="mi">24</span>
 <span class="n">pred</span> <span class="o">=</span> <span class="n">cp_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">multi_horizon</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">cal</span><span class="p">,</span> <span class="o">**</span><span class="n">pred_kwargs</span><span class="p">)</span>
 
 <span class="c1"># plot</span>
@@ -1617,8 +1368,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">multi_horizon</span> <span class="o">=</span> <span class="mi">24</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">multi_horizon</span> <span class="o">=</span> <span class="mi">24</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="n">input_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">multi_horizon</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
     <span class="n">train</span>
@@ -1665,7 +1415,7 @@ detail).</p>
 </div>
 </section>
 <section id="Example-3:-Multi-horizon-Forecasts-on-a-Scheduled-Basis-with-valid-Coverage">
-<h3>Example 3: Multi-horizon Forecasts on a Scheduled Basis with valid Coverage<a class="headerlink" href="#Example-3:-Multi-horizon-Forecasts-on-a-Scheduled-Basis-with-valid-Coverage" title="Permalink to this heading">¶</a></h3>
+<h3>Example 3: Multi-horizon Forecasts on a Scheduled Basis with valid Coverage<a class="headerlink" href="#Example-3:-Multi-horizon-Forecasts-on-a-Scheduled-Basis-with-valid-Coverage" title="Link to this heading">#</a></h3>
 <p>But what if we want to apply multi-horizon forecasts on a scheduled basis?</p>
 <p>E.g. we want to make a one-day (24 hour) forecast every 24 hours.</p>
 <p>By default, the calibration set considers all possible historical forecasts on the calibration set (<code class="docutils literal notranslate"><span class="pre">cal_stride=1</span></code>). This would use examples generated outside our 24-hour schedule, and might lead to invalid coverages.</p>
@@ -1674,8 +1424,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># conformal model</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># conformal model</span>
 <span class="n">cp_model</span> <span class="o">=</span> <span class="n">ConformalNaiveModel</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
     <span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">,</span>
@@ -1771,8 +1520,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span><span class="w"> </span><span class="nf">compute_hfc_horizon_metric</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="n">metrics</span><span class="o">.</span><span class="n">ic</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">compute_hfc_horizon_metric</span><span class="p">(</span><span class="n">metric</span><span class="o">=</span><span class="n">metrics</span><span class="o">.</span><span class="n">ic</span><span class="p">):</span>
     <span class="c1"># computes the metric per historical forecast, horizon and component with</span>
     <span class="c1"># shape `(n forecasts, horizon, n components, 1)`</span>
     <span class="n">residuals</span> <span class="o">=</span> <span class="n">cp_model</span><span class="o">.</span><span class="n">residuals</span><span class="p">(</span>
@@ -1799,8 +1547,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mf">8.6</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span><span class="p">,</span> <span class="p">(</span><span class="n">ax1</span><span class="p">,</span> <span class="n">ax2</span><span class="p">)</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mf">8.6</span><span class="p">),</span> <span class="n">sharex</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="n">horizons</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">24</span><span class="p">)]</span>
 <span class="n">ax1</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">horizons</span><span class="p">,</span> <span class="n">covs_horizon</span><span class="p">)</span>
@@ -1826,7 +1573,7 @@ detail).</p>
 <p>In general, the widths increase with higher horizon. After horizon 16 they drop again, due to the nature of the target series (low Electricity consumption during the night -&gt; lower uncertainty.)</p>
 </section>
 <section id="Example-4:-Conformalized-Quantile-Regression">
-<h3>Example 4: Conformalized Quantile Regression<a class="headerlink" href="#Example-4:-Conformalized-Quantile-Regression" title="Permalink to this heading">¶</a></h3>
+<h3>Example 4: Conformalized Quantile Regression<a class="headerlink" href="#Example-4:-Conformalized-Quantile-Regression" title="Link to this heading">#</a></h3>
 <p>Finally, let’s check out an example of our <code class="docutils literal notranslate"><span class="pre">ConformalQRModel</span></code>. The API is exactly the same.</p>
 <p>The only difference is that it requires a <strong>probabilistic</strong> base forecaster.</p>
 <p>Let’s use a linear model with quantile regression and perform the same single step forecast as in example 1.</p>
@@ -1834,8 +1581,7 @@ detail).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># probabilistic regression model (with quantiles)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># probabilistic regression model (with quantiles)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="n">input_length</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">horizon</span><span class="p">,</span>
@@ -1932,50 +1678,153 @@ detail).</p>
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="24-SKLearnClassifierModel-examples.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Classification Models</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="24-SKLearnClassifierModel-examples.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Classification Models</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="03-FFT-examples.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="03-FFT-examples.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Fast Fourier Transform Forecasting Model (FFT)</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Conformal-Prediction-for-Time-Series-Forecasting">Conformal Prediction for Time Series Forecasting</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Split-Conformal-Prediction">Split Conformal Prediction</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Advantages">Advantages</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Disadvantages">Disadvantages</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Darts-Conformal-Models">Darts Conformal Models</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Model-support">Model support</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Direct-Interval-Predictions-or-Sampled-Predictions">Direct Interval Predictions or Sampled Predictions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Workflow-behind-the-hood">Workflow behind the hood</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Available-Conformal-Models">Available Conformal Models</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ConformalNaiveModel"><code class="docutils literal notranslate"><span class="pre">ConformalNaiveModel</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#ConformalQRModel-(Conformalized-Quantile-Regression-Model)"><code class="docutils literal notranslate"><span class="pre">ConformalQRModel</span></code> (Conformalized Quantile Regression Model)</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Darts-features-to-make-your-Conformal-Models-more-adaptive">Darts features to make your Conformal Models more adaptive</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Examples">Examples</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Input-Dataset">Input Dataset</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Example-1:-Compare-different-models-on-single-step-horizon-forecasts">Example 1: Compare different models on single step horizon forecasts</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Train-the-base-forecaster">Train the base forecaster</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Apply-Conformal-Prediction">Apply Conformal Prediction</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Evaluate-Conformal-Prediction">Evaluate Conformal Prediction</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Comparison-with-another-model">Comparison with another model</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Example-2:-Multi-horizon-forecasts">Example 2: Multi-horizon forecasts</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Example-3:-Multi-horizon-Forecasts-on-a-Scheduled-Basis-with-valid-Coverage">Example 3: Multi-horizon Forecasts on a Scheduled Basis with valid Coverage</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Example-4:-Conformalized-Quantile-Regression">Example 4: Conformalized Quantile Regression</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples/23-Conformal-Prediction-examples.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

@@ -144,7 +144,7 @@ LFMs are models that can be trained on a single target series only. In Darts mos
 Global Forecasting Models (GFMs)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-GFMs are models that can be trained on multiple target (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data. In Darts, these are the global (naive) baseline models, regression models, PyTorch (Lightning)-based models (neural networks), as well ensemble models (depending on their ensemble model and / or the forecasting models they ensemble).
+GFMs are models that can be trained on multiple target (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data. In Darts, these are the global (naive) baseline models, regression models, PyTorch (Lightning)-based models (neural networks), foundation models, as well ensemble models (depending on their ensemble model and / or the forecasting models they ensemble).
 
 ----
 
@@ -287,6 +287,10 @@ GFMs are models that can be trained on multiple target (and covariate) time seri
      - ✅
      - ✅
      - ✅
+   * - `Chronos2Model <https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html#darts.models.forecasting.chronos2_model.Chronos2Model>`_
+     - ✅
+     - ✅
+     - 
    * - Ensemble Models (g)
      - ✅
      - ✅

@@ -1,3 +1,0 @@
-.. automodule:: darts.models.filtering.filtering_model
-   :members:
-   :undoc-members:

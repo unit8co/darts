@@ -1,465 +1,494 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Torch Forecasting Models &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'userguide/torch_forecasting_models';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Using Torch Models with GPUs and TPUs" href="gpu_and_tpu_usage.html" />
     <link rel="prev" title="Overview of Forecasting Models" href="forecasting_overview.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
-</div>
-    </nav>
-    
-
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="current nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="timeseries.html">
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     TimeSeries
-    </span>
-   </code>
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="forecasting_overview.html">
-   Overview of Forecasting Models
-  </a>
- </li>
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   Torch Forecasting Models
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="gpu_and_tpu_usage.html">
-   Using Torch Models with GPUs and TPUs
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="covariates.html">
-   Covariates
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="hyperparameter_optimization.html">
-   Hyperparameter Optimization in Darts
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="faq.html">
-   Frequently Asked Questions
-  </a>
- </li>
-</ul>
-
-  </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
 
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#content-of-this-guide">
-   Content of this guide
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#introduction">
-   Introduction
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#top-level-look-at-training-and-predicting-with-chunks">
-   Top level look at training and predicting with chunks
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#torch-forecasting-model-covariates-support">
-   Torch Forecasting Model Covariates Support
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#required-target-time-spans-for-training-validation-and-prediction">
-   Required target time spans for training, validation and prediction
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms">
-   In-depth look at how input data is used when training and predicting with TFMs
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#training">
-     Training
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#training-with-a-validation-dataset">
-     Training with a validation dataset
-    </a>
-   </li>
+</li>
+
   </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#id4">
-   Forecast/Prediction
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#advanced-functionnalities">
-   Advanced Functionnalities
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
   </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#saving-and-loading-model-states">
-     Saving and Loading Model States
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#automatic-checkpointing">
-       Automatic checkpointing
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#id9">
-       Manual saving / loading
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#training-saving-on-gpu-and-loading-on-cpu">
-       Training/Saving on GPU and loading on CPU
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#re-training-or-fine-tuning-a-pre-trained-model">
-       Re-training or fine-tuning a pre-trained model
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#id10">
-       Exporting model to ONNX format for inference
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#id11">
-     Callbacks
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#example-with-early-stopping">
-       Example with Early Stopping
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#example-of-custom-callback-to-store-losses">
-       Example of custom callback to store losses
-      </a>
-     </li>
-    </ul>
-   </li>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
   </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#performance-recommendations">
-   Performance Recommendations
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#build-your-timeseries-using-32-bits-data">
-     Build your
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       TimeSeries
-      </span>
-     </code>
-     using 32-bits data
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#use-a-gpu">
-     Use a GPU
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#tune-the-batch-size">
-     Tune the batch size
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#tune-num-loader-workers">
-     Tune
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       num_loader_workers
-      </span>
-     </code>
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#small-models-first">
-     Small models first
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#data-in-memory-and-i-o-bottlenecks">
-     Data in Memory and I/O bottlenecks
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#do-not-use-all-possible-sub-series-for-training">
-     Do not use
-     <em>
-      all
-     </em>
-     possible sub-series for training
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#example-benchmark">
-     Example Benchmark
-    </a>
-   </li>
-  </ul>
- </li>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="timeseries.html"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="forecasting_overview.html">Overview of Forecasting Models</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Torch Forecasting Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gpu_and_tpu_usage.html">Using Torch Models with GPUs and TPUs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="covariates.html">Covariates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hyperparameter_optimization.html">Hyperparameter Optimization in Darts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 </ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
 
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../userguide.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Torch Forecasting Models</span></li>
+  </ul>
 </nav>
-              </div>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
               
-              <div class="toc-item">
+              
+              
                 
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
   <section id="torch-forecasting-models">
-<h1>Torch Forecasting Models<a class="headerlink" href="#torch-forecasting-models" title="Permalink to this heading">¶</a></h1>
+<h1>Torch Forecasting Models<a class="headerlink" href="#torch-forecasting-models" title="Link to this heading">#</a></h1>
 <p>This document was written for darts version 0.15.0 and later.</p>
 <p>We assume that you already know about covariates in Darts. If you’re new to the topic we recommend you to read our <a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html">guide on covariates</a> first.</p>
 <section id="content-of-this-guide">
-<h2>Content of this guide<a class="headerlink" href="#content-of-this-guide" title="Permalink to this heading">¶</a></h2>
+<h2>Content of this guide<a class="headerlink" href="#content-of-this-guide" title="Link to this heading">#</a></h2>
 <ol class="arabic simple">
 <li><p>Introduction section covers the most important points about Torch Forecasting Models (TFMs):</p>
 <ul class="simple">
-<li><p><a class="reference external" href="#introduction">How to use TFMs</a></p></li>
-<li><p><a class="reference external" href="#top-level-look-at-training-and-predicting-with-chunks">Top-level look at chunks</a></p></li>
-<li><p><a class="reference external" href="#torch-forecasting-model-covariates-support">TFM covariates support</a></p></li>
-<li><p><a class="reference external" href="#required-target-time-spans-for-training-validation-and-prediction">Time span requirements for target and covariate series</a></p></li>
+<li><p><a class="reference internal" href="#introduction"><span class="std std-ref">How to use TFMs</span></a></p></li>
+<li><p><a class="reference internal" href="#top-level-look-at-training-and-predicting-with-chunks"><span class="std std-ref">Top-level look at chunks</span></a></p></li>
+<li><p><a class="reference internal" href="#torch-forecasting-model-covariates-support"><span class="std std-ref">TFM covariates support</span></a></p></li>
+<li><p><a class="reference internal" href="#required-target-time-spans-for-training-validation-and-prediction"><span class="std std-ref">Time span requirements for target and covariate series</span></a></p></li>
 </ul>
 </li>
 <li><p>Input data usage section gives an in-depth guide of how input data is used when training and predicting with TFMs:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="#training">Simple training</a></p></li>
-<li><p><a class="reference external" href="#training-with-a-validation-dataset">Training with validation set</a></p></li>
-<li><p><a class="reference external" href="#forecastprediction">Forecast / Prediction</a></p></li>
+<li><p><a class="reference internal" href="#training"><span class="std std-ref">Simple training</span></a></p></li>
+<li><p><a class="reference internal" href="#training-with-a-validation-dataset"><span class="std std-ref">Training with validation set</span></a></p></li>
+<li><p><a class="reference internal" href="#forecasting"><span class="std std-ref">Forecast and prediction</span></a></p></li>
 </ul>
 </li>
 <li><p>Advanced functionalities section provides some example of TFMs advanced features:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="#saving-and-loading-model-states">Model saving and loading</a></p>
+<li><p><a class="reference internal" href="#saving-and-loading-model-states"><span class="std std-ref">Model saving and loading</span></a></p>
 <ul>
-<li><p><a class="reference external" href="#automatic-checkpointing">Checkpoint saving / loading</a></p></li>
-<li><p><a class="reference external" href="#manual-saving--loading">Manual saving / loading</a></p></li>
-<li><p><a class="reference external" href="#trainingsaving-on-gpu-and-loading-on-cpu">Train &amp; save on GPU, load on CPU</a></p></li>
-<li><p><a class="reference external" href="#re-training-or-fine-tuning-a-pre-trained-model">Load pre-trained model for fine-tuning</a></p></li>
-<li><p><a class="reference external" href="#exporting-model-to-ONNX-format-for-inference">Exporting model to ONNX format for inference</a></p></li>
+<li><p><a class="reference internal" href="#automatic-checkpointing"><span class="std std-ref">Checkpoint saving and loading</span></a></p></li>
+<li><p><a class="reference internal" href="#manual-saving-and-loading"><span class="std std-ref">Manual model saving and loading</span></a></p></li>
+<li><p><a class="reference internal" href="#training-and-saving-on-gpu-loading-on-cpu"><span class="std std-ref">GPU training and CPU loading</span></a></p></li>
+<li><p><a class="reference internal" href="#re-training-or-fine-tuning-a-pre-trained-model"><span class="std std-ref">Load pre-trained model for fine-tuning</span></a></p></li>
+<li><p><a class="reference internal" href="#exporting-model-to-onnx-format-for-inference"><span class="std std-ref">ONNX export for inference</span></a></p></li>
 </ul>
 </li>
-<li><p><a class="reference external" href="#callbacks">Callbacks</a></p>
+<li><p><a class="reference internal" href="#callbacks"><span class="std std-ref">Using callbacks</span></a></p>
 <ul>
-<li><p><a class="reference external" href="#example-with-early-stopping">Early Stopping</a></p></li>
-<li><p><a class="reference external" href="#example-of-custom-callback-to-store-losses">Custom Callback</a></p></li>
+<li><p><a class="reference internal" href="#example-with-early-stopping"><span class="std std-ref">Early Stopping</span></a></p></li>
+<li><p><a class="reference internal" href="#example-of-custom-callback-to-store-losses"><span class="std std-ref">Custom Callback</span></a></p></li>
 </ul>
 </li>
 </ul>
 </li>
-<li><p><a class="reference external" href="#performance-recommendations">Performance optimization section</a> lists tricks to speed up the computation during training.</p></li>
+<li><p><a class="reference internal" href="#performance-recommendations"><span class="std std-ref">Performance optimization section</span></a> lists tricks to speed up the computation during training.</p></li>
 </ol>
 </section>
 <section id="introduction">
-<h2>Introduction<a class="headerlink" href="#introduction" title="Permalink to this heading">¶</a></h2>
+<h2>Introduction<a class="headerlink" href="#introduction" title="Link to this heading">#</a></h2>
 <p>In Darts, <strong>Torch Forecasting Models (TFMs)</strong> are broadly speaking “machine learning based” models, which denote PyTorch-based (deep learning) models.</p>
 <p>TFMs train and predict on fixed-length chunks (sub-samples) of your input <code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> series (if supported). <code class="docutils literal notranslate"><span class="pre">Target</span></code> is the series for which we want to predict the future, <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> are the past and / or future covariates.</p>
-<p>Each chunk contains an input chunk - representing the sample’s past - and an output chunk - the sample’s future. The sample’s prediction point lies at the end of the input chunk. The length of these chunks has to be specified at model creation with parameters <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (more on chunks in <a class="reference external" href="#top-level-look-at-training-and-predicting-with-chunks">the next subsection</a>).</p>
+<p>Each chunk contains an input chunk - representing the sample’s past - and an output chunk - the sample’s future. The sample’s prediction point lies at the end of the input chunk. The length of these chunks has to be specified at model creation with parameters <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (more on chunks in <a class="reference internal" href="#top-level-look-at-training-and-predicting-with-chunks"><span class="std std-ref">the next subsection</span></a>).</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># model that looks 7 time steps back (past) and 1 time step ahead (future)</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span>
                                   <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                                   <span class="o">**</span><span class="n">model_kwargs</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>All TFMs can be trained on single or multiple <code class="docutils literal notranslate"><span class="pre">target</span></code> series and, depending on their covariate support (covered in <a class="reference external" href="#torch-forecasting-model-covariates-support">this subsection</a>), <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and / or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.</p>
-<p>Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in <a class="reference external" href="#required-target-time-spans-for-training-validation-and-prediction">this subsection</a>)</p>
+<p>All TFMs can be trained on single or multiple <code class="docutils literal notranslate"><span class="pre">target</span></code> series and, depending on their covariate support (covered in <a class="reference internal" href="#torch-forecasting-model-covariates-support"><span class="std std-ref">this subsection on covariates support</span></a>), <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and / or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.</p>
+<p>Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in <a class="reference internal" href="#required-target-time-spans-for-training-validation-and-prediction"><span class="std std-ref">this subsection on time span requirements</span></a>)</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># fit the model on a single target series with optional past and / or future covariates</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target</span><span class="p">,</span>
           <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -486,25 +515,19 @@
 <p>If you want to know more about the training and prediction process of our Torch Forecasting Models and how they work with covariates, read on.</p>
 </section>
 <section id="top-level-look-at-training-and-predicting-with-chunks">
-<h2>Top level look at training and predicting with chunks<a class="headerlink" href="#top-level-look-at-training-and-predicting-with-chunks" title="Permalink to this heading">¶</a></h2>
+<h2>Top level look at training and predicting with chunks<a class="headerlink" href="#top-level-look-at-training-and-predicting-with-chunks" title="Link to this heading">#</a></h2>
 <p>In Figure 1 you can see how your data is distributed to the input and output chunks for each sample when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> or <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. For this example we look at data with daily frequency. The input chunk extracts values from <code class="docutils literal notranslate"><span class="pre">target</span></code> and optionally from <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and / or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> that fall into the input chunk time span. These “past” values of <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> are called “historic future covariates”.</p>
 <p>The output chunk only takes optional <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> values that fall into the output chunk time span. The future values of our <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> - “future past covariates” - are only used to provide the input chunk of upcoming samples with new data.</p>
 <p>All this information is used to predict the “future target” - the next <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> points after the end of “past target”.</p>
-<a class="reference external image-reference" href="./images/covariates/tfm.png"><img alt="figure0" src="../_images/tfm.png" /></a>
+<a class="reference external image-reference" href="./images/covariates/tfm.png"><img alt="figure0" src="../_images/tfm.png" />
+</a>
 <p><strong>Figure 1: Top level look at training / predicting on chunks with Torch Forecasting Models</strong></p>
 <p>When calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code> and depending on your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code>, the model can either predict in one go (if <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&lt;=</span> <span class="pre">output_chunk_length</span></code>), or auto-regressively, by predicting on multiple chunks in the future (if <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>). That is the reason why when predicting with <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> you might have to supply additional “future values of your <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>“.</p>
 </section>
 <section id="torch-forecasting-model-covariates-support">
-<h2>Torch Forecasting Model Covariates Support<a class="headerlink" href="#torch-forecasting-model-covariates-support" title="Permalink to this heading">¶</a></h2>
+<h2>Torch Forecasting Model Covariates Support<a class="headerlink" href="#torch-forecasting-model-covariates-support" title="Link to this heading">#</a></h2>
 <p>Under the hood, Darts has 5 types of <code class="docutils literal notranslate"><span class="pre">{X}CovariatesModel</span></code> classes implemented to cover different combinations of the covariate types mentioned before:</p>
-<table class="table">
-<colgroup>
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-</colgroup>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Class</p></th>
 <th class="head"><p>past covariates</p></th>
@@ -546,17 +569,10 @@
 </tr>
 </tbody>
 </table>
+</div>
 <p><strong>Table 1: Darts’ “{X}CovariatesModels” covariate support</strong></p>
 <p>Each Torch Forecasting Model inherits from one <code class="docutils literal notranslate"><span class="pre">{X}CovariatesModel</span></code> (covariate class names are abbreviated by the <code class="docutils literal notranslate"><span class="pre">X</span></code>-part):</p>
-<table class="table">
-<colgroup>
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-</colgroup>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>TFM</p></th>
 <th class="head"><p><code class="docutils literal notranslate"><span class="pre">Past</span></code></p></th>
@@ -639,10 +655,11 @@
 </tr>
 </tbody>
 </table>
+</div>
 <p><strong>Table 2: Darts’ Torch Forecasting Model covariate support</strong></p>
 </section>
 <section id="required-target-time-spans-for-training-validation-and-prediction">
-<h2>Required target time spans for training, validation and prediction<a class="headerlink" href="#required-target-time-spans-for-training-validation-and-prediction" title="Permalink to this heading">¶</a></h2>
+<h2>Required target time spans for training, validation and prediction<a class="headerlink" href="#required-target-time-spans-for-training-validation-and-prediction" title="Link to this heading">#</a></h2>
 <p>The relevant data is extracted automatically by the models, based on the time axes of the series.
 You can use the same covariates series for both <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> if they meet the requirements below.</p>
 <p><strong>Training</strong> only works if at least one sample with an input and output chunk can be extracted from the data you passed to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>. This applies both to training and validation data. In terms of minimum required time spans, this means:</p>
@@ -658,9 +675,9 @@ You can use the same covariates series for both <code class="docutils literal no
 <p>Side note: Our <code class="docutils literal notranslate"><span class="pre">*RNNModels</span></code> accept a <code class="docutils literal notranslate"><span class="pre">training_length</span></code> parameter at model creation instead of <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>. Internally the <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> for these models is automatically set to <code class="docutils literal notranslate"><span class="pre">1</span></code>. For training, past <code class="docutils literal notranslate"><span class="pre">target</span></code> must have a minimum length of <code class="docutils literal notranslate"><span class="pre">training_length</span> <span class="pre">+</span> <span class="pre">1</span></code> and for prediction, a length of <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code>.</p>
 </section>
 <section id="in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms">
-<h2>In-depth look at how input data is used when training and predicting with TFMs<a class="headerlink" href="#in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms" title="Permalink to this heading">¶</a></h2>
+<h2>In-depth look at how input data is used when training and predicting with TFMs<a class="headerlink" href="#in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms" title="Link to this heading">#</a></h2>
 <section id="training">
-<h3>Training<a class="headerlink" href="#training" title="Permalink to this heading">¶</a></h3>
+<h3>Training<a class="headerlink" href="#training" title="Link to this heading">#</a></h3>
 <p>Let’s have a look at how the models work under the hood.</p>
 <p>Let’s assume we run an ice-cream shop and we want to predict sales for the next day.
 We have one year (365 days) past data of our end-of-day ice-cream sales and of the average measured daily ambient temperature.
@@ -686,11 +703,13 @@ The <code class="docutils literal notranslate"><span class="pre">output_chunk_le
           <span class="n">future_covariates</span><span class="o">=</span><span class="n">weekday</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/covariates/seq_covs_single.png"><img alt="figure4" src="../_images/seq_covs_single.png" /></a>
+<a class="reference external image-reference" href="./images/covariates/seq_covs_single.png"><img alt="figure4" src="../_images/seq_covs_single.png" />
+</a>
 <p><strong>Figure 2: Overview of a single sequence from our ice-cream sales example</strong>; Mon1 - Sun1 stand for the first 7 days from our training dataset (week 1 of the year). Mon2 is the Monday of week 2.</p>
 <p>When calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, the models will build an appropriate <code class="docutils literal notranslate"><span class="pre">darts.utils.data.TorchTrainingDataset</span></code>, which specifies how to slice the data to obtain training samples. If you want to control this slicing yourself, you can instantiate your own <code class="docutils literal notranslate"><span class="pre">TorchTrainingDataset</span></code> and call <code class="docutils literal notranslate"><span class="pre">model.fit_from_dataset()</span></code> instead of <code class="docutils literal notranslate"><span class="pre">fit()</span></code>. By default, most models (though not all) will build <em>sequential</em> datasets, which basically means that all sub-slices of length <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span> <span class="pre">+</span> <span class="pre">output_chunk_length</span></code> in the provided series will be used for training.</p>
 <p>So during training, the torch models will go through the training data in sequences (see Figure 3). Using information from the <strong>input chunk</strong> and <strong>output chunk</strong>, the model predicts the future target on the output chunk. The training loss is evaluated between the predicted future target and the actual target value on the output chunk. The model trains itself by minimizing the loss over all sequences.</p>
-<a class="reference external image-reference" href="./images/covariates/seq_covs_1.png"><img alt="figure5" src="../_images/seq_covs_1.png" /></a>
+<a class="reference external image-reference" href="./images/covariates/seq_covs_1.png"><img alt="figure5" src="../_images/seq_covs_1.png" />
+</a>
 <p><strong>Figure 3: Prediction and loss evaluation in a single sequence</strong></p>
 <p>After having completed computations on the first sequence, the model moves to the next one and performs the same training steps. <em>The starting point of each sequence is selected randomly from the sequential dataset</em>. Figure 4 shows how this would look like if by pure chance the second sequence started one time step (day) after the first.</p>
 <p>This sequence-to-sequence process is repeated until all 365 days were covered.</p>
@@ -699,11 +718,12 @@ The <code class="docutils literal notranslate"><span class="pre">output_chunk_le
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/covariates/sequential_training.png"><img alt="figure6" src="../_images/sequential_training.png" /></a>
+<a class="reference external image-reference" href="./images/covariates/sequential_training.png"><img alt="figure6" src="../_images/sequential_training.png" />
+</a>
 <p><strong>Figure 4: Sequence-to-sequence: Move to next sequence and repeat training steps</strong></p>
 </section>
 <section id="training-with-a-validation-dataset">
-<h3>Training with a validation dataset<a class="headerlink" href="#training-with-a-validation-dataset" title="Permalink to this heading">¶</a></h3>
+<h3>Training with a validation dataset<a class="headerlink" href="#training-with-a-validation-dataset" title="Link to this heading">#</a></h3>
 <p>You can also train your models with a validation dataset:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># create train and validation sets</span>
 <span class="n">ice_cream_sales_train</span><span class="p">,</span> <span class="n">ice_cream_sales_val</span> <span class="o">=</span> <span class="n">ice_cream_sales</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">training_cutoff</span><span class="p">)</span>
@@ -718,13 +738,13 @@ The <code class="docutils literal notranslate"><span class="pre">output_chunk_le
 </pre></div>
 </div>
 <p>If you split your data, you have to define a <code class="docutils literal notranslate"><span class="pre">training_cutoff</span></code> (a date or fraction at which to split the dataset) so that both the train and validation datasets satisfy the minimum length requirements
-from <a class="reference external" href="#required-target-time-spans-for-training-validation-and-prediction">this subsection</a></p>
+from <a class="reference internal" href="#required-target-time-spans-for-training-validation-and-prediction"><span class="std std-ref">this subsection on time span requirements</span></a></p>
 <p>Instead of splitting by time, you can also use another subset of time series as validation set.</p>
 <p>The model trains itself the same way as before but additionally evaluates the loss on the validation dataset. If you want to keep track of the best performing model on the validation set, you have to enable checkpoint saving as shown next.</p>
 </section>
 </section>
-<section id="id4">
-<h2>Forecast/Prediction<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h2>
+<section id="forecasting">
+<h2>Forecasting<a class="headerlink" href="#forecasting" title="Link to this heading">#</a></h2>
 <p>After having trained the model, we want to predict the future ice-cream sales for any number of days after our 365 days training data.</p>
 <p>The actual prediction works very similar to how we trained the data on sequences. Depending on the number of days we want to predict - the forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> - we distinguish between two cases:</p>
 <ul>
@@ -749,19 +769,21 @@ from <a class="reference external" href="#required-target-time-spans-for-trainin
                            <span class="n">future_covariates</span><span class="o">=</span><span class="n">weekday</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/covariates/prediction_once.png"><img alt="figure7" src="../_images/prediction_once.png" /></a>
-<p><a href="#id5"><span class="problematic" id="id6">**</span></a>Figure 5: Forecast with a single sequence for <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&lt;=</span> <span class="pre">output_chunk_length</span></code>**</p>
-<a class="reference external image-reference" href="./images/covariates/prediction_multi.png"><img alt="figure8" src="../_images/prediction_multi.png" /></a>
-<p><a href="#id7"><span class="problematic" id="id8">**</span></a>Figure 6: Auto-regressive forecast for <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>**</p>
+<a class="reference external image-reference" href="./images/covariates/prediction_once.png"><img alt="figure7" src="../_images/prediction_once.png" />
+</a>
+<p><strong>Figure 5: Forecast with a single sequence for n &lt;= output_chunk_length</strong></p>
+<a class="reference external image-reference" href="./images/covariates/prediction_multi.png"><img alt="figure8" src="../_images/prediction_multi.png" />
+</a>
+<p><strong>Figure 6: Auto-regressive forecast for n &gt; output_chunk_length</strong></p>
 </section>
 <section id="advanced-functionnalities">
-<h2>Advanced Functionnalities<a class="headerlink" href="#advanced-functionnalities" title="Permalink to this heading">¶</a></h2>
+<h2>Advanced Functionnalities<a class="headerlink" href="#advanced-functionnalities" title="Link to this heading">#</a></h2>
 <section id="saving-and-loading-model-states">
-<h3>Saving and Loading Model States<a class="headerlink" href="#saving-and-loading-model-states" title="Permalink to this heading">¶</a></h3>
+<h3>Saving and Loading Model States<a class="headerlink" href="#saving-and-loading-model-states" title="Link to this heading">#</a></h3>
 <p>❗ Warning ❗ At this stage of Darts development, we are not (yet) ensuring backward compatibility, so it might not always be possible to load a model saved by an older version of the library.</p>
 <p>For models trained on GPU with versions of Darts &lt;= 0.22.0 that need to be loaded on CPU with a version of Darts &gt;= 0.23.0, please look at the code snipped provided in this <a class="reference external" href="https://github.com/unit8co/darts/issues/1245">issue</a>.</p>
 <section id="automatic-checkpointing">
-<h4>Automatic checkpointing<a class="headerlink" href="#automatic-checkpointing" title="Permalink to this heading">¶</a></h4>
+<h4>Automatic checkpointing<a class="headerlink" href="#automatic-checkpointing" title="Link to this heading">#</a></h4>
 <p>Automic checkpointing during training allows you to:</p>
 <ul class="simple">
 <li><p>keep track of the model state over the latest 5 epochs, and the best performing epoch based on the validation set loss</p></li>
@@ -779,16 +801,16 @@ from <a class="reference external" href="#required-target-time-spans-for-trainin
 </pre></div>
 </div>
 </section>
-<section id="id9">
-<h4>Manual saving / loading<a class="headerlink" href="#id9" title="Permalink to this heading">¶</a></h4>
+<section id="manual-saving-and-loading">
+<h4>Manual saving and loading<a class="headerlink" href="#manual-saving-and-loading" title="Link to this heading">#</a></h4>
 <p>You can also manually save the model at its current state and load it:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;/your/path/to/save/model.pt&quot;</span><span class="p">)</span>
 <span class="n">loaded_model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;/your/path/to/save/model.pt&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
-<section id="training-saving-on-gpu-and-loading-on-cpu">
-<h4>Training/Saving on GPU and loading on CPU<a class="headerlink" href="#training-saving-on-gpu-and-loading-on-cpu" title="Permalink to this heading">¶</a></h4>
+<section id="training-and-saving-on-gpu-loading-on-cpu">
+<h4>Training and saving on GPU, loading on CPU<a class="headerlink" href="#training-and-saving-on-gpu-loading-on-cpu" title="Link to this heading">#</a></h4>
 <p>You can load a model to CPU that was trained and saved on GPU (see detailed <a class="reference external" href="https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html">documentation</a>):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># define a model using gpu as accelerator</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span>
@@ -820,7 +842,7 @@ from <a class="reference external" href="#required-target-time-spans-for-trainin
 </div>
 </section>
 <section id="re-training-or-fine-tuning-a-pre-trained-model">
-<h4>Re-training or fine-tuning a pre-trained model<a class="headerlink" href="#re-training-or-fine-tuning-a-pre-trained-model" title="Permalink to this heading">¶</a></h4>
+<h4>Re-training or fine-tuning a pre-trained model<a class="headerlink" href="#re-training-or-fine-tuning-a-pre-trained-model" title="Link to this heading">#</a></h4>
 <p>To re-train or fine-tune a model using a different optimizer and/or learning rate scheduler, you can load the weights from the automatic checkpoints into a new model:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># model with identical architecture but different optimizer (default: torch.optim.Adam)</span>
 <span class="n">model_finetune</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span>  <span class="c1"># use identical parameters &amp; values as in original model</span>
@@ -844,8 +866,8 @@ from <a class="reference external" href="#required-target-time-spans-for-trainin
 </pre></div>
 </div>
 </section>
-<section id="id10">
-<h4>Exporting model to ONNX format for inference<a class="headerlink" href="#id10" title="Permalink to this heading">¶</a></h4>
+<section id="exporting-model-to-onnx-format-for-inference">
+<h4>Exporting model to ONNX format for inference<a class="headerlink" href="#exporting-model-to-onnx-format-for-inference" title="Link to this heading">#</a></h4>
 <p>It is also possible to export the model weights to the ONNX format to run inference in a lightweight environment. The example below works for any <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> except <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> and for optional usage of past, future and / or static covariates. Note that all series and covariates must extend far enough into the past (<code class="docutils literal notranslate"><span class="pre">input_chunk_length)</span></code> and future (<code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>) relative to the end of the target <code class="docutils literal notranslate"><span class="pre">series</span></code>. It will not be possible to forecast a horizon <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code> without implementing the auto-regression logic.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
@@ -887,8 +909,8 @@ from <a class="reference external" href="#required-target-time-spans-for-trainin
 </div>
 </section>
 </section>
-<section id="id11">
-<h3>Callbacks<a class="headerlink" href="#id11" title="Permalink to this heading">¶</a></h3>
+<section id="callbacks">
+<h3>Callbacks<a class="headerlink" href="#callbacks" title="Link to this heading">#</a></h3>
 <p>Callbacks are a powerful way to monitor or control the behavior of the model during the training process. Some examples:</p>
 <ul class="simple">
 <li><p>Performance Monitoring: compute additional metrics (in addition of the default losses)</p></li>
@@ -904,7 +926,7 @@ The code is triggered once the process execution reaches the corresponding hooks
 </ul>
 <p>Some useful predefined PyTorch Lightning callbacks can be found <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/extensions/callbacks.html#built-in-callbacks">here</a>.</p>
 <section id="example-with-early-stopping">
-<h4>Example with Early Stopping<a class="headerlink" href="#example-with-early-stopping" title="Permalink to this heading">¶</a></h4>
+<h4>Example with Early Stopping<a class="headerlink" href="#example-with-early-stopping" title="Link to this heading">#</a></h4>
 <p>Early stopping is an efficient way to avoid overfitting and reduce training time.
 It will exit the training process once the validation loss has not significantly improved over some epochs.</p>
 <p>You can use Early Stopping with any <code class="docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>, leveraging PyTorch Lightning’s <a class="reference external" href="https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.EarlyStopping.html#lightning.pytorch.callbacks.EarlyStopping">EarlyStopping</a> callback:</p>
@@ -957,7 +979,7 @@ It will exit the training process once the validation loss has not significantly
 <p>To use early-stopping and pruning in the context of hyperparameter optimization, check out <a class="reference external" href="https://unit8co.github.io/darts/userguide/hyperparameter_optimization.html">this guide</a>.</p>
 </section>
 <section id="example-of-custom-callback-to-store-losses">
-<h4>Example of custom callback to store losses<a class="headerlink" href="#example-of-custom-callback-to-store-losses" title="Permalink to this heading">¶</a></h4>
+<h4>Example of custom callback to store losses<a class="headerlink" href="#example-of-custom-callback-to-store-losses" title="Link to this heading">#</a></h4>
 <p>Training and validation loss can be automatically logged with <a class="reference external" href="https://www.tensorflow.org/tensorboard">tensorboard</a>. When activated, Darts will by default store the logs to a folder <code class="docutils literal notranslate"><span class="pre">darts_logs</span></code> in the current working directory. You can change this with model parameters <code class="docutils literal notranslate"><span class="pre">work_dir</span></code>, and <code class="docutils literal notranslate"><span class="pre">model_name</span></code>.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">log_tensorboad</span><span class="p">,</span> <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
@@ -1000,18 +1022,18 @@ It will exit the training process once the validation loss has not significantly
 </section>
 </section>
 <section id="performance-recommendations">
-<h2>Performance Recommendations<a class="headerlink" href="#performance-recommendations" title="Permalink to this heading">¶</a></h2>
+<h2>Performance Recommendations<a class="headerlink" href="#performance-recommendations" title="Link to this heading">#</a></h2>
 <p>This section recaps the main factors impacting the performance when
 training and using torch-based models.</p>
 <section id="build-your-timeseries-using-32-bits-data">
-<h3>Build your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> using 32-bits data<a class="headerlink" href="#build-your-timeseries-using-32-bits-data" title="Permalink to this heading">¶</a></h3>
+<h3>Build your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> using 32-bits data<a class="headerlink" href="#build-your-timeseries-using-32-bits-data" title="Link to this heading">#</a></h3>
 <p>The models in Darts will dynamically cast themselves (to 64 or 32-bits)
 to follow the dtype in the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Large performance and memory gains
 can often be obtained when everything (data and model) is in float32.
 To achieve this, it is enough to build your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> from arrays (or Dataframe-backing array) having dtype <code class="docutils literal notranslate"><span class="pre">np.float32</span></code>, or simply call <code class="docutils literal notranslate"><span class="pre">my_series32</span> <span class="pre">=</span> <span class="pre">my_series.astype(np.float32)</span></code>. Calling <code class="docutils literal notranslate"><span class="pre">my_series.dtype</span></code> gives you the dtype of your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
 </section>
 <section id="use-a-gpu">
-<h3>Use a GPU<a class="headerlink" href="#use-a-gpu" title="Permalink to this heading">¶</a></h3>
+<h3>Use a GPU<a class="headerlink" href="#use-a-gpu" title="Link to this heading">#</a></h3>
 <p>In many cases using a GPU will provide a drastic speedup compared to CPU.
 It can also incur some overheads (for transferring data to/from the GPU),
 so some testing and tuning is often necessary.
@@ -1019,30 +1041,30 @@ We refer to our <a class="reference external" href="https://unit8co.github.io/da
 for more information on how to setup a GPU (or a TPU) via PyTorch Lightning.</p>
 </section>
 <section id="tune-the-batch-size">
-<h3>Tune the batch size<a class="headerlink" href="#tune-the-batch-size" title="Permalink to this heading">¶</a></h3>
+<h3>Tune the batch size<a class="headerlink" href="#tune-the-batch-size" title="Link to this heading">#</a></h3>
 <p>A larger batch size tends to speed up the training because it reduces the number
 of backward passes per epoch and has the potential to better parallelize computation. However it also changes the training dynamics (e.g. you might need more epochs, and the convergence dynamics is affected). Furthermore larger batch sizes increase memory consumption. So here too some testing is required.</p>
 </section>
 <section id="tune-num-loader-workers">
-<h3>Tune <code class="docutils literal notranslate"><span class="pre">num_loader_workers</span></code><a class="headerlink" href="#tune-num-loader-workers" title="Permalink to this heading">¶</a></h3>
+<h3>Tune <code class="docutils literal notranslate"><span class="pre">num_loader_workers</span></code><a class="headerlink" href="#tune-num-loader-workers" title="Link to this heading">#</a></h3>
 <p>All deep learning models in Darts have a parameter <code class="docutils literal notranslate"><span class="pre">dataloader_kwargs</span></code> in their <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions, which configures the PyTorch DataLoaders. The <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> parameter for PyTorch DataLoaders can be set using the <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> key in the <code class="docutils literal notranslate"><span class="pre">dataloader_kwargs</span></code> dictionary.
 Setting <code class="docutils literal notranslate"><span class="pre">num_workers</span> <span class="pre">&gt;</span> <span class="pre">0</span></code> will use additional workers to load the data. This typically incurs some overhead (notably increasing memory consumption), but in some cases it can also substantially improve performance.
 The ideal value depends on many factors such as the batch size, whether you are using a GPU, the number of CPU cores available, and whether
 loading the data involved I/O operations (if the series are stored on disk).</p>
 </section>
 <section id="small-models-first">
-<h3>Small models first<a class="headerlink" href="#small-models-first" title="Permalink to this heading">¶</a></h3>
+<h3>Small models first<a class="headerlink" href="#small-models-first" title="Link to this heading">#</a></h3>
 <p>Of course one of the main factors affecting performance is the model size
 (number of parameters) and the number of operations required by forward/backward passes. Models in Darts can be tuned (e.g. number of layers, attention heads, widths etc), and these hyper-parameters tend to have a large impact on performance. When starting out, it is a good idea to build models of modest size first.</p>
 </section>
 <section id="data-in-memory-and-i-o-bottlenecks">
-<h3>Data in Memory and I/O bottlenecks<a class="headerlink" href="#data-in-memory-and-i-o-bottlenecks" title="Permalink to this heading">¶</a></h3>
+<h3>Data in Memory and I/O bottlenecks<a class="headerlink" href="#data-in-memory-and-i-o-bottlenecks" title="Link to this heading">#</a></h3>
 <p>It’s helpful to load all your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> in memory upfront if you can.
 Darts offers the possibility to train models on any <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code>,
 which means that for big datasets, you can write your own <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> implementation, and read the time series lazily from disk. This will typically incur a high I/O cost, though. So when training on multiple series, first try to build a simple <code class="docutils literal notranslate"><span class="pre">List[TimeSeries]</span></code> upfront, and see if it holds in the computer memory.</p>
 </section>
 <section id="do-not-use-all-possible-sub-series-for-training">
-<h3>Do not use <em>all</em> possible sub-series for training<a class="headerlink" href="#do-not-use-all-possible-sub-series-for-training" title="Permalink to this heading">¶</a></h3>
+<h3>Do not use <em>all</em> possible sub-series for training<a class="headerlink" href="#do-not-use-all-possible-sub-series-for-training" title="Link to this heading">#</a></h3>
 <p>By default, when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, the models in Darts will build a <code class="docutils literal notranslate"><span class="pre">TorchTrainingDataset</span></code> instance that is
 suitable for the model that you are using (e.g., <code class="docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code>, <code class="docutils literal notranslate"><span class="pre">FutureCovariatesTorchModel</span></code>, etc.).
 By default, these training datasets will often contain <em>all</em> possible consecutive (input, output) subseries present
@@ -1058,19 +1080,10 @@ to see examples of how to do it.</p></li>
 </section>
 <hr class="docutils" />
 <section id="example-benchmark">
-<h3>Example Benchmark<a class="headerlink" href="#example-benchmark" title="Permalink to this heading">¶</a></h3>
+<h3>Example Benchmark<a class="headerlink" href="#example-benchmark" title="Link to this heading">#</a></h3>
 <p>As an example, we show here the time required to train one epoch on the first 80% of the energy dataset (<code class="docutils literal notranslate"><span class="pre">darts.datasets.EnergyDataset</span></code>), which consists of one multivariate series that is 28050 timesteps long and has 28 dimensions.
 We train two models; <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> and <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>, with default parameters and <code class="docutils literal notranslate"><span class="pre">input_chunk_length=48</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=12</span></code> (which results in 27991 training samples with default sequential training datasets). For the TFT model, we also set the parameter <code class="docutils literal notranslate"><span class="pre">add_cyclic_encoder='hour'</span></code>. The tests are made on a Intel CPU i9-10900K CPU &#64; 3.70GHz, with an Nvidia RTX 2080s GPU, 32 GB of RAM. All <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> are pre-loaded in memory and given to the models as a list.</p>
-<table class="table">
-<colgroup>
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
-<col style="width: 14%" />
-</colgroup>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Model</p></th>
 <th class="head"><p>Dataset</p></th>
@@ -1460,55 +1473,163 @@ We train two models; <code class="docutils literal notranslate"><span class="pre
 </tr>
 </tbody>
 </table>
+</div>
 </section>
 </section>
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="forecasting_overview.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Overview of Forecasting Models</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="forecasting_overview.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Overview of Forecasting Models</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="gpu_and_tpu_usage.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="gpu_and_tpu_usage.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Using Torch Models with GPUs and TPUs</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#content-of-this-guide">Content of this guide</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction">Introduction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#top-level-look-at-training-and-predicting-with-chunks">Top level look at training and predicting with chunks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#torch-forecasting-model-covariates-support">Torch Forecasting Model Covariates Support</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#required-target-time-spans-for-training-validation-and-prediction">Required target time spans for training, validation and prediction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms">In-depth look at how input data is used when training and predicting with TFMs</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#training">Training</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#training-with-a-validation-dataset">Training with a validation dataset</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#forecasting">Forecasting</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#advanced-functionnalities">Advanced Functionnalities</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#saving-and-loading-model-states">Saving and Loading Model States</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#automatic-checkpointing">Automatic checkpointing</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#manual-saving-and-loading">Manual saving and loading</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#training-and-saving-on-gpu-loading-on-cpu">Training and saving on GPU, loading on CPU</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#re-training-or-fine-tuning-a-pre-trained-model">Re-training or fine-tuning a pre-trained model</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#exporting-model-to-onnx-format-for-inference">Exporting model to ONNX format for inference</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#callbacks">Callbacks</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#example-with-early-stopping">Example with Early Stopping</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#example-of-custom-callback-to-store-losses">Example of custom callback to store losses</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#performance-recommendations">Performance Recommendations</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#build-your-timeseries-using-32-bits-data">Build your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> using 32-bits data</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#use-a-gpu">Use a GPU</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tune-the-batch-size">Tune the batch size</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#tune-num-loader-workers">Tune <code class="docutils literal notranslate"><span class="pre">num_loader_workers</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#small-models-first">Small models first</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#data-in-memory-and-i-o-bottlenecks">Data in Memory and I/O bottlenecks</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#do-not-use-all-possible-sub-series-for-training">Do not use <em>all</em> possible sub-series for training</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#example-benchmark">Example Benchmark</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/userguide/torch_forecasting_models.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

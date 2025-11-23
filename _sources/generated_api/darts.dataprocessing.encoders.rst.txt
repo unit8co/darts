@@ -1,11 +1,17 @@
+darts.dataprocessing.encoders
+=============================
+
+.. currentmodule:: darts.dataprocessing.encoders
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.dataprocessing.encoders.encoder_base
+   darts.dataprocessing.encoders.encoders
 
 
 
-.. automodule:: darts.dataprocessing.encoders
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.dataprocessing.encoders.encoder_base
-        darts.dataprocessing.encoders.encoders
+- :doc:`darts.dataprocessing.encoders.encoder_base <darts.dataprocessing.encoders.encoder_base>`
+- :doc:`darts.dataprocessing.encoders.encoders <darts.dataprocessing.encoders.encoders>`

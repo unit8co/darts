@@ -1,724 +1,527 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Data (pre) processing using DataTransformer and Pipeline &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/02-data-processing';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Static Covariates" href="15-static-covariates.html" />
     <link rel="prev" title="Multiple Time Series, Pre-trained Models and Covariates" href="01-multi-time-series-and-covariates.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-    </nav>
-    
 
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="01-multi-time-series-and-covariates.html">
-   Multiple Time Series, Pre-trained Models and Covariates
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   Data (pre) processing using
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     DataTransformer
-    </span>
-   </code>
-   and
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     Pipeline
-    </span>
-   </code>
-  </a>
- </li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="15-static-covariates.html">
-   Static Covariates
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="15-static-covariates.html">Static Covariates</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="14-transfer-learning.html">
-   Transfer Learning for Time Series Forecasting with Darts
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="14-transfer-learning.html">Transfer Learning for Time Series Forecasting with Darts</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="16-hierarchical-reconciliation.html">
-   Hierarchical Reconciliation - Example on the Australian Tourism Dataset
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="16-hierarchical-reconciliation.html">Hierarchical Reconciliation - Example on the Australian Tourism Dataset</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="17-hyperparameter-optimization.html">
-   Hyper-parameters Optimization for Electricity Load Forecasting
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="17-hyperparameter-optimization.html">Hyper-parameters Optimization for Electricity Load Forecasting</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="20-SKLearnModel-examples.html">
-   Regression Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="24-SKLearnClassifierModel-examples.html">
-   Classification Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="23-Conformal-Prediction-examples.html">
-   Conformal Prediction Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="03-FFT-examples.html">
-   Fast Fourier Transform Forecasting Model (FFT)
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="04-RNN-examples.html">
-   Recurrent Neural Networks Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="05-TCN-examples.html">
-   Temporal Convolutional Network
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="06-Transformer-examples.html">
-   Transformer Model
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="07-NBEATS-examples.html">
-   N-BEATS
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="08-DeepAR-examples.html">
-   Probabilistic RNN
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="09-DeepTCN-examples.html">
-   DeepTCN model
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="13-TFT-examples.html">
-   Temporal Fusion Transformer
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="18-TiDE-examples.html">
-   TimeSeries Deep Encoder
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="21-TSMixer-examples.html">
-   Time Series Mixer (TSMixer)
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="19-EnsembleModel-examples.html">
-   Ensembling Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="10-Kalman-filter-examples.html">
-   Filtering and predicting using the darts filters
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="11-GP-filter-examples.html">
-   Filtering and predicting using the Gaussian Process filter
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="22-anomaly-detection-examples.html">
-   Anomaly Detection Darts Module
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="12-Dynamic-Time-Warping-example.html">
-   Dynamic Time Warping (DTW)
-  </a>
- </li>
-</ul>
+<li class="toctree-l1"><a class="reference internal" href="20-SKLearnModel-examples.html">Regression Models</a></li>
 
-  </div>
-</nav>
-            </div>
-            
-          
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="24-SKLearnClassifierModel-examples.html">Classification Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="23-Conformal-Prediction-examples.html">Conformal Prediction Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="03-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="04-RNN-examples.html">Recurrent Neural Networks Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="05-TCN-examples.html">Temporal Convolutional Network</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="06-Transformer-examples.html">Transformer Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="07-NBEATS-examples.html">N-BEATS</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="08-DeepAR-examples.html">Probabilistic RNN</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="09-DeepTCN-examples.html">DeepTCN model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="13-TFT-examples.html">Temporal Fusion Transformer</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="18-TiDE-examples.html">TimeSeries Deep Encoder</a></li>
 
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="21-TSMixer-examples.html">Time Series Mixer (TSMixer)</a></li>
+
+
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="25-Chronos-2-examples.html">Chronos-2 Foundation Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="19-EnsembleModel-examples.html">Ensembling Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="10-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="11-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="22-anomaly-detection-examples.html">Anomaly Detection Darts Module</a></li>
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="12-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
+</ul>
 </div>
-
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#The-DataTransformer-abstraction">
-   The
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     DataTransformer
-    </span>
-   </code>
-   abstraction
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Setting-up-the-example">
-   Setting up the example
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Reading-the-data-and-creating-a-time-series">
-     Reading the data and creating a time series
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Using-a-transformer:-Rescaling-a-time-series-using-Scaler.">
-   Using a transformer: Rescaling a time series using
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     Scaler
-    </span>
-   </code>
-   .
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Another-example-:-MissingValuesFiller">
-   Another example :
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     MissingValuesFiller
-    </span>
-   </code>
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Mapper-and-InvertibleMapper:-A-special-kind-of-transformers">
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     Mapper
-    </span>
-   </code>
-   and
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     InvertibleMapper
-    </span>
-   </code>
-   : A special kind of transformers
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#More-complex-(and-useful)-transformations">
-     More complex (and useful) transformations
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Chaining-transformations-:-introducing-Pipeline">
-   Chaining transformations : introducing
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     Pipeline
-    </span>
-   </code>
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Processing-multiple-TimeSeries">
-   Processing multiple TimeSeries
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Monitoring-&amp;-parallelising-data-processing">
-   Monitoring &amp; parallelising data processing
-  </a>
- </li>
-</ul>
-
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+</nav></div>
+    </div>
   
-<style>
-/* CSS for nbsphinx extension */
-
-/* remove conflicting styling from Sphinx themes */
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt *,
-div.nbinput.container div.input_area pre,
-div.nboutput.container div.output_area pre,
-div.nbinput.container div.input_area .highlight,
-div.nboutput.container div.output_area .highlight {
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-}
-
-div.nbinput.container > div[class*=highlight],
-div.nboutput.container > div[class*=highlight] {
-    margin: 0;
-}
-
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt * {
-    background: none;
-}
-
-div.nboutput.container div.output_area .highlight,
-div.nboutput.container div.output_area pre {
-    background: unset;
-}
-
-div.nboutput.container div.output_area div.highlight {
-    color: unset;  /* override Pygments text color */
-}
-
-/* avoid gaps between output lines */
-div.nboutput.container div[class*=highlight] pre {
-    line-height: normal;
-}
-
-/* input/output containers */
-div.nbinput.container,
-div.nboutput.container {
-    display: -webkit-flex;
-    display: flex;
-    align-items: flex-start;
-    margin: 0;
-    width: 100%;
-}
-@media (max-width: 540px) {
-    div.nbinput.container,
-    div.nboutput.container {
-        flex-direction: column;
-    }
-}
-
-/* input container */
-div.nbinput.container {
-    padding-top: 5px;
-}
-
-/* last container */
-div.nblast.container {
-    padding-bottom: 5px;
-}
-
-/* input prompt */
-div.nbinput.container div.prompt pre {
-    color: #307FC1;
-}
-
-/* output prompt */
-div.nboutput.container div.prompt pre {
-    color: #BF5B3D;
-}
-
-/* all prompts */
-div.nbinput.container div.prompt,
-div.nboutput.container div.prompt {
-    width: 4.5ex;
-    padding-top: 5px;
-    position: relative;
-    user-select: none;
-}
-
-div.nbinput.container div.prompt > div,
-div.nboutput.container div.prompt > div {
-    position: absolute;
-    right: 0;
-    margin-right: 0.3ex;
-}
-
-@media (max-width: 540px) {
-    div.nbinput.container div.prompt,
-    div.nboutput.container div.prompt {
-        width: unset;
-        text-align: left;
-        padding: 0.4em;
-    }
-    div.nboutput.container div.prompt.empty {
-        padding: 0;
-    }
-
-    div.nbinput.container div.prompt > div,
-    div.nboutput.container div.prompt > div {
-        position: unset;
-    }
-}
-
-/* disable scrollbars on prompts */
-div.nbinput.container div.prompt pre,
-div.nboutput.container div.prompt pre {
-    overflow: hidden;
-}
-
-/* input/output area */
-div.nbinput.container div.input_area,
-div.nboutput.container div.output_area {
-    -webkit-flex: 1;
-    flex: 1;
-    overflow: auto;
-}
-@media (max-width: 540px) {
-    div.nbinput.container div.input_area,
-    div.nboutput.container div.output_area {
-        width: 100%;
-    }
-}
-
-/* input area */
-div.nbinput.container div.input_area {
-    border: 1px solid #e0e0e0;
-    border-radius: 2px;
-    /*background: #f5f5f5;*/
-}
-
-/* override MathJax center alignment in output cells */
-div.nboutput.container div[class*=MathJax] {
-    text-align: left !important;
-}
-
-/* override sphinx.ext.imgmath center alignment in output cells */
-div.nboutput.container div.math p {
-    text-align: left;
-}
-
-/* standard error */
-div.nboutput.container div.output_area.stderr {
-    background: #fdd;
-}
-
-/* ANSI colors */
-.ansi-black-fg { color: #3E424D; }
-.ansi-black-bg { background-color: #3E424D; }
-.ansi-black-intense-fg { color: #282C36; }
-.ansi-black-intense-bg { background-color: #282C36; }
-.ansi-red-fg { color: #E75C58; }
-.ansi-red-bg { background-color: #E75C58; }
-.ansi-red-intense-fg { color: #B22B31; }
-.ansi-red-intense-bg { background-color: #B22B31; }
-.ansi-green-fg { color: #00A250; }
-.ansi-green-bg { background-color: #00A250; }
-.ansi-green-intense-fg { color: #007427; }
-.ansi-green-intense-bg { background-color: #007427; }
-.ansi-yellow-fg { color: #DDB62B; }
-.ansi-yellow-bg { background-color: #DDB62B; }
-.ansi-yellow-intense-fg { color: #B27D12; }
-.ansi-yellow-intense-bg { background-color: #B27D12; }
-.ansi-blue-fg { color: #208FFB; }
-.ansi-blue-bg { background-color: #208FFB; }
-.ansi-blue-intense-fg { color: #0065CA; }
-.ansi-blue-intense-bg { background-color: #0065CA; }
-.ansi-magenta-fg { color: #D160C4; }
-.ansi-magenta-bg { background-color: #D160C4; }
-.ansi-magenta-intense-fg { color: #A03196; }
-.ansi-magenta-intense-bg { background-color: #A03196; }
-.ansi-cyan-fg { color: #60C6C8; }
-.ansi-cyan-bg { background-color: #60C6C8; }
-.ansi-cyan-intense-fg { color: #258F8F; }
-.ansi-cyan-intense-bg { background-color: #258F8F; }
-.ansi-white-fg { color: #C5C1B4; }
-.ansi-white-bg { background-color: #C5C1B4; }
-.ansi-white-intense-fg { color: #A1A6B2; }
-.ansi-white-intense-bg { background-color: #A1A6B2; }
-
-.ansi-default-inverse-fg { color: #FFFFFF; }
-.ansi-default-inverse-bg { background-color: #000000; }
-
-.ansi-bold { font-weight: bold; }
-.ansi-underline { text-decoration: underline; }
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
 
 
-div.nbinput.container div.input_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight].math,
-div.nboutput.container div.output_area.rendered_html,
-div.nboutput.container div.output_area > div.output_javascript,
-div.nboutput.container div.output_area:not(.rendered_html) > img{
-    padding: 5px;
-    margin: 0;
-}
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
 
-/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
-div.nbinput.container div.input_area > div[class^='highlight'],
-div.nboutput.container div.output_area > div[class^='highlight']{
-    overflow-y: hidden;
-}
-
-/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
-.prompt a.copybtn {
-    display: none;
-}
-
-/* Some additional styling taken form the Jupyter notebook CSS */
-div.rendered_html table {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: black;
-  font-size: 12px;
-  table-layout: fixed;
-}
-div.rendered_html thead {
-  border-bottom: 1px solid black;
-  vertical-align: bottom;
-}
-div.rendered_html tr,
-div.rendered_html th,
-div.rendered_html td {
-  text-align: right;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
-}
-div.rendered_html th {
-  font-weight: bold;
-}
-div.rendered_html tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-div.rendered_html tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
-</style>
-<section id="Data-(pre)-processing-using-DataTransformer-and-Pipeline">
-<h1>Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Data-(pre)-processing-using-DataTransformer-and-Pipeline" title="Permalink to this heading">¶</a></h1>
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Data-(pre)-processing-using-DataTransformer-and-Pipeline">
+<h1>Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Data-(pre)-processing-using-DataTransformer-and-Pipeline" title="Link to this heading">#</a></h1>
 <p>In this notebook, we will demonstrate how to perform some common preprocessing tasks using <code class="docutils literal notranslate"><span class="pre">darts</span></code></p>
 <p>As a toy example, we will use the <a class="reference external" href="https://www.kaggle.com/tejasgosavi/monthlymilkproductionpounds">Monthly Milk Production dataset</a>.</p>
 <section id="The-DataTransformer-abstraction">
-<h2>The <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> abstraction<a class="headerlink" href="#The-DataTransformer-abstraction" title="Permalink to this heading">¶</a></h2>
+<h2>The <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> abstraction<a class="headerlink" href="#The-DataTransformer-abstraction" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> aims to provide a unified way of dealing with transformations of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">transform()</span></code> is implemented by all transformers. This method takes in either a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> or a sequence of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, applies the transformation and returns it as a new <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>/sequence of `TimeSeries.</p></li>
@@ -727,13 +530,12 @@ div.rendered_html tbody tr:hover {
 </ul>
 </section>
 <section id="Setting-up-the-example">
-<h2>Setting up the example<a class="headerlink" href="#Setting-up-the-example" title="Permalink to this heading">¶</a></h2>
+<h2>Setting up the example<a class="headerlink" href="#Setting-up-the-example" title="Link to this heading">#</a></h2>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># fix python path if working locally</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># fix python path if working locally</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
@@ -748,8 +550,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
@@ -774,13 +575,12 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Reading-the-data-and-creating-a-time-series">
-<h3>Reading the data and creating a time series<a class="headerlink" href="#Reading-the-data-and-creating-a-time-series" title="Permalink to this heading">¶</a></h3>
+<h3>Reading the data and creating a time series<a class="headerlink" href="#Reading-the-data-and-creating-a-time-series" title="Link to this heading">#</a></h3>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -850,14 +650,13 @@ Dimensions without coordinates: sample
 </section>
 </section>
 <section id="Using-a-transformer:-Rescaling-a-time-series-using-Scaler.">
-<h2>Using a transformer: Rescaling a time series using <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>.<a class="headerlink" href="#Using-a-transformer:-Rescaling-a-time-series-using-Scaler." title="Permalink to this heading">¶</a></h2>
-<p>Some applications may require your datapoints to be between 0 and 1 (e.g. to feed a time series to a Neural Network based forecasting model). This is easily achieved using the default <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>, which is a wrapper around <code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler(feature_range=(0,</span> <span class="pre">1))</span></code>.</p>
+<h2>Using a transformer: Rescaling a time series using <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>.<a class="headerlink" href="#Using-a-transformer:-Rescaling-a-time-series-using-Scaler." title="Link to this heading">#</a></h2>
+<p>Some applications may require your datapoints to be between 0 and 1 (e.g. to feed a time series to a Neural Network based forecasting model). This is easily achieved using the default <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>, which is a wrapper around <code class="docutils literal notranslate"><span class="pre">sklearn.preprocessing.MinMaxScaler(feature_range=(0,</span> <span class="pre">1))</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
 <span class="n">rescaled</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">rescaled</span><span class="p">)</span>
 </pre></div>
@@ -921,8 +720,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">back</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">rescaled</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">back</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">rescaled</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">back</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -983,14 +781,13 @@ Dimensions without coordinates: sample
 <p>Note that the <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> also allows to specify other scalers in its constructor, as long as they implement <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, <code class="docutils literal notranslate"><span class="pre">transform()</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> methods on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (typically scalers from <code class="docutils literal notranslate"><span class="pre">scikit-learn</span></code>)</p>
 </section>
 <section id="Another-example-:-MissingValuesFiller">
-<h2>Another example : <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code><a class="headerlink" href="#Another-example-:-MissingValuesFiller" title="Permalink to this heading">¶</a></h2>
+<h2>Another example : <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code><a class="headerlink" href="#Another-example-:-MissingValuesFiller" title="Link to this heading">#</a></h2>
 <p>Let’s look at handling missing values in a dataset.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">incomplete_series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1006,8 +803,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">filler</span> <span class="o">=</span> <span class="n">MissingValuesFiller</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">filler</span> <span class="o">=</span> <span class="n">MissingValuesFiller</span><span class="p">()</span>
 <span class="n">filled</span> <span class="o">=</span> <span class="n">filler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">incomplete_series</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;quadratic&quot;</span><span class="p">)</span>
 
 <span class="n">filled</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -1026,8 +822,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">filled</span> <span class="o">=</span> <span class="n">filler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">incomplete_series</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;quadratic&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">filled</span> <span class="o">=</span> <span class="n">filler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">incomplete_series</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;quadratic&quot;</span><span class="p">)</span>
 <span class="n">filled</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1041,15 +836,14 @@ Dimensions without coordinates: sample
 </div>
 </section>
 <section id="Mapper-and-InvertibleMapper:-A-special-kind-of-transformers">
-<h2><code class="docutils literal notranslate"><span class="pre">Mapper</span></code> and <code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code>: A special kind of transformers<a class="headerlink" href="#Mapper-and-InvertibleMapper:-A-special-kind-of-transformers" title="Permalink to this heading">¶</a></h2>
+<h2><code class="docutils literal notranslate"><span class="pre">Mapper</span></code> and <code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code>: A special kind of transformers<a class="headerlink" href="#Mapper-and-InvertibleMapper:-A-special-kind-of-transformers" title="Link to this heading">#</a></h2>
 <p>Sometimes you may want to perform a simple <code class="docutils literal notranslate"><span class="pre">map()</span></code> function on the data. This can also be done using data transformers. <code class="docutils literal notranslate"><span class="pre">Mapper</span></code> takes in a function and applies it to the data elementwise when calling <code class="docutils literal notranslate"><span class="pre">transform()</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code> also allows to specify an inverse function at creation (if there is one) and provides the <code class="docutils literal notranslate"><span class="pre">inverse_transform()</span></code> method.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">lin_series</span> <span class="o">=</span> <span class="n">linear_timeseries</span><span class="p">(</span><span class="n">start_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end_value</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">lin_series</span> <span class="o">=</span> <span class="n">linear_timeseries</span><span class="p">(</span><span class="n">start_value</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">end_value</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
 
 <span class="n">squarer</span> <span class="o">=</span> <span class="n">Mapper</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
 <span class="n">squared</span> <span class="o">=</span> <span class="n">squarer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">lin_series</span><span class="p">)</span>
@@ -1077,14 +871,13 @@ Dimensions without coordinates: sample
 </div>
 </div>
 <section id="More-complex-(and-useful)-transformations">
-<h3>More complex (and useful) transformations<a class="headerlink" href="#More-complex-(and-useful)-transformations" title="Permalink to this heading">¶</a></h3>
+<h3>More complex (and useful) transformations<a class="headerlink" href="#More-complex-(and-useful)-transformations" title="Link to this heading">#</a></h3>
 <p>In the Monthly Milk Production dataset used earlier, some of the difference between the months comes from the fact that some months contain more days than others, resulting in a larger production of milk during those months. This makes the time series more complex, and thus harder to predict.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">training</span><span class="p">,</span> <span class="n">validation</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_before</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;1973-01-01&quot;</span><span class="p">))</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">training</span><span class="p">,</span> <span class="n">validation</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_before</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;1973-01-01&quot;</span><span class="p">))</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">training</span><span class="p">)</span>
@@ -1124,14 +917,14 @@ Dimensions without coordinates: sample
 <p>To transform the time series, we have to divide a monthly value (the data point) by the number of days in the month given by the value’s corresponding timestamp.</p>
 <p><code class="docutils literal notranslate"><span class="pre">map()</span></code> (and thus <code class="docutils literal notranslate"><span class="pre">Mapper</span></code> / <code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code>) makes this convenient by allowing to apply a transformation function which uses both the value and its timestamp to compute the new value: <code class="docutils literal notranslate"><span class="pre">f(timestamp,</span> <span class="pre">value)</span> <span class="pre">=</span> <span class="pre">new_value</span></code></p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Transform the time series</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Transform the time series</span>
 <span class="n">toDailyAverage</span> <span class="o">=</span> <span class="n">InvertibleMapper</span><span class="p">(</span>
-    <span class="n">fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">/</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">,</span>
-    <span class="n">inverse_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">*</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">,</span>
+    <span class="n">fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">/</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">days_in_month</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">inverse_fn</span><span class="o">=</span><span class="k">lambda</span> <span class="n">timestamp</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span>
+    <span class="o">*</span> <span class="n">timestamp</span><span class="o">.</span><span class="n">days_in_month</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
 <span class="p">)</span>
 
 <span class="n">dailyAverage</span> <span class="o">=</span> <span class="n">toDailyAverage</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
@@ -1151,8 +944,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Make a forecast</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Make a forecast</span>
 <span class="n">dailyavg_train</span><span class="p">,</span> <span class="n">dailyavg_val</span> <span class="o">=</span> <span class="n">dailyAverage</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;1973-01-01&quot;</span><span class="p">))</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
@@ -1186,8 +978,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Inverse the transformation</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Inverse the transformation</span>
 <span class="c1"># Here the forecast is stochastic; so we take the median value</span>
 <span class="n">forecast</span> <span class="o">=</span> <span class="n">toDailyAverage</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">dailyavg_forecast</span><span class="p">)</span>
 </pre></div>
@@ -1197,8 +988,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MAPE = </span><span class="si">{</span><span class="n">mape</span><span class="p">(</span><span class="n">forecast</span><span class="p">,</span><span class="w"> </span><span class="n">validation</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MAPE = </span><span class="si">{</span><span class="n">mape</span><span class="p">(</span><span class="n">forecast</span><span class="p">,</span><span class="w"> </span><span class="n">validation</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
 <span class="n">forecast</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
@@ -1224,14 +1014,13 @@ Dimensions without coordinates: sample
 </section>
 </section>
 <section id="Chaining-transformations-:-introducing-Pipeline">
-<h2>Chaining transformations : introducing <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Chaining-transformations-:-introducing-Pipeline" title="Permalink to this heading">¶</a></h2>
+<h2>Chaining transformations : introducing <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code><a class="headerlink" href="#Chaining-transformations-:-introducing-Pipeline" title="Link to this heading">#</a></h2>
 <p>Now suppose that we both want to apply the above transformation (daily averaging), and rescale the dataset between 0 and 1 to use a Neural Network based forecasting model. Instead of applying these two transformations separately, and then inversing them separately, we can use a <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span><span class="n">toDailyAverage</span><span class="p">,</span> <span class="n">scaler</span><span class="p">])</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pipeline</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span><span class="n">toDailyAverage</span><span class="p">,</span> <span class="n">scaler</span><span class="p">])</span>
 <span class="n">transformed</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">training</span><span class="p">)</span>
 <span class="n">transformed</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
@@ -1249,8 +1038,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">back</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">transformed</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">back</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">transformed</span><span class="p">)</span>
 <span class="n">back</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -1267,8 +1055,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="n">filler</span> <span class="o">=</span> <span class="n">MissingValuesFiller</span><span class="p">()</span>
 <span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
@@ -1284,21 +1071,19 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">back</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">transformed</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">back</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">transformed</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 </section>
 <section id="Processing-multiple-TimeSeries">
-<h2>Processing multiple TimeSeries<a class="headerlink" href="#Processing-multiple-TimeSeries" title="Permalink to this heading">¶</a></h2>
+<h2>Processing multiple TimeSeries<a class="headerlink" href="#Processing-multiple-TimeSeries" title="Link to this heading">#</a></h2>
 <p>Often, we have to deal with multiple TimeSeries. DARTS supports Sequences of TimeSeries as input to transformers and pipelines, so that you don’t have to take care of processing each sample separately. Furthermore, it will take care of storing the parameters used by each scaler while transforming different TimeSeries (e.g., with scalers).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">incomplete_series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="n">multiple_ts</span> <span class="o">=</span> <span class="p">[</span><span class="n">incomplete_series</span><span class="p">,</span> <span class="n">series</span><span class="p">[:</span><span class="mi">10</span><span class="p">]]</span>
@@ -1325,8 +1110,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">back</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">transformed</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">back</span> <span class="o">=</span> <span class="n">pipeline</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">transformed</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">back</span><span class="p">:</span>
     <span class="n">ts</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 </pre></div>
@@ -1341,15 +1125,14 @@ Dimensions without coordinates: sample
 </div>
 </section>
 <section id="Monitoring-&amp;-parallelising-data-processing">
-<h2>Monitoring &amp; parallelising data processing<a class="headerlink" href="#Monitoring-&-parallelising-data-processing" title="Permalink to this heading">¶</a></h2>
+<h2>Monitoring &amp; parallelising data processing<a class="headerlink" href="#Monitoring-&-parallelising-data-processing" title="Link to this heading">#</a></h2>
 <p>Sometimes, we could also have to deal with huge datasets. In this cases, processing each sample sequentially can take quite a long time. Darts can help both monitoring the transformations, and processing multiple samples in parallel, when possible.</p>
 <p>Setting the <code class="docutils literal notranslate"><span class="pre">verbose</span></code> parameter in each transformer or pipeline while create some progress bars:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkIncompleteDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="n">huge_number_of_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span> <span class="o">*</span> <span class="mi">10000</span>
 
@@ -1377,8 +1160,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># setting n_jobs to -1 will make the library using all the cores available in the machine</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># setting n_jobs to -1 will make the library using all the cores available in the machine</span>
 <span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Faster&quot;</span><span class="p">)</span>
 <span class="n">scaler</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">huge_number_of_series</span><span class="p">)</span>
 <span class="n">back</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">huge_number_of_series</span><span class="p">)</span>
@@ -1401,8 +1183,7 @@ Dimensions without coordinates: sample
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
 </pre></div>
 </div>
 </div>
@@ -1410,50 +1191,133 @@ Dimensions without coordinates: sample
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="01-multi-time-series-and-covariates.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Multiple Time Series, Pre-trained Models and Covariates</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="01-multi-time-series-and-covariates.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Multiple Time Series, Pre-trained Models and Covariates</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="15-static-covariates.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="15-static-covariates.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Static Covariates</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#The-DataTransformer-abstraction">The <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> abstraction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Setting-up-the-example">Setting up the example</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Reading-the-data-and-creating-a-time-series">Reading the data and creating a time series</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Using-a-transformer:-Rescaling-a-time-series-using-Scaler.">Using a transformer: Rescaling a time series using <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>.</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Another-example-:-MissingValuesFiller">Another example : <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Mapper-and-InvertibleMapper:-A-special-kind-of-transformers"><code class="docutils literal notranslate"><span class="pre">Mapper</span></code> and <code class="docutils literal notranslate"><span class="pre">InvertibleMapper</span></code>: A special kind of transformers</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#More-complex-(and-useful)-transformations">More complex (and useful) transformations</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Chaining-transformations-:-introducing-Pipeline">Chaining transformations : introducing <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Processing-multiple-TimeSeries">Processing multiple TimeSeries</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Monitoring-&amp;-parallelising-data-processing">Monitoring &amp; parallelising data processing</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples/02-data-processing.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

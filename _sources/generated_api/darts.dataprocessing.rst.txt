@@ -1,13 +1,21 @@
+darts.dataprocessing
+====================
+
+.. currentmodule:: darts.dataprocessing
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   darts.dataprocessing.dtw
+   darts.dataprocessing.encoders
+   darts.dataprocessing.transformers
+
+   darts.dataprocessing.pipeline
 
 
+- :doc:`darts.dataprocessing.dtw <darts.dataprocessing.dtw>`
+- :doc:`darts.dataprocessing.encoders <darts.dataprocessing.encoders>`
+- :doc:`darts.dataprocessing.transformers <darts.dataprocessing.transformers>`
 
-.. automodule:: darts.dataprocessing
-
-    .. toctree::
-        :maxdepth: 1
-        
-        darts.dataprocessing.dtw
-        darts.dataprocessing.encoders
-        darts.dataprocessing.transformers
-        
-        darts.dataprocessing.pipeline
+- :doc:`darts.dataprocessing.pipeline <darts.dataprocessing.pipeline>`

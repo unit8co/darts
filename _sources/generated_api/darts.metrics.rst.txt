@@ -1,11 +1,17 @@
+darts.metrics
+=============
+
+.. currentmodule:: darts.metrics
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.metrics.metrics
+   darts.metrics.utils
 
 
 
-.. automodule:: darts.metrics
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.metrics.metrics
-        darts.metrics.utils
+- :doc:`darts.metrics.metrics <darts.metrics.metrics>`
+- :doc:`darts.metrics.utils <darts.metrics.utils>`

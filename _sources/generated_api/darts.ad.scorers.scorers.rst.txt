@@ -1,3 +1,0 @@
-.. automodule:: darts.ad.scorers.scorers
-   :members:
-   :undoc-members:

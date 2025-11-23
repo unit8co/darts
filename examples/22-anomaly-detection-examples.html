@@ -1,762 +1,523 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Anomaly Detection Darts Module &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/22-anomaly-detection-examples';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Dynamic Time Warping (DTW)" href="12-Dynamic-Time-Warping-example.html" />
     <link rel="prev" title="Filtering and predicting using the Gaussian Process filter" href="11-GP-filter-examples.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-    </nav>
-    
 
-    <div class="container-xl">
-      <div class="row">
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
           
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="01-multi-time-series-and-covariates.html">
-   Multiple Time Series, Pre-trained Models and Covariates
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="02-data-processing.html">
-   Data (pre) processing using
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     DataTransformer
-    </span>
-   </code>
-   and
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     Pipeline
-    </span>
-   </code>
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="02-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="15-static-covariates.html">
-   Static Covariates
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="15-static-covariates.html">Static Covariates</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="14-transfer-learning.html">
-   Transfer Learning for Time Series Forecasting with Darts
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="14-transfer-learning.html">Transfer Learning for Time Series Forecasting with Darts</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="16-hierarchical-reconciliation.html">
-   Hierarchical Reconciliation - Example on the Australian Tourism Dataset
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="16-hierarchical-reconciliation.html">Hierarchical Reconciliation - Example on the Australian Tourism Dataset</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="17-hyperparameter-optimization.html">
-   Hyper-parameters Optimization for Electricity Load Forecasting
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="17-hyperparameter-optimization.html">Hyper-parameters Optimization for Electricity Load Forecasting</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="20-SKLearnModel-examples.html">
-   Regression Models
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="20-SKLearnModel-examples.html">Regression Models</a></li>
+
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="24-SKLearnClassifierModel-examples.html">
-   Classification Models
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="24-SKLearnClassifierModel-examples.html">Classification Models</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="23-Conformal-Prediction-examples.html">
-   Conformal Prediction Models
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="23-Conformal-Prediction-examples.html">Conformal Prediction Models</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="03-FFT-examples.html">
-   Fast Fourier Transform Forecasting Model (FFT)
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="03-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="04-RNN-examples.html">
-   Recurrent Neural Networks Models
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="04-RNN-examples.html">Recurrent Neural Networks Models</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="05-TCN-examples.html">
-   Temporal Convolutional Network
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="05-TCN-examples.html">Temporal Convolutional Network</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="06-Transformer-examples.html">
-   Transformer Model
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="06-Transformer-examples.html">Transformer Model</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="07-NBEATS-examples.html">
-   N-BEATS
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="07-NBEATS-examples.html">N-BEATS</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="08-DeepAR-examples.html">
-   Probabilistic RNN
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="08-DeepAR-examples.html">Probabilistic RNN</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="09-DeepTCN-examples.html">
-   DeepTCN model
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="09-DeepTCN-examples.html">DeepTCN model</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="13-TFT-examples.html">
-   Temporal Fusion Transformer
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="13-TFT-examples.html">Temporal Fusion Transformer</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="18-TiDE-examples.html">
-   TimeSeries Deep Encoder
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="18-TiDE-examples.html">TimeSeries Deep Encoder</a></li>
+
+
+
+
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="21-TSMixer-examples.html">
-   Time Series Mixer (TSMixer)
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="21-TSMixer-examples.html">Time Series Mixer (TSMixer)</a></li>
+
+
+
+
+
+
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="19-EnsembleModel-examples.html">
-   Ensembling Models
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="25-Chronos-2-examples.html">Chronos-2 Foundation Model</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="10-Kalman-filter-examples.html">
-   Filtering and predicting using the darts filters
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="19-EnsembleModel-examples.html">Ensembling Models</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="11-GP-filter-examples.html">
-   Filtering and predicting using the Gaussian Process filter
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="10-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="11-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
 </ul>
 <ul class="current nav bd-sidenav">
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   Anomaly Detection Darts Module
-  </a>
- </li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Anomaly Detection Darts Module</a></li>
+
+
+
+
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="12-Dynamic-Time-Warping-example.html">
-   Dynamic Time Warping (DTW)
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="12-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
 </ul>
-
-  </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
 </div>
-
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#">
-   Anomaly Detection Darts Module
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Anomaly-Model:-Taxi-passengers-in-NY">
-   Anomaly Model: Taxi passengers in NY
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Load-and-visualize-the-data">
-     Load and visualize the data
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Train-a-Darts-forecasting-model">
-     Train a Darts forecasting model
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Use-a-Forecasting-Anomaly-Model">
-     Use a Forecasting Anomaly Model
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()">
-       Using the main functions: fit(), score(), eval_metric() and show_anomalies()
-      </a>
-     </li>
-    </ul>
-   </li>
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Convert-an-anomaly-score-to-a-binary-prediction-with-a-Detector">
-   Convert an anomaly score to a binary prediction with a
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     Detector
-    </span>
-   </code>
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#A-zoom-on-each-anomalies:-visualize-the-results">
-   A zoom on each anomalies: visualize the results
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Simple-case:-KMeansScorer">
-   Simple case:
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     KMeansScorer
-    </span>
-   </code>
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Multivariate-case-with-window=1">
-     Multivariate case with window=1
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Synthetic-data-creation">
-       Synthetic data creation
-      </a>
-      <ul class="nav section-nav flex-column">
-       <li class="toc-h4 nav-item toc-entry">
-        <a class="reference internal nav-link" href="#Train-set">
-         Train set
-        </a>
-       </li>
-       <li class="toc-h4 nav-item toc-entry">
-        <a class="reference internal nav-link" href="#Test-set">
-         Test set
-        </a>
-       </li>
-      </ul>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Use-the-scorer-KMeansScorer()">
-       Use the scorer
-       <code class="docutils literal notranslate">
-        <span class="pre">
-         KMeansScorer()
-        </span>
-       </code>
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Univariate-case-with-window&gt;1">
-     Univariate case with window&gt;1
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#id1">
-       Synthetic data creation
-      </a>
-      <ul class="nav section-nav flex-column">
-       <li class="toc-h4 nav-item toc-entry">
-        <a class="reference internal nav-link" href="#id2">
-         Train set
-        </a>
-       </li>
-       <li class="toc-h4 nav-item toc-entry">
-        <a class="reference internal nav-link" href="#id3">
-         Test set
-        </a>
-       </li>
-      </ul>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#id4">
-       Use the scorer
-       <code class="docutils literal notranslate">
-        <span class="pre">
-         KMeansScorer()
-        </span>
-       </code>
-      </a>
-     </li>
-    </ul>
-   </li>
-  </ul>
- </li>
-</ul>
-
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+</nav></div>
+    </div>
   
-<style>
-/* CSS for nbsphinx extension */
-
-/* remove conflicting styling from Sphinx themes */
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt *,
-div.nbinput.container div.input_area pre,
-div.nboutput.container div.output_area pre,
-div.nbinput.container div.input_area .highlight,
-div.nboutput.container div.output_area .highlight {
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-}
-
-div.nbinput.container > div[class*=highlight],
-div.nboutput.container > div[class*=highlight] {
-    margin: 0;
-}
-
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt * {
-    background: none;
-}
-
-div.nboutput.container div.output_area .highlight,
-div.nboutput.container div.output_area pre {
-    background: unset;
-}
-
-div.nboutput.container div.output_area div.highlight {
-    color: unset;  /* override Pygments text color */
-}
-
-/* avoid gaps between output lines */
-div.nboutput.container div[class*=highlight] pre {
-    line-height: normal;
-}
-
-/* input/output containers */
-div.nbinput.container,
-div.nboutput.container {
-    display: -webkit-flex;
-    display: flex;
-    align-items: flex-start;
-    margin: 0;
-    width: 100%;
-}
-@media (max-width: 540px) {
-    div.nbinput.container,
-    div.nboutput.container {
-        flex-direction: column;
-    }
-}
-
-/* input container */
-div.nbinput.container {
-    padding-top: 5px;
-}
-
-/* last container */
-div.nblast.container {
-    padding-bottom: 5px;
-}
-
-/* input prompt */
-div.nbinput.container div.prompt pre {
-    color: #307FC1;
-}
-
-/* output prompt */
-div.nboutput.container div.prompt pre {
-    color: #BF5B3D;
-}
-
-/* all prompts */
-div.nbinput.container div.prompt,
-div.nboutput.container div.prompt {
-    width: 4.5ex;
-    padding-top: 5px;
-    position: relative;
-    user-select: none;
-}
-
-div.nbinput.container div.prompt > div,
-div.nboutput.container div.prompt > div {
-    position: absolute;
-    right: 0;
-    margin-right: 0.3ex;
-}
-
-@media (max-width: 540px) {
-    div.nbinput.container div.prompt,
-    div.nboutput.container div.prompt {
-        width: unset;
-        text-align: left;
-        padding: 0.4em;
-    }
-    div.nboutput.container div.prompt.empty {
-        padding: 0;
-    }
-
-    div.nbinput.container div.prompt > div,
-    div.nboutput.container div.prompt > div {
-        position: unset;
-    }
-}
-
-/* disable scrollbars on prompts */
-div.nbinput.container div.prompt pre,
-div.nboutput.container div.prompt pre {
-    overflow: hidden;
-}
-
-/* input/output area */
-div.nbinput.container div.input_area,
-div.nboutput.container div.output_area {
-    -webkit-flex: 1;
-    flex: 1;
-    overflow: auto;
-}
-@media (max-width: 540px) {
-    div.nbinput.container div.input_area,
-    div.nboutput.container div.output_area {
-        width: 100%;
-    }
-}
-
-/* input area */
-div.nbinput.container div.input_area {
-    border: 1px solid #e0e0e0;
-    border-radius: 2px;
-    /*background: #f5f5f5;*/
-}
-
-/* override MathJax center alignment in output cells */
-div.nboutput.container div[class*=MathJax] {
-    text-align: left !important;
-}
-
-/* override sphinx.ext.imgmath center alignment in output cells */
-div.nboutput.container div.math p {
-    text-align: left;
-}
-
-/* standard error */
-div.nboutput.container div.output_area.stderr {
-    background: #fdd;
-}
-
-/* ANSI colors */
-.ansi-black-fg { color: #3E424D; }
-.ansi-black-bg { background-color: #3E424D; }
-.ansi-black-intense-fg { color: #282C36; }
-.ansi-black-intense-bg { background-color: #282C36; }
-.ansi-red-fg { color: #E75C58; }
-.ansi-red-bg { background-color: #E75C58; }
-.ansi-red-intense-fg { color: #B22B31; }
-.ansi-red-intense-bg { background-color: #B22B31; }
-.ansi-green-fg { color: #00A250; }
-.ansi-green-bg { background-color: #00A250; }
-.ansi-green-intense-fg { color: #007427; }
-.ansi-green-intense-bg { background-color: #007427; }
-.ansi-yellow-fg { color: #DDB62B; }
-.ansi-yellow-bg { background-color: #DDB62B; }
-.ansi-yellow-intense-fg { color: #B27D12; }
-.ansi-yellow-intense-bg { background-color: #B27D12; }
-.ansi-blue-fg { color: #208FFB; }
-.ansi-blue-bg { background-color: #208FFB; }
-.ansi-blue-intense-fg { color: #0065CA; }
-.ansi-blue-intense-bg { background-color: #0065CA; }
-.ansi-magenta-fg { color: #D160C4; }
-.ansi-magenta-bg { background-color: #D160C4; }
-.ansi-magenta-intense-fg { color: #A03196; }
-.ansi-magenta-intense-bg { background-color: #A03196; }
-.ansi-cyan-fg { color: #60C6C8; }
-.ansi-cyan-bg { background-color: #60C6C8; }
-.ansi-cyan-intense-fg { color: #258F8F; }
-.ansi-cyan-intense-bg { background-color: #258F8F; }
-.ansi-white-fg { color: #C5C1B4; }
-.ansi-white-bg { background-color: #C5C1B4; }
-.ansi-white-intense-fg { color: #A1A6B2; }
-.ansi-white-intense-bg { background-color: #A1A6B2; }
-
-.ansi-default-inverse-fg { color: #FFFFFF; }
-.ansi-default-inverse-bg { background-color: #000000; }
-
-.ansi-bold { font-weight: bold; }
-.ansi-underline { text-decoration: underline; }
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
 
 
-div.nbinput.container div.input_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight].math,
-div.nboutput.container div.output_area.rendered_html,
-div.nboutput.container div.output_area > div.output_javascript,
-div.nboutput.container div.output_area:not(.rendered_html) > img{
-    padding: 5px;
-    margin: 0;
-}
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
 
-/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
-div.nbinput.container div.input_area > div[class^='highlight'],
-div.nboutput.container div.output_area > div[class^='highlight']{
-    overflow-y: hidden;
-}
-
-/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
-.prompt a.copybtn {
-    display: none;
-}
-
-/* Some additional styling taken form the Jupyter notebook CSS */
-div.rendered_html table {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: black;
-  font-size: 12px;
-  table-layout: fixed;
-}
-div.rendered_html thead {
-  border-bottom: 1px solid black;
-  vertical-align: bottom;
-}
-div.rendered_html tr,
-div.rendered_html th,
-div.rendered_html td {
-  text-align: right;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
-}
-div.rendered_html th {
-  font-weight: bold;
-}
-div.rendered_html tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-div.rendered_html tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
-</style>
-<section id="Anomaly-Detection-Darts-Module">
-<h1>Anomaly Detection Darts Module<a class="headerlink" href="#Anomaly-Detection-Darts-Module" title="Permalink to this heading">¶</a></h1>
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Anomaly Detection Darts Module</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Anomaly-Detection-Darts-Module">
+<h1>Anomaly Detection Darts Module<a class="headerlink" href="#Anomaly-Detection-Darts-Module" title="Link to this heading">#</a></h1>
 <p>This notebook showcases some of the functionalities of Darts’ Anomaly Detection Module. We’ll look at Anomaly Scorers, Detectors, Aggregators and Anomaly Models.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Scorers</span></code>: compute anomaly scores time series, either only on the target series or between the target series and a forecasted/predicted series. They are the core of the anomaly detection module.</p></li>
@@ -765,7 +526,7 @@ div.rendered_html tbody tr:hover {
 <li><p><code class="docutils literal notranslate"><span class="pre">Anomaly</span> <span class="pre">Models</span></code>: offer a convenient way to produce anomaly scores from any of Darts’ global forecasting models or filtering models by comparing the models’ predictions with actual observations. Each Anomaly Model takes one forecasting/filtering model and one or multiple scorers. The model produces some predictions, which are fed together with the actual series to the scorer(s). It will return anomaly scores for each scorer.</p></li>
 </ul>
 <p>The figure below illustrates the different input/output for each tool:</p>
-<p><img alt="5e4fc0dc85e84c36ace8060679c326b9" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
+<p><img alt="87d4f549fae2419c8dab0ceebc7f79fa" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
 <p>The notebook is devided into two sections:</p>
 <ul class="simple">
 <li><p>How to use <code class="docutils literal notranslate"><span class="pre">ForecastingAnomalyModel</span></code> to find anomalies in the number of taxi passengers in New York.</p></li>
@@ -776,8 +537,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># fix python path if working locally</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># fix python path if working locally</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
@@ -789,8 +549,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
@@ -800,8 +559,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
@@ -834,10 +592,15 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Anomaly-Model:-Taxi-passengers-in-NY">
-<h1>Anomaly Model: Taxi passengers in NY<a class="headerlink" href="#Anomaly-Model:-Taxi-passengers-in-NY" title="Permalink to this heading">¶</a></h1>
+<h1>Anomaly Model: Taxi passengers in NY<a class="headerlink" href="#Anomaly-Model:-Taxi-passengers-in-NY" title="Link to this heading">#</a></h1>
 <section id="Load-and-visualize-the-data">
-<h2>Load and visualize the data<a class="headerlink" href="#Load-and-visualize-the-data" title="Permalink to this heading">¶</a></h2>
-<p>Information on the data: - Univariate Time Series (represents the number of taxi passengers in New York) - During a period of 8 months (2014-07 to 2015-01) - Frequency of 30 minutes</p>
+<h2>Load and visualize the data<a class="headerlink" href="#Load-and-visualize-the-data" title="Link to this heading">#</a></h2>
+<p>Information on the data:</p>
+<ul class="simple">
+<li><p>Univariate Time Series (represents the number of taxi passengers in New York)</p></li>
+<li><p>During a period of 8 months (2014-07 to 2015-01)</p></li>
+<li><p>Frequency of 30 minutes</p></li>
+</ul>
 <p>In this example, anomalies are subjective. It can be defined as periods where the demand for taxis is abnormal (different than what should be expected). Based on this definition, the following five dates can be considered anomalies:</p>
 <ul class="simple">
 <li><p>NYC Marathon - 2014-11-02</p></li>
@@ -850,8 +613,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># load the data</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># load the data</span>
 <span class="n">series_taxi</span> <span class="o">=</span> <span class="n">TaxiNewYorkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 
 <span class="c1"># define start and end dates for some known anomalies</span>
@@ -892,8 +654,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_anom</span><span class="p">(</span><span class="n">selected_anomaly</span><span class="p">,</span> <span class="n">delta_plotted_days</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_anom</span><span class="p">(</span><span class="n">selected_anomaly</span><span class="p">,</span> <span class="n">delta_plotted_days</span><span class="p">):</span>
     <span class="n">one_day</span> <span class="o">=</span> <span class="n">series_taxi</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">2</span>
     <span class="n">anomaly_date</span> <span class="o">=</span> <span class="n">anomalies_day</span><span class="p">[</span><span class="n">selected_anomaly</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">start_timestamp</span> <span class="o">=</span> <span class="n">anomaly_date</span> <span class="o">-</span> <span class="n">delta_plotted_days</span> <span class="o">*</span> <span class="n">one_day</span>
@@ -926,14 +687,13 @@ div.rendered_html tbody tr:hover {
 <p>The goal would be to detect these five irregular periods and identify other possible abnormal days.</p>
 </section>
 <section id="Train-a-Darts-forecasting-model">
-<h2>Train a Darts forecasting model<a class="headerlink" href="#Train-a-Darts-forecasting-model" title="Permalink to this heading">¶</a></h2>
+<h2>Train a Darts forecasting model<a class="headerlink" href="#Train-a-Darts-forecasting-model" title="Link to this heading">#</a></h2>
 <p>We will use a <code class="docutils literal notranslate"><span class="pre">SKLearnModel</span></code> to predict the number of taxi passengers. The first 4500 timestamps will be used to train the model. The training set is considered to be anomaly-free, the five considered anomalies are located after the 4500th timestamps. The number of lags is set to 1 week, assuming the demand follows a periodicity of 1 week. To help the model, additional information on the targeted series is passed as covariates (the hour and the day of the week).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># split the data in a training and testing set</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># split the data in a training and testing set</span>
 <span class="n">s_taxi_train</span> <span class="o">=</span> <span class="n">series_taxi</span><span class="p">[:</span><span class="mi">4500</span><span class="p">]</span>
 <span class="n">s_taxi_test</span> <span class="o">=</span> <span class="n">series_taxi</span><span class="p">[</span><span class="mi">4500</span><span class="p">:]</span>
 
@@ -966,21 +726,29 @@ SKLearnModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0], ou
 </div>
 </section>
 <section id="Use-a-Forecasting-Anomaly-Model">
-<h2>Use a Forecasting Anomaly Model<a class="headerlink" href="#Use-a-Forecasting-Anomaly-Model" title="Permalink to this heading">¶</a></h2>
-<p>The anomaly model consists of two inputs: - a fitted <code class="docutils literal notranslate"><span class="pre">GlobalForecastingModel</span></code> (you can find a list <a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">here</a>. If the model hasn’t been fitted, set parameter <code class="docutils literal notranslate"><span class="pre">allow_model_training</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code>) - a single or list of <code class="docutils literal notranslate"><span class="pre">AnomalyScorer</span></code> (trainable or not)</p>
-<p>For this example, three scorers will be used: - <code class="docutils literal notranslate"><span class="pre">NormScorer</span></code> (window is by default set to 1) - <code class="docutils literal notranslate"><span class="pre">WassersteinScorer</span></code> with a half-day window (24 timestamps) and no window aggregation - <code class="docutils literal notranslate"><span class="pre">WassersteinScorer</span></code> with a full-day window (48 timestamps) including window aggregation</p>
+<h2>Use a Forecasting Anomaly Model<a class="headerlink" href="#Use-a-Forecasting-Anomaly-Model" title="Link to this heading">#</a></h2>
+<p>The anomaly model consists of two inputs:</p>
+<ul class="simple">
+<li><p>a fitted <code class="docutils literal notranslate"><span class="pre">GlobalForecastingModel</span></code> (you can find a list <a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">here</a>. If the model hasn’t been fitted, set parameter <code class="docutils literal notranslate"><span class="pre">allow_model_training</span></code> to <code class="docutils literal notranslate"><span class="pre">True</span></code> when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code>)</p></li>
+<li><p>a single or list of <code class="docutils literal notranslate"><span class="pre">AnomalyScorer</span></code> (trainable or not)</p></li>
+</ul>
+<p>For this example, three scorers will be used:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">NormScorer</span></code> (window is by default set to 1)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">WassersteinScorer</span></code> with a half-day window (24 timestamps) and no window aggregation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">WassersteinScorer</span></code> with a full-day window (48 timestamps) including window aggregation</p></li>
+</ul>
 <p>The <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter is an integer value indicating the window size used by the scorer to transform the series into an anomaly score. A scorer will slice the given series into subsequences of size W and returns a value indicating how anomalous these subset of W values are.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">window_agg</span></code> can be used to transform the window-wise scores into point-wise scores by aggregating all anomaly scores from each window that the point was included in.</p>
 <p>The following figure illustrates the mechanism of a Forecasting Anomaly model:</p>
-<p><img alt="8dbc9ca772e54c12a1098b168d4aa73c" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
+<p><img alt="b38f1a33eec24fc19ede5e7970fafb43" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
 <section id="Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()">
-<h3>Using the main functions: fit(), score(), eval_metric() and show_anomalies()<a class="headerlink" href="#Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()" title="Permalink to this heading">¶</a></h3>
+<h3>Using the main functions: fit(), score(), eval_metric() and show_anomalies()<a class="headerlink" href="#Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()" title="Link to this heading">#</a></h3>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># with timestamps of 30 minutes</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># with timestamps of 30 minutes</span>
 <span class="n">half_a_day</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">12</span>
 <span class="n">full_day</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="mi">24</span>
 
@@ -1012,8 +780,7 @@ SKLearnModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0], ou
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">START</span> <span class="o">=</span> <span class="mf">0.1</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">START</span> <span class="o">=</span> <span class="mf">0.1</span>
 <span class="n">anomaly_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">s_taxi_train</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">START</span><span class="p">,</span> <span class="n">allow_model_training</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -1038,8 +805,7 @@ SKLearnModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0], ou
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">anomaly_scores</span><span class="p">,</span> <span class="n">model_forecasting</span> <span class="o">=</span> <span class="n">anomaly_model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">anomaly_scores</span><span class="p">,</span> <span class="n">model_forecasting</span> <span class="o">=</span> <span class="n">anomaly_model</span><span class="o">.</span><span class="n">score</span><span class="p">(</span>
     <span class="n">s_taxi_test</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="n">START</span><span class="p">,</span> <span class="n">return_model_prediction</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 <span class="n">pred_start</span> <span class="o">=</span> <span class="n">model_forecasting</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span>
@@ -1056,8 +822,7 @@ SKLearnModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0], ou
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># compute the MAE and RMSE on the test set</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># compute the MAE and RMSE on the test set</span>
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;On testing set -&gt; MAE: </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">model_forecasting</span><span class="p">,</span><span class="w"> </span><span class="n">s_taxi_test</span><span class="p">)</span><span class="si">}</span><span class="s2">, RMSE: </span><span class="si">{</span><span class="n">rmse</span><span class="p">(</span><span class="n">model_forecasting</span><span class="p">,</span><span class="w"> </span><span class="n">s_taxi_test</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
 <span class="p">)</span>
@@ -1091,8 +856,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">metric_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">metric_names</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]</span>
 <span class="n">metric_data</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">metric_name</span> <span class="ow">in</span> <span class="n">metric_names</span><span class="p">:</span>
     <span class="n">metric_data</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
@@ -1160,8 +924,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">anomaly_model</span><span class="o">.</span><span class="n">show_anomalies</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">anomaly_model</span><span class="o">.</span><span class="n">show_anomalies</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="n">s_taxi_test</span><span class="p">,</span>
     <span class="n">anomalies</span><span class="o">=</span><span class="n">series_taxi_anomalies</span><span class="p">[</span><span class="n">pred_start</span><span class="p">:],</span>
     <span class="n">start</span><span class="o">=</span><span class="n">START</span><span class="p">,</span>
@@ -1181,7 +944,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 </section>
 </section>
 <section id="Convert-an-anomaly-score-to-a-binary-prediction-with-a-Detector">
-<h1>Convert an anomaly score to a binary prediction with a <code class="docutils literal notranslate"><span class="pre">Detector</span></code><a class="headerlink" href="#Convert-an-anomaly-score-to-a-binary-prediction-with-a-Detector" title="Permalink to this heading">¶</a></h1>
+<h1>Convert an anomaly score to a binary prediction with a <code class="docutils literal notranslate"><span class="pre">Detector</span></code><a class="headerlink" href="#Convert-an-anomaly-score-to-a-binary-prediction-with-a-Detector" title="Link to this heading">#</a></h1>
 <p>Darts’ Anomaly Detectors convert anomaly scores into binary anomlies/predictions. In this example, we’ll use the <code class="docutils literal notranslate"><span class="pre">QuantileDetector</span></code>.</p>
 <p>It detects anomalies based on the quantile values (<code class="docutils literal notranslate"><span class="pre">high_quantile</span></code> and/or <code class="docutils literal notranslate"><span class="pre">low_quantile</span></code>) of historical data. It flags times as anomalous when the values exceed these quantile thresholds. In this example, the anomaly scores were computed for the absolute residuals of the model. It is lower-bound by 0. We set <code class="docutils literal notranslate"><span class="pre">low_quantile=None</span></code> (default), as we only want to flag values above <code class="docutils literal notranslate"><span class="pre">high_quantile</span></code>.</p>
 <p>We set <code class="docutils literal notranslate"><span class="pre">high_quantile</span></code> to <code class="docutils literal notranslate"><span class="pre">0.95</span></code>. This value must be chosen carefully, as it will convert the <code class="docutils literal notranslate"><span class="pre">(1-</span> <span class="pre">high_quantile)</span> <span class="pre">*</span> <span class="pre">100</span></code> % biggest anomaly scores into a prediction of anomalies. In our case, we want to see the 5% most anomalous timestamps.</p>
@@ -1192,8 +955,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.detectors</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileDetector</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.ad.detectors</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileDetector</span>
 
 <span class="n">contamination</span> <span class="o">=</span> <span class="mf">0.95</span>
 <span class="n">detector</span> <span class="o">=</span> <span class="n">QuantileDetector</span><span class="p">(</span><span class="n">high_quantile</span><span class="o">=</span><span class="n">contamination</span><span class="p">)</span>
@@ -1204,8 +966,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># use the anomaly score that gave the best AUC ROC score: Wasserstein anomaly score with a window of &#39;full_day&#39;</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># use the anomaly score that gave the best AUC ROC score: Wasserstein anomaly score with a window of &#39;full_day&#39;</span>
 <span class="n">best_anomaly_score</span> <span class="o">=</span> <span class="n">anomaly_scores</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
 <span class="c1"># fit and detect on the anomaly scores, it will return a binary prediction</span>
@@ -1232,8 +993,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">for</span> <span class="n">metric_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;f1&quot;</span><span class="p">]:</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">metric_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;f1&quot;</span><span class="p">]:</span>
     <span class="n">metric_val</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">eval_metric</span><span class="p">(</span>
         <span class="n">pred_scores</span><span class="o">=</span><span class="n">best_anomaly_score</span><span class="p">,</span>
         <span class="n">anomalies</span><span class="o">=</span><span class="n">series_taxi_anomalies</span><span class="p">,</span>
@@ -1255,14 +1015,15 @@ recall: 0.32/1
 f1: 0.45/1
 </pre></div></div>
 </div>
+<section id="Using-the-functions-show_anomalies_from_scores(),-eval_metric_from_scores()">
+<h2>Using the functions show_anomalies_from_scores(), eval_metric_from_scores()<a class="headerlink" href="#Using-the-functions-show_anomalies_from_scores(),-eval_metric_from_scores()" title="Link to this heading">#</a></h2>
 <p>Internally, methods <code class="docutils literal notranslate"><span class="pre">eval_metric()</span></code> and <code class="docutils literal notranslate"><span class="pre">show_anomalies()</span></code> call <code class="docutils literal notranslate"><span class="pre">eval_metric_from_scores()</span></code> and <code class="docutils literal notranslate"><span class="pre">show_anomalies_from_scores()</span></code>, respectively. We can also call them directly with pre-computed anomaly scores to avoid having to re-generate the scores each time.</p>
 <p>Let’s reproduce the results from above. Both functions require the window sizes used to compute each of the anomaly scores. In our case, the window sizes were <code class="docutils literal notranslate"><span class="pre">1,</span> <span class="pre">24</span> <span class="pre">(half_a_day),</span> <span class="pre">48</span> <span class="pre">(full_day)</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">windows</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_a_day</span><span class="p">,</span> <span class="n">full_day</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">windows</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_a_day</span><span class="p">,</span> <span class="n">full_day</span><span class="p">]</span>
 <span class="n">scorer_names</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">scorer</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">w</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">scorer</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">anomaly_model</span><span class="o">.</span><span class="n">scorers</span><span class="p">,</span> <span class="n">windows</span><span class="p">)]</span>
 
 <span class="n">metric_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">:</span> <span class="p">[]}</span>
@@ -1335,8 +1096,7 @@ f1: 0.45/1
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">show_anomalies_from_scores</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">show_anomalies_from_scores</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="n">s_taxi_test</span><span class="p">,</span>
     <span class="n">anomalies</span><span class="o">=</span><span class="n">series_taxi_anomalies</span><span class="p">[</span><span class="n">pred_start</span><span class="p">:],</span>
     <span class="n">pred_scores</span><span class="o">=</span><span class="n">anomaly_scores</span><span class="p">,</span>
@@ -1357,14 +1117,14 @@ f1: 0.45/1
 </div>
 </div>
 </section>
+</section>
 <section id="A-zoom-on-each-anomalies:-visualize-the-results">
-<h1>A zoom on each anomalies: visualize the results<a class="headerlink" href="#A-zoom-on-each-anomalies:-visualize-the-results" title="Permalink to this heading">¶</a></h1>
+<h1>A zoom on each anomalies: visualize the results<a class="headerlink" href="#A-zoom-on-each-anomalies:-visualize-the-results" title="Link to this heading">#</a></h1>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_anom_eval</span><span class="p">(</span><span class="n">selected_anomaly</span><span class="p">,</span> <span class="n">delta_plotted_days</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plot_anom_eval</span><span class="p">(</span><span class="n">selected_anomaly</span><span class="p">,</span> <span class="n">delta_plotted_days</span><span class="p">):</span>
     <span class="n">one_day</span> <span class="o">=</span> <span class="n">series_taxi</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">2</span>
     <span class="n">anomaly_date</span> <span class="o">=</span> <span class="n">anomalies_day</span><span class="p">[</span><span class="n">selected_anomaly</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
     <span class="n">start</span> <span class="o">=</span> <span class="n">anomaly_date</span> <span class="o">-</span> <span class="n">one_day</span> <span class="o">*</span> <span class="n">delta_plotted_days</span>
@@ -1407,21 +1167,20 @@ f1: 0.45/1
 </div>
 </section>
 <section id="Simple-case:-KMeansScorer">
-<h1>Simple case: <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code><a class="headerlink" href="#Simple-case:-KMeansScorer" title="Permalink to this heading">¶</a></h1>
+<h1>Simple case: <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code><a class="headerlink" href="#Simple-case:-KMeansScorer" title="Link to this heading">#</a></h1>
 <p>Let’s have a closer look at the scorer’s <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter on the example of the <code class="docutils literal notranslate"><span class="pre">KmeansScorer</span></code>. We’ll use two toy datasets to demonstrate how the scorers perform with different window sizes. In first example we set <code class="docutils literal notranslate"><span class="pre">window=1</span></code> on a multivariate time series, and in the second we set <code class="docutils literal notranslate"><span class="pre">window=2</span></code> on a univariate time series.</p>
 <p>The figure below illustrates the Scorer’s windowing process:</p>
-<p><img alt="40ecb2648cb3452e890106353b960ffb" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
+<p><img alt="fff71658e1de4059b58b4172a05d6e26" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
 <section id="Multivariate-case-with-window=1">
-<h2>Multivariate case with window=1<a class="headerlink" href="#Multivariate-case-with-window=1" title="Permalink to this heading">¶</a></h2>
+<h2>Multivariate case with window=1<a class="headerlink" href="#Multivariate-case-with-window=1" title="Link to this heading">#</a></h2>
 <section id="Synthetic-data-creation">
-<h3>Synthetic data creation<a class="headerlink" href="#Synthetic-data-creation" title="Permalink to this heading">¶</a></h3>
+<h3>Synthetic data creation<a class="headerlink" href="#Synthetic-data-creation" title="Link to this heading">#</a></h3>
 <p>The data is a multivariate series (2 components/columns). Each step has either value of <code class="docutils literal notranslate"><span class="pre">0</span></code> or <code class="docutils literal notranslate"><span class="pre">1</span></code>, and the two components always have opposite values:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;State 1&quot;</span><span class="p">,</span> <span class="s2">&quot;State 2&quot;</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;comp1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;comp2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]})</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;State 1&quot;</span><span class="p">,</span> <span class="s2">&quot;State 2&quot;</span><span class="p">],</span> <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;comp1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="s2">&quot;comp2&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]})</span>
 </pre></div>
 </div>
 </div>
@@ -1469,13 +1228,12 @@ f1: 0.45/1
 </div>
 <p>At each timestamp, it has a 50% chance to switch state and a 50% chance to keep the same state.</p>
 <section id="Train-set">
-<h4>Train set<a class="headerlink" href="#Train-set" title="Permalink to this heading">¶</a></h4>
+<h4>Train set<a class="headerlink" href="#Train-set" title="Link to this heading">#</a></h4>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_data_ex1</span><span class="p">(</span><span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_data_ex1</span><span class="p">(</span><span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
 
     <span class="c1"># create the train set</span>
@@ -1490,8 +1248,7 @@ f1: 0.45/1
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">data</span> <span class="o">=</span> <span class="n">generate_data_ex1</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">generate_data_ex1</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
 <span class="n">series_train</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;comp1&quot;</span><span class="p">,</span> <span class="s2">&quot;comp2&quot;</span><span class="p">])</span>
 
 <span class="c1"># visualize the train set</span>
@@ -1510,7 +1267,7 @@ f1: 0.45/1
 </div>
 </section>
 <section id="Test-set">
-<h4>Test set<a class="headerlink" href="#Test-set" title="Permalink to this heading">¶</a></h4>
+<h4>Test set<a class="headerlink" href="#Test-set" title="Link to this heading">#</a></h4>
 <p>We create the test set using the same rules as the train set but we’ll inject six anomalies of three different types. The anomalies can be longer than one timestamp. The types are:</p>
 <ul class="simple">
 <li><p>1st type: replacing the value of one component (0 or 1) with 2</p></li>
@@ -1521,8 +1278,7 @@ f1: 0.45/1
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># inject anomalies in the test timeseries</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># inject anomalies in the test timeseries</span>
 <span class="n">data</span> <span class="o">=</span> <span class="n">generate_data_ex1</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
 <span class="c1"># 2 anomalies per type</span>
@@ -1553,8 +1309,7 @@ f1: 0.45/1
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">show_anomalies_from_scores</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">show_anomalies_from_scores</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="n">series_test</span><span class="p">,</span> <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Testing set multivariate&quot;</span>
 <span class="p">)</span>
 </pre></div>
@@ -1570,7 +1325,7 @@ f1: 0.45/1
 </section>
 </section>
 <section id="Use-the-scorer-KMeansScorer()">
-<h3>Use the scorer <code class="docutils literal notranslate"><span class="pre">KMeansScorer()</span></code><a class="headerlink" href="#Use-the-scorer-KMeansScorer()" title="Permalink to this heading">¶</a></h3>
+<h3>Use the scorer <code class="docutils literal notranslate"><span class="pre">KMeansScorer()</span></code><a class="headerlink" href="#Use-the-scorer-KMeansScorer()" title="Link to this heading">#</a></h3>
 <p>We’ll use the <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code> to locate the anomalies with the following parameters:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">k</span></code>=2: The number of clusters/centroids generated by the KMeans model. We choose two since we know that there are only two valid states.</p></li>
@@ -1582,8 +1337,7 @@ f1: 0.45/1
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">Kmeans_scorer</span> <span class="o">=</span> <span class="n">KMeansScorer</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">component_wise</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Kmeans_scorer</span> <span class="o">=</span> <span class="n">KMeansScorer</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">component_wise</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="c1"># fit the KmeansScorer on the train timeseries &#39;series_train&#39;</span>
 <span class="n">Kmeans_scorer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series_train</span><span class="p">)</span>
@@ -1603,8 +1357,7 @@ f1: 0.45/1
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">anomaly_score</span> <span class="o">=</span> <span class="n">Kmeans_scorer</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">series_test</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">anomaly_score</span> <span class="o">=</span> <span class="n">Kmeans_scorer</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">series_test</span><span class="p">)</span>
 
 <span class="c1"># visualize the anomaly score compared to the true anomalies</span>
 <span class="n">anomaly_score</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Anomaly score by KMeans&quot;</span><span class="p">)</span>
@@ -1627,8 +1380,7 @@ f1: 0.45/1
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">for</span> <span class="n">metric_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]:</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">metric_name</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">,</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">]:</span>
     <span class="n">metric_val</span> <span class="o">=</span> <span class="n">Kmeans_scorer</span><span class="o">.</span><span class="n">eval_metric</span><span class="p">(</span><span class="n">anomalies</span><span class="p">,</span> <span class="n">series_test</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="n">metric_name</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="n">metric_name</span> <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;: </span><span class="si">{</span><span class="n">metric_val</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
@@ -1648,8 +1400,7 @@ AUC_PR: 1.0
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">Kmeans_scorer</span><span class="o">.</span><span class="n">show_anomalies</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series_test</span><span class="p">,</span> <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">Kmeans_scorer</span><span class="o">.</span><span class="n">show_anomalies</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series_test</span><span class="p">,</span> <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span> <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -1663,12 +1414,12 @@ AUC_PR: 1.0
 </section>
 </section>
 <section id="Univariate-case-with-window&gt;1">
-<h2>Univariate case with window&gt;1<a class="headerlink" href="#Univariate-case-with-window>1" title="Permalink to this heading">¶</a></h2>
+<h2>Univariate case with window&gt;1<a class="headerlink" href="#Univariate-case-with-window>1" title="Link to this heading">#</a></h2>
 <p>In the previous example, we used <code class="docutils literal notranslate"><span class="pre">window=1</span></code> which was sufficient to identify all anomalies. In the next example, we’ll see that sometimes higher values are required to capture the true anomalies.</p>
 <section id="id1">
-<h3>Synthetic data creation<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<h3>Synthetic data creation<a class="headerlink" href="#id1" title="Link to this heading">#</a></h3>
 <section id="id2">
-<h4>Train set<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h4>
+<h4>Train set<a class="headerlink" href="#id2" title="Link to this heading">#</a></h4>
 <p>In this toy example, we generate a univariate (one component) series that can take 4 possible values.</p>
 <ul class="simple">
 <li><p>possible values at each step <code class="docutils literal notranslate"><span class="pre">(0,</span> <span class="pre">1,</span> <span class="pre">2,</span> <span class="pre">3)</span></code></p></li>
@@ -1684,8 +1435,7 @@ AUC_PR: 1.0
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_data_ex2</span><span class="p">(</span><span class="n">start_val</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">generate_data_ex2</span><span class="p">(</span><span class="n">start_val</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">random_state</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
     <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">random_state</span><span class="p">)</span>
     <span class="c1"># create the test set</span>
     <span class="n">vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
@@ -1707,8 +1457,7 @@ AUC_PR: 1.0
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">data</span> <span class="o">=</span> <span class="n">generate_data_ex2</span><span class="p">(</span><span class="n">start_val</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">generate_data_ex2</span><span class="p">(</span><span class="n">start_val</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">series_train</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;series&quot;</span><span class="p">])</span>
 
 <span class="c1"># visualize the train set</span>
@@ -1735,7 +1484,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 </div>
 </section>
 <section id="id3">
-<h4>Test set<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h4>
+<h4>Test set<a class="headerlink" href="#id3" title="Link to this heading">#</a></h4>
 <p>We create the test set using the same rules as the train set but we’ll inject six anomalies of two different types. The anomalies can be longer than one timestamp:</p>
 <ul class="simple">
 <li><p>Type 1: steps with <code class="docutils literal notranslate"><span class="pre">abs(diff)</span> <span class="pre">&gt;</span> <span class="pre">1</span></code> (jumps larger than one)</p></li>
@@ -1745,8 +1494,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">data</span> <span class="o">=</span> <span class="n">generate_data_ex2</span><span class="p">(</span><span class="n">start_val</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">data</span> <span class="o">=</span> <span class="n">generate_data_ex2</span><span class="p">(</span><span class="n">start_val</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 
 <span class="c1"># 3 anomalies per type</span>
 <span class="c1"># type 1: sudden shift between state 0 to state 2 without passing by value 1</span>
@@ -1777,8 +1525,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">show_anomalies_from_scores</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">show_anomalies_from_scores</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="n">series_test</span><span class="p">,</span> <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Testing set univariate&quot;</span>
 <span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
@@ -1796,14 +1543,13 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 </section>
 </section>
 <section id="id4">
-<h3>Use the scorer <code class="docutils literal notranslate"><span class="pre">KMeansScorer()</span></code><a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
+<h3>Use the scorer <code class="docutils literal notranslate"><span class="pre">KMeansScorer()</span></code><a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
 <p>We fit two <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code> with different values for the <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter (1 and 2).</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">windows</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">windows</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">]</span>
 <span class="n">Kmeans_scorer_w1</span> <span class="o">=</span> <span class="n">KMeansScorer</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">windows</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 <span class="n">Kmeans_scorer_w2</span> <span class="o">=</span> <span class="n">KMeansScorer</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">window</span><span class="o">=</span><span class="n">windows</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">window_agg</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
@@ -1813,8 +1559,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">scores_all</span> <span class="o">=</span> <span class="p">[]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">scores_all</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="n">metric_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;AUC_ROC&quot;</span><span class="p">:</span> <span class="p">[],</span> <span class="s2">&quot;AUC_PR&quot;</span><span class="p">:</span> <span class="p">[]}</span>
 <span class="k">for</span> <span class="n">model</span><span class="p">,</span> <span class="n">window</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">([</span><span class="n">Kmeans_scorer_w1</span><span class="p">,</span> <span class="n">Kmeans_scorer_w2</span><span class="p">],</span> <span class="n">windows</span><span class="p">):</span>
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series_train</span><span class="p">)</span>
@@ -1880,8 +1625,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">show_anomalies_from_scores</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">show_anomalies_from_scores</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="n">series_test</span><span class="p">,</span>
     <span class="n">anomalies</span><span class="o">=</span><span class="n">anomalies</span><span class="p">,</span>
     <span class="n">pred_scores</span><span class="o">=</span><span class="n">scores_all</span><span class="p">,</span>
@@ -1904,8 +1648,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
 </pre></div>
 </div>
 </div>
@@ -1916,50 +1659,156 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="11-GP-filter-examples.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Filtering and predicting using the Gaussian Process filter</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="11-GP-filter-examples.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Filtering and predicting using the Gaussian Process filter</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="12-Dynamic-Time-Warping-example.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="12-Dynamic-Time-Warping-example.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Dynamic Time Warping (DTW)</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Anomaly Detection Darts Module</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Anomaly-Model:-Taxi-passengers-in-NY">Anomaly Model: Taxi passengers in NY</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Load-and-visualize-the-data">Load and visualize the data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Train-a-Darts-forecasting-model">Train a Darts forecasting model</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Use-a-Forecasting-Anomaly-Model">Use a Forecasting Anomaly Model</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()">Using the main functions: fit(), score(), eval_metric() and show_anomalies()</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Convert-an-anomaly-score-to-a-binary-prediction-with-a-Detector">Convert an anomaly score to a binary prediction with a <code class="docutils literal notranslate"><span class="pre">Detector</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Using-the-functions-show_anomalies_from_scores(),-eval_metric_from_scores()">Using the functions show_anomalies_from_scores(), eval_metric_from_scores()</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#A-zoom-on-each-anomalies:-visualize-the-results">A zoom on each anomalies: visualize the results</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Simple-case:-KMeansScorer">Simple case: <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Multivariate-case-with-window=1">Multivariate case with window=1</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Synthetic-data-creation">Synthetic data creation</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Train-set">Train set</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Test-set">Test set</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Use-the-scorer-KMeansScorer()">Use the scorer <code class="docutils literal notranslate"><span class="pre">KMeansScorer()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Univariate-case-with-window&gt;1">Univariate case with window&gt;1</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id1">Synthetic data creation</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id2">Train set</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Test set</a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Use the scorer <code class="docutils literal notranslate"><span class="pre">KMeansScorer()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples/22-anomaly-detection-examples.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

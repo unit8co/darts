@@ -1,13 +1,19 @@
+darts.ad.detectors
+==================
+
+.. currentmodule:: darts.ad.detectors
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.ad.detectors.iqr_detector
+   darts.ad.detectors.quantile_detector
+   darts.ad.detectors.threshold_detector
 
 
 
-.. automodule:: darts.ad.detectors
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.ad.detectors.detectors
-        darts.ad.detectors.iqr_detector
-        darts.ad.detectors.quantile_detector
-        darts.ad.detectors.threshold_detector
+- :doc:`darts.ad.detectors.iqr_detector <darts.ad.detectors.iqr_detector>`
+- :doc:`darts.ad.detectors.quantile_detector <darts.ad.detectors.quantile_detector>`
+- :doc:`darts.ad.detectors.threshold_detector <darts.ad.detectors.threshold_detector>`

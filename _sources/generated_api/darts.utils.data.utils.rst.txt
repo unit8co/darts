@@ -1,3 +1,0 @@
-.. automodule:: darts.utils.data.utils
-   :members:
-   :undoc-members:

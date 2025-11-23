@@ -1,705 +1,526 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Static Covariates &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/15-static-covariates';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Transfer Learning for Time Series Forecasting with Darts" href="14-transfer-learning.html" />
     <link rel="prev" title="Data (pre) processing using DataTransformer and Pipeline" href="02-data-processing.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-    </nav>
-    
 
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="01-multi-time-series-and-covariates.html">
-   Multiple Time Series, Pre-trained Models and Covariates
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="01-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="02-data-processing.html">
-   Data (pre) processing using
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     DataTransformer
-    </span>
-   </code>
-   and
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     Pipeline
-    </span>
-   </code>
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="02-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
 </ul>
 <ul class="current nav bd-sidenav">
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   Static Covariates
-  </a>
- </li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Static Covariates</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="14-transfer-learning.html">
-   Transfer Learning for Time Series Forecasting with Darts
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="14-transfer-learning.html">Transfer Learning for Time Series Forecasting with Darts</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="16-hierarchical-reconciliation.html">
-   Hierarchical Reconciliation - Example on the Australian Tourism Dataset
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="16-hierarchical-reconciliation.html">Hierarchical Reconciliation - Example on the Australian Tourism Dataset</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="17-hyperparameter-optimization.html">
-   Hyper-parameters Optimization for Electricity Load Forecasting
-  </a>
- </li>
+<li class="toctree-l1"><a class="reference internal" href="17-hyperparameter-optimization.html">Hyper-parameters Optimization for Electricity Load Forecasting</a></li>
 </ul>
 <ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="20-SKLearnModel-examples.html">
-   Regression Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="24-SKLearnClassifierModel-examples.html">
-   Classification Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="23-Conformal-Prediction-examples.html">
-   Conformal Prediction Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="03-FFT-examples.html">
-   Fast Fourier Transform Forecasting Model (FFT)
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="04-RNN-examples.html">
-   Recurrent Neural Networks Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="05-TCN-examples.html">
-   Temporal Convolutional Network
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="06-Transformer-examples.html">
-   Transformer Model
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="07-NBEATS-examples.html">
-   N-BEATS
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="08-DeepAR-examples.html">
-   Probabilistic RNN
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="09-DeepTCN-examples.html">
-   DeepTCN model
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="13-TFT-examples.html">
-   Temporal Fusion Transformer
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="18-TiDE-examples.html">
-   TimeSeries Deep Encoder
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="21-TSMixer-examples.html">
-   Time Series Mixer (TSMixer)
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="19-EnsembleModel-examples.html">
-   Ensembling Models
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="10-Kalman-filter-examples.html">
-   Filtering and predicting using the darts filters
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="11-GP-filter-examples.html">
-   Filtering and predicting using the Gaussian Process filter
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="22-anomaly-detection-examples.html">
-   Anomaly Detection Darts Module
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="12-Dynamic-Time-Warping-example.html">
-   Dynamic Time Warping (DTW)
-  </a>
- </li>
-</ul>
+<li class="toctree-l1"><a class="reference internal" href="20-SKLearnModel-examples.html">Regression Models</a></li>
 
-  </div>
-</nav>
-            </div>
-            
-          
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="24-SKLearnClassifierModel-examples.html">Classification Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="23-Conformal-Prediction-examples.html">Conformal Prediction Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="03-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="04-RNN-examples.html">Recurrent Neural Networks Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="05-TCN-examples.html">Temporal Convolutional Network</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="06-Transformer-examples.html">Transformer Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="07-NBEATS-examples.html">N-BEATS</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="08-DeepAR-examples.html">Probabilistic RNN</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="09-DeepTCN-examples.html">DeepTCN model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="13-TFT-examples.html">Temporal Fusion Transformer</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="18-TiDE-examples.html">TimeSeries Deep Encoder</a></li>
 
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="21-TSMixer-examples.html">Time Series Mixer (TSMixer)</a></li>
+
+
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="25-Chronos-2-examples.html">Chronos-2 Foundation Model</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="19-EnsembleModel-examples.html">Ensembling Models</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="10-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="11-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="22-anomaly-detection-examples.html">Anomaly Detection Darts Module</a></li>
+
+
+
+
+</ul>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="12-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
+</ul>
 </div>
-
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#1.-Defining-static-covariates">
-   1. Defining static covariates
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#2.-Add-static-covariates-to-an-existing-TimeSeries">
-   2. Add static covariates to an existing TimeSeries
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#3.-Adding-static-covariates-at-TimeSeries-construction">
-   3. Adding static covariates at TimeSeries construction
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Using-static-covariates-with-multiple-TimeSeries">
-   Using static covariates with multiple TimeSeries
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#4.-Extract-a-list-of-time-series-by-groups-from-a-DataFrame-using-from_group_dataframe()">
-   4. Extract a list of time series by groups from a DataFrame using
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     from_group_dataframe()
-    </span>
-   </code>
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#5.-Scaling/Encoding/Transforming-static-covariate-data">
-   5. Scaling/Encoding/Transforming static covariate data
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#6.-Forecasting-example-with-TFTModel-and-static-covariates">
-   6. Forecasting example with
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     TFTModel
-    </span>
-   </code>
-   and static covariates
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#6.1-Experiment-setup">
-     6.1 Experiment setup
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#6.2-Forecasting-without-static-covariates">
-   6.2 Forecasting without static covariates
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#6.3-Forecasting-with-0/1-binary-static-covariates-(numeric)">
-   6.3 Forecasting with 0/1 binary static covariates (numeric)
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#6.4-Forecasting-with-categorical-static-covariates">
-   6.4 Forecasting with categorical static covariates
-  </a>
- </li>
-</ul>
-
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+</nav></div>
+    </div>
   
-<style>
-/* CSS for nbsphinx extension */
-
-/* remove conflicting styling from Sphinx themes */
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt *,
-div.nbinput.container div.input_area pre,
-div.nboutput.container div.output_area pre,
-div.nbinput.container div.input_area .highlight,
-div.nboutput.container div.output_area .highlight {
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-}
-
-div.nbinput.container > div[class*=highlight],
-div.nboutput.container > div[class*=highlight] {
-    margin: 0;
-}
-
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt * {
-    background: none;
-}
-
-div.nboutput.container div.output_area .highlight,
-div.nboutput.container div.output_area pre {
-    background: unset;
-}
-
-div.nboutput.container div.output_area div.highlight {
-    color: unset;  /* override Pygments text color */
-}
-
-/* avoid gaps between output lines */
-div.nboutput.container div[class*=highlight] pre {
-    line-height: normal;
-}
-
-/* input/output containers */
-div.nbinput.container,
-div.nboutput.container {
-    display: -webkit-flex;
-    display: flex;
-    align-items: flex-start;
-    margin: 0;
-    width: 100%;
-}
-@media (max-width: 540px) {
-    div.nbinput.container,
-    div.nboutput.container {
-        flex-direction: column;
-    }
-}
-
-/* input container */
-div.nbinput.container {
-    padding-top: 5px;
-}
-
-/* last container */
-div.nblast.container {
-    padding-bottom: 5px;
-}
-
-/* input prompt */
-div.nbinput.container div.prompt pre {
-    color: #307FC1;
-}
-
-/* output prompt */
-div.nboutput.container div.prompt pre {
-    color: #BF5B3D;
-}
-
-/* all prompts */
-div.nbinput.container div.prompt,
-div.nboutput.container div.prompt {
-    width: 4.5ex;
-    padding-top: 5px;
-    position: relative;
-    user-select: none;
-}
-
-div.nbinput.container div.prompt > div,
-div.nboutput.container div.prompt > div {
-    position: absolute;
-    right: 0;
-    margin-right: 0.3ex;
-}
-
-@media (max-width: 540px) {
-    div.nbinput.container div.prompt,
-    div.nboutput.container div.prompt {
-        width: unset;
-        text-align: left;
-        padding: 0.4em;
-    }
-    div.nboutput.container div.prompt.empty {
-        padding: 0;
-    }
-
-    div.nbinput.container div.prompt > div,
-    div.nboutput.container div.prompt > div {
-        position: unset;
-    }
-}
-
-/* disable scrollbars on prompts */
-div.nbinput.container div.prompt pre,
-div.nboutput.container div.prompt pre {
-    overflow: hidden;
-}
-
-/* input/output area */
-div.nbinput.container div.input_area,
-div.nboutput.container div.output_area {
-    -webkit-flex: 1;
-    flex: 1;
-    overflow: auto;
-}
-@media (max-width: 540px) {
-    div.nbinput.container div.input_area,
-    div.nboutput.container div.output_area {
-        width: 100%;
-    }
-}
-
-/* input area */
-div.nbinput.container div.input_area {
-    border: 1px solid #e0e0e0;
-    border-radius: 2px;
-    /*background: #f5f5f5;*/
-}
-
-/* override MathJax center alignment in output cells */
-div.nboutput.container div[class*=MathJax] {
-    text-align: left !important;
-}
-
-/* override sphinx.ext.imgmath center alignment in output cells */
-div.nboutput.container div.math p {
-    text-align: left;
-}
-
-/* standard error */
-div.nboutput.container div.output_area.stderr {
-    background: #fdd;
-}
-
-/* ANSI colors */
-.ansi-black-fg { color: #3E424D; }
-.ansi-black-bg { background-color: #3E424D; }
-.ansi-black-intense-fg { color: #282C36; }
-.ansi-black-intense-bg { background-color: #282C36; }
-.ansi-red-fg { color: #E75C58; }
-.ansi-red-bg { background-color: #E75C58; }
-.ansi-red-intense-fg { color: #B22B31; }
-.ansi-red-intense-bg { background-color: #B22B31; }
-.ansi-green-fg { color: #00A250; }
-.ansi-green-bg { background-color: #00A250; }
-.ansi-green-intense-fg { color: #007427; }
-.ansi-green-intense-bg { background-color: #007427; }
-.ansi-yellow-fg { color: #DDB62B; }
-.ansi-yellow-bg { background-color: #DDB62B; }
-.ansi-yellow-intense-fg { color: #B27D12; }
-.ansi-yellow-intense-bg { background-color: #B27D12; }
-.ansi-blue-fg { color: #208FFB; }
-.ansi-blue-bg { background-color: #208FFB; }
-.ansi-blue-intense-fg { color: #0065CA; }
-.ansi-blue-intense-bg { background-color: #0065CA; }
-.ansi-magenta-fg { color: #D160C4; }
-.ansi-magenta-bg { background-color: #D160C4; }
-.ansi-magenta-intense-fg { color: #A03196; }
-.ansi-magenta-intense-bg { background-color: #A03196; }
-.ansi-cyan-fg { color: #60C6C8; }
-.ansi-cyan-bg { background-color: #60C6C8; }
-.ansi-cyan-intense-fg { color: #258F8F; }
-.ansi-cyan-intense-bg { background-color: #258F8F; }
-.ansi-white-fg { color: #C5C1B4; }
-.ansi-white-bg { background-color: #C5C1B4; }
-.ansi-white-intense-fg { color: #A1A6B2; }
-.ansi-white-intense-bg { background-color: #A1A6B2; }
-
-.ansi-default-inverse-fg { color: #FFFFFF; }
-.ansi-default-inverse-bg { background-color: #000000; }
-
-.ansi-bold { font-weight: bold; }
-.ansi-underline { text-decoration: underline; }
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
 
 
-div.nbinput.container div.input_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight].math,
-div.nboutput.container div.output_area.rendered_html,
-div.nboutput.container div.output_area > div.output_javascript,
-div.nboutput.container div.output_area:not(.rendered_html) > img{
-    padding: 5px;
-    margin: 0;
-}
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
 
-/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
-div.nbinput.container div.input_area > div[class^='highlight'],
-div.nboutput.container div.output_area > div[class^='highlight']{
-    overflow-y: hidden;
-}
-
-/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
-.prompt a.copybtn {
-    display: none;
-}
-
-/* Some additional styling taken form the Jupyter notebook CSS */
-div.rendered_html table {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: black;
-  font-size: 12px;
-  table-layout: fixed;
-}
-div.rendered_html thead {
-  border-bottom: 1px solid black;
-  vertical-align: bottom;
-}
-div.rendered_html tr,
-div.rendered_html th,
-div.rendered_html td {
-  text-align: right;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
-}
-div.rendered_html th {
-  font-weight: bold;
-}
-div.rendered_html tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-div.rendered_html tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
-</style>
-<div class="nbinput nblast docutils container">
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../examples.html" class="nav-link">Examples</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Static Covariates</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># fix python path if working locally</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># fix python path if working locally</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
@@ -710,8 +531,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
 </pre></div>
@@ -721,8 +541,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -738,7 +557,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="Static-Covariates">
-<h1>Static Covariates<a class="headerlink" href="#Static-Covariates" title="Permalink to this heading">¶</a></h1>
+<h1>Static Covariates<a class="headerlink" href="#Static-Covariates" title="Link to this heading">#</a></h1>
 <p>Static covariates are characteristics of a time series / constants which do not change over time. When dealing with multiple time series, static covariates can help specific models improve forecasts. Darts’ models will only consider static covariates embedded in the target series (the series for which we want to predict future values) and not past and/or future covariates (external data).</p>
 <p>In this tutorial we look at:</p>
 <ol class="arabic simple">
@@ -754,8 +573,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
     <span class="n">times</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="s2">&quot;2020-01-01&quot;</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;h&quot;</span><span class="p">),</span>
     <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">)),</span>
@@ -773,7 +591,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <section id="1.-Defining-static-covariates">
-<h2>1. Defining static covariates<a class="headerlink" href="#1.-Defining-static-covariates" title="Permalink to this heading">¶</a></h2>
+<h2>1. Defining static covariates<a class="headerlink" href="#1.-Defining-static-covariates" title="Link to this heading">#</a></h2>
 <p>Define your static covariates as a pd.DataFrame where the columns represent the static variables and rows stand for the components of the uni/multivariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> they will be added to.</p>
 <ul class="simple">
 <li><p>The number of rows must either be 1 or equal to the number of components from <code class="docutils literal notranslate"><span class="pre">series</span></code>.</p></li>
@@ -783,8 +601,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># arbitrary continuous and categorical static covariates (single row)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># arbitrary continuous and categorical static covariates (single row)</span>
 <span class="n">static_covs_single</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;cont&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;cat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">]})</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">static_covs_single</span><span class="p">)</span>
 
@@ -810,7 +627,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="2.-Add-static-covariates-to-an-existing-TimeSeries">
-<h2>2. Add static covariates to an existing TimeSeries<a class="headerlink" href="#2.-Add-static-covariates-to-an-existing-TimeSeries" title="Permalink to this heading">¶</a></h2>
+<h2>2. Add static covariates to an existing TimeSeries<a class="headerlink" href="#2.-Add-static-covariates-to-an-existing-TimeSeries" title="Link to this heading">#</a></h2>
 <p>Create a new series from an existing TimeSeries with added static covariates using method <code class="docutils literal notranslate"><span class="pre">with_static_covariates()</span></code> (see docs <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_static_covariates">here</a>)</p>
 <ul class="simple">
 <li><p>Single row static covarites with multivariate <code class="docutils literal notranslate"><span class="pre">series</span></code> creates “global_components” which are mapped to all components</p></li>
@@ -820,8 +637,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">assert</span> <span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span> <span class="ow">is</span> <span class="kc">None</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">assert</span> <span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span> <span class="ow">is</span> <span class="kc">None</span>
 
 <span class="n">series_single</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span><span class="n">static_covs_single</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Single row static covarites with multivariate `series`&quot;</span><span class="p">)</span>
@@ -852,14 +668,13 @@ comp3               1.0   b
 </div>
 </section>
 <section id="3.-Adding-static-covariates-at-TimeSeries-construction">
-<h2>3. Adding static covariates at TimeSeries construction<a class="headerlink" href="#3.-Adding-static-covariates-at-TimeSeries-construction" title="Permalink to this heading">¶</a></h2>
+<h2>3. Adding static covariates at TimeSeries construction<a class="headerlink" href="#3.-Adding-static-covariates-at-TimeSeries-construction" title="Link to this heading">#</a></h2>
 <p>Static covariates can also directly be added when creating a time series with parameter <code class="docutils literal notranslate"><span class="pre">static_covariates</span></code> in most of <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_*()</span></code> methods.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># add arbitrary continuous and categorical static covariates</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># add arbitrary continuous and categorical static covariates</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span>
     <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span> <span class="mi">3</span><span class="p">)),</span>
     <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;comp1&quot;</span><span class="p">,</span> <span class="s2">&quot;comp2&quot;</span><span class="p">,</span> <span class="s2">&quot;comp3&quot;</span><span class="p">],</span>
@@ -883,14 +698,13 @@ comp3               1.0   b
 </div>
 </section>
 <section id="Using-static-covariates-with-multiple-TimeSeries">
-<h2>Using static covariates with multiple TimeSeries<a class="headerlink" href="#Using-static-covariates-with-multiple-TimeSeries" title="Permalink to this heading">¶</a></h2>
+<h2>Using static covariates with multiple TimeSeries<a class="headerlink" href="#Using-static-covariates-with-multiple-TimeSeries" title="Link to this heading">#</a></h2>
 <p>Static covariates are only really useful if we use them across multiple TimeSeries. By convention, the static covariates layout (pd.DataFrame columns, index) has to be the same for all series.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">first_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">first_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
     <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;ID&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SERIES1&quot;</span><span class="p">],</span> <span class="s2">&quot;var1&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">]})</span>
 <span class="p">)</span>
 <span class="n">second_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
@@ -919,7 +733,7 @@ global_components  SERIES2  0.75
 </div>
 </section>
 <section id="4.-Extract-a-list-of-time-series-by-groups-from-a-DataFrame-using-from_group_dataframe()">
-<h2>4. Extract a list of time series by groups from a DataFrame using <code class="docutils literal notranslate"><span class="pre">from_group_dataframe()</span></code><a class="headerlink" href="#4.-Extract-a-list-of-time-series-by-groups-from-a-DataFrame-using-from_group_dataframe()" title="Permalink to this heading">¶</a></h2>
+<h2>4. Extract a list of time series by groups from a DataFrame using <code class="docutils literal notranslate"><span class="pre">from_group_dataframe()</span></code><a class="headerlink" href="#4.-Extract-a-list-of-time-series-by-groups-from-a-DataFrame-using-from_group_dataframe()" title="Link to this heading">#</a></h2>
 <p>If your DataFrame contains multiple time series which are stacked vertically, you can use <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_group_dataframe()</span></code> (see the docs <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_group_dataframe">here</a>) to extract them as a list of TimeSeries instances. This requires a column or list of columns for which the DataFrame should grouped by (parameter <code class="docutils literal notranslate"><span class="pre">group_cols</span></code>). <code class="docutils literal notranslate"><span class="pre">group_cols</span></code> will automatically be added as static covariates to
 the individual series. Additional columns can be used as static covariates with parameter <code class="docutils literal notranslate"><span class="pre">static_cols</span></code>.</p>
 <p>In the example below, we generate a DataFrame which contains data of two distinct time series (overlapping/repeating dates) “SERIES1” and “SERIES2” and extract the TimeSeries with <code class="docutils literal notranslate"><span class="pre">from_group_dataframe()</span></code>.</p>
@@ -927,8 +741,7 @@ the individual series. Additional columns can be used as static covariates with 
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># generate an DataFrame example</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># generate an DataFrame example</span>
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
     <span class="n">data</span><span class="o">=</span><span class="p">{</span>
         <span class="s2">&quot;dates&quot;</span><span class="p">:</span> <span class="p">[</span>
@@ -1003,7 +816,7 @@ global_components  SERIES2  0.75
 </div>
 </section>
 <section id="5.-Scaling/Encoding/Transforming-static-covariate-data">
-<h2>5. Scaling/Encoding/Transforming static covariate data<a class="headerlink" href="#5.-Scaling/Encoding/Transforming-static-covariate-data" title="Permalink to this heading">¶</a></h2>
+<h2>5. Scaling/Encoding/Transforming static covariate data<a class="headerlink" href="#5.-Scaling/Encoding/Transforming-static-covariate-data" title="Link to this heading">#</a></h2>
 <p>There might be the need to scale numeric static covariates or encode categorical static covariates as not all models can handle non numeric static covariates.</p>
 <p>Use <code class="docutils literal notranslate"><span class="pre">StaticCovariatesTransformer</span></code> (see the docs <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.static_covariates_transformer.html#staticcovariatestransformer">here</a>) to scale/transform static covariates. By default it uses a <code class="docutils literal notranslate"><span class="pre">MinMaxScaler</span></code> to scale numeric data, and a <code class="docutils literal notranslate"><span class="pre">OrdinalEncoder</span></code> to encode categorical data. Both the numeric and categorical transformers will be fit globally on static covariate data of all time series passed to
 <code class="docutils literal notranslate"><span class="pre">StaticCovariatesTransformer.fit()</span></code></p>
@@ -1011,8 +824,7 @@ global_components  SERIES2  0.75
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">StaticCovariatesTransformer</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">StaticCovariatesTransformer</span>
 
 <span class="n">transformer</span> <span class="o">=</span> <span class="n">StaticCovariatesTransformer</span><span class="p">()</span>
 <span class="n">series_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series_multi</span><span class="p">)</span>
@@ -1049,14 +861,13 @@ global_components  1.0   1.0
 </div>
 </section>
 <section id="6.-Forecasting-example-with-TFTModel-and-static-covariates">
-<h2>6. Forecasting example with <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> and static covariates<a class="headerlink" href="#6.-Forecasting-example-with-TFTModel-and-static-covariates" title="Permalink to this heading">¶</a></h2>
+<h2>6. Forecasting example with <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> and static covariates<a class="headerlink" href="#6.-Forecasting-example-with-TFTModel-and-static-covariates" title="Link to this heading">#</a></h2>
 <p>Now let’s find out if adding static covariates to a forecasting problem can improve predictive accuracy. We’ll use <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> which supports numeric and categorical static covariates.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pytorch_lightning.callbacks</span><span class="w"> </span><span class="kn">import</span> <span class="n">TQDMProgressBar</span>
 
@@ -1069,14 +880,13 @@ global_components  1.0   1.0
 </div>
 </div>
 <section id="6.1-Experiment-setup">
-<h3>6.1 Experiment setup<a class="headerlink" href="#6.1-Experiment-setup" title="Permalink to this heading">¶</a></h3>
+<h3>6.1 Experiment setup<a class="headerlink" href="#6.1-Experiment-setup" title="Link to this heading">#</a></h3>
 <p>For our experiment, we generate two time series: a fully sine wave series (label = smooth) and sine wave series with some irregularities every other period (label = irregular, see the ramps at periods 2 and 4).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">period</span> <span class="o">=</span> <span class="mi">20</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">period</span> <span class="o">=</span> <span class="mi">20</span>
 <span class="n">sine_series</span> <span class="o">=</span> <span class="n">tg</span><span class="o">.</span><span class="n">sine_timeseries</span><span class="p">(</span>
     <span class="n">length</span><span class="o">=</span><span class="mi">4</span> <span class="o">*</span> <span class="n">period</span><span class="p">,</span> <span class="n">value_frequency</span><span class="o">=</span><span class="mi">1</span> <span class="o">/</span> <span class="n">period</span><span class="p">,</span> <span class="n">column_name</span><span class="o">=</span><span class="s2">&quot;smooth&quot;</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;h&quot;</span>
 <span class="p">)</span>
@@ -1115,8 +925,7 @@ global_components  1.0   1.0
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_case</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">train_series</span><span class="p">,</span> <span class="n">predict_series</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_case</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">train_series</span><span class="p">,</span> <span class="n">predict_series</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;helper function which performs model training, prediction and plotting&quot;&quot;&quot;</span>
     <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
     <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">period</span> <span class="o">/</span> <span class="mi">2</span><span class="p">),</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">250</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">predict_series</span><span class="p">)</span>
@@ -1147,14 +956,13 @@ global_components  1.0   1.0
 </section>
 </section>
 <section id="6.2-Forecasting-without-static-covariates">
-<h2>6.2 Forecasting without static covariates<a class="headerlink" href="#6.2-Forecasting-without-static-covariates" title="Permalink to this heading">¶</a></h2>
+<h2>6.2 Forecasting without static covariates<a class="headerlink" href="#6.2-Forecasting-without-static-covariates" title="Link to this heading">#</a></h2>
 <p>Let’s train the first model without any static covariates</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">sine_series</span><span class="p">,</span> <span class="n">irregular_series</span><span class="p">]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">sine_series</span><span class="p">,</span> <span class="n">irregular_series</span><span class="p">]</span>
 <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">train_series</span><span class="p">:</span>
     <span class="k">assert</span> <span class="ow">not</span> <span class="n">series</span><span class="o">.</span><span class="n">has_static_covariates</span>
 
@@ -1197,14 +1005,13 @@ global_components  1.0   1.0
 <p>As expected, the model was not able to determine the type of the underlying prediciton series (smooth or irregular) and generate a sine-wave like forecast for both.</p>
 </section>
 <section id="6.3-Forecasting-with-0/1-binary-static-covariates-(numeric)">
-<h2>6.3 Forecasting with 0/1 binary static covariates (numeric)<a class="headerlink" href="#6.3-Forecasting-with-0/1-binary-static-covariates-(numeric)" title="Permalink to this heading">¶</a></h2>
+<h2>6.3 Forecasting with 0/1 binary static covariates (numeric)<a class="headerlink" href="#6.3-Forecasting-with-0/1-binary-static-covariates-(numeric)" title="Link to this heading">#</a></h2>
 <p>Now let’s repeat the experiment but this time we add information about the curve type as a binary (numeric) static covariate named <code class="docutils literal notranslate"><span class="pre">&quot;curve_type&quot;</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">sine_series_st_bin</span> <span class="o">=</span> <span class="n">sine_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sine_series_st_bin</span> <span class="o">=</span> <span class="n">sine_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
     <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;curve_type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">]})</span>
 <span class="p">)</span>
 <span class="n">irregular_series_st_bin</span> <span class="o">=</span> <span class="n">irregular_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
@@ -1266,15 +1073,14 @@ irregular                 0.0
 <p>That already looks much better! The model was able to identify the curve type/category from the binary static covariate feature.</p>
 </section>
 <section id="6.4-Forecasting-with-categorical-static-covariates">
-<h2>6.4 Forecasting with categorical static covariates<a class="headerlink" href="#6.4-Forecasting-with-categorical-static-covariates" title="Permalink to this heading">¶</a></h2>
+<h2>6.4 Forecasting with categorical static covariates<a class="headerlink" href="#6.4-Forecasting-with-categorical-static-covariates" title="Link to this heading">#</a></h2>
 <p>The last experiment already showed promising results. So why not only use binary features for categorical data? While it might have worked well for our two time series, if we had more curve types we’d need to one hot encode the feature into a binary variable for each category. With a lot of categories, this lead to a large number of features/predictors and multicollinearity which can lower the model’s predictive accuracy.</p>
 <p>As a last experiment, let’s use the curve type as a categorical feature. <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> learns an embedding for categorical features. Darts’ <code class="docutils literal notranslate"><span class="pre">TorchForecastingModels</span></code> (such as <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>) only support numeric data. Before training we need to transform the <code class="docutils literal notranslate"><span class="pre">&quot;curve_type&quot;</span></code> into a integer-valued feature with <code class="docutils literal notranslate"><span class="pre">StaticCovariatesTransformer</span></code> (see section 5.).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">sine_series_st_cat</span> <span class="o">=</span> <span class="n">sine_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sine_series_st_cat</span> <span class="o">=</span> <span class="n">sine_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
     <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;curve_type&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;smooth&quot;</span><span class="p">]})</span>
 <span class="p">)</span>
 <span class="n">irregular_series_st_cat</span> <span class="o">=</span> <span class="n">irregular_series</span><span class="o">.</span><span class="n">with_static_covariates</span><span class="p">(</span>
@@ -1314,8 +1120,7 @@ smooth                    1.0
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">n_categories</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># &quot;smooth&quot; and &quot;non_smooth&quot;</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">n_categories</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># &quot;smooth&quot; and &quot;non_smooth&quot;</span>
 <span class="n">embedding_size</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># embed the categorical variable into a numeric vector of size 2</span>
 <span class="n">categorical_embedding_sizes</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;curve_type&quot;</span><span class="p">:</span> <span class="p">(</span><span class="n">n_categories</span><span class="p">,</span> <span class="n">embedding_size</span><span class="p">)}</span>
 
@@ -1361,8 +1166,7 @@ smooth                    1.0
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">for</span> <span class="n">series</span><span class="p">,</span> <span class="n">ps_no_st</span><span class="p">,</span> <span class="n">ps_st_bin</span><span class="p">,</span> <span class="n">ps_st_cat</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">series</span><span class="p">,</span> <span class="n">ps_no_st</span><span class="p">,</span> <span class="n">ps_st_bin</span><span class="p">,</span> <span class="n">ps_st_cat</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
     <span class="n">train_series</span><span class="p">,</span> <span class="n">preds</span><span class="p">,</span> <span class="n">preds_st_bin</span><span class="p">,</span> <span class="n">preds_st_cat</span>
 <span class="p">):</span>
     <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">40</span><span class="p">:]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
@@ -1425,50 +1229,132 @@ RMSE  0.289051  0.138122  0.138631
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="02-data-processing.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="02-data-processing.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="14-transfer-learning.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="14-transfer-learning.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Transfer Learning for Time Series Forecasting with Darts</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#1.-Defining-static-covariates">1. Defining static covariates</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#2.-Add-static-covariates-to-an-existing-TimeSeries">2. Add static covariates to an existing TimeSeries</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#3.-Adding-static-covariates-at-TimeSeries-construction">3. Adding static covariates at TimeSeries construction</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Using-static-covariates-with-multiple-TimeSeries">Using static covariates with multiple TimeSeries</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#4.-Extract-a-list-of-time-series-by-groups-from-a-DataFrame-using-from_group_dataframe()">4. Extract a list of time series by groups from a DataFrame using <code class="docutils literal notranslate"><span class="pre">from_group_dataframe()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#5.-Scaling/Encoding/Transforming-static-covariate-data">5. Scaling/Encoding/Transforming static covariate data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#6.-Forecasting-example-with-TFTModel-and-static-covariates">6. Forecasting example with <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> and static covariates</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#6.1-Experiment-setup">6.1 Experiment setup</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#6.2-Forecasting-without-static-covariates">6.2 Forecasting without static covariates</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#6.3-Forecasting-with-0/1-binary-static-covariates-(numeric)">6.3 Forecasting with 0/1 binary static covariates (numeric)</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#6.4-Forecasting-with-categorical-static-covariates">6.4 Forecasting with categorical static covariates</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/examples/15-static-covariates.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

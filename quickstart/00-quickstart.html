@@ -1,720 +1,450 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Quickstart &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'quickstart/00-quickstart';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="User Guide" href="../userguide.html" />
-    <link rel="prev" title="Time Series Made Easy in Python" href="../README.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+    <link rel="prev" title="Time Series Made Easy in Python" href="../index.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <dialog id="pst-search-dialog">
     
-    <div class="container-fluid" id="banner"></div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
 
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
   </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="current reference internal nav-link" href="#">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
     
-</ul>
-      </div>
-      
-    </div>
-
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
-</div>
-    </nav>
-    
-
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    
-  </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
-</div>
-
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#">
-   Quickstart
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Installing-Darts">
-   Installing Darts
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Building-and-manipulating-TimeSeries">
-   Building and manipulating
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     TimeSeries
-    </span>
-   </code>
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Read-data-and-build-a-TimeSeries">
-     Read data and build a
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       TimeSeries
-      </span>
-     </code>
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Load-one-of-our-existing-datasets">
-     Load one of our existing datasets
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Export-a-TimeSeries">
-     Export a
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       TimeSeries
-      </span>
-     </code>
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Some-TimeSeries-Operations">
-     Some
-     <code class="docutils literal notranslate">
-      <span class="pre">
-       TimeSeries
-      </span>
-     </code>
-     Operations
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Creating-a-training-and-validation-series">
-     Creating a training and validation series
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Training-forecasting-models-and-making-predictions">
-   Training forecasting models and making predictions
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Playing-with-toy-models">
-     Playing with toy models
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Inspect-Seasonality">
-       Inspect Seasonality
-      </a>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#A-less-naive-model">
-       A less naive model
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Computing-error-metrics">
-     Computing error metrics
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Quickly-try-out-several-models">
-     Quickly try out several models
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Searching-for-hyper-parameters-with-the-Theta-method">
-       Searching for hyper-parameters with the Theta method
-      </a>
-     </li>
-    </ul>
-   </li>
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Backtesting:-simulate-historical-forecasting">
-   Backtesting: simulate historical forecasting
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Machine-learning-and-global-models">
-   Machine learning and global models
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#A-toy-example-with-two-series">
-     A toy example with two series
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Using-deep-learning:-example-with-N-BEATS">
-     Using deep learning: example with N-BEATS
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Covariates:-using-external-data">
-   Covariates: using external data
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Encoders:-using-covariates-for-free">
-     Encoders: using covariates for free
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Regression-forecasting-models">
-   Regression forecasting models
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Sample-Weights">
-   Sample Weights
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Forecast-Start-Shifting">
-   Forecast Start Shifting
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Probabilistic-forecasts">
-   Probabilistic forecasts
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#With-Local-Models">
-     With Local Models
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#With-Neural-Network-Models-(TorchForecastingModel)">
-     With Neural Network Models (TorchForecastingModel)
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Probabilistic-Sample-Predictions">
-       Probabilistic Sample Predictions
-      </a>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Direct-Parameter-Predicitons">
-       Direct Parameter Predicitons
-      </a>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Types-of-distributions">
-       Types of distributions
-      </a>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Evaluating-Probabilistic-Forecasts">
-       Evaluating Probabilistic Forecasts
-      </a>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#Using-Quantile-Loss">
-       Using Quantile Loss
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#With-Regression-Models">
-     With Regression Models
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Ensembling-models">
-   Ensembling models
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Naive-Ensembling">
-     Naive Ensembling
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Learned-Ensembling">
-     Learned Ensembling
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Filtering-models">
-   Filtering models
-  </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Fitting-a-Kalman-Filter">
-     Fitting a Kalman Filter
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#Inferring-missing-values-with-Gaussian-Processes">
-     Inferring missing values with Gaussian Processes
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#A-Word-of-Caution">
-   A Word of Caution
-  </a>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#Anomaly-Detection">
-   Anomaly Detection
-  </a>
- </li>
-</ul>
-
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
   
-<style>
-/* CSS for nbsphinx extension */
 
-/* remove conflicting styling from Sphinx themes */
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt *,
-div.nbinput.container div.input_area pre,
-div.nboutput.container div.output_area pre,
-div.nbinput.container div.input_area .highlight,
-div.nboutput.container div.output_area .highlight {
-    border: none;
-    padding: 0;
-    margin: 0;
-    box-shadow: none;
-}
-
-div.nbinput.container > div[class*=highlight],
-div.nboutput.container > div[class*=highlight] {
-    margin: 0;
-}
-
-div.nbinput.container div.prompt *,
-div.nboutput.container div.prompt * {
-    background: none;
-}
-
-div.nboutput.container div.output_area .highlight,
-div.nboutput.container div.output_area pre {
-    background: unset;
-}
-
-div.nboutput.container div.output_area div.highlight {
-    color: unset;  /* override Pygments text color */
-}
-
-/* avoid gaps between output lines */
-div.nboutput.container div[class*=highlight] pre {
-    line-height: normal;
-}
-
-/* input/output containers */
-div.nbinput.container,
-div.nboutput.container {
-    display: -webkit-flex;
-    display: flex;
-    align-items: flex-start;
-    margin: 0;
-    width: 100%;
-}
-@media (max-width: 540px) {
-    div.nbinput.container,
-    div.nboutput.container {
-        flex-direction: column;
-    }
-}
-
-/* input container */
-div.nbinput.container {
-    padding-top: 5px;
-}
-
-/* last container */
-div.nblast.container {
-    padding-bottom: 5px;
-}
-
-/* input prompt */
-div.nbinput.container div.prompt pre {
-    color: #307FC1;
-}
-
-/* output prompt */
-div.nboutput.container div.prompt pre {
-    color: #BF5B3D;
-}
-
-/* all prompts */
-div.nbinput.container div.prompt,
-div.nboutput.container div.prompt {
-    width: 4.5ex;
-    padding-top: 5px;
-    position: relative;
-    user-select: none;
-}
-
-div.nbinput.container div.prompt > div,
-div.nboutput.container div.prompt > div {
-    position: absolute;
-    right: 0;
-    margin-right: 0.3ex;
-}
-
-@media (max-width: 540px) {
-    div.nbinput.container div.prompt,
-    div.nboutput.container div.prompt {
-        width: unset;
-        text-align: left;
-        padding: 0.4em;
-    }
-    div.nboutput.container div.prompt.empty {
-        padding: 0;
-    }
-
-    div.nbinput.container div.prompt > div,
-    div.nboutput.container div.prompt > div {
-        position: unset;
-    }
-}
-
-/* disable scrollbars on prompts */
-div.nbinput.container div.prompt pre,
-div.nboutput.container div.prompt pre {
-    overflow: hidden;
-}
-
-/* input/output area */
-div.nbinput.container div.input_area,
-div.nboutput.container div.output_area {
-    -webkit-flex: 1;
-    flex: 1;
-    overflow: auto;
-}
-@media (max-width: 540px) {
-    div.nbinput.container div.input_area,
-    div.nboutput.container div.output_area {
-        width: 100%;
-    }
-}
-
-/* input area */
-div.nbinput.container div.input_area {
-    border: 1px solid #e0e0e0;
-    border-radius: 2px;
-    /*background: #f5f5f5;*/
-}
-
-/* override MathJax center alignment in output cells */
-div.nboutput.container div[class*=MathJax] {
-    text-align: left !important;
-}
-
-/* override sphinx.ext.imgmath center alignment in output cells */
-div.nboutput.container div.math p {
-    text-align: left;
-}
-
-/* standard error */
-div.nboutput.container div.output_area.stderr {
-    background: #fdd;
-}
-
-/* ANSI colors */
-.ansi-black-fg { color: #3E424D; }
-.ansi-black-bg { background-color: #3E424D; }
-.ansi-black-intense-fg { color: #282C36; }
-.ansi-black-intense-bg { background-color: #282C36; }
-.ansi-red-fg { color: #E75C58; }
-.ansi-red-bg { background-color: #E75C58; }
-.ansi-red-intense-fg { color: #B22B31; }
-.ansi-red-intense-bg { background-color: #B22B31; }
-.ansi-green-fg { color: #00A250; }
-.ansi-green-bg { background-color: #00A250; }
-.ansi-green-intense-fg { color: #007427; }
-.ansi-green-intense-bg { background-color: #007427; }
-.ansi-yellow-fg { color: #DDB62B; }
-.ansi-yellow-bg { background-color: #DDB62B; }
-.ansi-yellow-intense-fg { color: #B27D12; }
-.ansi-yellow-intense-bg { background-color: #B27D12; }
-.ansi-blue-fg { color: #208FFB; }
-.ansi-blue-bg { background-color: #208FFB; }
-.ansi-blue-intense-fg { color: #0065CA; }
-.ansi-blue-intense-bg { background-color: #0065CA; }
-.ansi-magenta-fg { color: #D160C4; }
-.ansi-magenta-bg { background-color: #D160C4; }
-.ansi-magenta-intense-fg { color: #A03196; }
-.ansi-magenta-intense-bg { background-color: #A03196; }
-.ansi-cyan-fg { color: #60C6C8; }
-.ansi-cyan-bg { background-color: #60C6C8; }
-.ansi-cyan-intense-fg { color: #258F8F; }
-.ansi-cyan-intense-bg { background-color: #258F8F; }
-.ansi-white-fg { color: #C5C1B4; }
-.ansi-white-bg { background-color: #C5C1B4; }
-.ansi-white-intense-fg { color: #A1A6B2; }
-.ansi-white-intense-bg { background-color: #A1A6B2; }
-
-.ansi-default-inverse-fg { color: #FFFFFF; }
-.ansi-default-inverse-bg { background-color: #000000; }
-
-.ansi-bold { font-weight: bold; }
-.ansi-underline { text-decoration: underline; }
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Quickstart
+  </a>
+</li>
 
 
-div.nbinput.container div.input_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight] > pre,
-div.nboutput.container div.output_area div[class*=highlight].math,
-div.nboutput.container div.output_area.rendered_html,
-div.nboutput.container div.output_area > div.output_javascript,
-div.nboutput.container div.output_area:not(.rendered_html) > img{
-    padding: 5px;
-    margin: 0;
-}
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
 
-/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
-div.nbinput.container div.input_area > div[class^='highlight'],
-div.nboutput.container div.output_area > div[class^='highlight']{
-    overflow-y: hidden;
-}
 
-/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
-.prompt a.copybtn {
-    display: none;
-}
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
 
-/* Some additional styling taken form the Jupyter notebook CSS */
-div.rendered_html table {
-  border: none;
-  border-collapse: collapse;
-  border-spacing: 0;
-  color: black;
-  font-size: 12px;
-  table-layout: fixed;
-}
-div.rendered_html thead {
-  border-bottom: 1px solid black;
-  vertical-align: bottom;
-}
-div.rendered_html tr,
-div.rendered_html th,
-div.rendered_html td {
-  text-align: right;
-  vertical-align: middle;
-  padding: 0.5em 0.5em;
-  line-height: normal;
-  white-space: normal;
-  max-width: none;
-  border: none;
-}
-div.rendered_html th {
-  font-weight: bold;
-}
-div.rendered_html tbody tr:nth-child(odd) {
-  background: #f5f5f5;
-}
-div.rendered_html tbody tr:hover {
-  background: rgba(66, 165, 245, 0.2);
-}
-</style>
-<section id="Quickstart">
-<h1>Quickstart<a class="headerlink" href="#Quickstart" title="Permalink to this heading">¶</a></h1>
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="#">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"></div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Quickstart</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Quickstart">
+<h1>Quickstart<a class="headerlink" href="#Quickstart" title="Link to this heading">#</a></h1>
 <p>In this notebook, we go over the main functionalities of the library:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="#Installing-Darts">Installing Darts</a></p></li>
-<li><p><a class="reference external" href="#Building-and-manipulating-TimeSeries">Building and manipulating TimeSeries</a></p></li>
-<li><p><a class="reference external" href="#Training-forecasting-models-and-making-predictions">Training forecasting models and making predictions</a></p></li>
-<li><p><a class="reference external" href="#Backtesting:-simulate-historical-forecasting">Backtesting</a></p></li>
-<li><p><a class="reference external" href="#Machine-learning-and-global-models">Machine learning and global models</a></p></li>
-<li><p><a class="reference external" href="#Covariates:-using-external-data">Covariates: using external data</a></p></li>
-<li><p><a class="reference external" href="#Regression-forecasting-models">Regression forecasting models</a></p></li>
-<li><p><a class="reference external" href="#Sample-Weights">Sample weights for training</a></p></li>
-<li><p><a class="reference external" href="#Forecast-Start-Shifting">Forecast Start Shifting</a></p></li>
-<li><p><a class="reference external" href="#Probabilistic-forecasts">Probabilistic forecasts</a></p></li>
-<li><p><a class="reference external" href="#Ensembling-models">Ensembling models</a></p></li>
-<li><p><a class="reference external" href="#Filtering-models">Filtering models</a></p></li>
-<li><p><a class="reference external" href="#Anomaly-Detection">Anomaly Detection</a></p></li>
+<li><p><a class="reference internal" href="#Installing-Darts"><span class="std std-ref">Installing Darts</span></a></p></li>
+<li><p><a class="reference internal" href="#Building-and-manipulating-TimeSeries"><span class="std std-ref">Building and manipulating TimeSeries</span></a></p></li>
+<li><p><a class="reference internal" href="#Training-forecasting-models-and-making-predictions"><span class="std std-ref">Training forecasting models and making predictions</span></a></p></li>
+<li><p><a class="reference internal" href="#Backtesting:-simulate-historical-forecasting"><span class="std std-ref">Backtesting</span></a></p></li>
+<li><p><a class="reference internal" href="#Machine-learning-and-global-models"><span class="std std-ref">Machine learning and global models</span></a></p></li>
+<li><p><a class="reference internal" href="#Covariates:-using-external-data"><span class="std std-ref">Covariates: using external data</span></a></p></li>
+<li><p><a class="reference internal" href="#Regression-forecasting-models"><span class="std std-ref">Regression forecasting models</span></a></p></li>
+<li><p><a class="reference internal" href="#Sample-Weights"><span class="std std-ref">Sample weights for training</span></a></p></li>
+<li><p><a class="reference internal" href="#Forecast-Start-Shifting"><span class="std std-ref">Forecast Start Shifting</span></a></p></li>
+<li><p><a class="reference internal" href="#Probabilistic-forecasts"><span class="std std-ref">Probabilistic forecasts</span></a></p></li>
+<li><p><a class="reference internal" href="#Ensembling-models"><span class="std std-ref">Ensembling models</span></a></p></li>
+<li><p><a class="reference internal" href="#Filtering-models"><span class="std std-ref">Filtering models</span></a></p></li>
+<li><p><a class="reference internal" href="#Anomaly-Detection"><span class="std std-ref">Anomaly Detection</span></a></p></li>
 </ul>
 <p>We will only show some minimal “get started” examples here. For more in depth information, you can refer to our <a class="reference external" href="https://unit8co.github.io/darts/userguide.html">user guide</a> and <a class="reference external" href="https://unit8co.github.io/darts/examples.html">example notebooks</a>.</p>
 </section>
 <section id="Installing-Darts">
-<h1>Installing Darts<a class="headerlink" href="#Installing-Darts" title="Permalink to this heading">¶</a></h1>
+<h1>Installing Darts<a class="headerlink" href="#Installing-Darts" title="Link to this heading">#</a></h1>
 <p>We recommend using some virtual environment. Then there are mainly two ways.</p>
 <p>With pip:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>pip install darts
@@ -730,8 +460,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># fix python path if working locally</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># fix python path if working locally</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
 
 <span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
@@ -746,8 +475,7 @@ div.rendered_html tbody tr:hover {
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">matplotlib</span> inline
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
@@ -757,11 +485,11 @@ div.rendered_html tbody tr:hover {
 </div>
 </section>
 <section id="Building-and-manipulating-TimeSeries">
-<h1>Building and manipulating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Building-and-manipulating-TimeSeries" title="Permalink to this heading">¶</a></h1>
+<h1>Building and manipulating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Building-and-manipulating-TimeSeries" title="Link to this heading">#</a></h1>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is the main data class in Darts. A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> represents a univariate or multivariate time series, with a proper time index. The time index can either be of type <code class="docutils literal notranslate"><span class="pre">pandas.DatetimeIndex</span></code> (containing datetimes), or of type <code class="docutils literal notranslate"><span class="pre">pandas.RangeIndex</span></code> (containing integers useful for representing sequential data without specific timestamps). In some cases, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can even represent <em>probabilistic</em> series, in order for instance to obtain confidence intervals. All models in Darts
 consume <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> and produce <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
 <section id="Read-data-and-build-a-TimeSeries">
-<h2>Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Read-data-and-build-a-TimeSeries" title="Permalink to this heading">¶</a></h2>
+<h2>Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Read-data-and-build-a-TimeSeries" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be built easily using a few factory methods:</p>
 <ul class="simple">
 <li><p>From a <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>, using <code class="docutils literal notranslate"><span class="pre">TimeSeries.from_dataframe()</span></code> (<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_dataframe">docs</a>). We support multiple frame backends such as <code class="docutils literal notranslate"><span class="pre">pandas.DataFrame</span></code>, <code class="docutils literal notranslate"><span class="pre">polars.DataFrame</span></code>, <code class="docutils literal notranslate"><span class="pre">pyarrow.table</span></code> and more (see <strong>(a)</strong>).</p></li>
@@ -780,8 +508,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_index</span>
 
 <span class="c1"># generate a sine and cosine wave</span>
@@ -809,15 +536,14 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 </div>
 </section>
 <section id="Load-one-of-our-existing-datasets">
-<h2>Load one of our existing datasets<a class="headerlink" href="#Load-one-of-our-existing-datasets" title="Permalink to this heading">¶</a></h2>
+<h2>Load one of our existing datasets<a class="headerlink" href="#Load-one-of-our-existing-datasets" title="Link to this heading">#</a></h2>
 <p>Alternatively, you can load one of our existing datasets (<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.datasets.html">docs</a>).</p>
 <p>Below, we get a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> by directly loading the air passengers series dataset.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
@@ -833,7 +559,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 </div>
 </section>
 <section id="Export-a-TimeSeries">
-<h2>Export a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Export-a-TimeSeries" title="Permalink to this heading">¶</a></h2>
+<h2>Export a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Export-a-TimeSeries" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be exported in many different ways:</p>
 <ul class="simple">
 <li><p>To a <code class="docutils literal notranslate"><span class="pre">DataFrame</span></code>, using <code class="docutils literal notranslate"><span class="pre">TimeSeries.to_dataframe()</span></code> (<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.to_dataframe">docs</a>). We support multiple frame backends such as <code class="docutils literal notranslate"><span class="pre">pandas</span></code>, <code class="docutils literal notranslate"><span class="pre">polars</span></code>, <code class="docutils literal notranslate"><span class="pre">pyarrow</span></code> and more (see <strong>(a)</strong> from above).</p></li>
@@ -849,8 +575,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">&quot;polars&quot;</span><span class="p">,</span> <span class="n">time_as_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">5</span><span class="p">:]</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">&quot;polars&quot;</span><span class="p">,</span> <span class="n">time_as_index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -870,7 +595,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 </div>
 </section>
 <section id="Some-TimeSeries-Operations">
-<h2>Some <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> Operations<a class="headerlink" href="#Some-TimeSeries-Operations" title="Permalink to this heading">¶</a></h2>
+<h2>Some <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> Operations<a class="headerlink" href="#Some-TimeSeries-Operations" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> support different kinds of operations - here are a few examples.</p>
 <p><strong>Splitting</strong></p>
 <p>We can also split at a fraction of the series, at a pandas <code class="docutils literal notranslate"><span class="pre">Timestamp</span></code> or at an integer index value.</p>
@@ -878,8 +603,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series1</span><span class="p">,</span> <span class="n">series2</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="mf">0.75</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series1</span><span class="p">,</span> <span class="n">series2</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="mf">0.75</span><span class="p">)</span>
 <span class="n">series1</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">series2</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
@@ -897,8 +621,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series1</span><span class="p">,</span> <span class="n">series2</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series1</span><span class="p">,</span> <span class="n">series2</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
 <span class="n">series1</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">series2</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
@@ -916,8 +639,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series_noise</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series_noise</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
     <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
 <span class="p">)</span>
 <span class="p">(</span><span class="n">series</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="mi">20</span> <span class="o">*</span> <span class="n">series_noise</span> <span class="o">-</span> <span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
@@ -937,8 +659,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="p">(</span><span class="n">series</span> <span class="o">/</span> <span class="mi">50</span><span class="p">)</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">series_noise</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">series</span> <span class="o">/</span> <span class="mi">50</span><span class="p">)</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">series_noise</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -954,8 +675,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -971,8 +691,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ts</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">/</span> <span class="n">ts</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ts</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">/</span> <span class="n">ts</span><span class="o">.</span><span class="n">days_in_month</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -988,8 +707,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="p">(</span><span class="n">series</span> <span class="o">/</span> <span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">add_datetime_attribute</span><span class="p">(</span><span class="s2">&quot;month&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">series</span> <span class="o">/</span> <span class="mi">20</span><span class="p">)</span><span class="o">.</span><span class="n">add_datetime_attribute</span><span class="p">(</span><span class="s2">&quot;month&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1005,8 +723,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="p">(</span><span class="n">series</span> <span class="o">/</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">add_holidays</span><span class="p">(</span><span class="s2">&quot;US&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="p">(</span><span class="n">series</span> <span class="o">/</span> <span class="mi">200</span><span class="p">)</span><span class="o">.</span><span class="n">add_holidays</span><span class="p">(</span><span class="s2">&quot;US&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1022,8 +739,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series</span><span class="o">.</span><span class="n">diff</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">series</span><span class="o">.</span><span class="n">diff</span><span class="p">()</span><span class="o">.</span><span class="n">plot</span><span class="p">();</span>
 </pre></div>
 </div>
 </div>
@@ -1040,8 +756,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.missing_values</span><span class="w"> </span><span class="kn">import</span> <span class="n">fill_missing_values</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.missing_values</span><span class="w"> </span><span class="kn">import</span> <span class="n">fill_missing_values</span>
 
 <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
 <span class="n">values</span><span class="p">[</span><span class="mi">10</span><span class="p">:</span><span class="mi">30</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
@@ -1062,15 +777,14 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 </div>
 </section>
 <section id="Creating-a-training-and-validation-series">
-<h2>Creating a training and validation series<a class="headerlink" href="#Creating-a-training-and-validation-series" title="Permalink to this heading">¶</a></h2>
+<h2>Creating a training and validation series<a class="headerlink" href="#Creating-a-training-and-validation-series" title="Link to this heading">#</a></h2>
 <p>For what follows, we will split our <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> into a training and a validation series. Note: in general, it is also a good practice to keep a test series aside and never touch it until the end of the process. Here, we just build a training and a validation series for simplicity.</p>
 <p>The training series will be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing values until January 1958 (excluded), and the validation series a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the rest:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_before</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19580101&quot;</span><span class="p">))</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_before</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s2">&quot;19580101&quot;</span><span class="p">))</span>
 <span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;training&quot;</span><span class="p">)</span>
 <span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;validation&quot;</span><span class="p">);</span>
 </pre></div>
@@ -1086,17 +800,16 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 </section>
 </section>
 <section id="Training-forecasting-models-and-making-predictions">
-<h1>Training forecasting models and making predictions<a class="headerlink" href="#Training-forecasting-models-and-making-predictions" title="Permalink to this heading">¶</a></h1>
+<h1>Training forecasting models and making predictions<a class="headerlink" href="#Training-forecasting-models-and-making-predictions" title="Link to this heading">#</a></h1>
 <section id="Playing-with-toy-models">
-<h2>Playing with toy models<a class="headerlink" href="#Playing-with-toy-models" title="Permalink to this heading">¶</a></h2>
+<h2>Playing with toy models<a class="headerlink" href="#Playing-with-toy-models" title="Link to this heading">#</a></h2>
 <p>There is a collection of “naive” baseline models in Darts, which can be very useful to get an idea of the bare minimum accuracy that one could expect. For example, the <code class="docutils literal notranslate"><span class="pre">NaiveSeasonal(K)</span></code> model always “repeats” the value that occured <code class="docutils literal notranslate"><span class="pre">K</span></code> time steps ago.</p>
 <p>In its most naive form, when <code class="docutils literal notranslate"><span class="pre">K=1</span></code>, this model simply always repeats the last value of the training series:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaiveSeasonal</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaiveSeasonal</span>
 
 <span class="n">naive_model</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
 <span class="n">naive_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
@@ -1116,14 +829,13 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 </div>
 <p>It’s very easy to fit models and produce predictions on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. All the models have a <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and a <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. This is similar to <a class="reference external" href="https://scikit-learn.org/">Scikit-learn</a>, except that it is specific to time series. The <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function takes as argument the training time series on which to fit the model, and the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function takes as argument the number of time steps (after the end of the training series) over which to forecast.</p>
 <section id="Inspect-Seasonality">
-<h3>Inspect Seasonality<a class="headerlink" href="#Inspect-Seasonality" title="Permalink to this heading">¶</a></h3>
+<h3>Inspect Seasonality<a class="headerlink" href="#Inspect-Seasonality" title="Link to this heading">#</a></h3>
 <p>Our model above is perhaps a bit too naive. We can already improve by exploiting the seasonality in the data. It seems quite obvious that the data has a yearly seasonality, which we can confirm by looking at the auto-correlation function (ACF), and highlighting the lag <code class="docutils literal notranslate"><span class="pre">m=12</span></code>:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_seasonality</span><span class="p">,</span> <span class="n">plot_acf</span>
 
 <span class="n">plot_acf</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
 </pre></div>
@@ -1141,8 +853,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">25</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">25</span><span class="p">):</span>
     <span class="n">is_seasonal</span><span class="p">,</span> <span class="n">period</span> <span class="o">=</span> <span class="n">check_seasonality</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">m</span><span class="o">=</span><span class="n">m</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">is_seasonal</span><span class="p">:</span>
         <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;There is seasonality of order </span><span class="si">{</span><span class="n">period</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
@@ -1159,14 +870,13 @@ There is seasonality of order 12.
 </div>
 </section>
 <section id="A-less-naive-model">
-<h3>A less naive model<a class="headerlink" href="#A-less-naive-model" title="Permalink to this heading">¶</a></h3>
+<h3>A less naive model<a class="headerlink" href="#A-less-naive-model" title="Link to this heading">#</a></h3>
 <p>Let’s try the <code class="docutils literal notranslate"><span class="pre">NaiveSeasonal</span></code> model again with a seasonality of 12:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">seasonal_model</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">seasonal_model</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
 <span class="n">seasonal_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
 <span class="n">seasonal_forecast</span> <span class="o">=</span> <span class="n">seasonal_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="mi">36</span><span class="p">)</span>
 
@@ -1187,8 +897,7 @@ There is seasonality of order 12.
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaiveDrift</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaiveDrift</span>
 
 <span class="n">drift_model</span> <span class="o">=</span> <span class="n">NaiveDrift</span><span class="p">()</span>
 <span class="n">drift_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
@@ -1213,15 +922,14 @@ There is seasonality of order 12.
 </section>
 </section>
 <section id="Computing-error-metrics">
-<h2>Computing error metrics<a class="headerlink" href="#Computing-error-metrics" title="Permalink to this heading">¶</a></h2>
+<h2>Computing error metrics<a class="headerlink" href="#Computing-error-metrics" title="Link to this heading">#</a></h2>
 <p>This looks already like a fairly decent forecast, and we did not use any non-naive model yet. In fact - any model should be able to beat this.</p>
 <p>So what’s the error we will have to beat? We will use the <a class="reference external" href="https://en.wikipedia.org/wiki/Mean_absolute_percentage_error">Mean Absolute Percentage Error (MAPE)</a> (note that in practice there are often good reasons <em>not</em> to use the MAPE - we use it here as it is quite convenient and scale independent). In Darts it is a simple function call:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mape</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mape</span>
 
 <span class="nb">print</span><span class="p">(</span>
     <span class="sa">f</span><span class="s2">&quot;Mean absolute percentage error for the combined naive drift + seasonal: </span><span class="si">{</span><span class="n">mape</span><span class="p">(</span><span class="n">series</span><span class="p">,</span><span class="w"> </span><span class="n">combined_forecast</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">%.&quot;</span>
@@ -1240,14 +948,13 @@ Mean absolute percentage error for the combined naive drift + seasonal: 5.66%.
 <p><code class="docutils literal notranslate"><span class="pre">darts.metrics</span></code> contains many more metrics to compare time series. The metrics will compare only common slices of series when the two series are not aligned, and parallelize computation over a large number of series pairs - but let’s not get ahead of ourselves.</p>
 </section>
 <section id="Quickly-try-out-several-models">
-<h2>Quickly try out several models<a class="headerlink" href="#Quickly-try-out-several-models" title="Permalink to this heading">¶</a></h2>
+<h2>Quickly try out several models<a class="headerlink" href="#Quickly-try-out-several-models" title="Link to this heading">#</a></h2>
 <p>Darts is built to make it easy to train and validate several models in a unified way. Let’s train a few more and compute their respective MAPE on the validation set:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoARIMA</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">Theta</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">AutoARIMA</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">Theta</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">eval_model</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
@@ -1274,15 +981,14 @@ model Theta() obtains MAPE: 8.15%
 </div>
 <p>Here, we only created these models with their default parameters. We can probably do better if we fine-tune to our problem. Let’s try with the Theta method.</p>
 <section id="Searching-for-hyper-parameters-with-the-Theta-method">
-<h3>Searching for hyper-parameters with the Theta method<a class="headerlink" href="#Searching-for-hyper-parameters-with-the-Theta-method" title="Permalink to this heading">¶</a></h3>
+<h3>Searching for hyper-parameters with the Theta method<a class="headerlink" href="#Searching-for-hyper-parameters-with-the-Theta-method" title="Link to this heading">#</a></h3>
 <p>The model <code class="docutils literal notranslate"><span class="pre">Theta</span></code> contains an implementation of Assimakopoulos and Nikolopoulos’ Theta method. This method has had some success, particularly in the M3-competition.</p>
 <p>Though the value of the Theta parameter is often set to 0 in applications, our implementation supports a variable value for parameter tuning purposes. Let’s try to find a good value for Theta:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># Search for the best theta parameter, by trying 50 different values</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Search for the best theta parameter, by trying 50 different values</span>
 <span class="n">thetas</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
 
 <span class="n">best_mape</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">)</span>
@@ -1304,8 +1010,7 @@ model Theta() obtains MAPE: 8.15%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">best_theta_model</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">best_theta</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">best_theta_model</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">best_theta</span><span class="p">)</span>
 <span class="n">best_theta_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
 <span class="n">pred_best_theta</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">))</span>
 
@@ -1325,8 +1030,7 @@ Lowest MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">train</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;train&quot;</span><span class="p">)</span>
 <span class="n">val</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;true&quot;</span><span class="p">)</span>
 <span class="n">pred_best_theta</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;prediction&quot;</span><span class="p">);</span>
 </pre></div>
@@ -1344,7 +1048,7 @@ Lowest MAPE is: 4.40, with theta = -3.5102040816326543.
 </section>
 </section>
 <section id="Backtesting:-simulate-historical-forecasting">
-<h1>Backtesting: simulate historical forecasting<a class="headerlink" href="#Backtesting:-simulate-historical-forecasting" title="Permalink to this heading">¶</a></h1>
+<h1>Backtesting: simulate historical forecasting<a class="headerlink" href="#Backtesting:-simulate-historical-forecasting" title="Link to this heading">#</a></h1>
 <p>So at this point we have a model that performs well on our validation set, and that’s good. But, how can we know the performance we <em>would have obtained</em> if we <em>had been using this model</em> historically?</p>
 <p>Backtesting simulates predictions that would have been obtained historically with a given model. It can take a while to produce, since the model is (by default) re-trained every time the simulated prediction time advances.</p>
 <p>Such simulated forecasts are always defined with respect to a <em>forecast horizon</em>, which is the number of time steps that separate the prediction time from the forecast time. In the example below, we simulate forecasts done for 3 months into the future (compared to prediction time). The result of calling <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> is (by default) a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> which contains only the last predicted value of each of those 3-months ahead forecasts:</p>
@@ -1352,8 +1056,7 @@ Lowest MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">hfc_params</span> <span class="o">=</span> <span class="p">{</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">hfc_params</span> <span class="o">=</span> <span class="p">{</span>
     <span class="s2">&quot;series&quot;</span><span class="p">:</span> <span class="n">series</span><span class="p">,</span>
     <span class="s2">&quot;start&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span>
         <span class="s2">&quot;1956-01-01&quot;</span>
@@ -1397,8 +1100,7 @@ MAPE = 7.99%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">historical_fcast_theta_all</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">historical_fcast_theta_all</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="o">**</span><span class="n">hfc_params</span>
 <span class="p">)</span>
 
@@ -1440,8 +1142,7 @@ MAPE = 5.61%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">best_theta_model</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">best_theta</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">best_theta_model</span> <span class="o">=</span> <span class="n">Theta</span><span class="p">(</span><span class="n">best_theta</span><span class="p">)</span>
 
 <span class="n">raw_errors</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
     <span class="n">metric</span><span class="o">=</span><span class="n">mape</span><span class="p">,</span> <span class="n">reduction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">hfc_params</span>
@@ -1475,8 +1176,7 @@ MAPE = 5.61%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">average_error</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">average_error</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
     <span class="n">metric</span><span class="o">=</span><span class="n">mape</span><span class="p">,</span>
     <span class="n">reduction</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>  <span class="c1"># this is actually the default</span>
     <span class="o">**</span><span class="n">hfc_params</span><span class="p">,</span>
@@ -1506,8 +1206,7 @@ Average error (MAPE) over all historical forecasts: 6.30
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">hfc_precomputed</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">hfc_precomputed</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">last_points_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="o">**</span><span class="n">hfc_params</span>
 <span class="p">)</span>
 <span class="n">new_error</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
@@ -1532,13 +1231,14 @@ Average error (MAPE) over all historical forecasts: 6.30
 Average error (MAPE) over all historical forecasts: 6.30
 </pre></div></div>
 </div>
-<p>Let’s look at the fitted value residuals of our current <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model, i.e. the difference between the 1-step forecasts at every point in time obtained by fitting the model on all previous points, and the actual observed values:</p>
+<section id="Looking-at-residuals">
+<h2>Looking at residuals<a class="headerlink" href="#Looking-at-residuals" title="Link to this heading">#</a></h2>
+<p>Let’s look at the fitted value residuals of our current <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model, i.e. the difference between the 1-step forecasts at every point in time obtained by fitting the model on all previous points, and the actual observed values:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_residuals_analysis</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.statistics</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_residuals_analysis</span>
 
 <span class="n">plot_residuals_analysis</span><span class="p">(</span><span class="n">best_theta_model</span><span class="o">.</span><span class="n">residuals</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
 </pre></div>
@@ -1558,8 +1258,7 @@ Average error (MAPE) over all historical forecasts: 6.30
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">ae</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">ae</span>
 
 <span class="n">residuals</span> <span class="o">=</span> <span class="n">best_theta_model</span><span class="o">.</span><span class="n">residuals</span><span class="p">(</span>
     <span class="n">historical_forecasts</span><span class="o">=</span><span class="n">hfc_precomputed</span><span class="p">,</span>
@@ -1586,13 +1285,15 @@ Average error (MAPE) over all historical forecasts: 6.30
 </div>
 </div>
 <p>We can clearly see that the errors increase the further ahead into the future we predict.</p>
+</section>
+<section id="A-better-model">
+<h2>A better model<a class="headerlink" href="#A-better-model" title="Link to this heading">#</a></h2>
 <p>Could we maybe do better with a simple <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code> model?</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_es</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">seasonal_periods</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_es</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">(</span><span class="n">seasonal_periods</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
 <span class="n">historical_fcast_es</span> <span class="o">=</span> <span class="n">model_es</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="o">**</span><span class="n">hfc_params</span><span class="p">)</span>
 
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
@@ -1627,8 +1328,7 @@ MAPE = 4.42%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">plot_residuals_analysis</span><span class="p">(</span><span class="n">model_es</span><span class="o">.</span><span class="n">residuals</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot_residuals_analysis</span><span class="p">(</span><span class="n">model_es</span><span class="o">.</span><span class="n">residuals</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -1647,11 +1347,12 @@ MAPE = 4.42%
 </div>
 <p>The residual analysis also reflects an improved performance in that we now have a distribution of the residuals centred at value 0, and the ACF values, although not insignificant, have lower magnitudes.</p>
 </section>
+</section>
 <section id="Machine-learning-and-global-models">
-<h1>Machine learning and global models<a class="headerlink" href="#Machine-learning-and-global-models" title="Permalink to this heading">¶</a></h1>
+<h1>Machine learning and global models<a class="headerlink" href="#Machine-learning-and-global-models" title="Link to this heading">#</a></h1>
 <p>Darts has a rich support for machine learning and deep learning forecasting models; for instance:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html">SKLearnModel</a> can wrap around any sklearn-compatible regression model to produce forecasts (it has its own <a class="reference external" href="#Regression-forecasting-models">section below</a>).</p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html">SKLearnModel</a> can wrap around any sklearn-compatible regression model to produce forecasts (it has its own <a class="reference internal" href="#Regression-forecasting-models"><span class="std std-ref">section below</span></a>).</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html">RNNModel</a> is a flexible RNN implementation, which can be used like DeepAR.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html">NBEATSModel</a> implements the N-BEATS model.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html">TFTModel</a> implements the Temporal Fusion Transformer model.</p></li>
@@ -1662,14 +1363,13 @@ MAPE = 4.42%
 <p>This is a key point of using ML-based models for forecasting: more often than not, ML models (especially deep learning models) need to be trained on large amounts of data, which often means a large amount of separate yet related time series.</p>
 <p>In Darts, the basic way to specify multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is using a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (for example, a simple list of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>).</p>
 <section id="A-toy-example-with-two-series">
-<h2>A toy example with two series<a class="headerlink" href="#A-toy-example-with-two-series" title="Permalink to this heading">¶</a></h2>
+<h2>A toy example with two series<a class="headerlink" href="#A-toy-example-with-two-series" title="Link to this heading">#</a></h2>
 <p>These models can be trained on thousands of series. Here, for the sake of illustration, we will load two distinct series - the air traffic passenger count and another series with the number of pounds of milk produced per cow monthly. We also cast our series to <code class="docutils literal notranslate"><span class="pre">np.float32</span></code> as that will slightly speedup the training:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">MonthlyMilkDataset</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">MonthlyMilkDataset</span>
 
 <span class="n">series_air</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 <span class="n">series_milk</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
@@ -1697,8 +1397,7 @@ MAPE = 4.42%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.dataprocessing.transformers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Scaler</span>
 
 <span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
 <span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">([</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">])</span>
@@ -1718,7 +1417,7 @@ MAPE = 4.42%
 <p>Note how we can scale several series in one go. We can also parallelize this sort of operations over multiple processors by specifying <code class="docutils literal notranslate"><span class="pre">n_jobs</span></code>.</p>
 </section>
 <section id="Using-deep-learning:-example-with-N-BEATS">
-<h2>Using deep learning: example with N-BEATS<a class="headerlink" href="#Using-deep-learning:-example-with-N-BEATS" title="Permalink to this heading">¶</a></h2>
+<h2>Using deep learning: example with N-BEATS<a class="headerlink" href="#Using-deep-learning:-example-with-N-BEATS" title="Link to this heading">#</a></h2>
 <blockquote>
 <div><p>Note: You can find a detailed user guide for our Neural Network Models (TorchForecastingModels) <a class="reference external" href="https://unit8co.github.io/darts/userguide/torch_forecasting_models.html">here</a>.</p>
 </div></blockquote>
@@ -1733,8 +1432,7 @@ MAPE = 4.42%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NBEATSModel</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 
@@ -1788,8 +1486,7 @@ consumes its previous outputs).</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred_air</span><span class="p">,</span> <span class="n">pred_milk</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pred_air</span><span class="p">,</span> <span class="n">pred_milk</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">)</span>
 
 <span class="c1"># scale back:</span>
 <span class="n">pred_air</span><span class="p">,</span> <span class="n">pred_milk</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">([</span><span class="n">pred_air</span><span class="p">,</span> <span class="n">pred_milk</span><span class="p">])</span>
@@ -1830,7 +1527,7 @@ HPU available: False, using: 0 HPUs
 </section>
 </section>
 <section id="Covariates:-using-external-data">
-<h1>Covariates: using external data<a class="headerlink" href="#Covariates:-using-external-data" title="Permalink to this heading">¶</a></h1>
+<h1>Covariates: using external data<a class="headerlink" href="#Covariates:-using-external-data" title="Link to this heading">#</a></h1>
 <p>In addition to the <strong>target</strong> series (the series we are interested to forecast), many models in Darts also accept <strong>covariates</strong> series in input. Covariates are series that we do not want to forecast, but which can provide helpful additional information to the models. Both the targets and covariates can be multivariate or univariate.</p>
 <p>There are two kinds of covariate time series in Darts:</p>
 <ul class="simple">
@@ -1848,8 +1545,7 @@ the month and year values to have them between 0 and 1:</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">concatenate</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">concatenate</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span> <span class="k">as</span> <span class="n">dt_attr</span>
 
 <span class="n">air_covs</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">(</span>
@@ -1889,8 +1585,7 @@ the month and year values to have them between 0 and 1:</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
     <span class="p">[</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span>
@@ -1946,8 +1641,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span>
     <span class="n">past_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_covs_scaled</span><span class="p">,</span> <span class="n">milk_covs_scaled</span><span class="p">],</span>
     <span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
@@ -1993,15 +1687,14 @@ HPU available: False, using: 0 HPUs
 horizon itself)!</p>
 <p>In our case it’s fine to do this since we only use calendar information that we know in advance. If instead we used some features that we only know in the past, then we should only forecast with <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&lt;=</span> <span class="pre">output_chunk_length</span></code>.</p>
 <section id="Encoders:-using-covariates-for-free">
-<h2>Encoders: using covariates for free<a class="headerlink" href="#Encoders:-using-covariates-for-free" title="Permalink to this heading">¶</a></h2>
+<h2>Encoders: using covariates for free<a class="headerlink" href="#Encoders:-using-covariates-for-free" title="Link to this heading">#</a></h2>
 <p>Using covariates related to the calendar or time axis (such as months and years as in our example above) is so frequent that all of Darts’ models with covariates support have a built-in functionality to generate them out of the box.</p>
 <p>To easily integrate such covariates to your model, you can simply specify the <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> parameter at model creation. This parameter has to be a dictionary containing informations about what should be encoded as extra covariates. Here is an example of what such a dictionary could look like, for a model supporting both past and future covariates:</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="k">def</span><span class="w"> </span><span class="nf">extract_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">extract_year</span><span class="p">(</span><span class="n">idx</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Extract the year each time index entry and normalized it.&quot;&quot;&quot;</span>
     <span class="k">return</span> <span class="p">(</span><span class="n">idx</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span>
 
@@ -2031,8 +1724,7 @@ horizon itself)!</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">encoders</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;datetime_attribute&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;past&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="s2">&quot;year&quot;</span><span class="p">]},</span> <span class="s2">&quot;transformer&quot;</span><span class="p">:</span> <span class="n">Scaler</span><span class="p">()}</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">encoders</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;datetime_attribute&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;past&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="s2">&quot;year&quot;</span><span class="p">]},</span> <span class="s2">&quot;transformer&quot;</span><span class="p">:</span> <span class="n">Scaler</span><span class="p">()}</span>
 </pre></div>
 </div>
 </div>
@@ -2041,8 +1733,7 @@ horizon itself)!</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
     <span class="n">add_encoders</span><span class="o">=</span><span class="n">encoders</span><span class="p">,</span>
@@ -2098,8 +1789,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[46]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">show_warnings</span><span class="o">=</span><span class="kc">False</span>
 <span class="p">)</span>
 
@@ -2140,7 +1830,7 @@ HPU available: False, using: 0 HPUs
 </section>
 </section>
 <section id="Regression-forecasting-models">
-<h1>Regression forecasting models<a class="headerlink" href="#Regression-forecasting-models" title="Permalink to this heading">¶</a></h1>
+<h1>Regression forecasting models<a class="headerlink" href="#Regression-forecasting-models" title="Link to this heading">#</a></h1>
 <blockquote>
 <div><p>Note: You can find a detailed example notebook for our SKLearnModel <a class="reference external" href="https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html">here</a>.</p>
 </div></blockquote>
@@ -2158,8 +1848,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">BayesianRidge</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.linear_model</span><span class="w"> </span><span class="kn">import</span> <span class="n">BayesianRidge</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">SKLearnModel</span>
 
@@ -2184,8 +1873,7 @@ covariates 6 months before the forecasted time step (which also requires to know
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[48]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
     <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span>
     <span class="n">future_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_covs_scaled</span><span class="p">,</span> <span class="n">milk_covs_scaled</span><span class="p">],</span>
     <span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span>
@@ -2214,8 +1902,7 @@ covariates 6 months before the forecasted time step (which also requires to know
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[49]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">mape</span><span class="p">([</span><span class="n">series_air</span><span class="p">,</span> <span class="n">series_milk</span><span class="p">],</span> <span class="p">[</span><span class="n">pred_air</span><span class="p">,</span> <span class="n">pred_milk</span><span class="p">])</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mape</span><span class="p">([</span><span class="n">series_air</span><span class="p">,</span> <span class="n">series_milk</span><span class="p">],</span> <span class="p">[</span><span class="n">pred_air</span><span class="p">,</span> <span class="n">pred_milk</span><span class="p">])</span>
 </pre></div>
 </div>
 </div>
@@ -2233,8 +1920,7 @@ covariates 6 months before the forecasted time step (which also requires to know
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[50]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">mape</span><span class="p">([</span><span class="n">series_air</span><span class="p">,</span> <span class="n">series_milk</span><span class="p">],</span> <span class="p">[</span><span class="n">pred_air</span><span class="p">,</span> <span class="n">pred_milk</span><span class="p">],</span> <span class="n">series_reduction</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">mape</span><span class="p">([</span><span class="n">series_air</span><span class="p">,</span> <span class="n">series_milk</span><span class="p">],</span> <span class="p">[</span><span class="n">pred_air</span><span class="p">,</span> <span class="n">pred_milk</span><span class="p">],</span> <span class="n">series_reduction</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -2252,8 +1938,7 @@ covariates 6 months before the forecasted time step (which also requires to know
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">bayes_ridge_model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">bayes_ridge_model</span> <span class="o">=</span> <span class="n">SKLearnModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="mi">72</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">model</span><span class="o">=</span><span class="n">BayesianRidge</span><span class="p">()</span>
 <span class="p">)</span>
 
@@ -2299,13 +1984,14 @@ MAPE = 3.76%
 </div>
 </div>
 <p>Our best model so far!</p>
+<section id="Applying-scaler-in-backtesting">
+<h2>Applying scaler in backtesting<a class="headerlink" href="#Applying-scaler-in-backtesting" title="Link to this heading">#</a></h2>
 <p>To avoid data-leakage through the target and future covariate scaler, we will pass it to <code class="docutils literal notranslate"><span class="pre">historical_forecasts</span></code> so that the scaler is fitted and applied to both the target and the future covariates at each iteration.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[52]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">backtest_auto_scaling</span> <span class="o">=</span> <span class="n">bayes_ridge_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">backtest_auto_scaling</span> <span class="o">=</span> <span class="n">bayes_ridge_model</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">future_covariates</span><span class="o">=</span><span class="n">air_covs</span><span class="p">,</span>
     <span class="n">data_transformers</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;series&quot;</span><span class="p">:</span> <span class="n">Scaler</span><span class="p">(),</span> <span class="s2">&quot;future_covariates&quot;</span><span class="p">:</span> <span class="n">Scaler</span><span class="p">()},</span>
     <span class="n">retrain</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># ensure that the scalers are fitted at each iterations</span>
@@ -2350,11 +2036,12 @@ MAPE = 3.92%
 </div>
 <p>The MAPE score is slightly worse, which is expected since information cannot leak from the future anymore but the backtesting conditions are more reliable.</p>
 </section>
+</section>
 <section id="Sample-Weights">
-<h1>Sample Weights<a class="headerlink" href="#Sample-Weights" title="Permalink to this heading">¶</a></h1>
+<h1>Sample Weights<a class="headerlink" href="#Sample-Weights" title="Link to this heading">#</a></h1>
 <p>All our global models (regression-, ensemble-, and neural network models) support sample weights for training. They are applied per observation, label (each step in <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>), and component. This can be very useful to:</p>
 <ul class="simple">
-<li><p>weigh certain time frames more than others (e.g. decaying weights the further the points in the past, higher weights for times with more business value, …)</p></li>
+<li><p>weigh certain time frames more than others (e.g. decaying weights the further the points in the past, higher weights for times with more business value, …)</p></li>
 <li><p>reduce / remove the effect of outliers or missing values on the model</p></li>
 </ul>
 <p>Let’s just introduce some outliers to the air passengers series and see how a linear regression model with a 12 months lookback window (<code class="docutils literal notranslate"><span class="pre">lags=12</span></code>) performs on this data.</p>
@@ -2362,8 +2049,7 @@ MAPE = 3.92%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[53]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="c1"># convert to pandas DataFrame and add some outliers</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># convert to pandas DataFrame and add some outliers</span>
 <span class="n">air_df</span> <span class="o">=</span> <span class="n">series_air</span><span class="o">.</span><span class="n">to_dataframe</span><span class="p">()</span>
 <span class="n">outlier_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">air_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span> <span class="o">&gt;=</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">air_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span> <span class="o">&lt;=</span> <span class="mi">1951</span><span class="p">)</span>
 <span class="n">air_df</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">outlier_mask</span><span class="p">]</span> <span class="o">=</span> <span class="mf">600.0</span>
@@ -2416,8 +2102,7 @@ MAPE = 26.40%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[54]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">weight_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">air_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span> <span class="o">&gt;=</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">air_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span> <span class="o">&lt;=</span> <span class="mi">1952</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">weight_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">air_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span> <span class="o">&gt;=</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">air_df</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">year</span> <span class="o">&lt;=</span> <span class="mi">1952</span><span class="p">)</span>
 <span class="n">sample_weight</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">air_df</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
 <span class="n">sample_weight</span><span class="p">[</span><span class="n">weight_mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
 <span class="n">sample_weight</span> <span class="o">=</span> <span class="n">air_outlier</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">)</span>
@@ -2440,8 +2125,7 @@ MAPE = 26.40%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[55]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_lin</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_lin</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 <span class="n">backtest_weighted</span> <span class="o">=</span> <span class="n">model_lin</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
     <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span> <span class="o">**</span><span class="n">hist_fc_kwargs</span>
 <span class="p">)</span>
@@ -2477,7 +2161,7 @@ MAPE = 5.19%
 <p><strong>Note:</strong> our sample weights also support multi-horizon forecasts, multiple time series, multivariate series, and weights for evaluation sets (if the model support it)</p>
 </section>
 <section id="Forecast-Start-Shifting">
-<h1>Forecast Start Shifting<a class="headerlink" href="#Forecast-Start-Shifting" title="Permalink to this heading">¶</a></h1>
+<h1>Forecast Start Shifting<a class="headerlink" href="#Forecast-Start-Shifting" title="Link to this heading">#</a></h1>
 <p>We might also be interested in forecasts starting with an offset after the end of our target series. This can be useful for example:</p>
 <ul class="simple">
 <li><p>In (Day-) Ahead Markets, where (each day) we need to make some biddings for a future point in time (next day) - we are not really interested in what happens between now and that future point in time. We can reduce model complexity by only focusing on times of interest.</p></li>
@@ -2489,8 +2173,7 @@ MAPE = 5.19%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[56]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_shifted</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_shifted</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span>
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
@@ -2516,18 +2199,17 @@ MAPE = 5.19%
 <p>We see that the prediction starts 12 months after the end of the training series.</p>
 </section>
 <section id="Probabilistic-forecasts">
-<h1>Probabilistic forecasts<a class="headerlink" href="#Probabilistic-forecasts" title="Permalink to this heading">¶</a></h1>
+<h1>Probabilistic forecasts<a class="headerlink" href="#Probabilistic-forecasts" title="Link to this heading">#</a></h1>
 <p>Most models in Darts support probabilistic forecasts (some local models and all regression-, ensemble- and neural network models). The full support list is <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">available on the Darts README page</a>.</p>
 <section id="With-Local-Models">
-<h2>With Local Models<a class="headerlink" href="#With-Local-Models" title="Permalink to this heading">¶</a></h2>
+<h2>With Local Models<a class="headerlink" href="#With-Local-Models" title="Link to this heading">#</a></h2>
 <p>For local models (<code class="docutils literal notranslate"><span class="pre">ARIMA</span></code>, <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>, …), we can simply specify a <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> parameter when calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. The returned <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> will then contain <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> Monte Carlo samples describing the distribution of the time series’ values. The advantage of relying on Monte Carlo samples (in contrast to, say, explicit confidence intervals) is that they can be used to describe any parametric or non-parametric joint distribution over components, and compute
 arbitrary quantiles.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[57]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model_es</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model_es</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
 <span class="n">model_es</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
 <span class="n">probabilistic_forecast</span> <span class="o">=</span> <span class="n">model_es</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 
@@ -2547,7 +2229,7 @@ arbitrary quantiles.</p>
 </div>
 </section>
 <section id="With-Neural-Network-Models-(TorchForecastingModel)">
-<h2>With Neural Network Models (TorchForecastingModel)<a class="headerlink" href="#With-Neural-Network-Models-(TorchForecastingModel)" title="Permalink to this heading">¶</a></h2>
+<h2>With Neural Network Models (TorchForecastingModel)<a class="headerlink" href="#With-Neural-Network-Models-(TorchForecastingModel)" title="Link to this heading">#</a></h2>
 <p>With neural networks, we have to use a <code class="docutils literal notranslate"><span class="pre">Likelihood</span></code> object at model creation. The likelihoods specify which distribution the model will try to fit, along with potential prior values for the distributions’ parameters. The full list of available likelihoods is <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html">available in the docs</a>.</p>
 <p>Next to the distributions, we also support <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> as likelihood, which estimates future quantile values of the target series.</p>
 <p>Using likelihoods is easy. For instance, here is what training an <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code> to fit a Laplace likelihood looks like:</p>
@@ -2555,8 +2237,7 @@ arbitrary quantiles.</p>
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[58]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TCNModel</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">TCNModel</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">LaplaceLikelihood</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span>
@@ -2622,14 +2303,13 @@ ServerApp.rate_limit_window=3.0 (secs)
 </pre></div></div>
 </div>
 <section id="Probabilistic-Sample-Predictions">
-<h3>Probabilistic Sample Predictions<a class="headerlink" href="#Probabilistic-Sample-Predictions" title="Permalink to this heading">¶</a></h3>
+<h3>Probabilistic Sample Predictions<a class="headerlink" href="#Probabilistic-Sample-Predictions" title="Link to this heading">#</a></h3>
 <p>Then to get probabilistic forecasts, we again only need to specify some <code class="docutils literal notranslate"><span class="pre">num_samples</span> <span class="pre">&gt;&gt;</span> <span class="pre">1</span></code>. This will sample from predicted distribution.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[59]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 
 <span class="c1"># scale back:</span>
 <span class="n">pred</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">series_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -2664,15 +2344,14 @@ HPU available: False, using: 0 HPUs
 </div>
 </section>
 <section id="Direct-Parameter-Predicitons">
-<h3>Direct Parameter Predicitons<a class="headerlink" href="#Direct-Parameter-Predicitons" title="Permalink to this heading">¶</a></h3>
+<h3>Direct Parameter Predicitons<a class="headerlink" href="#Direct-Parameter-Predicitons" title="Link to this heading">#</a></h3>
 <p>The great thing about our likelihoods is that instead of sampling from the distribution/quantiles, we can directly predict the distribution/quantile parameters. For this, we only have to set <code class="docutils literal notranslate"><span class="pre">predict_likelihood_parameters=True</span></code>.</p>
 <p>Below we get the predicted location (mu) and scale (b) of the laplace distribution (in the scaled space between 0 and 1).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[60]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
 <span class="n">train_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;laplace_dist&quot;</span><span class="p">);</span>
@@ -2709,8 +2388,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[61]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
     <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
@@ -2767,8 +2445,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[62]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 
 <span class="c1"># scale back:</span>
 <span class="n">pred</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">series_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -2806,8 +2483,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[63]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;1-99th percentiles&quot;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.99</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;1-99th percentiles&quot;</span><span class="p">)</span>
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">low_quantile</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">high_quantile</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s2">&quot;20-80th percentiles&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -2821,20 +2497,19 @@ HPU available: False, using: 0 HPUs
 </div>
 </section>
 <section id="Types-of-distributions">
-<h3>Types of distributions<a class="headerlink" href="#Types-of-distributions" title="Permalink to this heading">¶</a></h3>
+<h3>Types of distributions<a class="headerlink" href="#Types-of-distributions" title="Link to this heading">#</a></h3>
 <p>The likelihood has to be compatible with the domain of your time series’ values. For instance <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.PoissonLikelihood">PoissonLikelihood</a> can be used on discrete positive values, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.ExponentialLikelihood">ExponentialLikelihood</a> can be used on real
 positive values, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.BetaLikelihood">BetaLikelihood</a> on real values in <span class="math notranslate nohighlight">\((0,1)\)</span>.</p>
 <p>It is also possible to use <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression">QuantileRegression</a> to apply a quantile loss and fit some desired quantiles directly.</p>
 </section>
 <section id="Evaluating-Probabilistic-Forecasts">
-<h3>Evaluating Probabilistic Forecasts<a class="headerlink" href="#Evaluating-Probabilistic-Forecasts" title="Permalink to this heading">¶</a></h3>
+<h3>Evaluating Probabilistic Forecasts<a class="headerlink" href="#Evaluating-Probabilistic-Forecasts" title="Link to this heading">#</a></h3>
 <p>How can we evaluate the quality of probabilistic forecasts? By default, most metrics functions (such as <code class="docutils literal notranslate"><span class="pre">mape()</span></code>) will keep working but look only at the median forecast. It is also possible to use the Mean Quantile Loss metric <code class="docutils literal notranslate"><span class="pre">mql()</span></code>, which quantifies the error for each predicted quantiles. For quantile=0.5 (the median), it is identical to the Mean Absolute Error (MAE):</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[64]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mql</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mql</span>
 
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MAPE of median forecast: </span><span class="si">{</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air</span><span class="p">,</span><span class="w"> </span><span class="n">pred</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MAE of median forecast: </span><span class="si">{</span><span class="n">mae</span><span class="p">(</span><span class="n">series_air</span><span class="p">,</span><span class="w"> </span><span class="n">pred</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
@@ -2860,14 +2535,13 @@ quantile loss at quantile 0.95: 12.20
 </div>
 </section>
 <section id="Using-Quantile-Loss">
-<h3>Using Quantile Loss<a class="headerlink" href="#Using-Quantile-Loss" title="Permalink to this heading">¶</a></h3>
+<h3>Using Quantile Loss<a class="headerlink" href="#Using-Quantile-Loss" title="Link to this heading">#</a></h3>
 <p>Could we do better by fitting these quantiles directly? We can just use a <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> likelihood:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[65]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.torch</span><span class="w"> </span><span class="kn">import</span> <span class="n">QuantileRegression</span>
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
@@ -2924,8 +2598,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[66]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
 
 <span class="c1"># scale back:</span>
 <span class="n">pred</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">series_idx</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -2979,14 +2652,13 @@ quantile loss at quantile 0.95: 7.39
 </section>
 </section>
 <section id="With-Regression-Models">
-<h2>With Regression Models<a class="headerlink" href="#With-Regression-Models" title="Permalink to this heading">¶</a></h2>
+<h2>With Regression Models<a class="headerlink" href="#With-Regression-Models" title="Link to this heading">#</a></h2>
 <p>Probailistic support for our <code class="docutils literal notranslate"><span class="pre">SKLearnModels</span></code> is similiar to that of the neural networks. We have to specify a <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> at model creation. Instead of giving a likelihood object, we can simply pick one of <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code> (with some <code class="docutils literal notranslate"><span class="pre">quantiles</span></code>) and <code class="docutils literal notranslate"><span class="pre">&quot;poisson&quot;</span></code>.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[67]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span>
     <span class="n">lags</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
     <span class="n">lags_future_covariates</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
     <span class="n">likelihood</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span>
@@ -3028,19 +2700,18 @@ quantile loss at quantile 0.95: 6.19
 </section>
 </section>
 <section id="Ensembling-models">
-<h1>Ensembling models<a class="headerlink" href="#Ensembling-models" title="Permalink to this heading">¶</a></h1>
+<h1>Ensembling models<a class="headerlink" href="#Ensembling-models" title="Link to this heading">#</a></h1>
 <p><em>Ensembling</em> is about combining the forecasts produced by several models, in order to obtain a final - and hopefully better forecast.</p>
-<p>For instance, in our example of a <a class="reference external" href="#A-less-naive-model">less naive model above</a>, we manually combined a naive seasonal model with a naive drift model. Here, we will show how model forecasts can be automatically combined - naively using a <code class="docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code>, or learned using <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>.</p>
+<p>For instance, in our example of a <a class="reference internal" href="#A-less-naive-model"><span class="std std-ref">less naive model above</span></a>, we manually combined a naive seasonal model with a naive drift model. Here, we will show how model forecasts can be automatically combined - naively using a <code class="docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code>, or learned using <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>.</p>
 <p>It is of course also possible to use <code class="docutils literal notranslate"><span class="pre">past</span></code> and/or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> with ensemble model but they will be passed only to the forecasting models supporting them.</p>
 <section id="Naive-Ensembling">
-<h2>Naive Ensembling<a class="headerlink" href="#Naive-Ensembling" title="Permalink to this heading">¶</a></h2>
+<h2>Naive Ensembling<a class="headerlink" href="#Naive-Ensembling" title="Link to this heading">#</a></h2>
 <p>Naive ensembling just takes the average of the forecasts from several models. Darts <code class="docutils literal notranslate"><span class="pre">NaiveEnsembleModel</span></code> does exactly that and all through the same API as the forecasting models (fit, predict, historical forecasts, backtesting, …).</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[68]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaiveEnsembleModel</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">NaiveEnsembleModel</span>
 
 <span class="n">models</span> <span class="o">=</span> <span class="p">[</span><span class="n">NaiveDrift</span><span class="p">(),</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="mi">12</span><span class="p">)]</span>
 
@@ -3077,7 +2748,7 @@ MAPE = 11.93%
 </div>
 </section>
 <section id="Learned-Ensembling">
-<h2>Learned Ensembling<a class="headerlink" href="#Learned-Ensembling" title="Permalink to this heading">¶</a></h2>
+<h2>Learned Ensembling<a class="headerlink" href="#Learned-Ensembling" title="Link to this heading">#</a></h2>
 <p>As expected in this case, the naive ensemble doesn’t give great results (although in some cases it could!)</p>
 <p>We can sometimes do better if we see the ensembling as a supervised regression problem: given a set of forecasts (features), find a model that combines them in order to minimise errors on the target. This is what the <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code> does. It accepts parameters:</p>
 <ul class="simple">
@@ -3091,8 +2762,7 @@ MAPE = 11.93%
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[69]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionEnsembleModel</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegressionEnsembleModel</span>
 
 <span class="n">ensemble_model</span> <span class="o">=</span> <span class="n">RegressionEnsembleModel</span><span class="p">(</span>
     <span class="n">forecasting_models</span><span class="o">=</span><span class="n">models</span><span class="p">,</span> <span class="n">regression_train_n_points</span><span class="o">=</span><span class="mi">12</span>
@@ -3132,8 +2802,7 @@ MAPE = 4.77
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[70]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">ensemble_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series_air</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">ensemble_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series_air</span><span class="p">)</span>
 <span class="n">ensemble_model</span><span class="o">.</span><span class="n">ensemble_model</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">coef_</span>
 </pre></div>
 </div>
@@ -3152,18 +2821,17 @@ array([0.01368814, 1.0980107 ], dtype=float32)
 </section>
 </section>
 <section id="Filtering-models">
-<h1>Filtering models<a class="headerlink" href="#Filtering-models" title="Permalink to this heading">¶</a></h1>
+<h1>Filtering models<a class="headerlink" href="#Filtering-models" title="Link to this heading">#</a></h1>
 <p>In addition to <em>forecasting</em> models, which are able to predict future values of series, Darts also contains a couple of helpful <em>filtering</em> models, which can model “in sample” series’ values distributions.</p>
 <section id="Fitting-a-Kalman-Filter">
-<h2>Fitting a Kalman Filter<a class="headerlink" href="#Fitting-a-Kalman-Filter" title="Permalink to this heading">¶</a></h2>
+<h2>Fitting a Kalman Filter<a class="headerlink" href="#Fitting-a-Kalman-Filter" title="Link to this heading">#</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">KalmanFilter</span></code> implements a <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.filtering.kalman_filter.html">Kalman Filter</a>. The implementation relies on <a class="reference external" href="https://nfoursid.readthedocs.io/en/latest/source/kalman.html">nfoursid</a>, so it is for instance possible to provide a <code class="docutils literal notranslate"><span class="pre">nfoursid.kalman.Kalman</span></code> object containing a transition matrix, process noise covariance, observation noise covariance etc.</p>
 <p>It is also possible to do system identification by calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> to “train” the Kalman Filter using the N4SID system identification algorithm:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[71]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">KalmanFilter</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">KalmanFilter</span>
 
 <span class="n">kf</span> <span class="o">=</span> <span class="n">KalmanFilter</span><span class="p">(</span><span class="n">dim_x</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
 <span class="n">kf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air_scaled</span><span class="p">)</span>
@@ -3183,14 +2851,13 @@ array([0.01368814, 1.0980107 ], dtype=float32)
 </div>
 </section>
 <section id="Inferring-missing-values-with-Gaussian-Processes">
-<h2>Inferring missing values with Gaussian Processes<a class="headerlink" href="#Inferring-missing-values-with-Gaussian-Processes" title="Permalink to this heading">¶</a></h2>
+<h2>Inferring missing values with Gaussian Processes<a class="headerlink" href="#Inferring-missing-values-with-Gaussian-Processes" title="Link to this heading">#</a></h2>
 <p>Darts also contains a <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code> which can be used for probabilistic modeling of series:</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[72]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.gaussian_process.kernels</span><span class="w"> </span><span class="kn">import</span> <span class="n">RBF</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.gaussian_process.kernels</span><span class="w"> </span><span class="kn">import</span> <span class="n">RBF</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">GaussianProcessFilter</span>
 
@@ -3222,20 +2889,19 @@ array([0.01368814, 1.0980107 ], dtype=float32)
 </section>
 </section>
 <section id="A-Word-of-Caution">
-<h1>A Word of Caution<a class="headerlink" href="#A-Word-of-Caution" title="Permalink to this heading">¶</a></h1>
+<h1>A Word of Caution<a class="headerlink" href="#A-Word-of-Caution" title="Link to this heading">#</a></h1>
 <p>So is N-BEATS, exponential smoothing, or a Bayesian ridge regression trained on milk production the best approach for predicting the future number of airline passengers? Well, at this point it’s actually hard to say exactly which one is best. Our time series is small, and our validation set is even smaller. In such cases, it’s very easy to overfit the whole forecasting exercise to such a small validation set. That’s especially true if the number of available models and their degrees of freedom
 is high (such as for deep learning models), or if we played with many models on a single test set (as done in this notebook).</p>
 <p>As data scientists, it is our responsibility to understand the extent to which our models can be trusted. So always take results with a grain of salt, especially on small datasets, and apply the scientific method before making any kind of forecast :) Happy modeling!</p>
 </section>
 <section id="Anomaly-Detection">
-<h1>Anomaly Detection<a class="headerlink" href="#Anomaly-Detection" title="Permalink to this heading">¶</a></h1>
+<h1>Anomaly Detection<a class="headerlink" href="#Anomaly-Detection" title="Link to this heading">#</a></h1>
 <p>Darts also has an entire module on Time Series Anomaly Detection. For more info, read our <a class="reference external" href="https://unit8co.github.io/darts/examples/22-anomaly-detection-examples.html">user guide on anomaly detection</a>.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
 </pre></div>
 </div>
 </div>
@@ -3244,50 +2910,188 @@ is high (such as for deep learning models), or if we played with many models on 
 </script></section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="../README.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Time Series Made Easy in Python</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="../index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Time Series Made Easy in Python</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="../userguide.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="../userguide.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">User Guide</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Quickstart</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Installing-Darts">Installing Darts</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Building-and-manipulating-TimeSeries">Building and manipulating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Read-data-and-build-a-TimeSeries">Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Load-one-of-our-existing-datasets">Load one of our existing datasets</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Export-a-TimeSeries">Export a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Some-TimeSeries-Operations">Some <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> Operations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Creating-a-training-and-validation-series">Creating a training and validation series</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Training-forecasting-models-and-making-predictions">Training forecasting models and making predictions</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Playing-with-toy-models">Playing with toy models</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Inspect-Seasonality">Inspect Seasonality</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#A-less-naive-model">A less naive model</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Computing-error-metrics">Computing error metrics</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Quickly-try-out-several-models">Quickly try out several models</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Searching-for-hyper-parameters-with-the-Theta-method">Searching for hyper-parameters with the Theta method</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Backtesting:-simulate-historical-forecasting">Backtesting: simulate historical forecasting</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Looking-at-residuals">Looking at residuals</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#A-better-model">A better model</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Machine-learning-and-global-models">Machine learning and global models</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#A-toy-example-with-two-series">A toy example with two series</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Using-deep-learning:-example-with-N-BEATS">Using deep learning: example with N-BEATS</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Covariates:-using-external-data">Covariates: using external data</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Encoders:-using-covariates-for-free">Encoders: using covariates for free</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Regression-forecasting-models">Regression forecasting models</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Applying-scaler-in-backtesting">Applying scaler in backtesting</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Sample-Weights">Sample Weights</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Forecast-Start-Shifting">Forecast Start Shifting</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Probabilistic-forecasts">Probabilistic forecasts</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#With-Local-Models">With Local Models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#With-Neural-Network-Models-(TorchForecastingModel)">With Neural Network Models (TorchForecastingModel)</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Probabilistic-Sample-Predictions">Probabilistic Sample Predictions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Direct-Parameter-Predicitons">Direct Parameter Predicitons</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Types-of-distributions">Types of distributions</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Evaluating-Probabilistic-Forecasts">Evaluating Probabilistic Forecasts</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Using-Quantile-Loss">Using Quantile Loss</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#With-Regression-Models">With Regression Models</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Ensembling-models">Ensembling models</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Naive-Ensembling">Naive Ensembling</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Learned-Ensembling">Learned Ensembling</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Filtering-models">Filtering models</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Fitting-a-Kalman-Filter">Fitting a Kalman Filter</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Inferring-missing-values-with-Gaussian-Processes">Inferring missing values with Gaussian Processes</a></li>
+</ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#A-Word-of-Caution">A Word of Caution</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#Anomaly-Detection">Anomaly Detection</a></li>
+</ul>
+
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/quickstart/00-quickstart.ipynb.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

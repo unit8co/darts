@@ -1,23 +1,33 @@
+darts.utils
+===========
+
+.. currentmodule:: darts.utils
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   darts.utils.data
+   darts.utils.likelihood_models
+
+   darts.utils.callbacks
+   darts.utils.losses
+   darts.utils.missing_values
+   darts.utils.model_selection
+   darts.utils.statistics
+   darts.utils.timeseries_generation
+   darts.utils.torch
+   darts.utils.utils
 
 
+- :doc:`darts.utils.data <darts.utils.data>`
+- :doc:`darts.utils.likelihood_models <darts.utils.likelihood_models>`
 
-.. automodule:: darts.utils
-
-    .. toctree::
-        :maxdepth: 1
-        
-        darts.utils.data
-        darts.utils.historical_forecasts
-        darts.utils.likelihood_models
-        
-        darts.utils.callbacks
-        darts.utils.losses
-        darts.utils.missing_values
-        darts.utils.model_selection
-        darts.utils.multioutput
-        darts.utils.onnx_utils
-        darts.utils.statistics
-        darts.utils.timeseries_generation
-        darts.utils.torch
-        darts.utils.ts_utils
-        darts.utils.utils
+- :doc:`darts.utils.callbacks <darts.utils.callbacks>`
+- :doc:`darts.utils.losses <darts.utils.losses>`
+- :doc:`darts.utils.missing_values <darts.utils.missing_values>`
+- :doc:`darts.utils.model_selection <darts.utils.model_selection>`
+- :doc:`darts.utils.statistics <darts.utils.statistics>`
+- :doc:`darts.utils.timeseries_generation <darts.utils.timeseries_generation>`
+- :doc:`darts.utils.torch <darts.utils.torch>`
+- :doc:`darts.utils.utils <darts.utils.utils>`

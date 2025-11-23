@@ -1,297 +1,444 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Overview of Forecasting Models &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'userguide/forecasting_overview';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Torch Forecasting Models" href="torch_forecasting_models.html" />
     <link rel="prev" title="TimeSeries" href="timeseries.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
-</div>
-    </nav>
-    
-
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="current nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="timeseries.html">
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     TimeSeries
-    </span>
-   </code>
-  </a>
- </li>
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   Overview of Forecasting Models
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="torch_forecasting_models.html">
-   Torch Forecasting Models
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="gpu_and_tpu_usage.html">
-   Using Torch Models with GPUs and TPUs
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="covariates.html">
-   Covariates
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="hyperparameter_optimization.html">
-   Hyperparameter Optimization in Darts
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="faq.html">
-   Frequently Asked Questions
-  </a>
- </li>
-</ul>
-
-  </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
 
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#generalities">
-   Generalities
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#saving-and-loading-models">
-   Saving and Loading Models
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#support-for-multivariate-series">
-   Support for multivariate series
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#handling-multiple-series">
-   Handling multiple series
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#support-for-covariates">
-   Support for Covariates
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#probabilistic-forecasts">
-   Probabilistic forecasts
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#probabilistic-neural-networks">
-     Probabilistic neural networks
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#capturing-model-uncertainty-using-monte-carlo-dropout">
-     Capturing model uncertainty using Monte Carlo Dropout
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#probabilistic-regression-models">
-     Probabilistic regression models
-    </a>
-   </li>
+</li>
+
   </ul>
- </li>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="timeseries.html"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Overview of Forecasting Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torch_forecasting_models.html">Torch Forecasting Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gpu_and_tpu_usage.html">Using Torch Models with GPUs and TPUs</a></li>
+<li class="toctree-l1"><a class="reference internal" href="covariates.html">Covariates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hyperparameter_optimization.html">Hyperparameter Optimization in Darts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 </ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
 
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../userguide.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Overview of Forecasting Models</span></li>
+  </ul>
 </nav>
-              </div>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
               
-              <div class="toc-item">
+              
+              
                 
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
   <section id="overview-of-forecasting-models">
-<h1>Overview of Forecasting Models<a class="headerlink" href="#overview-of-forecasting-models" title="Permalink to this heading">¶</a></h1>
+<h1>Overview of Forecasting Models<a class="headerlink" href="#overview-of-forecasting-models" title="Link to this heading">#</a></h1>
 <p>Forecasting models are models that can produce predictions about future values of some time series, given the history of this series.
 The forecasting models in Darts are <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">listed on the README</a>. They have different capabilities and features. For example, some models work on multidimensional series, return probabilistic forecasts, or accept other kinds of external <em>covariates</em> data in input.</p>
 <p>Below, we give an overview of what these features mean.</p>
 <section id="generalities">
-<h2>Generalities<a class="headerlink" href="#generalities" title="Permalink to this heading">¶</a></h2>
+<h2>Generalities<a class="headerlink" href="#generalities" title="Link to this heading">#</a></h2>
 <p>All forecasting models work in the same way: first they are built (taking some hyper-parameters in argument), then they are fit on one or several series
 by calling the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function, and finally they are used to obtain one or several forecasts by calling the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function.</p>
 <p><strong>Example:</strong></p>
@@ -323,7 +470,7 @@ be provided to <code class="docutils literal notranslate"><span class="pre">pred
 </ul>
 </section>
 <section id="saving-and-loading-models">
-<h2>Saving and Loading Models<a class="headerlink" href="#saving-and-loading-models" title="Permalink to this heading">¶</a></h2>
+<h2>Saving and Loading Models<a class="headerlink" href="#saving-and-loading-models" title="Link to this heading">#</a></h2>
 <p>If you wish to save a particular model and use it elsewhere or at a later point in time, darts can achieve that. It leverages pickle and in the case of Torch models relies on saving PyTorch Lightning trainer checkpoints.
 All forecasting models support saving the model on the filesystem, by calling the <code class="docutils literal notranslate"><span class="pre">save()</span></code> function, which saves that particular <code class="docutils literal notranslate"><span class="pre">ForecastingModel</span></code> object instance. When the model is to be used again, the method <code class="docutils literal notranslate"><span class="pre">load()</span></code> can be used. Please note that the methods <code class="docutils literal notranslate"><span class="pre">save_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">load_model()</span></code> are deprecated.</p>
 <p><strong>Example:</strong></p>
@@ -357,7 +504,7 @@ More info: <a class="reference external" href="https://docs.python.org/3/library
 </ul>
 </section>
 <section id="support-for-multivariate-series">
-<h2>Support for multivariate series<a class="headerlink" href="#support-for-multivariate-series" title="Permalink to this heading">¶</a></h2>
+<h2>Support for multivariate series<a class="headerlink" href="#support-for-multivariate-series" title="Link to this heading">#</a></h2>
 <p>Some models support multivariate time series. This means that the target (and potential covariates) series provided to the model
 during fit and predict stage can have multiple dimensions. The model will then in turn produce multivariate forecasts.</p>
 <p>Here is an example, using a <code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> to forecast a single multivariate series made of 2 components:</p>
@@ -379,11 +526,12 @@ during fit and predict stage can have multiple dimensions. The model will then i
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/forecast_multiv.png"><img alt="Forecasting a multivariate series" src="../_images/forecast_multiv.png" /></a>
+<a class="reference external image-reference" href="./images/forecast_multiv.png"><img alt="Forecasting a multivariate series" src="../_images/forecast_multiv.png" />
+</a>
 <p>These models are shown with a “✅” under the <code class="docutils literal notranslate"><span class="pre">Multivariate</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.</p>
 </section>
 <section id="handling-multiple-series">
-<h2>Handling multiple series<a class="headerlink" href="#handling-multiple-series" title="Permalink to this heading">¶</a></h2>
+<h2>Handling multiple series<a class="headerlink" href="#handling-multiple-series" title="Link to this heading">#</a></h2>
 <p>Some models support being fit on multiple time series. To do this, it is enough to simply provide a Python <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (for instance a list of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>. When a model is fit this way, the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function will expect the argument <code class="docutils literal notranslate"><span class="pre">series</span></code> to be set, containing
 one or several <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (i.e., a single or a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) that need to be forecasted.
 The advantage of training on multiple series is that a single model can be exposed to more patterns occurring across all series in the training dataset. That can often be beneficial, especially for larger models with more capacity.</p>
@@ -397,27 +545,28 @@ The advantage of training on multiple series is that a single model can be expos
 <span class="n">supports_multi_ts</span> <span class="o">=</span> <span class="nb">issubclass</span><span class="p">(</span><span class="n">SKLearnModel</span><span class="p">,</span> <span class="n">GlobalForecastingModel</span><span class="p">)</span>
 </pre></div>
 </div>
-<p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844">This article</a> provides more explanations about training models on multiple series.</p>
+<p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844">This article on multi-series forecasting</a> provides more explanations about training models on multiple series.</p>
 </section>
 <section id="support-for-covariates">
-<h2>Support for Covariates<a class="headerlink" href="#support-for-covariates" title="Permalink to this heading">¶</a></h2>
+<h2>Support for Covariates<a class="headerlink" href="#support-for-covariates" title="Link to this heading">#</a></h2>
 <p>Some models support <em>covariate series</em>. Covariate series are time series that the models can take as inputs, but will not forecast.
 We distinguish between <em>past covariates</em> and <em>future covariates</em>:</p>
 <ul class="simple">
 <li><p>Past covariates are covariate time series whose values are <strong>not</strong> known into the future at prediction time. Those can for instance represent signals that have to be measured and are not known upfront. Models do not use the future values of <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> when making forecasts.</p></li>
 <li><p>Future covariates are covariate time series whose values are known into the future at prediction time (up until the forecast horizon). These can represent signals such as calendar information, holidays, weather forecasts, etc. Models that accept <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> will consume the future values (up to the forecast horizon) when making forecasts.</p></li>
 </ul>
-<a class="reference external image-reference" href="./images/covariates/covariates-highlevel.png"><img alt="covariates" src="../_images/covariates-highlevel1.png" /></a>
+<a class="reference external image-reference" href="./images/covariates/covariates-highlevel.png"><img alt="covariates" src="../_images/covariates-highlevel1.png" />
+</a>
 <p>Past and future covariates can be used by providing respectively <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> arguments to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.
 When a model is trained on multiple target series, one covariate has to be provided per target series. The covariate series themselves can be multivariate
 and contain multiple “covariate dimensions”; see the <a class="reference external" href="https://unit8co.github.io/darts/userguide/timeseries.html">TimeSeries guide</a> for how to build multivariate series.</p>
 <p>It is not necessary to worry about the covariates series having the exact right time spans (e.g., so that the last timestamp of future covariates matches the forecast horizon). Darts takes care of slicing the covariates behind the scenes, based on the time axes of the target(s) and that of the covariates.</p>
 <p>Models supporting past (resp. future) covariates are indicated with a “✅” under the <code class="docutils literal notranslate"><span class="pre">Past-observed</span> <span class="pre">covariates</span> <span class="pre">support</span></code> (resp. <code class="docutils literal notranslate"><span class="pre">Future-known</span> <span class="pre">covariates</span> <span class="pre">support</span></code>) columns on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>,</p>
 <p>To know more about covariates, please refer to the <a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html">covariates section of the user guide</a>.</p>
-<p>In addition, you can have a look at <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993">this article</a> for some examples of how to use past and future covariates.</p>
+<p>In addition, you can have a look at <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993">this article on covariates</a> for some examples of how to use past and future covariates.</p>
 </section>
 <section id="probabilistic-forecasts">
-<h2>Probabilistic forecasts<a class="headerlink" href="#probabilistic-forecasts" title="Permalink to this heading">¶</a></h2>
+<h2>Probabilistic forecasts<a class="headerlink" href="#probabilistic-forecasts" title="Link to this heading">#</a></h2>
 <p>Some of the models in Darts can produce probabilistic forecasts. For these models, the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> returned by <code class="docutils literal notranslate"><span class="pre">predict()</span></code> will be probabilistic, and contain a certain number of Monte Carlo samples describing the joint distribution over time and components. The number of samples can be directly determined by the argument <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> of the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function (leaving <code class="docutils literal notranslate"><span class="pre">num_samples=1</span></code> will return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>).</p>
 <p>Models supporting probabilistic forecasts are indicated with a “✅” in the <code class="docutils literal notranslate"><span class="pre">Probabilistic</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.
 The actual probabilistic distribution of the forecasts depends on the model.</p>
@@ -437,9 +586,10 @@ The actual probabilistic distribution of the forecasts depends on the model.</p>
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_ets.png"><img alt="Exponential Smoothing" src="../_images/example_ets.png" /></a>
+<a class="reference external image-reference" href="./images/probabilistic/example_ets.png"><img alt="Exponential Smoothing" src="../_images/example_ets.png" />
+</a>
 <section id="probabilistic-neural-networks">
-<h3>Probabilistic neural networks<a class="headerlink" href="#probabilistic-neural-networks" title="Permalink to this heading">¶</a></h3>
+<h3>Probabilistic neural networks<a class="headerlink" href="#probabilistic-neural-networks" title="Link to this heading">#</a></h3>
 <p>All neural networks (torch-based models) in Darts have a rich support to estimate different kinds of probability distributions.
 When creating the model, it is possible to provide one of the <em>likelihood models</em> available in <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html">darts.utils.likelihood_models.torch</a>, which determine the distribution that will be estimated by the model.
 In such cases, the model will output the parameters of the distribution, and it will be trained by minimising the negative log-likelihood of the training samples.
@@ -470,7 +620,8 @@ The strength of this regularization term can also be specified when creating the
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_tcn_laplace.png"><img alt="TCN Laplace regression" src="../_images/example_tcn_laplace.png" /></a>
+<a class="reference external image-reference" href="./images/probabilistic/example_tcn_laplace.png"><img alt="TCN Laplace regression" src="../_images/example_tcn_laplace.png" />
+</a>
 <p>It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression">darts.utils.likelihood_models.torch.QuantileRegression</a>, in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distribution, and it can often be a good option in practice, when one is not sure of the “real” distribution, or when fitting parametric likelihoods give poor results.
 For example, the code snippet below is almost exactly the same as the preceding snippet; the only difference is that it now uses a <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> likelihood, which means that the neural network will be trained with a pinball loss, and its number of outputs will be dynamically configured to match the number of quantiles.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
@@ -497,10 +648,11 @@ For example, the code snippet below is almost exactly the same as the preceding 
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_tcn_quantile.png"><img alt="TCN quantile regression" src="../_images/example_tcn_quantile.png" /></a>
+<a class="reference external image-reference" href="./images/probabilistic/example_tcn_quantile.png"><img alt="TCN quantile regression" src="../_images/example_tcn_quantile.png" />
+</a>
 </section>
 <section id="capturing-model-uncertainty-using-monte-carlo-dropout">
-<h3>Capturing model uncertainty using Monte Carlo Dropout<a class="headerlink" href="#capturing-model-uncertainty-using-monte-carlo-dropout" title="Permalink to this heading">¶</a></h3>
+<h3>Capturing model uncertainty using Monte Carlo Dropout<a class="headerlink" href="#capturing-model-uncertainty-using-monte-carlo-dropout" title="Link to this heading">#</a></h3>
 <p>In Darts, dropout can also be used as an additional way to capture model uncertainty, following the approach described in [1]. This is sometimes referred to as <em>epistemic uncertainty</em>, and can be seen as a way to marginalize over a family of models represented by all the different dropout activation functions.</p>
 <p>This feature is readily available for all deep learning models integrating some dropout (except RNN models - we refer to the dropout API reference documentations for a mention of models supporting this). It only requires to specify <code class="docutils literal notranslate"><span class="pre">mc_dropout=True</span></code> at prediction time. For example, the code below trains a TCN model (using the default MSE loss) with a dropout rate of 10%, and then produces a probabilistic forecasts using Monte Carlo Dropout:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
@@ -527,11 +679,12 @@ For example, the code snippet below is almost exactly the same as the preceding 
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_mc_dropout.png"><img alt="TCN quantile regression" src="../_images/example_mc_dropout.png" /></a>
+<a class="reference external image-reference" href="./images/probabilistic/example_mc_dropout.png"><img alt="TCN quantile regression" src="../_images/example_mc_dropout.png" />
+</a>
 <p>Monte Carlo Dropout can be combined with other likelihood estimation in Darts, which can be interpreted as a way to capture both epistemic and aleatoric uncertainty.</p>
 </section>
 <section id="probabilistic-regression-models">
-<h3>Probabilistic regression models<a class="headerlink" href="#probabilistic-regression-models" title="Permalink to this heading">¶</a></h3>
+<h3>Probabilistic regression models<a class="headerlink" href="#probabilistic-regression-models" title="Link to this heading">#</a></h3>
 <p>Some regression models can also be configured to produce probabilistic forecasts too. At the time of writing, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html">LinearRegressionModel</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html">LightGBMModel</a> and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html">XGBModel</a> support a <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> argument. When set to <code class="docutils literal notranslate"><span class="pre">&quot;poisson&quot;</span></code> the model will fit a Poisson distribution, and when set to <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code> the model will use the pinball loss to perform quantile regression (the quantiles themselves can be specified using the <code class="docutils literal notranslate"><span class="pre">quantiles</span></code> argument).</p>
 <p>Example:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">AirPassengersDataset</span>
@@ -551,57 +704,138 @@ For example, the code snippet below is almost exactly the same as the preceding 
 <span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
-<a class="reference external image-reference" href="./images/probabilistic/example_linreg_quantile.png"><img alt="quantile linear regression" src="../_images/example_linreg_quantile.png" /></a>
+<a class="reference external image-reference" href="./images/probabilistic/example_linreg_quantile.png"><img alt="quantile linear regression" src="../_images/example_linreg_quantile.png" />
+</a>
 <p>[1] Yarin Gal, Zoubin Ghahramani, <a class="reference external" href="https://arxiv.org/abs/1506.02142">“Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning”</a></p>
 </section>
 </section>
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="timeseries.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="timeseries.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="torch_forecasting_models.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="torch_forecasting_models.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Torch Forecasting Models</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#generalities">Generalities</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#saving-and-loading-models">Saving and Loading Models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#support-for-multivariate-series">Support for multivariate series</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#handling-multiple-series">Handling multiple series</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#support-for-covariates">Support for Covariates</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#probabilistic-forecasts">Probabilistic forecasts</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#probabilistic-neural-networks">Probabilistic neural networks</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#capturing-model-uncertainty-using-monte-carlo-dropout">Capturing model uncertainty using Monte Carlo Dropout</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#probabilistic-regression-models">Probabilistic regression models</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/userguide/forecasting_overview.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

@@ -1,14 +1,23 @@
+darts.ad
+========
+
+.. currentmodule:: darts.ad
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   darts.ad.aggregators
+   darts.ad.anomaly_model
+   darts.ad.detectors
+   darts.ad.scorers
+
+   darts.ad.utils
 
 
+- :doc:`darts.ad.aggregators <darts.ad.aggregators>`
+- :doc:`darts.ad.anomaly_model <darts.ad.anomaly_model>`
+- :doc:`darts.ad.detectors <darts.ad.detectors>`
+- :doc:`darts.ad.scorers <darts.ad.scorers>`
 
-.. automodule:: darts.ad
-
-    .. toctree::
-        :maxdepth: 1
-        
-        darts.ad.aggregators
-        darts.ad.anomaly_model
-        darts.ad.detectors
-        darts.ad.scorers
-        
-        darts.ad.utils
+- :doc:`darts.ad.utils <darts.ad.utils>`

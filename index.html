@@ -1,312 +1,519 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="./" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Time Series Made Easy in Python &#8212; darts  documentation</title>
-    
-  <link href="_static/css/theme.css" rel="stylesheet">
-  <link href="_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/jquery.js"></script>
-    <script src="_static/underscore.js"></script>
-    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/clipboard.min.js"></script>
-    <script src="_static/copybutton.js"></script>
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=9bcbadda"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <link rel="shortcut icon" href="_static/docs-favicon.ico"/>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
+    <link rel="icon" href="_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Time Series Made Easy in Python" href="README.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+    <link rel="next" title="Quickstart" href="quickstart/00-quickstart.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="#">
-  <img src="_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
-</div>
-    </nav>
-    
-
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    
-  </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
 
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#">
-   Time Series Made Easy in Python
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="#">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart/00-quickstart.html">
+    Quickstart
   </a>
-  <ul class="visible nav section-nav flex-column">
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#documentation">
-     Documentation
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#high-level-introductions">
-       High Level Introductions
-      </a>
-     </li>
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#articles-on-selected-topics">
-       Articles on Selected Topics
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#quick-install">
-     Quick Install
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#example-usage">
-     Example Usage
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#features">
-     Features
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#id1">
-     Forecasting Models
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#community-contact">
-     Community &amp; Contact
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#contribute">
-     Contribute
-    </a>
-   </li>
-   <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#citation">
-     Citation
-    </a>
-    <ul class="nav section-nav flex-column">
-    </ul>
-   </li>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
   </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#indices-and-tables">
-   Indices and tables
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
-</ul>
+</li>
 
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
-          
 
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
           
           
-            
           
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
               
-              <div>
+              <div class="bd-header-article d-print-none"></div>
+              
+              
+              
                 
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
   <section id="time-series-made-easy-in-python">
-<h1>Time Series Made Easy in Python<a class="headerlink" href="#time-series-made-easy-in-python" title="Permalink to this heading">¶</a></h1>
-<a class="reference external image-reference" href="https://github.com/unit8co/darts/raw/master/static/images/darts-logo-trim.png"><img alt="darts" src="https://github.com/unit8co/darts/raw/master/static/images/darts-logo-trim.png" /></a>
+<h1>Time Series Made Easy in Python<a class="headerlink" href="#time-series-made-easy-in-python" title="Link to this heading">#</a></h1>
+<a class="only-light reference internal image-reference" href="_images/darts-logo-light.png"><img alt="darts" class="only-light align-center" src="_images/darts-logo-light.png" style="width: 100%;" />
+</a>
+<a class="only-dark reference internal image-reference" href="_images/darts-logo-dark.png"><img alt="darts" class="only-dark align-center" src="_images/darts-logo-dark.png" style="width: 100%;" />
+</a>
+<p align="center" style="margin-top: 20px;">
+    <a href="https://badge.fury.io/py/darts"><img src="https://badge.fury.io/py/u8darts.svg" alt="PyPI version"></a>
+    <a href="https://anaconda.org/conda-forge/u8darts-all"><img src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" alt="Conda Version"></a>
+    <img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Supported versions">
+    <a href="https://hub.docker.com/r/unit8/darts"><img src="https://img.shields.io/docker/v/unit8/darts?label=docker&sort=date" alt="Docker Image Version"></a>
+    <img src="https://img.shields.io/github/release-date/unit8co/darts" alt="GitHub Release Date">
+    <img src="https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master" alt="GitHub Workflow Status">
+    <a href="https://pepy.tech/project/darts"><img src="https://pepy.tech/badge/darts" alt="Downloads"></a>
+    <a href="https://pepy.tech/project/u8darts"><img src="https://pepy.tech/badge/u8darts" alt="Downloads"></a>
+    <a href="https://codecov.io/gh/unit8co/darts"><img src="https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW" alt="codecov"></a>
+    <a href="https://github.com/psf/black"><img src="https://img.shields.io/badge/code%20style-black-000000.svg" alt="Code style: black"></a>
+    <a href="https://gitter.im/u8darts/darts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge"><img src="https://badges.gitter.im/u8darts/darts.svg" alt="Join the chat at https://gitter.im/u8darts/darts"></a>
+</p><div class="line-block">
+<div class="line"><br /></div>
+</div>
+<p><strong>Darts</strong> is a Python library for user-friendly <strong>forecasting and anomaly detection</strong> on time series.
+It contains a variety of models, from classics such as ARIMA to deep neural networks.
+All models can be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions, similar to scikit-learn.
+The library also makes it easy to backtest models, combine the predictions of several models, and take external data into account.
+Darts supports both <strong>univariate and multivariate</strong> time series and models, and offers extensive support for <strong>probabilistic forecasting</strong>.</p>
+<div class="sd-container-fluid sd-sphinx-override sd-mb-4 sd-pt-2 sd-pb-2 sd-pl-0 sd-pr-0 sd-text-center docutils">
+<div class="sd-row sd-row-cols-1 sd-row-cols-xs-1 sd-row-cols-sm-2 sd-row-cols-md-3 sd-row-cols-lg-3 sd-g-4 sd-g-xs-4 sd-g-sm-4 sd-g-md-4 sd-g-lg-4 docutils">
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-md intro-card docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Quickstart</div>
+<img alt="Quickstart" class="sd-card-img-top only-light" src="_images/quickstart.png" />
+<img alt="Quickstart" class="sd-card-img-top only-dark" src="_images/quickstart1.png" />
+<p class="sd-card-text">Introduction to Darts’ main concepts and workflow</p>
+</div>
+<div class="sd-card-footer docutils">
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-secondary sd-stretched-link reference internal" href="quickstart/00-quickstart.html"><span class="doc">To the quickstart guide</span></a></span></p>
+</div>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-md intro-card docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Models</div>
+<img alt="Models" class="sd-card-img-top only-light" src="_images/models.png" />
+<img alt="Models" class="sd-card-img-top only-dark" src="_images/models1.png" />
+<p class="sd-card-text">Available models and supported features</p>
+</div>
+<div class="sd-card-footer docutils">
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-secondary sd-stretched-link reference internal" href="#forecasting-models"><span class="std std-ref">To the models table</span></a></span></p>
+</div>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-md intro-card docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+API Reference</div>
+<img alt="API Reference" class="sd-card-img-top only-light" src="_images/api.png" />
+<img alt="API Reference" class="sd-card-img-top only-dark" src="_images/api1.png" />
+<p class="sd-card-text">Detailed API documentation with methods and parameters</p>
+</div>
+<div class="sd-card-footer docutils">
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-secondary sd-stretched-link reference internal" href="generated_api/darts.html"><span class="doc">To the API reference</span></a></span></p>
+</div>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-md intro-card docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+Examples</div>
+<img alt="Examples" class="sd-card-img-top only-light" src="_images/examples.png" />
+<img alt="Examples" class="sd-card-img-top only-dark" src="_images/examples1.png" />
+<p class="sd-card-text">Jupyter notebooks with basic and advanced tutorials</p>
+</div>
+<div class="sd-card-footer docutils">
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-secondary sd-stretched-link reference internal" href="examples.html"><span class="doc">To the examples</span></a></span></p>
+</div>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-md intro-card docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+User Guide</div>
+<img alt="User Guide" class="sd-card-img-top only-light" src="_images/user-guide.png" />
+<img alt="User Guide" class="sd-card-img-top only-dark" src="_images/user-guide1.png" />
+<p class="sd-card-text">In-depth information on key concepts and features</p>
+</div>
+<div class="sd-card-footer docutils">
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-secondary sd-stretched-link reference internal" href="userguide.html"><span class="doc">To the user guide</span></a></span></p>
+</div>
+</div>
+</div>
+<div class="sd-col sd-d-flex-row docutils">
+<div class="sd-card sd-sphinx-override sd-w-100 sd-shadow-md intro-card docutils">
+<div class="sd-card-body docutils">
+<div class="sd-card-title sd-font-weight-bold docutils">
+How to Contribute</div>
+<img alt="Contribute" class="sd-card-img-top only-light" src="_images/contribute.png" />
+<img alt="Contribute" class="sd-card-img-top only-dark" src="_images/contribute1.png" />
+<p class="sd-card-text">Guidelines for contributing to the Darts library</p>
+</div>
+<div class="sd-card-footer docutils">
+<p class="sd-card-text"><span class="sd-d-grid"><a class="sd-sphinx-override sd-btn sd-text-wrap sd-btn-secondary sd-stretched-link reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md"><span>To the contributing guide</span></a></span></p>
+</div>
+</div>
+</div>
+</div>
+</div>
 <hr class="docutils" />
-<a class="reference external image-reference" href="https://badge.fury.io/py/darts"><img alt="PyPI version" src="https://badge.fury.io/py/u8darts.svg" /></a>
-<a class="reference external image-reference" href="https://anaconda.org/conda-forge/u8darts-all"><img alt="Conda Version" src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" /></a>
-<a class="reference external image-reference" href="https://img.shields.io/badge/python-3.10+-blue.svg"><img alt="Supported versions" src="https://img.shields.io/badge/python-3.10+-blue.svg" /></a>
-<a class="reference external image-reference" href="https://hub.docker.com/r/unit8/darts"><img alt="Docker Image Version (latest by date)" src="https://img.shields.io/docker/v/unit8/darts?label=docker&amp;sort=date" /></a>
-<a class="reference external image-reference" href="https://img.shields.io/github/release-date/unit8co/darts"><img alt="GitHub Release Date" src="https://img.shields.io/github/release-date/unit8co/darts" /></a>
-<a class="reference external image-reference" href="https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master"><img alt="GitHub Workflow Status" src="https://img.shields.io/github/actions/workflow/status/unit8co/darts/release.yml?branch=master" /></a>
-<a class="reference external image-reference" href="https://pepy.tech/project/darts"><img alt="Downloads" src="https://pepy.tech/badge/darts" /></a>
-<a class="reference external image-reference" href="https://pepy.tech/project/u8darts"><img alt="Downloads" src="https://pepy.tech/badge/u8darts" /></a>
-<a class="reference external image-reference" href="https://codecov.io/gh/unit8co/darts"><img alt="codecov" src="https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW" /></a>
-<a class="reference external image-reference" href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
-<a class="reference external image-reference" href="https://gitter.im/u8darts/darts?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img alt="Join the chat at https://gitter.im/u8darts/darts" src="https://badges.gitter.im/u8darts/darts.svg" /></a>
-<p><strong>Darts</strong> is a Python library for user-friendly forecasting and anomaly detection
-on time series. It contains a variety of models, from classics such as ARIMA to
-deep neural networks. The forecasting models can all be used in the same way,
-using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions, similar to scikit-learn.
-The library also makes it easy to backtest models,
-combine the predictions of several models, and take external data into account.
-Darts supports both univariate and multivariate time series and models.
-The ML-based models can be trained on potentially large datasets containing multiple time
-series, and some of the models offer a rich support for probabilistic forecasting.</p>
-<p>Darts also offers extensive anomaly detection capabilities.
-For instance, it is trivial to apply PyOD models on time series to obtain anomaly scores,
-or to wrap any of Darts forecasting or filtering models to obtain fully
-fledged anomaly detection models.</p>
-<section id="documentation">
-<h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this heading">¶</a></h2>
-<ul class="simple">
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html">Quickstart</a></p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/userguide.html">User Guide</a></p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.html">API Reference</a></p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples.html">Examples</a></p></li>
-</ul>
 <section id="high-level-introductions">
-<h3>High Level Introductions<a class="headerlink" href="#high-level-introductions" title="Permalink to this heading">¶</a></h3>
+<h2>High Level Introductions<a class="headerlink" href="#high-level-introductions" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878">Introductory Blog Post</a></p></li>
 <li><p><a class="reference external" href="https://youtu.be/g6OXDnXEtFA">Introduction video (25 minutes)</a></p></li>
 </ul>
 </section>
 <section id="articles-on-selected-topics">
-<h3>Articles on Selected Topics<a class="headerlink" href="#articles-on-selected-topics" title="Permalink to this heading">¶</a></h3>
+<h2>Articles on Selected Topics<a class="headerlink" href="#articles-on-selected-topics" title="Link to this heading">#</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844">Training Models on Multiple Time Series</a></p></li>
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993">Using Past and Future Covariates</a></p></li>
@@ -316,22 +523,22 @@ fledged anomaly detection models.</p>
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/hierarchical-forecast-reconciliation-with-darts-8b4b058bb543">Hierarchical Forecast Reconciliation</a></p></li>
 </ul>
 </section>
-</section>
 <section id="quick-install">
-<h2>Quick Install<a class="headerlink" href="#quick-install" title="Permalink to this heading">¶</a></h2>
+<h2>Quick Install<a class="headerlink" href="#quick-install" title="Link to this heading">#</a></h2>
 <p>We recommend to first setup a clean Python environment for your project with Python 3.10+ using your favorite tool
-(<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>,
+(<a class="reference external" href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html">conda</a>,
 <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with
 or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
 <p>Once your environment is set up you can install darts using pip:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">darts</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>darts
 </pre></div>
 </div>
-<p>For more details you can refer to our
-<a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">installation instructions</a>.</p>
+<p>For more details you can refer to our <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">installation instructions</a>.</p>
 </section>
 <section id="example-usage">
-<h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this heading">¶</a></h2>
+<h2>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading">#</a></h2>
+<section id="forecasting">
+<h3>Forecasting<a class="headerlink" href="#forecasting" title="Link to this heading">#</a></h3>
 <p>Create a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object from a Pandas DataFrame, and split it in train/validation series:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimeSeries</span>
@@ -362,9 +569,11 @@ or without <a class="reference external" href="https://virtualenvwrapper.readthe
 <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
 </pre></div>
 </div>
-<div style="text-align:center;">
-<img src="https://github.com/unit8co/darts/raw/master/static/images/example.png" alt="darts forecast example" />
-</div><p>Load a multivariate series, trim it, keep 2 components, split train and validation sets:</p>
+<img alt="darts forecast example" class="align-center" src="https://github.com/unit8co/darts/raw/master/static/images/example.png" />
+</section>
+<section id="anomaly-detection">
+<h3>Anomaly Detection<a class="headerlink" href="#anomaly-detection" title="Link to this heading">#</a></h3>
+<p>Load a multivariate series, trim it, keep 2 components, split train and validation sets:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">darts.datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">ETTh2Dataset</span>
 
 <span class="n">series</span> <span class="o">=</span> <span class="n">ETTh2Dataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()[:</span><span class="mi">10000</span><span class="p">][[</span><span class="s2">&quot;MUFL&quot;</span><span class="p">,</span> <span class="s2">&quot;LULL&quot;</span><span class="p">]]</span>
@@ -389,8 +598,7 @@ then use it over validation scores to get binary anomaly classification:</p>
 <span class="n">binary_anom</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">detect</span><span class="p">(</span><span class="n">anom_score</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>Plot (shifting and scaling some of the series
-to make everything appear on the same figure):</p>
+<p>Plot (shifting and scaling some of the series to make everything appear on the same figure):</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 
 <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
@@ -398,82 +606,60 @@ to make everything appear on the same figure):</p>
 <span class="p">(</span><span class="n">binary_anom</span> <span class="o">*</span> <span class="mi">45</span> <span class="o">-</span> <span class="mi">150</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;detected binary anomaly&quot;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
 </pre></div>
 </div>
-<div style="text-align:center;">
-<img src="https://github.com/unit8co/darts/raw/master/static/images/example_ad.png" alt="darts anomaly detection example" />
-</div></section>
+<img alt="darts anomaly detection example" class="align-center" src="https://github.com/unit8co/darts/raw/master/static/images/example_ad.png" />
+</section>
+</section>
 <section id="features">
-<h2>Features<a class="headerlink" href="#features" title="Permalink to this heading">¶</a></h2>
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading">#</a></h2>
 <ul class="simple">
-<li><p><strong>Forecasting Models:</strong> A large collection of forecasting models for regression as well as classification tasks; from statistical models (such as
-ARIMA) to deep learning models (such as N-BEATS). See the <a class="reference external" href="#forecasting-models">forecasting models</a> below.</p></li>
-<li><p><strong>Anomaly Detection</strong> The <code class="docutils literal notranslate"><span class="pre">darts.ad</span></code> module contains a collection of anomaly scorers,
-detectors and aggregators, which can all be combined to detect anomalies in time series.
-It is easy to wrap any of Darts forecasting or filtering models to build
-a fully fledged anomaly detection model that compares predictions with actuals.
-The <code class="docutils literal notranslate"><span class="pre">PyODScorer</span></code> makes it trivial to use PyOD detectors on time series.</p></li>
-<li><p><strong>Multivariate Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be multivariate - i.e., contain multiple time-varying
-dimensions/columns instead of a single scalar value. Many models can consume and produce multivariate series.</p></li>
-<li><p><strong>Multiple Series Training (Global Models):</strong> All machine learning based models (incl. all neural networks)
-support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.</p></li>
-<li><p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
-time series; this can for instance be used to get confidence intervals, and many models support different
-flavours of probabilistic forecasting (such as estimating parametric distributions or quantiles).
-Some anomaly detection scorers are also able to exploit these predictive distributions.</p></li>
-<li><p><strong>Conformal Prediction Support:</strong> Our conformal prediction models allow to generate probabilistic forecasts with
-calibrated quantile intervals for any pre-trained global forecasting model.</p></li>
-<li><p><strong>Past and Future Covariates Support:</strong> Many models in Darts support past-observed and/or future-known
-covariate (external data) time series as inputs for producing forecasts.</p></li>
-<li><p><strong>Static Covariates Support:</strong> In addition to time-dependent data, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can also contain
-static data for each dimension, which can be exploited by some models.</p></li>
-<li><p><strong>Hierarchical Reconciliation:</strong> Darts offers transformers to perform reconciliation.
-These can make the forecasts add up in a way that respects the underlying hierarchy.</p></li>
-<li><p><strong>Regression Models:</strong> It is possible to plug-in any scikit-learn compatible model
-to obtain forecasts as functions of lagged values of the target series and covariates.</p></li>
-<li><p><strong>Training with Sample Weights:</strong> All global models support being trained with sample weights. They can be
-applied to each observation, forecasted time step and target column.</p></li>
-<li><p><strong>Forecast Start Shifting:</strong> All global models support training and prediction on a shifted output window.
-This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported
-with a delay.</p></li>
+<li><p><strong>Forecasting Models:</strong> A large collection of forecasting models for regression as well as classification tasks; from statistical models (such as ARIMA) to deep learning models (such as N-BEATS). See the forecasting models table below.</p></li>
+<li><p><strong>Anomaly Detection:</strong> The <code class="docutils literal notranslate"><span class="pre">darts.ad</span></code> module contains a collection of anomaly scorers, detectors and aggregators, which can all be combined to detect anomalies in time series. It is easy to wrap any of Darts forecasting or filtering models to build a fully fledged anomaly detection model that compares predictions with actuals. The <code class="docutils literal notranslate"><span class="pre">PyODScorer</span></code> makes it trivial to use PyOD detectors on time series.</p></li>
+<li><p><strong>Multivariate Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be multivariate - i.e., contain multiple time-varying dimensions/columns instead of a single scalar value. Many models can consume and produce multivariate series.</p></li>
+<li><p><strong>Multiple Series Training (Global Models):</strong> All machine learning based models (incl. all neural networks) support being trained on multiple (potentially multivariate) series. This can scale to large datasets too.</p></li>
+<li><p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic time series; this can for instance be used to get confidence intervals, and many models support different flavours of probabilistic forecasting (such as estimating parametric distributions or quantiles). Some anomaly detection scorers are also able to exploit these predictive distributions.</p></li>
+<li><p><strong>Conformal Prediction Support:</strong> Our conformal prediction models allow to generate probabilistic forecasts with calibrated quantile intervals for any pre-trained global forecasting model.</p></li>
+<li><p><strong>Past and Future Covariates Support:</strong> Many models in Darts support past-observed and/or future-known covariate (external data) time series as inputs for producing forecasts.</p></li>
+<li><p><strong>Static Covariates Support:</strong> In addition to time-dependent data, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can also contain static data for each dimension, which can be exploited by some models.</p></li>
+<li><p><strong>Hierarchical Reconciliation:</strong> Darts offers transformers to perform reconciliation. These can make the forecasts add up in a way that respects the underlying hierarchy.</p></li>
+<li><p><strong>Regression Models:</strong> It is possible to plug-in any scikit-learn compatible model to obtain forecasts as functions of lagged values of the target series and covariates.</p></li>
+<li><p><strong>Training with Sample Weights:</strong> All global models support being trained with sample weights. They can be applied to each observation, forecasted time step and target column.</p></li>
+<li><p><strong>Forecast Start Shifting:</strong> All global models support training and prediction on a shifted output window. This is useful for example for Day-Ahead Market forecasts, or when the covariates (or target series) are reported with a delay.</p></li>
 <li><p><strong>Explainability:</strong> Darts has the ability to <em>explain</em> some forecasting models using Shap values.</p></li>
-<li><p><strong>Data Processing:</strong> Tools to easily apply (and revert) common transformations on
-time series data (scaling, filling missing values, differencing, boxcox, …)</p></li>
-<li><p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
-from R2-scores to Mean Absolute Scaled Error.</p></li>
+<li><p><strong>Data Processing:</strong> Tools to easily apply (and revert) common transformations on time series data (scaling, filling missing values, differencing, boxcox, …)</p></li>
+<li><p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit; from R2-scores to Mean Absolute Scaled Error.</p></li>
 <li><p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p></li>
-<li><p><strong>PyTorch Lightning Support:</strong> All deep learning models are implemented using PyTorch Lightning,
-supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.</p></li>
-<li><p><strong>Filtering Models:</strong> Darts offers three filtering models: <code class="docutils literal notranslate"><span class="pre">KalmanFilter</span></code>, <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code>,
-and <code class="docutils literal notranslate"><span class="pre">MovingAverageFilter</span></code>, which allow to filter time series, and in some cases obtain probabilistic
-inferences of the underlying states/values.</p></li>
-<li><p><strong>Datasets</strong> The <code class="docutils literal notranslate"><span class="pre">darts.datasets</span></code> submodule contains some popular time series datasets for rapid
-and reproducible experimentation.</p></li>
+<li><p><strong>PyTorch Lightning Support:</strong> All deep learning models are implemented using PyTorch Lightning, supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.</p></li>
+<li><p><strong>Filtering Models:</strong> Darts offers three filtering models: <code class="docutils literal notranslate"><span class="pre">KalmanFilter</span></code>, <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code>, and <code class="docutils literal notranslate"><span class="pre">MovingAverageFilter</span></code>, which allow to filter time series, and in some cases obtain probabilistic inferences of the underlying states/values.</p></li>
+<li><p><strong>Datasets:</strong> The <code class="docutils literal notranslate"><span class="pre">darts.datasets</span></code> submodule contains some popular time series datasets for rapid and reproducible experimentation.</p></li>
 <li><p><strong>Compatibility with Multiple Backends:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can be created from and exported to various backends such as pandas, polars, numpy, pyarrow, xarray, and more, facilitating seamless integration with different data processing libraries.</p></li>
 </ul>
 </section>
-<section id="id1">
-<h2>Forecasting Models<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
+<section id="forecasting-models">
+<span id="id1"></span><h2>Forecasting Models<a class="headerlink" href="#forecasting-models" title="Link to this heading">#</a></h2>
 <p>Here’s a breakdown of the forecasting models currently implemented in Darts. Our suite includes both regression and classification models, each tailored for specific forecasting tasks. We are committed to expanding our offerings with new models and features to enhance your forecasting capabilities.</p>
-<p><strong>Regression Models:</strong> Our regression models are designed to predict continuous numerical values, making them ideal for forecasting future trends and patterns in time series data. Utilize these models to gain insights into potential future outcomes based on historical data.</p>
-<table class="table">
+<section id="regression-models">
+<h3>Regression Models<a class="headerlink" href="#regression-models" title="Link to this heading">#</a></h3>
+<p>Our regression models are designed to predict continuous numerical values, making them ideal for forecasting future trends and patterns in time series data. Utilize these models to gain insights into potential future outcomes based on historical data.</p>
+<div class="pst-scrollable-table-container"><table class="table">
 <colgroup>
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
+<col style="width: 33.3%" />
+<col style="width: 11.1%" />
+<col style="width: 11.1%" />
+<col style="width: 11.1%" />
+<col style="width: 11.1%" />
+<col style="width: 22.2%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Model</p></th>
-<th class="head"><p>Sources</p></th>
-<th class="head"><p>Target Series Support:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Univariate/<span class="raw-html-m2r"><br/></span>Multivariate</p></th>
-<th class="head"><p>Covariates Support:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Past-observed/<span class="raw-html-m2r"><br/></span>Future-known/<span class="raw-html-m2r"><br/></span>Static</p></th>
-<th class="head"><p>Probabilistic Forecasting:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Sampled/<span class="raw-html-m2r"><br/></span>Distribution Parameters</p></th>
+<th class="head"><p>Target Series Support: Univariate / Multivariate</p></th>
+<th class="head"><p>Covariates Support: Past-observed / Future-known / Static</p></th>
+<th class="head"><p>Probabilistic Forecasting: Sampled / Distribution Parameters</p></th>
 <th class="head"><p>Training &amp; Forecasting on Multiple Series</p></th>
+<th class="head"><p>Sources</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><strong>Baseline Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms">LocalForecastingModel</a>)</p></td>
+<tr class="row-even"><td><p><strong>Baseline Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms">LocalForecastingModel</a>)</p></td>
 <td></td>
 <td></td>
 <td></td>
@@ -481,34 +667,34 @@ and reproducible experimentation.</p></li>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean">NaiveMean</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>🔴</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal">NaiveSeasonal</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>🔴</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift">NaiveDrift</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>🔴</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage">NaiveMovingAverage</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>🔴</p></td>
+<td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Statistical / Classic Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms">LocalForecastingModel</a>)</p></td>
+<tr class="row-odd"><td><p><strong>Statistical / Classic Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#local-forecasting-models-lfms">LocalForecastingModel</a>)</p></td>
 <td></td>
 <td></td>
 <td></td>
@@ -516,118 +702,118 @@ and reproducible experimentation.</p></li>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.arima.html#darts.models.forecasting.arima.ARIMA">ARIMA</a></p></td>
-<td></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.varima.html#darts.models.forecasting.varima.VARIMA">VARIMA</a></p></td>
-<td></td>
 <td><p>🔴 ✅</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.exponential_smoothing.html#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing">ExponentialSmoothing</a></p></td>
-<td></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.Theta">Theta</a> and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.theta.html#darts.models.forecasting.theta.FourTheta">FourTheta</a></p></td>
-<td><p><a class="reference external" href="https://robjhyndman.com/papers/Theta.pdf">Theta</a> &amp; <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">4 Theta</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://robjhyndman.com/papers/Theta.pdf">Theta paper</a> &amp; <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">4 Theta source</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet_model.html#darts.models.forecasting.prophet_model.Prophet">Prophet</a></p></td>
-<td><p><a class="reference external" href="https://github.com/facebook/prophet">Prophet repo</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://github.com/facebook/prophet">Prophet repo</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT">FFT</a> (Fast Fourier Transform)</p></td>
-<td></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>🔴</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.kalman_forecaster.html#darts.models.forecasting.kalman_forecaster.KalmanForecaster">KalmanForecaster</a> using the Kalman filter and N4SID for system identification</p></td>
-<td><p><a class="reference external" href="https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf">N4SID paper</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf">N4SID paper</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_tbats.html#darts.models.forecasting.sf_tbats.TBATS">TBATS</a></p></td>
-<td><p><a class="reference external" href="https://robjhyndman.com/papers/ComplexSeasonality.pdf">TBATS paper</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://robjhyndman.com/papers/ComplexSeasonality.pdf">TBATS paper</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_croston.html#darts.models.forecasting.sf_croston.Croston">Croston</a> method</p></td>
-<td></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_model.html#darts.models.forecasting.sf_model.StatsForecastModel">StatsForecastModel</a> wrapper around any <a class="reference external" href="https://nixtlaverse.nixtla.io/statsforecast/index.html#models">StatsForecast</a> model</p></td>
-<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_arima.html#darts.models.forecasting.sf_auto_arima.AutoARIMA">AutoARIMA</a></p></td>
-<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ets.html#darts.models.forecasting.sf_auto_ets.AutoETS">AutoETS</a></p></td>
-<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_ces.html#darts.models.forecasting.sf_auto_ces.AutoCES">AutoCES</a></p></td>
-<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_mfles.html#darts.models.forecasting.sf_auto_mfles.AutoMFLES">AutoMFLES</a></p></td>
-<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_tbats.html#darts.models.forecasting.sf_auto_tbats.AutoTBATS">AutoTBATS</a></p></td>
-<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sf_auto_theta.html#darts.models.forecasting.sf_auto_theta.AutoTheta">AutoTheta</a></p></td>
-<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 <td><p>✅ 🔴</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴</p></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">Nixtla’s statsforecast</a></p></td>
 </tr>
-<tr class="row-even"><td><p><strong>Global Baseline Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
+<tr class="row-even"><td><p><strong>Global Baseline Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
 <td></td>
 <td></td>
 <td></td>
@@ -635,27 +821,27 @@ and reproducible experimentation.</p></li>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveAggregate">GlobalNaiveAggregate</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveDrift">GlobalNaiveDrift</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.global_baseline_models.html#darts.models.forecasting.global_baseline_models.GlobalNaiveSeasonal">GlobalNaiveSeasonal</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴 🔴 🔴</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
-<tr class="row-even"><td><p><strong>Regression Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
+<tr class="row-even"><td><p><strong>Regression Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
 <td></td>
 <td></td>
 <td></td>
@@ -663,48 +849,48 @@ and reproducible experimentation.</p></li>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnModel">SKLearnModel</a>: wrapper around any scikit-learn-like regression model</p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel">LinearRegressionModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForestModel">RandomForestModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>🔴 🔴</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostModel">CatBoostModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMModel">LightGBMModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBModel">XGBModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
-<tr class="row-odd"><td><p><strong>PyTorch (Lightning)-based Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
+<tr class="row-odd"><td><p><strong>PyTorch (Lightning)-based Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
 <td></td>
 <td></td>
 <td></td>
@@ -712,83 +898,97 @@ and reproducible experimentation.</p></li>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.rnn_model.html#darts.models.forecasting.rnn_model.RNNModel">RNNModel</a> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
-<td><p><a class="reference external" href="https://arxiv.org/abs/1704.04110">DeepAR paper</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>🔴 ✅ 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/1704.04110">DeepAR paper</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.block_rnn_model.html#darts.models.forecasting.block_rnn_model.BlockRNNModel">BlockRNNModel</a> (incl. LSTM and GRU)</p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel">NBEATSModel</a></p></td>
-<td><p><a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ 🔴 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTSModel">NHiTSModel</a></p></td>
-<td><p><a class="reference external" href="https://arxiv.org/abs/2201.12886">N-HiTS paper</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ 🔴 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2201.12886">N-HiTS paper</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tcn_model.html#darts.models.forecasting.tcn_model.TCNModel">TCNModel</a></p></td>
-<td><p><a class="reference external" href="https://arxiv.org/abs/1803.01271">TCN paper</a>, <a class="reference external" href="https://arxiv.org/abs/1906.04397">DeepTCN paper</a>, <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">blog post</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ 🔴 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/1803.01271">TCN paper</a>, <a class="reference external" href="https://arxiv.org/abs/1906.04397">DeepTCN paper</a>, <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">blog post</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel">TransformerModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ 🔴 🔴</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel">TFTModel</a> (Temporal Fusion Transformer)</p></td>
-<td><p><a class="reference external" href="https://arxiv.org/pdf/1912.09363.pdf">TFT paper</a>, <a class="reference external" href="https://pytorch-forecasting.readthedocs.io/en/latest/models.html">PyTorch Forecasting</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/1912.09363.pdf">TFT paper</a>, <a class="reference external" href="https://pytorch-forecasting.readthedocs.io/en/latest/models.html">PyTorch Forecasting</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.dlinear.html#darts.models.forecasting.dlinear.DLinearModel">DLinearModel</a></p></td>
-<td><p><a class="reference external" href="https://arxiv.org/pdf/2205.13504.pdf">DLinear paper</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/2205.13504.pdf">DLinear paper</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nlinear.html#darts.models.forecasting.nlinear.NLinearModel">NLinearModel</a></p></td>
-<td><p><a class="reference external" href="https://arxiv.org/pdf/2205.13504.pdf">NLinear paper</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/2205.13504.pdf">NLinear paper</a></p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tide_model.html#darts.models.forecasting.tide_model.TiDEModel">TiDEModel</a></p></td>
-<td><p><a class="reference external" href="https://arxiv.org/pdf/2304.08424.pdf">TiDE paper</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/2304.08424.pdf">TiDE paper</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tsmixer_model.html#darts.models.forecasting.tsmixer_model.TSMixerModel">TSMixerModel</a></p></td>
-<td><p><a class="reference external" href="https://arxiv.org/pdf/2303.06053.pdf">TSMixer paper</a>, <a class="reference external" href="https://github.com/ditschuk/pytorch-tsmixer">PyTorch Implementation</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/2303.06053.pdf">TSMixer paper</a>, <a class="reference external" href="https://github.com/ditschuk/pytorch-tsmixer">PyTorch Implementation</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>Ensemble Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on ensembled forecasting models and the ensemble model itself</p></td>
+<tr class="row-odd"><td><p><strong>Foundation Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): No training required</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html#darts.models.forecasting.chronos2_model.Chronos2Model">Chronos2Model</a></p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅ ✅ 🔴</p></td>
+<td><p>✅ ✅</p></td>
+<td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2510.15821">Chronos-2 report</a>, <a class="reference external" href="https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting">Amazon blog post</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Ensemble Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on ensembled forecasting models and the ensemble model itself</p></td>
 <td></td>
 <td></td>
 <td></td>
@@ -796,20 +996,20 @@ and reproducible experimentation.</p></li>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveEnsembleModel">NaiveEnsembleModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_ensemble_model.html#darts.models.forecasting.regression_ensemble_model.RegressionEnsembleModel">RegressionEnsembleModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
-<tr class="row-even"><td><p><strong>Conformal Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on the forecasting model used</p></td>
+<tr class="row-even"><td><p><strong>Conformal Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>): Model support is dependent on the forecasting model used</p></td>
 <td></td>
 <td></td>
 <td></td>
@@ -817,42 +1017,46 @@ and reproducible experimentation.</p></li>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalNaiveModel">ConformalNaiveModel</a></p></td>
-<td><p><a class="reference external" href="https://arxiv.org/pdf/1905.03222">Conformalized Prediction</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/1905.03222">Conformalized Prediction</a></p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.conformal_models.html#darts.models.forecasting.conformal_models.ConformalQRModel">ConformalQRModel</a></p></td>
-<td><p><a class="reference external" href="https://arxiv.org/pdf/1905.03222">Conformalized Quantile Regression</a></p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td><p><a class="reference external" href="https://arxiv.org/pdf/1905.03222">Conformalized Quantile Regression</a></p></td>
 </tr>
 </tbody>
 </table>
-<p><strong>Classification Models:</strong> Classification models in Darts are designed to predict categorical class labels, enabling effective time series labeling and future class prediction. These models are perfect for scenarios where identifying distinct categories or states over time is crucial.</p>
-<table class="table">
+</div>
+</section>
+<section id="classification-models">
+<h3>Classification Models<a class="headerlink" href="#classification-models" title="Link to this heading">#</a></h3>
+<p>Classification models in Darts are designed to predict categorical class labels, enabling effective time series labeling and future class prediction. These models are perfect for scenarios where identifying distinct categories or states over time is crucial.</p>
+<div class="pst-scrollable-table-container"><table class="table">
 <colgroup>
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
+<col style="width: 33.3%" />
+<col style="width: 11.1%" />
+<col style="width: 11.1%" />
+<col style="width: 11.1%" />
+<col style="width: 11.1%" />
+<col style="width: 22.2%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Model</p></th>
-<th class="head"><p>Sources</p></th>
-<th class="head"><p>Target Series Support:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Univariate/<span class="raw-html-m2r"><br/></span>Multivariate</p></th>
-<th class="head"><p>Covariates Support:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Past-observed/<span class="raw-html-m2r"><br/></span>Future-known/<span class="raw-html-m2r"><br/></span>Static</p></th>
-<th class="head"><p>Probabilistic Forecasting:<span class="raw-html-m2r"><br/></span><span class="raw-html-m2r"><br/></span>Sampled/<span class="raw-html-m2r"><br/></span>Distribution Parameters</p></th>
+<th class="head"><p>Target Series Support: Univariate / Multivariate</p></th>
+<th class="head"><p>Covariates Support: Past-observed / Future-known / Static</p></th>
+<th class="head"><p>Probabilistic Forecasting: Sampled / Distribution Parameters</p></th>
 <th class="head"><p>Training &amp; Forecasting on Multiple Series</p></th>
+<th class="head"><p>Sources</p></th>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><strong>Regression Models</strong><span class="raw-html-m2r"><br/></span>(<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
+<tr class="row-even"><td><p><strong>Regression Models</strong> (<a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#global-forecasting-models-gfms">GlobalForecastingModel</a>)</p></td>
 <td></td>
 <td></td>
 <td></td>
@@ -860,68 +1064,63 @@ and reproducible experimentation.</p></li>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.sklearn_model.html#darts.models.forecasting.sklearn_model.SKLearnClassifierModel">SKLearnClassifierModel</a>: wrapper around any scikit-learn-like classification model</p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.catboost_model.html#darts.models.forecasting.catboost_model.CatBoostClassifierModel">CatBoostClassifierModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.lgbm.html#darts.models.forecasting.lgbm.LightGBMClassifierModel">LightGBMClassifierModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.xgboost.html#darts.models.forecasting.xgboost.XGBClassifierModel">XGBClassifierModel</a></p></td>
-<td></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅ ✅ ✅</p></td>
 <td><p>✅ ✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 </tr>
 </tbody>
 </table>
+</div>
+</section>
 </section>
 <section id="community-contact">
-<h2>Community &amp; Contact<a class="headerlink" href="#community-contact" title="Permalink to this heading">¶</a></h2>
-<p>Anyone is welcome to join our <a class="reference external" href="https://gitter.im/u8darts/darts">Gitter room</a> to ask questions, make proposals,
-discuss use-cases, and more. If you spot a bug or have suggestions, GitHub issues are also welcome.</p>
-<p>If what you want to tell us is not suitable for Gitter or Github,
-feel free to send us an email at <span class="raw-html-m2r"><a href="mailto:darts@unit8.co">darts@unit8.co</a></span> for
-darts related matters or <span class="raw-html-m2r"><a href="mailto:info@unit8.co">info@unit8.co</a></span> for any other
-inquiries.</p>
+<h2>Community &amp; Contact<a class="headerlink" href="#community-contact" title="Link to this heading">#</a></h2>
+<p>Anyone is welcome to join our <a class="reference external" href="https://gitter.im/u8darts/darts">Gitter room</a> to ask questions, make proposals, discuss use-cases, and more. If you spot a bug or have suggestions, GitHub issues are also welcome.</p>
+<p>If what you want to tell us is not suitable for Gitter or Github, feel free to send us an email at <a class="reference external" href="mailto:darts&#37;&#52;&#48;unit8&#46;co">darts<span>&#64;</span>unit8<span>&#46;</span>co</a> for darts related matters or <a class="reference external" href="mailto:info&#37;&#52;&#48;unit8&#46;co">info<span>&#64;</span>unit8<span>&#46;</span>co</a> for any other inquiries.</p>
 </section>
 <section id="contribute">
-<h2>Contribute<a class="headerlink" href="#contribute" title="Permalink to this heading">¶</a></h2>
-<p>The development is ongoing, and we welcome suggestions, pull requests and issues on GitHub.
-All contributors will be acknowledged on the
-<a class="reference external" href="https://github.com/unit8co/darts/blob/master/CHANGELOG.md">change log page</a>.</p>
-<p>Before working on a contribution (a new feature or a fix),
-<a class="reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md">check our contribution guidelines</a>.</p>
+<h2>Contribute<a class="headerlink" href="#contribute" title="Link to this heading">#</a></h2>
+<p>The development is ongoing, and we welcome suggestions, pull requests and issues on GitHub. All contributors will be acknowledged on the <a class="reference external" href="https://github.com/unit8co/darts/blob/master/CHANGELOG.md">change log page</a>.</p>
+<p>Before working on a contribution (a new feature or a fix), <a class="reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md">check our contribution guidelines</a>.</p>
 </section>
 <section id="citation">
-<h2>Citation<a class="headerlink" href="#citation" title="Permalink to this heading">¶</a></h2>
+<h2>Citation<a class="headerlink" href="#citation" title="Link to this heading">#</a></h2>
 <p>If you are using Darts in your scientific work, we would appreciate citations to the following JMLR paper.</p>
 <p><a class="reference external" href="https://www.jmlr.org/papers/v23/21-1177.html">Darts: User-Friendly Modern Machine Learning for Time Series</a></p>
 <p>Bibtex entry:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>@article{JMLR:v23:21-1177,
-  author  = {Julien Herzen and Francesco LÃ¤ssig and Samuele Giuliano Piazzetta and Thomas Neuer and LÃ©o Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan KoÅ›cisz and Dennis Bader and FrÃ©dÃ©rick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and GaÃ«l Grosch},
-  title   = {Darts: User-Friendly Modern Machine Learning for Time Series},
-  journal = {Journal of Machine Learning Research},
-  year    = {2022},
-  volume  = {23},
-  number  = {124},
-  pages   = {1-6},
-  url     = {http://jmlr.org/papers/v23/21-1177.html}
-}
+<div class="highlight-bibtex notranslate"><div class="highlight"><pre><span></span><span class="nc">@article</span><span class="p">{</span><span class="nl">JMLR:v23:21-1177</span><span class="p">,</span>
+<span class="w">  </span><span class="na">author</span><span class="w">  </span><span class="p">=</span><span class="w"> </span><span class="s">{Julien Herzen and Francesco Lässig and Samuele Giuliano Piazzetta and Thomas Neuer and Léo Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan Kościsz and Dennis Bader and Frédérick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and Gaël Grosch}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">title</span><span class="w">   </span><span class="p">=</span><span class="w"> </span><span class="s">{Darts: User-Friendly Modern Machine Learning for Time Series}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">journal</span><span class="w"> </span><span class="p">=</span><span class="w"> </span><span class="s">{Journal of Machine Learning Research}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">year</span><span class="w">    </span><span class="p">=</span><span class="w"> </span><span class="s">{2022}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">volume</span><span class="w">  </span><span class="p">=</span><span class="w"> </span><span class="s">{23}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">number</span><span class="w">  </span><span class="p">=</span><span class="w"> </span><span class="s">{124}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">pages</span><span class="w">   </span><span class="p">=</span><span class="w"> </span><span class="s">{1-6}</span><span class="p">,</span>
+<span class="w">  </span><span class="na">url</span><span class="w">     </span><span class="p">=</span><span class="w"> </span><span class="s">{http://jmlr.org/papers/v23/21-1177.html}</span>
+<span class="p">}</span>
 </pre></div>
 </div>
 <div class="toctree-wrapper compound">
@@ -934,57 +1133,133 @@ All contributors will be acknowledged on the
 </div>
 <div class="toctree-wrapper compound">
 </div>
-<div class="toctree-wrapper compound">
-</div>
 </section>
-</section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading">¶</a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'>
-    <a class='right-next' id="next-link" href="README.html" title="next page">
-    <div class="prev-next-info">
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="right-next"
+       href="quickstart/00-quickstart.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Time Series Made Easy in Python</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+        <p class="prev-next-title">Quickstart</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#high-level-introductions">High Level Introductions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#articles-on-selected-topics">Articles on Selected Topics</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-install">Quick Install</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#example-usage">Example Usage</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#forecasting">Forecasting</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#anomaly-detection">Anomaly Detection</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#features">Features</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#forecasting-models">Forecasting Models</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#regression-models">Regression Models</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#classification-models">Classification Models</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#community-contact">Community &amp; Contact</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#contribute">Contribute</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#citation">Citation</a><ul class="nav section-nav flex-column">
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

@@ -1,303 +1,443 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
     <title>Covariates &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'userguide/covariates';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Hyperparameter Optimization in Darts" href="hyperparameter_optimization.html" />
     <link rel="prev" title="Using Torch Models with GPUs and TPUs" href="gpu_and_tpu_usage.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../generated_api/darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
-</div>
-    </nav>
-    
-
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="current nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="timeseries.html">
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     TimeSeries
-    </span>
-   </code>
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="forecasting_overview.html">
-   Overview of Forecasting Models
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="torch_forecasting_models.html">
-   Torch Forecasting Models
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="gpu_and_tpu_usage.html">
-   Using Torch Models with GPUs and TPUs
-  </a>
- </li>
- <li class="toctree-l1 current active">
-  <a class="current reference internal" href="#">
-   Covariates
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="hyperparameter_optimization.html">
-   Hyperparameter Optimization in Darts
-  </a>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="faq.html">
-   Frequently Asked Questions
-  </a>
- </li>
-</ul>
-
-  </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
 
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#summary-tl-dr">
-   Summary - TL;DR
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#introduction-what-are-covariates-in-darts">
-   Introduction - What are covariates (in Darts)?
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#forecasting-model-covariate-support">
-   Forecasting Model Covariate Support
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
   </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#local-forecasting-models-lfms">
-     Local Forecasting Models (LFMs):
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#global-forecasting-models-gfms">
-     Global Forecasting Models (GFMs)
-    </a>
-   </li>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
   </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#quick-guide-on-how-to-use-past-and-or-future-covariates-with-darts-forecasting-models">
-   Quick guide on how to use past and/or future covariates with Darts’ forecasting models
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
   </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models">
-   Covariate time span requirements for Local and Global Forecasting Models
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
   </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#id3">
-     Local Forecasting Models (LFMs):
-    </a>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#id4">
-     Global Forecasting Models (GFMs):
-    </a>
-   </li>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../generated_api/darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
   </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#examples">
-   Examples
-  </a>
- </li>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="timeseries.html"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="forecasting_overview.html">Overview of Forecasting Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torch_forecasting_models.html">Torch Forecasting Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gpu_and_tpu_usage.html">Using Torch Models with GPUs and TPUs</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Covariates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="hyperparameter_optimization.html">Hyperparameter Optimization in Darts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">Frequently Asked Questions</a></li>
 </ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
 
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../userguide.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Covariates</span></li>
+  </ul>
 </nav>
-              </div>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
               
-              <div class="toc-item">
+              
+              
                 
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
   <section id="covariates">
-<h1>Covariates<a class="headerlink" href="#covariates" title="Permalink to this heading">¶</a></h1>
+<h1>Covariates<a class="headerlink" href="#covariates" title="Link to this heading">#</a></h1>
 <p>Sections about past and future covariates were written for darts version 0.15.0 and later.
 Sections about static covariates were written for darts version 0.20.0 and later.</p>
 <section id="summary-tl-dr">
-<h2>Summary - TL;DR<a class="headerlink" href="#summary-tl-dr" title="Permalink to this heading">¶</a></h2>
+<h2>Summary - TL;DR<a class="headerlink" href="#summary-tl-dr" title="Link to this heading">#</a></h2>
 <p>In Darts, <strong>covariates</strong> refer to external data that can be used as inputs to models to help improve forecasts.
 In the context of forecasting models, the <strong>target</strong> is the series to be forecasted/predicted, and the
 covariates themselves are not predicted. We distinguish three kinds of covariates:</p>
@@ -349,7 +489,8 @@ covariates themselves are not predicted. We distinguish three kinds of covariate
 </div>
 <p>If you train a model using <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>, you’ll have to provide these <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> also at prediction time to <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. This applies to <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> too, with a nuance that <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> have to extend far enough into the future at prediction time (all the way to the forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code>). This can be seen in the graph below. <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> needs to include at least the same time steps as <code class="docutils literal notranslate"><span class="pre">target</span></code>, and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> must include at least the same time span plus additional <code class="docutils literal notranslate"><span class="pre">n</span></code> forecast horizon time steps.</p>
 <p><strong>You can use the same ``*_covariates`` for both training and prediction, given that they contain the required time spans.</strong></p>
-<a class="reference external image-reference" href="./images/covariates/top_level.png"><img alt="figure0" src="../_images/top_level.png" /></a>
+<a class="reference external image-reference" href="./images/covariates/top_level.png"><img alt="figure0" src="../_images/top_level.png" />
+</a>
 <p><strong>Figure 1: Top level summary of how forecasting models work with target and covariates for a prediction with forecast horizon n=2</strong></p>
 <p>There are some extra nuances that might be good to know. For instance, deep learning models in Darts
 can (in general) forecast <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> points at a time. However it is still possible for models
@@ -358,12 +499,12 @@ are known far enough into the future. In such cases, the forecasts are obtained 
 of the past covariates, and using auto-regression on the target series. If you want to know more details, read on.</p>
 </section>
 <section id="introduction-what-are-covariates-in-darts">
-<h2>Introduction - What are covariates (in Darts)?<a class="headerlink" href="#introduction-what-are-covariates-in-darts" title="Permalink to this heading">¶</a></h2>
+<h2>Introduction - What are covariates (in Darts)?<a class="headerlink" href="#introduction-what-are-covariates-in-darts" title="Link to this heading">#</a></h2>
 <p>Past, future and static covariates provide additional information/context that can be useful to improve the prediction of the <code class="docutils literal notranslate"><span class="pre">target</span></code> series. The <code class="docutils literal notranslate"><span class="pre">target</span></code> series is the variable we wish to predict the future for. We do not predict the covariates themselves, only use them for prediction of the <code class="docutils literal notranslate"><span class="pre">target</span></code>.</p>
 <p>Past and future covariates hold information about the past (up to and including present time) or future. This is always relative to the prediction point (in time) after which we want to forecast the future.
 In Darts, we refer to these two types as <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>.</p>
 <p>Static covariates hold time independent (constant / static) information about the <code class="docutils literal notranslate"><span class="pre">target</span></code> series. We refer to them as <code class="docutils literal notranslate"><span class="pre">static_covariates</span></code>. They must be embedded in the <code class="docutils literal notranslate"><span class="pre">target</span></code> series. Working with static covariates follows a slightly different approach than with past or future covariates. Check out our <a class="reference external" href="https://unit8co.github.io/darts/examples/15-static-covariates.html">notebook on static covariates</a> to learn more.</p>
-<p>Darts’ forecasting models have different support modes for <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code>. Some do not support covariates at all, others support only past or future covariates and some even support all three (more on that in <a class="reference external" href="#forecasting-model-covariate-support">this subsection</a>).</p>
+<p>Darts’ forecasting models have different support modes for <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code>. Some do not support covariates at all, others support only past or future covariates and some even support all three (more on that in <a class="reference internal" href="#forecasting-model-covariate-support"><span class="std std-ref">this subsection</span></a>).</p>
 <p>Let’s have a look at some examples of past, future, and static covariates:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>: typically measurements (past data) or temporal attributes</p>
@@ -403,23 +544,17 @@ Static attributes are powerful when working with multiple <code class="docutils 
 <p>Side note: if you don’t have future values (e.g. of measured temperatures), nothing prevents you from applying one of Darts’ forecasting models to forecast future temperatures, and then use this as <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>. Darts is not attempting to forecast the covariates for you, as this would introduce an extra “hidden” modeling step, which we think is best left to the users.</p>
 </section>
 <section id="forecasting-model-covariate-support">
-<h2>Forecasting Model Covariate Support<a class="headerlink" href="#forecasting-model-covariate-support" title="Permalink to this heading">¶</a></h2>
+<h2>Forecasting Model Covariate Support<a class="headerlink" href="#forecasting-model-covariate-support" title="Link to this heading">#</a></h2>
 <p>Darts’ forecasting models accept optional <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and / or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> in their <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods (and <code class="docutils literal notranslate"><span class="pre">static_covariates</span></code> embedded in the <code class="docutils literal notranslate"><span class="pre">target</span></code> series), depending on their capabilities. Table 1 shows the supported covariate types for each model. The models will raise an error if covariates were used that are not supported.</p>
 <section id="local-forecasting-models-lfms">
-<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#local-forecasting-models-lfms" title="Permalink to this heading">¶</a></h3>
+<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#local-forecasting-models-lfms" title="Link to this heading">#</a></h3>
 <p>LFMs are models that can be trained on a single target series only. In Darts most models in this category tend to be simpler statistical models (such as ETS or ARIMA). LFMs accept only a single <code class="docutils literal notranslate"><span class="pre">target</span></code> (and covariate) time series and usually train on the entire series you supplied when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> at once. They can also predict in one go for any number of predictions <code class="docutils literal notranslate"><span class="pre">n</span></code> after the end of the training series.</p>
 </section>
 <section id="global-forecasting-models-gfms">
-<h3>Global Forecasting Models (GFMs)<a class="headerlink" href="#global-forecasting-models-gfms" title="Permalink to this heading">¶</a></h3>
-<p>GFMs are models that can be trained on multiple target (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data. In Darts, these are the global (naive) baseline models, regression models, PyTorch (Lightning)-based models (neural networks), as well ensemble models (depending on their ensemble model and / or the forecasting models they ensemble).</p>
+<h3>Global Forecasting Models (GFMs)<a class="headerlink" href="#global-forecasting-models-gfms" title="Link to this heading">#</a></h3>
+<p>GFMs are models that can be trained on multiple target (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data. In Darts, these are the global (naive) baseline models, regression models, PyTorch (Lightning)-based models (neural networks), foundation models, as well ensemble models (depending on their ensemble model and / or the forecasting models they ensemble).</p>
 <hr class="docutils" />
-<table class="table">
-<colgroup>
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-</colgroup>
+<div class="pst-scrollable-table-container"><table class="table">
 <thead>
 <tr class="row-odd"><th class="head"><p>Model</p></th>
 <th class="head"><p>Past Covariates</p></th>
@@ -593,18 +728,24 @@ Static attributes are powerful when working with multiple <code class="docutils 
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 </tr>
-<tr class="row-odd"><td><p>Ensemble Models (g)</p></td>
+<tr class="row-odd"><td><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.chronos2_model.html#darts.models.forecasting.chronos2_model.Chronos2Model">Chronos2Model</a></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p>Ensemble Models (g)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 </tr>
-<tr class="row-even"><td><p>Conformal Prediction Models (h)</p></td>
+<tr class="row-odd"><td><p>Conformal Prediction Models (h)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 </tr>
 </tbody>
 </table>
+</div>
 <p><strong>Table 1: Darts’ forecasting models and their covariate support</strong></p>
 <ol class="loweralpha simple">
 <li><p>Naive Baselines including <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveDrift">NaiveDrift</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMean">NaiveMean</a>, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveMovingAverage">NaiveMovingAverage</a>, and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal">NaiveSeasonal</a>.</p></li>
@@ -620,9 +761,9 @@ Static attributes are powerful when working with multiple <code class="docutils 
 </section>
 <hr class="docutils" />
 <section id="quick-guide-on-how-to-use-past-and-or-future-covariates-with-darts-forecasting-models">
-<h2>Quick guide on how to use past and/or future covariates with Darts’ forecasting models<a class="headerlink" href="#quick-guide-on-how-to-use-past-and-or-future-covariates-with-darts-forecasting-models" title="Permalink to this heading">¶</a></h2>
+<h2>Quick guide on how to use past and/or future covariates with Darts’ forecasting models<a class="headerlink" href="#quick-guide-on-how-to-use-past-and-or-future-covariates-with-darts-forecasting-models" title="Link to this heading">#</a></h2>
 <p>It is very simple to use covariates with Darts’ forecasting models. There are just some requirements they have to fulfill.</p>
-<p>Just like the <code class="docutils literal notranslate"><span class="pre">target</span></code> series, each of your past and / or future covariates series must be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object. When you train your model with <code class="docutils literal notranslate"><span class="pre">fit()</span></code> using past and /or future covariates, you have to supply the same types of covariates to <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. Depending on the choice of your model and how long your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> is, there might be different time span requirements for your covariates. You can find these requirements in the <a class="reference external" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models">next subsection</a>.</p>
+<p>Just like the <code class="docutils literal notranslate"><span class="pre">target</span></code> series, each of your past and / or future covariates series must be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object. When you train your model with <code class="docutils literal notranslate"><span class="pre">fit()</span></code> using past and /or future covariates, you have to supply the same types of covariates to <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. Depending on the choice of your model and how long your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> is, there might be different time span requirements for your covariates. You can find these requirements in the <a class="reference internal" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models"><span class="std std-ref">next subsection</span></a>.</p>
 <p><strong>You can even use the same ``*_covariates`` for fitting and prediction if they contain the required time spans. This is because Darts will “intelligently” slice them for you based on the target time axis.</strong></p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># create one of Darts&#39; forecasting model</span>
 <span class="n">model</span> <span class="o">=</span> <span class="n">SomeForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
@@ -668,11 +809,11 @@ Static attributes are powerful when working with multiple <code class="docutils 
 </div>
 </section>
 <section id="covariate-time-span-requirements-for-local-and-global-forecasting-models">
-<h2>Covariate time span requirements for Local and Global Forecasting Models<a class="headerlink" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models" title="Permalink to this heading">¶</a></h2>
+<h2>Covariate time span requirements for Local and Global Forecasting Models<a class="headerlink" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models" title="Link to this heading">#</a></h2>
 <p>There are differences in how Darts’ “Local” and “Global” Forecasting Models perform training and prediction. Specifically, how they extract/work with the data supplied during fit() and predict().</p>
 <p>Depending on the model you use and how long your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> is, there might be different time span requirements for your covariates.</p>
 <section id="id3">
-<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#id3" title="Link to this heading">#</a></h3>
 <p>LFMs usually train on the entire <code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> series (if supported) you supplied when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> at once. They can also predict in one go for forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> after the end of the <code class="docutils literal notranslate"><span class="pre">target</span></code>.</p>
 <p><em>Time span requirements to use the same future covariates series for both ``fit()`` and ``predict()``:</em></p>
 <ul class="simple">
@@ -680,7 +821,7 @@ Static attributes are powerful when working with multiple <code class="docutils 
 </ul>
 </section>
 <section id="id4">
-<h3>Global Forecasting Models (GFMs):<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h3>
+<h3>Global Forecasting Models (GFMs):<a class="headerlink" href="#id4" title="Link to this heading">#</a></h3>
 <p>GFMs train and predict on fixed-length chunks (sub-samples) of the <code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> series (if supported). Each chunk contains an input chunk - representing the sample’s past - and an output chunk - the sample’s future. The length of these chunks has to be specified at model creation with parameters <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (one notable exception is <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> which always uses an <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> of 1).</p>
 <p>Depending on your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code>, the model can either predict in one go, or auto-regressively, by predicting on multiple chunks in the future. That is the reason why when predicting with <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> you have to supply additional “future values of your <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>“.</p>
 <p><strong>Time span requirements to use the same past and / or future covariates series for both ``fit()`` and ``predict()``:</strong></p>
@@ -702,7 +843,7 @@ Static attributes are powerful when working with multiple <code class="docutils 
 </section>
 </section>
 <section id="examples">
-<h2>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading">#</a></h2>
 <p>Here are a few examples showcasing how to use covariates with Darts forecasting models:</p>
 <ul class="simple">
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/15-static-covariates.html">Static covariates tutorial including TFTModel example</a></p></li>
@@ -714,50 +855,133 @@ Static attributes are powerful when working with multiple <code class="docutils 
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="gpu_and_tpu_usage.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Using Torch Models with GPUs and TPUs</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="gpu_and_tpu_usage.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Using Torch Models with GPUs and TPUs</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="hyperparameter_optimization.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="hyperparameter_optimization.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Hyperparameter Optimization in Darts</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#summary-tl-dr">Summary - TL;DR</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#introduction-what-are-covariates-in-darts">Introduction - What are covariates (in Darts)?</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#forecasting-model-covariate-support">Forecasting Model Covariate Support</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#local-forecasting-models-lfms">Local Forecasting Models (LFMs):</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#global-forecasting-models-gfms">Global Forecasting Models (GFMs)</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#quick-guide-on-how-to-use-past-and-or-future-covariates-with-darts-forecasting-models">Quick guide on how to use past and/or future covariates with Darts’ forecasting models</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models">Covariate time span requirements for Local and Global Forecasting Models</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id3">Local Forecasting Models (LFMs):</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#id4">Global Forecasting Models (GFMs):</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#examples">Examples</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/userguide/covariates.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

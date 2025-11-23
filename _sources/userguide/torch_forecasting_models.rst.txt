@@ -25,7 +25,7 @@ Content of this guide
 
    * `Simple training <#training>`_
    * `Training with validation set <#training-with-a-validation-dataset>`_
-   * `Forecast / Prediction <#forecastprediction>`_
+   * `Forecast and prediction <#forecasting>`_
 
 #. 
    Advanced functionalities section provides some example of TFMs advanced features:
@@ -33,13 +33,13 @@ Content of this guide
 
    * `Model saving and loading <#saving-and-loading-model-states>`_
 
-     * `Checkpoint saving / loading <#automatic-checkpointing>`_
-     * `Manual saving / loading <#manual-saving--loading>`_
-     * `Train & save on GPU, load on CPU <#trainingsaving-on-gpu-and-loading-on-cpu>`_
+     * `Checkpoint saving and loading <#automatic-checkpointing>`_
+     * `Manual model saving and loading <#manual-saving-and-loading>`_
+     * `GPU training and CPU loading <#training-and-saving-on-gpu-loading-on-cpu>`_
      * `Load pre-trained model for fine-tuning <#re-training-or-fine-tuning-a-pre-trained-model>`_
-     * `Exporting model to ONNX format for inference <#exporting-model-to-ONNX-format-for-inference>`_
+     * `ONNX export for inference <#exporting-model-to-onnx-format-for-inference>`_
 
-   * `Callbacks <#callbacks>`_
+   * `Using callbacks <#callbacks>`_
 
      * `Early Stopping <#example-with-early-stopping>`_
      * `Custom Callback <#example-of-custom-callback-to-store-losses>`_
@@ -63,9 +63,9 @@ Each chunk contains an input chunk - representing the sample's past - and an out
                                      output_chunk_length=1,
                                      **model_kwargs)
 
-All TFMs can be trained on single or multiple ``target`` series and, depending on their covariate support (covered in `this subsection <#torch-forecasting-model-covariates-support>`_\ ), ``past_covariates`` and / or ``future_covariates``. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.
+All TFMs can be trained on single or multiple ``target`` series and, depending on their covariate support (covered in `this subsection on covariates support <#torch-forecasting-model-covariates-support>`_\ ), ``past_covariates`` and / or ``future_covariates``. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.
 
-Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in `this subsection <#required-target-time-spans-for-training-validation-and-prediction>`_\ )
+Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in `this subsection on time span requirements <#required-target-time-spans-for-training-validation-and-prediction>`_\ )
 
 .. code-block:: python
 
@@ -346,14 +346,14 @@ You can also train your models with a validation dataset:
              val_future_covariates=weekday)
 
 If you split your data, you have to define a ``training_cutoff`` (a date or fraction at which to split the dataset) so that both the train and validation datasets satisfy the minimum length requirements
-from `this subsection <#required-target-time-spans-for-training-validation-and-prediction>`_
+from `this subsection on time span requirements <#required-target-time-spans-for-training-validation-and-prediction>`_
 
 Instead of splitting by time, you can also use another subset of time series as validation set.
 
 The model trains itself the same way as before but additionally evaluates the loss on the validation dataset. If you want to keep track of the best performing model on the validation set, you have to enable checkpoint saving as shown next.
 
-Forecast/Prediction
--------------------
+Forecasting
+-----------
 
 After having trained the model, we want to predict the future ice-cream sales for any number of days after our 365 days training data.
 
@@ -389,7 +389,7 @@ The actual prediction works very similar to how we trained the data on sequences
    :alt: figure7
 
 
-**Figure 5: Forecast with a single sequence for ``n <= output_chunk_length``\ **
+**Figure 5: Forecast with a single sequence for n <= output_chunk_length**
 
 
 .. image:: ./images/covariates/prediction_multi.png
@@ -397,7 +397,7 @@ The actual prediction works very similar to how we trained the data on sequences
    :alt: figure8
 
 
-**Figure 6: Auto-regressive forecast for ``n > output_chunk_length``\ **
+**Figure 6: Auto-regressive forecast for n > output_chunk_length**
 
 Advanced Functionnalities
 -------------------------
@@ -431,8 +431,8 @@ You can activate checkpointing at model creation:
    # load the model state that performed best on validation set
    best_model = model.load_from_checkpoint(model_name='my_model', best=True)
 
-Manual saving / loading
-~~~~~~~~~~~~~~~~~~~~~~~
+Manual saving and loading
+~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can also manually save the model at its current state and load it:
 
@@ -441,8 +441,8 @@ You can also manually save the model at its current state and load it:
    model.save("/your/path/to/save/model.pt")
    loaded_model = model.load("/your/path/to/save/model.pt")
 
-Training/Saving on GPU and loading on CPU
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Training and saving on GPU, loading on CPU
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can load a model to CPU that was trained and saved on GPU (see detailed `documentation <https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html>`_\ ):
 

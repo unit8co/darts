@@ -1,939 +1,915 @@
 
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" data-content_root="../" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Utils for time series generation &#8212; darts  documentation</title>
-    
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+    <title>Utils for TimeSeries generation &#8212; darts  documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8878045cc6db502f8baf" rel="stylesheet" />
 
-    
-      
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=8f2a1f02" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css?v=4ae1632d" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.min.css?v=95c83b7e" />
+    <link rel="stylesheet" type="text/css" href="../_static/custom.css?v=2d50e28e" />
+  
+  <!-- So that users can add custom icons -->
+  <script src="../_static/scripts/fontawesome.js?digest=8878045cc6db502f8baf"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf" />
 
-    
-    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
-    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
-    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../_static/doctools.js"></script>
-    <script src="../_static/clipboard.min.js"></script>
-    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=9bcbadda"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=7aa11fa7"></script>
+    <script src="../_static/design-tabs.js?v=f930bc37"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
-    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'generated_api/darts.utils.timeseries_generation';</script>
+    <link rel="icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Utils for Pytorch and its usage" href="darts.utils.torch.html" />
-    <link rel="prev" title="Time Series Statistics" href="darts.utils.statistics.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+    <link rel="prev" title="TimeSeries Statistics" href="darts.utils.statistics.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.38.0" />
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-
-<a class="navbar-brand" href="../index.html">
-  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
-</a>
-
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../README.html">
-  Home
- </a>
-</li>
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
-  Quickstart
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../userguide.html">
-  User Guide
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="darts.html">
-  API Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../examples.html">
-  Examples
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../release_notes/RELEASE_NOTES.html">
-  Release Notes
- </a>
-</li>
-
+  
+  <dialog id="pst-search-dialog">
     
-</ul>
-      </div>
-      
-    </div>
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-        <li class="nav-item">
-          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
-            <span><i class="fab fa-github-square"></i></span>
-            <label class="sr-only">GitHub</label>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
-            <span><i class="fab fa-twitter-square"></i></span>
-            <label class="sr-only">Twitter</label>
-          </a>
-        </li>
-      </ul>
-      </div>
-      
-    </div>
-  </div>
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-    </nav>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
     
+      <div class="navbar-item">
 
-    <div class="container-xl">
-      <div class="row">
-          
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-  <div class="bd-toc-item active">
-    <ul class="current nav bd-sidenav">
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.ad.html">
-   Anomaly Detection
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
-  <label for="toctree-checkbox-1">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.aggregators.html">
-     Anomaly Aggregators
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
-    <label for="toctree-checkbox-2">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">
-       AND Aggregator
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">
-       Ensemble scikit-learn aggregator
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">
-       OR Aggregator
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.anomaly_model.html">
-     Anomaly Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
-    <label for="toctree-checkbox-3">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">
-       Filtering Anomaly Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">
-       Forecasting Anomaly Model
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.detectors.html">
-     Anomaly Detectors
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
-    <label for="toctree-checkbox-4">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.detectors.iqr_detector.html">
-       Interquartile Range (IQR) Detector
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.detectors.quantile_detector.html">
-       Quantile Detector
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.detectors.threshold_detector.html">
-       Threshold Detector
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.ad.scorers.html">
-     Anomaly Scorers
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
-    <label for="toctree-checkbox-5">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.difference_scorer.html">
-       Difference Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">
-       k-means Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">
-       NLL Cauchy Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">
-       NLL Exponential Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">
-       NLL Gamma Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">
-       NLL Gaussian Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">
-       NLL Laplace Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">
-       NLL Poisson Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.norm_scorer.html">
-       Norm Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">
-       PyOD Scorer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">
-       Wasserstein Scorer
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.ad.utils.html">
-     Utils for Anomaly Detection
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.dataprocessing.html">
-   Data Processing
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
-  <label for="toctree-checkbox-6">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.dtw.html">
-     Dynamic Time Warping (DTW)
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
-    <label for="toctree-checkbox-7">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">
-       Dynamic Time Warping (DTW)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.dtw.window.html">
-       DTW Windows
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.encoders.html">
-     Time Axis Encoders
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
-    <label for="toctree-checkbox-8">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">
-       Encoder Base Classes
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">
-       Time Axes Encoders
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.dataprocessing.transformers.html">
-     Data Transformers
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
-    <label for="toctree-checkbox-9">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Data Transformer Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
-       Box-Cox Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.diff.html">
-       Differencing Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mapper and InvertibleMapper
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.midas.html">
-       Mixed-data sampling (MIDAS) Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
-       Missing Values Filler
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
-       Hierarchical Reconciliation
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
-       Scaler
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">
-       Static Covariates Transformer
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">
-       Window Transformer
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
-     Pipeline
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.datasets.html">
-   Datasets
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-10" name="toctree-checkbox-10" type="checkbox"/>
-  <label for="toctree-checkbox-10">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul class="simple">
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.explainability.html">
-   Explainability
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-11" name="toctree-checkbox-11" type="checkbox"/>
-  <label for="toctree-checkbox-11">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.explainability.explainability_result.html">
-     Explainability Result
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.explainability.shap_explainer.html">
-     Shap Explainer for SKLearnModels
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.explainability.tft_explainer.html">
-     TFT Explainer for Temporal Fusion Transformer (TFTModel)
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.metrics.html">
-   Metrics
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-12" name="toctree-checkbox-12" type="checkbox"/>
-  <label for="toctree-checkbox-12">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.metrics.metrics.html">
-     Metrics
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 has-children">
-  <a class="reference internal" href="darts.models.html">
-   Models
-  </a>
-  <input class="toctree-checkbox" id="toctree-checkbox-13" name="toctree-checkbox-13" type="checkbox"/>
-  <label for="toctree-checkbox-13">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.models.filtering.html">
-     Filtering Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-14" name="toctree-checkbox-14" type="checkbox"/>
-    <label for="toctree-checkbox-14">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
-       Gaussian Processes
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
-       Kalman Filter
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.filtering.moving_average_filter.html">
-       Moving Average
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.models.forecasting.html">
-     Forecasting Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-15" name="toctree-checkbox-15" type="checkbox"/>
-    <label for="toctree-checkbox-15">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.arima.html">
-       ARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.baselines.html">
-       Baseline Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
-       Block Recurrent Neural Networks
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.catboost_model.html">
-       CatBoost Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.conformal_models.html">
-       Conformal Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.dlinear.html">
-       D-Linear
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
-       Exponential Smoothing
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.fft.html">
-       Fast Fourier Transform
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">
-       Global Baseline Models (Naive)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
-       Kalman Filter Forecaster
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.lgbm.html">
-       LightGBM Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
-       Linear Regression Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
-       N-BEATS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.nhits.html">
-       N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.nlinear.html">
-       N-Linear
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
-       Random Forest
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
-       Regression Ensemble Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
-       Recurrent Neural Networks
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
-       AutoARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">
-       AutoCES
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">
-       AutoETS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">
-       AutoMFLES
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">
-       AutoTBATS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">
-       AutoTheta
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_croston.html">
-       Croston Method
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_model.html">
-       StatsForecastModel
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sf_tbats.html">
-       TBATS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.sklearn_model.html">
-       SKLearn-Like Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
-       Temporal Convolutional Network
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
-       Temporal Fusion Transformer (TFT)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.theta.html">
-       Theta Method
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tide_model.html">
-       Time-series Dense Encoder (TiDE)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
-       Transformer Model
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">
-       Time-Series Mixer (TSMixer)
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.varima.html">
-       VARIMA
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.xgboost.html">
-       XGBoost Models
-      </a>
-     </li>
-    </ul>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1 current active has-children">
-  <a class="reference internal" href="darts.utils.html">
-   Utils
-  </a>
-  <input checked="" class="toctree-checkbox" id="toctree-checkbox-16" name="toctree-checkbox-16" type="checkbox"/>
-  <label for="toctree-checkbox-16">
-   <i class="fas fa-chevron-down">
-   </i>
-  </label>
-  <ul class="current">
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.utils.data.html">
-     TimeSeries Datasets
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-17" name="toctree-checkbox-17" type="checkbox"/>
-    <label for="toctree-checkbox-17">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.torch_datasets.dataset.html">
-       Dataset Base Class
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">
-       Inference Datasets
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">
-       Training Datasets
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2 has-children">
-    <a class="reference internal" href="darts.utils.likelihood_models.html">
-     Likelihood Models
-    </a>
-    <input class="toctree-checkbox" id="toctree-checkbox-18" name="toctree-checkbox-18" type="checkbox"/>
-    <label for="toctree-checkbox-18">
-     <i class="fas fa-chevron-down">
-     </i>
-    </label>
-    <ul>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">
-       Likelihoods for
-       <cite>
-        SKLearnModel
-       </cite>
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">
-       Likelihoods for
-       <cite>
-        StatsForecast
-       </cite>
-       Models
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.utils.likelihood_models.torch.html">
-       Likelihoods for
-       <cite>
-        TorchForecastingModel
-       </cite>
-      </a>
-     </li>
-    </ul>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.losses.html">
-     PyTorch Loss Functions
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.missing_values.html">
-     Utils for filling missing values
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.model_selection.html">
-     Model selection utilities
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.statistics.html">
-     Time Series Statistics
-    </a>
-   </li>
-   <li class="toctree-l2 current active">
-    <a class="current reference internal" href="#">
-     Utils for time series generation
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.torch.html">
-     Utils for Pytorch and its usage
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.ts_utils.html">
-     Additional util functions
-    </a>
-   </li>
-   <li class="toctree-l2">
-    <a class="reference internal" href="darts.utils.utils.html">
-     Additional util functions
-    </a>
-   </li>
-  </ul>
- </li>
- <li class="toctree-l1">
-  <a class="reference internal" href="darts.timeseries.html">
-   Timeseries
-  </a>
- </li>
-</ul>
+  
+    
+  
 
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/darts-logo-light.png" class="logo__image only-light" alt="darts  documentation - Home"/>
+    <img src="../_static/darts-logo-dark.png" class="logo__image only-dark pst-js-only" alt="darts  documentation - Home"/>
+  
+  
+</a></div>
+    
   </div>
-</nav>
-            </div>
-            
-          
-
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-
-<nav id="bd-toc-nav">
+  
+  <div class="col-lg-9 navbar-header-items">
     
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
-            
-          </div>
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
           
 
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
           
           
-            
           
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../quickstart/00-quickstart.html">
+    Quickstart
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../userguide.html">
+    User Guide
+  </a>
+</li>
+
+
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="darts.html">
+    API Reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../examples.html">
+    Examples
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../release_notes/RELEASE_NOTES.html">
+    Release Notes
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button pst-js-only" aria-label="Color mode" data-bs-title="Color mode"  data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <i class="theme-switch fa-solid fa-sun                fa-lg" data-mode="light" title="Light"></i>
+  <i class="theme-switch fa-solid fa-moon               fa-lg" data-mode="dark"  title="Dark"></i>
+  <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"  title="System Settings"></i>
+</button></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/unit8co/darts" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/unit8co" title="Twitter" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.ad.html">Anomaly Detection</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.aggregators.html">Anomaly Aggregators</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.aggregators.and_aggregator.html">AND Aggregator</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.aggregators.ensemble_sklearn_aggregator.html">Ensemble scikit-learn aggregator</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.aggregators.or_aggregator.html">OR Aggregator</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.anomaly_model.html">Anomaly Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.anomaly_model.filtering_am.html">Filtering Anomaly Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.anomaly_model.forecasting_am.html">Forecasting Anomaly Model</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.detectors.html">Anomaly Detectors</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.detectors.iqr_detector.html">Interquartile Range (IQR) Detector</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.detectors.quantile_detector.html">Quantile Detector</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.detectors.threshold_detector.html">Threshold Detector</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.ad.scorers.html">Anomaly Scorers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.difference_scorer.html">Difference Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.kmeans_scorer.html">k-means Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_cauchy_scorer.html">NLL Cauchy Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_exponential_scorer.html">NLL Exponential Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_gamma_scorer.html">NLL Gamma Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_gaussian_scorer.html">NLL Gaussian Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_laplace_scorer.html">NLL Laplace Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.nll_poisson_scorer.html">NLL Poisson Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.norm_scorer.html">Norm Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.pyod_scorer.html">PyOD Scorer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.ad.scorers.wasserstein_scorer.html">Wasserstein Scorer</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.ad.utils.html">Utils for Anomaly Detection</a></li>
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.dataprocessing.html">Data Processing</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.dataprocessing.dtw.html">Dynamic Time Warping (DTW)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.dtw.cost_matrix.html">DTW Cost Matrix</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.dtw.dtw.html">Dynamic Time Warping (DTW)</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.dtw.window.html">DTW Windows</a></li>
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.dataprocessing.encoders.html">Time Axis Encoders</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.encoders.encoder_base.html">Encoder Base Classes</a></li>
+
+
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.encoders.encoders.html">Time Axes Encoders</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.dataprocessing.transformers.html">Data Transformers</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">Data Transformer Base Class</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">Box-Cox Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.diff.html">Differencing Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">Fittable Data Transformer Base Class</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">Invertible Data Transformer Base Class</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">Mapper and InvertibleMapper</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.midas.html">Mixed-data sampling (MIDAS) Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">Missing Values Filler</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">Hierarchical Reconciliation</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">Scaler</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.static_covariates_transformer.html">Static Covariates Transformer</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.dataprocessing.transformers.window_transformer.html">Window Transformer</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.dataprocessing.pipeline.html">Pipeline</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.datasets.html">Datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="darts.datasets.datasets.html">Datasets</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.explainability.html">Explainability</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="darts.explainability.explainability_result.html">Explainability Result</a></li>
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.explainability.shap_explainer.html">Shap Explainer for SKLearnModels</a></li>
+
+<li class="toctree-l2"><a class="reference internal" href="darts.explainability.tft_explainer.html">TFTModel Explainer</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.metrics.html">Metrics</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="darts.metrics.metrics.html">Metrics</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.metrics.utils.html">Metric Utils</a></li>
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="darts.models.html">Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.models.filtering.html">Filtering Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">Gaussian Process Filter</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.filtering.kalman_filter.html">Kalman Filter</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.filtering.moving_average_filter.html">Moving Average Filter</a></li>
+
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.models.forecasting.html">Forecasting Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.arima.html">ARIMA</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.baselines.html">Baseline Models</a></li>
+
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">Block Recurrent Neural Networks</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.catboost_model.html">CatBoost Models</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.chronos2_model.html">Chronos-2</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.conformal_models.html">Conformal Models</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.dlinear.html">D-Linear</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">Exponential Smoothing</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.fft.html">Fast Fourier Transform</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.global_baseline_models.html">Global Baseline Models (Naive)</a></li>
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">Kalman Filter Forecaster</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.lgbm.html">LightGBM Models</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">Linear Regression Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nbeats.html">N-BEATS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nhits.html">N-HiTS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.nlinear.html">N-Linear</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.prophet_model.html">Facebook Prophet</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.random_forest.html">Random Forest</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">Regression Ensemble Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.rnn_model.html">Recurrent Neural Networks</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">AutoARIMA</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_ces.html">AutoCES</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_ets.html">AutoETS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_mfles.html">AutoMFLES</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_tbats.html">AutoTBATS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_auto_theta.html">AutoTheta</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_croston.html">Croston Method</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_model.html">StatsForecastModel</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sf_tbats.html">TBATS</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.sklearn_model.html">SKLearn-Like Models</a></li>
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tcn_model.html">Temporal Convolutional Network</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tft_model.html">Temporal Fusion Transformer (TFT)</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tft_submodels.html">TFTModel Sub-Modules</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.theta.html">Theta Method</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tide_model.html">Time-series Dense Encoder (TiDE)</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.transformer_model.html">Transformer Model</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.tsmixer_model.html">Time-Series Mixer (TSMixer)</a></li>
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.varima.html">VARIMA</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.models.forecasting.xgboost.html">XGBoost Models</a></li>
+
+
+
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="darts.utils.html">Utils</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.data.html">TimeSeries Datasets</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3 has-children"><a class="reference internal" href="darts.utils.data.torch_datasets.html">Datasets for TorchForecastingModel</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l4"><a class="reference internal" href="darts.utils.data.torch_datasets.inference_dataset.html">Inference Datasets</a></li>
+
+
+<li class="toctree-l4"><a class="reference internal" href="darts.utils.data.torch_datasets.training_dataset.html">Training Datasets</a></li>
+
+
+
+
+</ul>
+</details></li>
+</ul>
+</details></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="darts.utils.likelihood_models.html">Likelihood Models</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.sklearn.html">Likelihoods for SKLearnModel</a></li>
+
+
+
+
+
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.statsforecast.html">Likelihoods for StatsForecastModel</a></li>
+
+<li class="toctree-l3"><a class="reference internal" href="darts.utils.likelihood_models.torch.html">Likelihoods for TorchForecastingModel</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.callbacks.html">Callbacks for TorchForecastingModel</a></li>
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.losses.html">PyTorch Loss Functions</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.missing_values.html">Utils for filling missing values</a></li>
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.model_selection.html">Model selection utilities</a></li>
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.statistics.html">TimeSeries Statistics</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Utils for TimeSeries generation</a></li>
+
+
+
+
+
+
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.torch.html">Utils for Pytorch and its usage</a></li>
+
+
+<li class="toctree-l2"><a class="reference internal" href="darts.utils.utils.html">Additional util functions</a></li>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</ul>
+</details></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
+
+
+
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
               
-              <div>
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="darts.html" class="nav-link">Darts</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="darts.utils.html" class="nav-link">Utils</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">Utils for TimeSeries generation</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
                 
-  <span class="target" id="module-darts.utils.timeseries_generation"></span><section id="utils-for-time-series-generation">
-<h1>Utils for time series generation<a class="headerlink" href="#utils-for-time-series-generation" title="Permalink to this heading">¶</a></h1>
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="utils-for-timeseries-generation">
+<span id="module-darts.utils.timeseries_generation"></span><h1>Utils for TimeSeries generation<a class="headerlink" href="#utils-for-timeseries-generation" title="Link to this heading">#</a></h1>
+</section>
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.autoregressive_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">autoregressive_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_values=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='autoregressive'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#autoregressive_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.autoregressive_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">autoregressive_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">coef</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_values=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='autoregressive'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#autoregressive_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.autoregressive_timeseries" title="Link to this definition">#</a></dt>
 <dd><p>Creates a univariate, autoregressive TimeSeries whose values are calculated using specified coefficients <cite>coef</cite> and
 starting values <cite>start_values</cite>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>coef</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The autoregressive coefficients used for calculating the next time step.
+<li><p><strong>coef</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</span>) – The autoregressive coefficients used for calculating the next time step.
 series[t] = coef[-1] * series[t-1] + coef[-2] * series[t-2] + … + coef[0] * series[t-len(coef)]</p></li>
-<li><p><strong>start_values</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The starting values used for calculating the first few values for which no lags exist yet.
+<li><p><strong>start_values</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]</span>) – The starting values used for calculating the first few values for which no lags exist yet.
 series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + … + coef[0] * starting_values[0]</p></li>
-<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+<li><p><strong>start</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
 DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
+<li><p><strong>end</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+<li><p><strong>length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>freq</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
 By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
 The freq is optional for generating an integer index (if not specified, 1 is used).</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
-<li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
+<li><p><strong>column_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>dtype</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></span>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>An autoregressive TimeSeries created as indicated above.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
@@ -941,33 +917,32 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.constant_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">constant_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='constant'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#constant_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.constant_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">constant_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='constant'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#constant_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.constant_timeseries" title="Link to this definition">#</a></dt>
 <dd><p>Creates a constant univariate TimeSeries with the given value, length (or end date), start date and frequency.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The constant value that the TimeSeries object will assume at every index.</p></li>
-<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+<li><p><strong>value</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The constant value that the TimeSeries object will assume at every index.</p></li>
+<li><p><strong>start</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
 DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
+<li><p><strong>end</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+<li><p><strong>length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>freq</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
 By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
-The freq is optional for generating an integer index (if not specified, 1 is used).</p>
-</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
-<li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
+The freq is optional for generating an integer index (if not specified, 1 is used).</p></li>
+<li><p><strong>column_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>dtype</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></span>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A constant TimeSeries with value ‘value’.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
@@ -975,49 +950,43 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.datetime_attribute_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">datetime_attribute_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cyclic=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_columns=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#datetime_attribute_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">datetime_attribute_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">one_hot=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cyclic=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">with_columns=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#datetime_attribute_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="Link to this definition">#</a></dt>
 <dd><p>Returns a new TimeSeries with index <cite>time_index</cite> and one or more dimensions containing
 (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.</p>
 <p>1-indexed attributes are shifted to enforce 0-indexing across all the encodings.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>time_index</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – Either a <cite>pd.DatetimeIndex</cite> attribute which will serve as the basis of the new column(s), or
+<li><p><strong>time_index</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]</span>) – Either a <cite>pd.DatetimeIndex</cite> attribute which will serve as the basis of the new column(s), or
 a <cite>TimeSeries</cite> whose time axis will serve this purpose.</p></li>
-<li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – An attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”, “weekday”, “day”,
-“hour”, “minute”, “second”. See all available attributes in
-<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.</p></li>
-<li><p><strong>one_hot</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value indicating whether to add the specified attribute as a one hot encoding
+<li><p><strong>attribute</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – An attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”, “weekday”, “day”,
+“hour”, “minute”, “second”. See all available attributes <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">here</a>.</p></li>
+<li><p><strong>one_hot</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Boolean value indicating whether to add the specified attribute as a one hot encoding
 (results in more columns).</p></li>
-<li><p><strong>cyclic</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value indicating whether to add the specified attribute as a cyclic encoding.
+<li><p><strong>cyclic</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Boolean value indicating whether to add the specified attribute as a cyclic encoding.
 Alternative to one_hot encoding, enable only one of the two.
 (adds 2 columns, corresponding to sin and cos transformation)</p></li>
-<li><p><strong>until</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Extend the time_index up until timestamp for datetime indexed series
+<li><p><strong>until</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Extend the time_index up until timestamp for datetime indexed series
 and int for range indexed series, should match or exceed forecasting window.</p></li>
-<li><p><strong>add_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Extend the time_index by add_length, should match or exceed forecasting window.
+<li><p><strong>add_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Extend the time_index by add_length, should match or exceed forecasting window.
 Set only one of until and add_length.</p></li>
 <li><p><strong>dtype</strong> – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
-<li><p><strong>with_columns</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – <p>Optionally, specify the output component names.
-* If <cite>one_hot</cite> and <cite>cyclic</cite> are <code class="docutils literal notranslate"><span class="pre">False</span></code>, must be a string
-* If <cite>cyclic</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, must be a list of two strings. The first string for the sine, the second for the</p>
-<blockquote>
-<div><p>cosine component name.</p>
-</div></blockquote>
+<li><p><strong>with_columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – <p>Optionally, specify the output component names.</p>
 <ul>
-<li><dl class="simple">
-<dt>If <cite>one_hot</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, must be a list of strings of the same length as the generated one hot encoded</dt><dd><p>features.</p>
-</dd>
-</dl>
-</li>
+<li><p>If <cite>one_hot</cite> and <cite>cyclic</cite> are <code class="docutils literal notranslate"><span class="pre">False</span></code>, must be a string</p></li>
+<li><p>If <cite>cyclic</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, must be a list of two strings. The first string for the sine, the second for the
+cosine component name.</p></li>
+<li><p>If <cite>one_hot</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, must be a list of strings of the same length as the generated one hot encoded
+features.</p></li>
 </ul>
 </p></li>
-<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
+<li><p><strong>tz</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Optionally, a time zone to convert the time index to before computing the attributes.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>New datetime attribute TimeSeries instance.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
@@ -1025,41 +994,40 @@ Set only one of until and add_length.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.gaussian_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">gaussian_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='gaussian'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#gaussian_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.gaussian_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">gaussian_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='gaussian'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#gaussian_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.gaussian_timeseries" title="Link to this definition">#</a></dt>
 <dd><p>Creates a gaussian univariate TimeSeries by sampling all the series values independently,
 from a gaussian distribution with mean <cite>mean</cite> and standard deviation <cite>std</cite>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>mean</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – The mean of the gaussian distribution that is sampled at each step.
+<li><p><strong>mean</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span>) – The mean of the gaussian distribution that is sampled at each step.
 If a float value is given, the same mean is used at every step.
 If a numpy.ndarray of floats with the same length as <cite>length</cite> is
 given, a different mean is used at each time step.</p></li>
-<li><p><strong>std</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – The standard deviation of the gaussian distribution that is sampled at each step.
+<li><p><strong>std</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]</span>) – The standard deviation of the gaussian distribution that is sampled at each step.
 If a float value is given, the same standard deviation is used at every step.
 If an array of dimension <cite>(length, length)</cite> is given, it will
 be used as covariance matrix for a multivariate gaussian distribution.</p></li>
-<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+<li><p><strong>start</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
 DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
+<li><p><strong>end</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+<li><p><strong>length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>freq</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
 By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
-The freq is optional for generating an integer index (if not specified, 1 is used).</p>
-</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
-<li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
+The freq is optional for generating an integer index (if not specified, 1 is used).</p></li>
+<li><p><strong>column_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>dtype</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></span>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A white noise TimeSeries created as indicated above.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
@@ -1067,30 +1035,30 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.holidays_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">holidays_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prov=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='holidays'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#holidays_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.holidays_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">holidays_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country_code</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prov=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">state=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='holidays'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">until=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_length=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tz=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#holidays_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.holidays_timeseries" title="Link to this definition">#</a></dt>
 <dd><p>Creates a binary univariate TimeSeries with index <cite>time_index</cite> that equals 1 at every index that lies within
 (or equals) a selected country’s holiday, and 0 otherwise.</p>
 <p>Available countries can be found <a class="reference external" href="https://github.com/dr-prodigy/python-holidays#available-countries">here</a>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>time_index</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>]) – Either a <cite>pd.DatetimeIndex</cite> or a <cite>TimeSeries</cite> for which to generate the holidays.</p></li>
-<li><p><strong>country_code</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The country ISO code.</p></li>
-<li><p><strong>prov</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The province.</p></li>
-<li><p><strong>state</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The state.</p></li>
-<li><p><strong>until</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Extend the time_index up until timestamp for datetime indexed series
+<li><p><strong>time_index</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>]</span>) – Either a <cite>pd.DatetimeIndex</cite> or a <cite>TimeSeries</cite> for which to generate the holidays.</p></li>
+<li><p><strong>country_code</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The country ISO code.</p></li>
+<li><p><strong>prov</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The province.</p></li>
+<li><p><strong>state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The state.</p></li>
+<li><p><strong>until</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Extend the time_index up until timestamp for datetime indexed series
 and int for range indexed series, should match or exceed forecasting window.</p></li>
-<li><p><strong>add_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Extend the time_index by add_length, should match or exceed forecasting window.
+<li><p><strong>add_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Extend the time_index by add_length, should match or exceed forecasting window.
 Set only one of until and add_length.</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries.</p></li>
-<li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series.</p></li>
-<li><p><strong>tz</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a time zone to convert the time index to before generating the holidays.</p></li>
+<li><p><strong>column_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Optionally, the name of the value column for the returned TimeSeries.</p></li>
+<li><p><strong>dtype</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></span>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series.</p></li>
+<li><p><strong>tz</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Optionally, a time zone to convert the time index to before generating the holidays.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A new binary holiday TimeSeries instance.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
@@ -1098,37 +1066,36 @@ Set only one of until and add_length.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.linear_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">linear_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_value=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_value=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#linear_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.linear_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">linear_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">start_value=0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end_value=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#linear_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.linear_timeseries" title="Link to this definition">#</a></dt>
 <dd><p>Creates a univariate TimeSeries with a starting value of <cite>start_value</cite> that increases linearly such that
 it takes on the value <cite>end_value</cite> at the last entry of the TimeSeries. This means that
 the difference between two adjacent entries will be equal to
 (<cite>end_value</cite> - <cite>start_value</cite>) / (<cite>length</cite> - 1).</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>start_value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The value of the first entry in the TimeSeries.</p></li>
-<li><p><strong>end_value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The value of the last entry in the TimeSeries.</p></li>
-<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+<li><p><strong>start_value</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The value of the first entry in the TimeSeries.</p></li>
+<li><p><strong>end_value</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The value of the last entry in the TimeSeries.</p></li>
+<li><p><strong>start</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
 DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
+<li><p><strong>end</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+<li><p><strong>length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>freq</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
 By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
-The freq is optional for generating an integer index (if not specified, 1 is used).</p>
-</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
-<li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
+The freq is optional for generating an integer index (if not specified, 1 is used).</p></li>
+<li><p><strong>column_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>dtype</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></span>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A linear TimeSeries created as indicated above.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
@@ -1136,35 +1103,34 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.random_walk_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">random_walk_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='random_walk'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#random_walk_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.random_walk_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">random_walk_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">mean=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">std=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='random_walk'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#random_walk_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.random_walk_timeseries" title="Link to this definition">#</a></dt>
 <dd><p>Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
 with mean <cite>mean</cite> and standard deviation <cite>std</cite>.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>mean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The mean of the gaussian distribution that is sampled at each step.</p></li>
-<li><p><strong>std</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The standard deviation of the gaussian distribution that is sampled at each step.</p></li>
-<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+<li><p><strong>mean</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The mean of the gaussian distribution that is sampled at each step.</p></li>
+<li><p><strong>std</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The standard deviation of the gaussian distribution that is sampled at each step.</p></li>
+<li><p><strong>start</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
 DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
+<li><p><strong>end</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+<li><p><strong>length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>freq</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
 By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
-The freq is optional for generating an integer index (if not specified, 1 is used).</p>
-</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
-<li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
+The freq is optional for generating an integer index (if not specified, 1 is used).</p></li>
+<li><p><strong>column_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>dtype</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></span>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A random walk TimeSeries created as indicated above.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
@@ -1172,89 +1138,166 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.timeseries_generation.sine_timeseries">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">sine_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value_frequency=0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_amplitude=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_phase=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_y_offset=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='sine'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#sine_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.sine_timeseries" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.timeseries_generation.</span></span><span class="sig-name descname"><span class="pre">sine_timeseries</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value_frequency=0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_amplitude=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_phase=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_y_offset=0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=Timestamp('2000-01-01</span> <span class="pre">00:00:00')</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">end=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_name='sine'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype=&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/timeseries_generation.html#sine_timeseries"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.timeseries_generation.sine_timeseries" title="Link to this definition">#</a></dt>
 <dd><p>Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
 phase and y offset.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>value_frequency</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The number of periods that take place within one time unit given in <cite>freq</cite>.</p></li>
-<li><p><strong>value_amplitude</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The maximum  difference between any value of the returned TimeSeries and <cite>y_offset</cite>.</p></li>
-<li><p><strong>value_phase</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The relative position within one period of the first value of the returned TimeSeries (in radians).</p></li>
-<li><p><strong>value_y_offset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The shift of the sine function along the y axis.</p></li>
-<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+<li><p><strong>value_frequency</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The number of periods that take place within one time unit given in <cite>freq</cite>.</p></li>
+<li><p><strong>value_amplitude</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The maximum  difference between any value of the returned TimeSeries and <cite>y_offset</cite>.</p></li>
+<li><p><strong>value_phase</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The relative position within one period of the first value of the returned TimeSeries (in radians).</p></li>
+<li><p><strong>value_y_offset</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The shift of the sine function along the y axis.</p></li>
+<li><p><strong>start</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
 DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
+<li><p><strong>end</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – <p>The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
+<li><p><strong>length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>freq</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – The time difference between two adjacent entries in the returned index. In case <cite>start</cite> is a timestamp,
 a DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.
 By default, “D” (daily) is used.
 If <cite>start</cite> is an integer, <cite>freq</cite> will be interpreted as the step size in the underlying RangeIndex.
-The freq is optional for generating an integer index (if not specified, 1 is used).</p>
-</p></li>
-<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
-<li><p><strong>dtype</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
+The freq is optional for generating an integer index (if not specified, 1 is used).</p></li>
+<li><p><strong>column_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>dtype</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dtype</span></code></span>) – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A sinusoidal TimeSeries parametrized as indicated above.</p>
 </dd>
-<dt class="field-odd">Return type</dt>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
 </dd>
 </dl>
 </dd></dl>
 
-</section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.utils.statistics.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Time Series Statistics</p>
-        </div>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="darts.utils.statistics.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">TimeSeries Statistics</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.utils.torch.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="darts.utils.torch.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Utils for Pytorch and its usage</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Utils for TimeSeries generation</a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.timeseries_generation.autoregressive_timeseries"><code class="docutils literal notranslate"><span class="pre">autoregressive_timeseries()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.timeseries_generation.constant_timeseries"><code class="docutils literal notranslate"><span class="pre">constant_timeseries()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.timeseries_generation.gaussian_timeseries"><code class="docutils literal notranslate"><span class="pre">gaussian_timeseries()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.timeseries_generation.holidays_timeseries"><code class="docutils literal notranslate"><span class="pre">holidays_timeseries()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.timeseries_generation.linear_timeseries"><code class="docutils literal notranslate"><span class="pre">linear_timeseries()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.timeseries_generation.random_walk_timeseries"><code class="docutils literal notranslate"><span class="pre">random_walk_timeseries()</span></code></a></li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#darts.utils.timeseries_generation.sine_timeseries"><code class="docutils literal notranslate"><span class="pre">sine_timeseries()</span></code></a></li>
+</ul>
+
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/generated_api/darts.utils.timeseries_generation.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=8878045cc6db502f8baf"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=8878045cc6db502f8baf"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 8.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
-    
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2020 - 2025, Unit8 SA (Apache 2.0 License).<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.16.1.
+</p></div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 5.0.0.<br>
-</p>
-    </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>

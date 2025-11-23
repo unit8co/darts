@@ -1,17 +1,29 @@
+darts
+=====
+
+.. currentmodule:: darts
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   darts.ad
+   darts.dataprocessing
+   darts.datasets
+   darts.explainability
+   darts.metrics
+   darts.models
+   darts.utils
+
+   darts.timeseries
 
 
+- :doc:`darts.ad <darts.ad>`
+- :doc:`darts.dataprocessing <darts.dataprocessing>`
+- :doc:`darts.datasets <darts.datasets>`
+- :doc:`darts.explainability <darts.explainability>`
+- :doc:`darts.metrics <darts.metrics>`
+- :doc:`darts.models <darts.models>`
+- :doc:`darts.utils <darts.utils>`
 
-.. automodule:: darts
-
-    .. toctree::
-        :maxdepth: 1
-        
-        darts.ad
-        darts.dataprocessing
-        darts.datasets
-        darts.explainability
-        darts.metrics
-        darts.models
-        darts.utils
-        
-        darts.timeseries
+- :doc:`darts.timeseries <darts.timeseries>`

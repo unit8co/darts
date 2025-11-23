@@ -1,21 +1,37 @@
+darts.dataprocessing.transformers
+=================================
+
+.. currentmodule:: darts.dataprocessing.transformers
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.dataprocessing.transformers.base_data_transformer
+   darts.dataprocessing.transformers.boxcox
+   darts.dataprocessing.transformers.diff
+   darts.dataprocessing.transformers.fittable_data_transformer
+   darts.dataprocessing.transformers.invertible_data_transformer
+   darts.dataprocessing.transformers.mappers
+   darts.dataprocessing.transformers.midas
+   darts.dataprocessing.transformers.missing_values_filler
+   darts.dataprocessing.transformers.reconciliation
+   darts.dataprocessing.transformers.scaler
+   darts.dataprocessing.transformers.static_covariates_transformer
+   darts.dataprocessing.transformers.window_transformer
 
 
 
-.. automodule:: darts.dataprocessing.transformers
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.dataprocessing.transformers.base_data_transformer
-        darts.dataprocessing.transformers.boxcox
-        darts.dataprocessing.transformers.diff
-        darts.dataprocessing.transformers.fittable_data_transformer
-        darts.dataprocessing.transformers.invertible_data_transformer
-        darts.dataprocessing.transformers.mappers
-        darts.dataprocessing.transformers.midas
-        darts.dataprocessing.transformers.missing_values_filler
-        darts.dataprocessing.transformers.reconciliation
-        darts.dataprocessing.transformers.scaler
-        darts.dataprocessing.transformers.static_covariates_transformer
-        darts.dataprocessing.transformers.window_transformer
+- :doc:`darts.dataprocessing.transformers.base_data_transformer <darts.dataprocessing.transformers.base_data_transformer>`
+- :doc:`darts.dataprocessing.transformers.boxcox <darts.dataprocessing.transformers.boxcox>`
+- :doc:`darts.dataprocessing.transformers.diff <darts.dataprocessing.transformers.diff>`
+- :doc:`darts.dataprocessing.transformers.fittable_data_transformer <darts.dataprocessing.transformers.fittable_data_transformer>`
+- :doc:`darts.dataprocessing.transformers.invertible_data_transformer <darts.dataprocessing.transformers.invertible_data_transformer>`
+- :doc:`darts.dataprocessing.transformers.mappers <darts.dataprocessing.transformers.mappers>`
+- :doc:`darts.dataprocessing.transformers.midas <darts.dataprocessing.transformers.midas>`
+- :doc:`darts.dataprocessing.transformers.missing_values_filler <darts.dataprocessing.transformers.missing_values_filler>`
+- :doc:`darts.dataprocessing.transformers.reconciliation <darts.dataprocessing.transformers.reconciliation>`
+- :doc:`darts.dataprocessing.transformers.scaler <darts.dataprocessing.transformers.scaler>`
+- :doc:`darts.dataprocessing.transformers.static_covariates_transformer <darts.dataprocessing.transformers.static_covariates_transformer>`
+- :doc:`darts.dataprocessing.transformers.window_transformer <darts.dataprocessing.transformers.window_transformer>`

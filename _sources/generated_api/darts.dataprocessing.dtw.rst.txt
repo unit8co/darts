@@ -1,12 +1,19 @@
+darts.dataprocessing.dtw
+========================
+
+.. currentmodule:: darts.dataprocessing.dtw
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.dataprocessing.dtw.cost_matrix
+   darts.dataprocessing.dtw.dtw
+   darts.dataprocessing.dtw.window
 
 
 
-.. automodule:: darts.dataprocessing.dtw
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.dataprocessing.dtw.cost_matrix
-        darts.dataprocessing.dtw.dtw
-        darts.dataprocessing.dtw.window
+- :doc:`darts.dataprocessing.dtw.cost_matrix <darts.dataprocessing.dtw.cost_matrix>`
+- :doc:`darts.dataprocessing.dtw.dtw <darts.dataprocessing.dtw.dtw>`
+- :doc:`darts.dataprocessing.dtw.window <darts.dataprocessing.dtw.window>`

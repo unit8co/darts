@@ -1,12 +1,16 @@
+darts.models
+============
+
+.. currentmodule:: darts.models
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   darts.models.filtering
+   darts.models.forecasting
 
 
 
-.. automodule:: darts.models
-
-    .. toctree::
-        :maxdepth: 1
-        
-        darts.models.components
-        darts.models.filtering
-        darts.models.forecasting
-        
+- :doc:`darts.models.filtering <darts.models.filtering>`
+- :doc:`darts.models.forecasting <darts.models.forecasting>`

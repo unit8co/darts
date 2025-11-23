@@ -1,10 +1,15 @@
+darts.datasets
+==============
+
+.. currentmodule:: darts.datasets
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+
+   darts.datasets.datasets
 
 
 
-.. automodule:: darts.datasets
-
-    .. toctree::
-        :maxdepth: 1
-        
-        
-        darts.datasets.dataset_loaders
+- :doc:`darts.datasets.datasets <darts.datasets.datasets>`

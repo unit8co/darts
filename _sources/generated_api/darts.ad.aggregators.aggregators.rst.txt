@@ -1,3 +1,0 @@
-.. automodule:: darts.ad.aggregators.aggregators
-   :members:
-   :undoc-members:
