@@ -5,33 +5,50 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.38.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.39.0...master)
 
 ### For users of the library:
 
 **Improved**
 
-- 🚀🚀 Added new forecasting model `Chronos2Model`: Amazon's pre-trained 120M-parameter foundational model for zero-shot forecasting. `Chronos2Model` can be used for univariate, multivariate, and multiple time series forecasting without any training. It supports past and future covariates and can output deterministic or probabilistic forecasts. Check out the new [Chronos-2 Foundation Model Notebook](https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html) for examples and usage of Chronos-2. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
+**Fixed**
+
+**Dependencies**
+
+### For developers of the library:
+
+## [0.39.0](https://github.com/unit8co/darts/tree/0.39.0) (2025-11-23)
+
+### For users of the library:
+
+**Improved**
+
+- Improvements to forecasting models:
+  - 🚀🚀 Added new forecasting model `Chronos2Model`: Amazon's pre-trained 120M-parameter foundational model for zero-shot forecasting. `Chronos2Model` can be used for univariate, multivariate, and multiple time series forecasting without any training. It supports past and future covariates and can output deterministic or probabilistic forecasts. Check out the new [Chronos-2 Foundation Model Notebook](https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html) for examples and usage of Chronos-2. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
+
+- Improvements to `TimeSeries`
+  - 🚀 Revamped how TimeSeries are displayed in notebooks and consoles to provide a cleaner and more informative summary. Values are now shown in tabular / DataFrame format. If available, static covariates, hierarchy, and metadata are shown in dedicated formatted sections. [#2931](https://github.com/unit8co/darts/pull/2931) by [Jakub Chłapek](https://github.com/jakubchlapek)
+  - 🔴 Improved the performance of the `TimeSeries.map()` method for functions that take two arguments. The mapping is now applied on the entire time index and values array which requires users to reshape the time index explicitly within the function. See more information in the `TimeSeries.map()` method documentation. [#2911](https://github.com/unit8co/darts/pull/2911) by [Jakub Chłapek](https://github.com/jakubchlapek)
+
 - 🚀 Major improvements to the documentation : [#2949](https://github.com/unit8co/darts/pull/2949) by [Dennis Bader](https://github.com/dennisbader).
   - Updated the Sphinx PyData theme to the newest version with dark mode support and a more modern look.
   - Added a new Darts logo for dark mode.
   - Redesigned the landing (home) page with grid cards to quickly point users to the most important resources.
   - Added a right navigation sidebar on API pages for easier navigation.
-- 🔴 Improved the performance of the `TimeSeries.map()` method for functions that take two arguments. The mapping is now applied on the entire time index and values array which requires users to reshape the time index explicitly within the function. See more information in the `TimeSeries.map()` method documentation. [#2911](https://github.com/unit8co/darts/pull/2911) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
 **Fixed**
 
 **Dependencies**
 - Added dependencies `huggingface-hub>=0.35.3` and `safetensors>=0.6.2` for foundation model support to `darts`, `u8darts[torch]`, and `u8darts[all]`. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
 - Raised the minimum PyTorch version to `torch>=2.0.0`. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
-- Changed `Timeseries.plot()` implementation to no longer rely on xarray under the hood while keeping the same functionality. [#2932](https://github.com/unit8co/darts/pull/2932) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
 ### For developers of the library:
 
 - Added `FoundationModel` as a new base class for foundation models in Darts. It inherits from `TorchForecastingModel` and therefore uses the same PyTorch Lightning backend as other torch models. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
 - Added `HuggingFaceConnector` utility class for downloading and loading model configurations and weights from Hugging Face Hub. [#2944](https://github.com/unit8co/darts/pull/2944) by [Zhihao Dai](https://github.com/daidahao).
-- Fixed all warnings when generating the documentation. Also, the documentation can now be generated without having to re-install Darts before every run. [#2936](https://github.com/unit8co/darts/pull/2936) by [Dennis Bader](https://github.com/dennisbader).
 - Reworked the `_validate_model_params` function of `TorchForecastingModel` to support more complicated cases of class inheritance. [#2908](https://github.com/unit8co/darts/pull/2908) by [Tim Rosenflanz](https://github.com/tRosenflanz)
+- Changed `Timeseries.plot()` implementation to no longer rely on xarray under the hood while keeping the same functionality. [#2932](https://github.com/unit8co/darts/pull/2932) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- Fixed all warnings when generating the documentation. Also, the documentation can now be generated without having to re-install Darts before every run. [#2936](https://github.com/unit8co/darts/pull/2936) by [Dennis Bader](https://github.com/dennisbader).
 - Updated the release dependencies to the newest versions for the documentation updates. [#2949](https://github.com/unit8co/darts/pull/2949) by [Dennis Bader](https://github.com/dennisbader).
 
 ## [0.38.0](https://github.com/unit8co/darts/tree/0.38.0) (2025-10-03)
