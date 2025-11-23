@@ -5579,7 +5579,9 @@ class TimeSeries:
 
         # notify when samples were aggregated
         if self.n_samples > 1:
-            info_str += f"{'<br>' if repr_type == 'html' else '\n'}info: only sample median was displayed"
+            info_str += (
+                "<br>" if repr_type == "html" else "\n"
+            ) + "info: only sample median was displayed"
         return values_repr, info_str
 
     def __copy__(self, deep: bool = True):
