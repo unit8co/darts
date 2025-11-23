@@ -112,7 +112,7 @@ def make_collapsible_section(
 
 def make_paragraph(text: str, bold: bool = False, margin_left: str = "0.5em") -> str:
     """Creates an HTML paragraph with optional bold text and margin."""
-    if bold:
-        text = f"<strong>{text}</strong>"
     style = f"margin-left: {margin_left}; margin-bottom: 1em; text-align: left; font-family: inherit;"
+    if bold:
+        style += " font-weight: bold;"
     return f"<p style='{style}'>{text}</p>"

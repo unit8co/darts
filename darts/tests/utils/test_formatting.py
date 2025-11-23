@@ -109,7 +109,7 @@ class TestFormatting:
     def test_make_paragraph_bold(self):
         """Test make_paragraph with bold."""
         result = make_paragraph("Text", bold=True)
-        assert "<strong>Text</strong>" in result
+        assert "font-weight: bold" in result
 
     def test_make_paragraph_margin(self):
         """Test make_paragraph with custom margin."""

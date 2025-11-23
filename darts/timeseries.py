@@ -5489,22 +5489,11 @@ class TimeSeries:
         return np.greater_equal(self._values, other)
 
     def __str__(self):
-        max_rows, max_cols = 10, 10
-        df = self._repr_dataframe(max_rows, max_cols)
+        values_repr, info_dict = self._get_values_repr("string")
 
-        # if one sample then print all values, otherwise print median of samples
-        values_str = f"{df.to_string(max_rows=max_rows, max_cols=max_cols)}"
         if self.n_samples > 1:
-            values_str += "\n\nInfo: only sample median was displayed"
-
-        freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
-
-        # create a dict for consistent formatting with other sections
-        info_dict = {
-            "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
-            "Time frame": f"({self.start_time()}, {self.end_time()}, {freq_str})",
-            "Size": format_bytes(self._values.nbytes),
-        }
+            # info that samples were aggregated
+            values_repr += "\n\nInfo: only sample median was displayed"
 
         # indentation, first line needs to be manual
         if self.static_covariates is not None:
@@ -5514,7 +5503,7 @@ class TimeSeries:
             static_cov_str = "    <empty>"
 
         return (
-            f"{values_str}\n\n"
+            f"{values_repr}\n\n"
             f"Properties:\n{format_dict(info_dict)}\n"
             f"Static covariates:\n{static_cov_str}\n"
             f"Hierarchy:\n{format_dict(self.hierarchy)}\n"
@@ -5525,28 +5514,14 @@ class TimeSeries:
         return str(self)
 
     def _repr_html_(self):
-        max_rows, max_cols = 10, 10
-        df = self._repr_dataframe(max_rows, max_cols)
+        values_repr, info_dict = self._get_values_repr("html")
 
-        values_str = f"{df.to_html(max_rows=max_rows, max_cols=max_cols)}"
         if self.n_samples > 1:
-            values_str += "\nInfo: only sample median was displayed\n"
-
-        freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
-
-        static_covs_empty = self.static_covariates is None
-        hierarchy_empty = self.hierarchy is None or len(self.hierarchy) == 0
-        metadata_empty = self.metadata is None or len(self.metadata) == 0
-
-        # create a dict for consistent formatting with other sections
-        info_dict = {
-            "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
-            "Time frame": f"({self.start_time()}, {self.end_time()}, {freq_str})",
-            "Size": format_bytes(self._values.nbytes),
-        }
+            # info that samples were aggregated
+            values_repr += make_paragraph("Info: only sample median was displayed")
 
         return (
-            make_paragraph(values_str, bold=True, margin_left="0")
+            make_paragraph(values_repr, margin_left="0")
             + make_collapsible_section(
                 "Properties",
                 format_dict(info_dict, render_html=True),
@@ -5554,36 +5529,34 @@ class TimeSeries:
             )
             + make_collapsible_section(
                 "Static covariates",
-                self.static_covariates.to_html(max_rows=max_rows, max_cols=max_cols)
+                self.static_covariates.to_html(max_rows=10, max_cols=10)
                 if self.static_covariates is not None
                 else "&lt;empty&gt;",
-                open_by_default=not static_covs_empty,
+                open_by_default=self.has_static_covariates,
             )
             + make_collapsible_section(
                 "Hierarchy",
                 f"{format_dict(self.hierarchy, render_html=True)}",
-                open_by_default=not hierarchy_empty,
+                open_by_default=self.has_hierarchy,
             )
             + make_collapsible_section(
                 "Metadata",
                 f"{format_dict(self.metadata, render_html=True)}",
-                open_by_default=not metadata_empty,
+                open_by_default=self.has_metadata,
             )
         )
 
-    def _repr_dataframe(self, max_rows: int, max_cols: int) -> pd.DataFrame:
-        """Create a minimal DataFrame of the TimeSeries for efficient representation.
+    def _get_values_repr(self, repr_type: str) -> tuple[str, dict[str, str]]:
+        """Create a representation of the TimeSeries values.
 
         The returned dimensions respect the maximum allowed items to be displayed
 
         Parameters
         ----------
-        max_rows
-            The maximum number of rows to display.
-        max_cols
-            The maximum number of columns to display.
+        repr_type
+            The type of representation to use ("html" or "string").
         """
-        margin = 2
+        max_rows, max_cols, margin = 10, 10, 2
         values = self.all_values(copy=False)
         times = self.time_index
         columns = self.columns
@@ -5604,7 +5577,19 @@ class TimeSeries:
         else:
             values = values[:, :, 0]
 
-        return pd.DataFrame(data=values, index=times, columns=columns, copy=False)
+        df = pd.DataFrame(data=values, index=times, columns=columns, copy=False)
+        values_repr = getattr(df, f"to_{repr_type}")(
+            max_rows=max_rows, max_cols=max_cols
+        )
+        freq_str = self._freq_str if self._freq_str is not None else str(self.freq)
+
+        # create a dict for consistent formatting with other sections
+        info_dict = {
+            "Shape": f"(times: {self.n_timesteps}, components: {self.n_components}, samples: {self.n_samples})",
+            "Time frame": f"({self.start_time()}, {self.end_time()}, {freq_str})",
+            "Size": format_bytes(self._values.nbytes),
+        }
+        return values_repr, info_dict
 
     def __copy__(self, deep: bool = True):
         return self.copy()

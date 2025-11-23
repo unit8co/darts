@@ -193,7 +193,7 @@ class TestTimeSeriesReprFormatting:
         result = self.simple_series._repr_html_()
         assert isinstance(result, str)
         assert "<table" in result
-        assert "<strong>" in result
+        assert "font-weight: bold" in result
         assert "Properties" in result
         assert "Shape" in result
         assert "(times: 10, components: 1, samples: 1)" in result
