@@ -1,5 +1,13 @@
 def format_bytes(nbytes: int, precision: int = 2) -> str:
-    """Formats bytes as human-readable text."""
+    """Formats bytes as human-readable text.
+
+    Parameters
+    ----------
+    nbytes
+        The number of bytes to format.
+    precision
+        The number of decimal places to round to.
+    """
     units = ["B", "KB", "MB", "GB", "TB"]
     scale = 1024.0
     i = 0
@@ -10,7 +18,15 @@ def format_bytes(nbytes: int, precision: int = 2) -> str:
 
 
 def truncate_key(key: str, max_len: int = 20) -> str:
-    """Truncates a key string to `max_len`, adding '...' if truncated."""
+    """Truncates a key string to `max_len`, adding '...' if truncated.
+
+    Parameters
+    ----------
+    key
+        The key to truncate.
+    max_len
+        The maximum length to truncate to.
+    """
     key_str = str(key)
     if len(key_str) > max_len:
         return key_str[: max_len - 3] + "..."
@@ -28,6 +44,19 @@ def format_dict(
     Keys longer than `pad` are truncated with '...'.
     Values longer than `max_value_len` are truncated with '...'.
     Pass `render_html=True` to use flexbox layout for proper alignment with proportional fonts.
+
+    Parameters
+    ----------
+    d
+        The dictionary to format.
+    max_items
+        The maximum number of items to show.
+    pad
+        The number of spaces to pad.
+    render_html
+        Whether to render HTML output or not.
+    max_value_len
+        The maximum number of characters to show.
     """
     if not d:
         return "&lt;empty&gt;" if render_html else "    <empty>"
@@ -75,6 +104,15 @@ def format_dict(
 def format_list(lst: list, max_items: int = 5, render_html: bool = False) -> str:
     """Formats a list as a string, showing at most `max_items` items.
     Pass `render_html=True` to escape '<' and '>' characters.
+
+    Parameters
+    ----------
+    lst
+        The list to format.
+    max_items
+        The maximum number of items to show.
+    render_html
+        Whether to render HTML output or not.
     """
     if not lst:
         if render_html:
@@ -97,7 +135,17 @@ def format_list(lst: list, max_items: int = 5, render_html: bool = False) -> str
 def make_collapsible_section(
     title: str, content: str, open_by_default: bool = True
 ) -> str:
-    """Creates a collapsible HTML section."""
+    """Creates a collapsible HTML section.
+
+    Parameters
+    ----------
+    title
+        The title of the section.
+    content
+        The content of the section.
+    open_by_default
+        Whether to directly open the section when displaying.
+    """
     open_tag = " open" if open_by_default else ""
     is_flexbox = '<div style="display: flex;' in content
     wrapper_tag = "div" if is_flexbox else "pre"
