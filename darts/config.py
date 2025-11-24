@@ -5,6 +5,41 @@ Configuration
 Darts configuration system for global options and settings.
 
 This module provides functionality to configure global behavior of Darts, similar to pandas' options system.
+
+Available Options
+=================
+
+**Display Options**
+
+- ``display.max_rows`` : int (default: 10)
+    Maximum number of rows to display in TimeSeries representation. When a TimeSeries has more rows
+    than this, the display will be truncated, showing the first and last portion of rows.
+
+- ``display.max_cols`` : int (default: 10)
+    Maximum number of columns to display in TimeSeries representation. When a TimeSeries has more
+    columns than this, the display will be truncated, showing the first and last portion of columns.
+
+**Plotting Options**
+
+- ``plotting.use_darts_style`` : bool (default: False)
+    Whether to apply Darts' custom matplotlib plotting style. When True, Darts will configure
+    matplotlib with a custom style optimized for time series visualization. When False, matplotlib's
+    default or user-configured style will be used. Changes to this option take effect immediately.
+
+Examples
+========
+>>> from darts import get_option, set_option, option_context
+>>> # Get current display settings
+>>> get_option('display.max_rows')
+10
+>>> # Change display settings globally
+>>> set_option('display.max_rows', 20)
+>>> # Temporarily change settings within a context
+>>> with option_context('display.max_rows', 5):
+...     print(my_timeseries)  # Shows only 5 rows
+>>> # Settings automatically restored after context
+>>> get_option('display.max_rows')
+20
 """
 
 from collections.abc import Generator
@@ -252,6 +287,11 @@ def get_option(pat: str) -> Any:
     """
     Retrieves the value of the specified option.
 
+    Available Options:
+
+    - display.[max_rows, max_cols]
+    - plotting.use_darts_style
+
     Parameters
     ----------
     pat
@@ -280,6 +320,11 @@ def set_option(pat: str, value: Any) -> None:
     """
     Sets the value of the specified option.
 
+    Available Options:
+
+    - display.[max_rows, max_cols]
+    - plotting.use_darts_style
+
     Parameters
     ----------
     pat
@@ -304,6 +349,11 @@ def reset_option(pat: str) -> None:
     """
     Reset one or more options to their default value.
 
+    Available Options:
+
+    - display.[max_rows, max_cols]
+    - plotting.use_darts_style
+
     Parameters
     ----------
     pat
@@ -327,6 +377,11 @@ def reset_option(pat: str) -> None:
 def describe_option(pat: str) -> Optional[str]:
     """
     Describe one or more options.
+
+    Available Options:
+
+    - display.[max_rows, max_cols]
+    - plotting.use_darts_style
 
     Parameters
     ----------
@@ -361,6 +416,11 @@ def describe_option(pat: str) -> Optional[str]:
 def option_context(*args) -> Generator[None, None, None]:
     """
     Context manager to temporarily set options in the `with` statement context.
+
+    Available Options:
+
+    - display.[max_rows, max_cols]
+    - plotting.use_darts_style
 
     Parameters
     ----------

@@ -11,27 +11,11 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- 🚀 Added a new configuration system for Darts, similar to pandas' options and settings. Users can now configure global behavior such as:
-  - `display.max_rows`: Maximum number of rows to display in TimeSeries representation (default: 10)
-  - `display.max_cols`: Maximum number of columns to display in TimeSeries representation (default: 10)
-  - `display.margin`: Margin to show on each side when truncating TimeSeries display (default: 2)
-  - `plotting.use_darts_style`: Whether to apply Darts' custom matplotlib plotting style (default: True). Changes take effect immediately and apply to all subsequent plots.
-
-  The configuration API includes: `get_option()`, `set_option()`, `reset_option()`, `describe_option()`, and `option_context()` for temporary changes. Example usage:
-  ```python
-  from darts import set_option, option_context
-
-  # Change display settings globally
-  set_option('display.max_rows', 20)
-
-  # Dynamically switch plotting styles
-  set_option('plotting.use_darts_style', False)  # Use matplotlib defaults
-
-  # Or temporarily within a context
-  with option_context('display.max_rows', 5):
-      print(my_timeseries)  # Shows only 5 rows
-  ```
-  by [Dennis Bader](https://github.com/dennisbader).
+- 🚀 Added a new configuration system for Darts, similar to pandas' options and settings. [#2955](https://github.com/unit8co/darts/pull/2955) by [Dennis Bader](https://github.com/dennisbader).
+  - Users can now configure global behavior such as:
+    - `display.[max_rows, max_cols]`: Maximum number of rows or columns to display in TimeSeries representation (default: 10)
+    - `plotting.use_darts_style`: Whether to apply Darts' custom matplotlib plotting style (default: True). Changes take effect immediately and apply to all subsequent plots.
+  - The configuration API includes: `get_option()`, `set_option()`, `reset_option()`, `describe_option()`, and `option_context()` for temporary changes.
 
 **Fixed**
 
