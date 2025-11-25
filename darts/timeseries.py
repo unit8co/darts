@@ -62,6 +62,7 @@ from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
 
+from darts.config import get_option
 from darts.logging import get_logger, raise_log
 from darts.utils import _build_tqdm_iterator, _parallel_apply
 from darts.utils._formatting import (
@@ -5546,7 +5547,9 @@ class TimeSeries:
         repr_type
             The type of representation to use ("html" or "string").
         """
-        max_rows, max_cols, margin = 10, 10, 2
+        max_rows = get_option("display.max_rows")
+        max_cols = get_option("display.max_cols")
+        margin = 2
         values = self.all_values(copy=False)
         times = self.time_index
         columns = self.columns
