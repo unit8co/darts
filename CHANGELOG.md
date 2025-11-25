@@ -16,6 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
     - `display.[max_rows, max_cols]`: Maximum number of rows or columns to display in TimeSeries representation (default: 10)
     - `plotting.use_darts_style`: Whether to apply Darts' custom matplotlib plotting style (default: True). Changes take effect immediately and apply to all subsequent plots.
   - The configuration API includes: `get_option()`, `set_option()`, `reset_option()`, `describe_option()`, and `option_context()` for temporary changes.
+  - 🟠 The Darts plotting style is now not applied anymore by default. To activate it call `set_option('plotting.use_darts_style', True)` before plotting.
 
 **Fixed**
 
