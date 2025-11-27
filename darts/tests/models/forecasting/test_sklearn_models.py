@@ -3050,6 +3050,7 @@ class TestSKLearnModels:
         series = tg.linear_timeseries(
             length=28, start=pd.Timestamp("2000-01-01"), freq="d"
         ).with_static_covariates(pd.Series([1.0, 2.0, 3.0]))
+        static_covs = series.static_covariates.copy(deep=True)
 
         model = LinearRegressionModel(
             lags=None,
@@ -3079,6 +3080,8 @@ class TestSKLearnModels:
 
         for p1, p2 in zip(preds1, preds2):
             np.testing.assert_array_almost_equal(p1.values(), p2.values())
+            assert p1.static_covariates.equals(static_covs)
+            assert p2.static_covariates.equals(static_covs)
 
     @pytest.mark.parametrize(
         "config",

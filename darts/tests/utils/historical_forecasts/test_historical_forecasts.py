@@ -1376,9 +1376,9 @@ class TestHistoricalforecast:
         itertools.product(
             [ts_univariate, ts_multivariate],
             models_reg_no_cov_cls_kwargs + models_reg_cov_cls_kwargs,
-            [False],
             [True, False],
-            [5],
+            [True, False],
+            [1, 5],
         ),
     )
     def test_optimized_historical_forecasts_regression(self, config):
