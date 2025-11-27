@@ -1,6 +1,6 @@
 """
-Optimized Historical Forecasts for `SKLearnModel`
--------------------------------------------------
+Optimized Historical Forecasts for SKLearnModel
+-----------------------------------------------
 """
 
 from collections.abc import Sequence

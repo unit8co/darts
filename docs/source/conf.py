@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.38.0"
+version = "0.39.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,7 +35,6 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
-    "sphinx_automodapi.automodapi",
     "sphinx.ext.graphviz",
     "sphinx.ext.napoleon",
     "sphinx.ext.githubpages",
@@ -44,11 +43,13 @@ extensions = [
     "nbsphinx",
     "m2r2",
     "numpydoc",
+    "sphinx_design",
 ]
 
 exclude_parent_classes = [
     "Module",  # torch.nn.modules.module.Module
     "LightningModule",  # pytorch_lightning.core.module.LightningModule
+    "PLForecastingModule",  # darts.models.forecasting.pl_forecasting_module.PLForecastingModule
     "TQDMProgressBar",  #
     "_MultiOutputEstimator",  # sklearn.multioutput._MultiOutputEstimator
     "MultiOutputClassifier",  # sklearn.multioutput.MultiOutputClassifier
@@ -89,33 +90,13 @@ language = "en"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
+# Note: some source files are excluded from rst generation in the
+# darts/docs/Makefile `generate-api` command
 exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
     "**/modules.rst",
-    "**/darts.tests.*",
-    "**/*logging.rst",
-    "**/darts.ad.aggregators.aggregators.rst",
-    "**/darts.ad.anomaly_model.anomaly_model.rst",
-    "**/darts.ad.detectors.detectors.rst",
-    "**/darts.ad.scorers.scorers.rst",
-    "**/darts.explainability.explainability.rst",
-    "**/darts.explainability.utils.rst",
-    "**/darts.models.components.*",
-    "**/darts.models.forecasting.ensemble_model.rst",
-    "**/darts.models.forecasting.forecasting_model.rst",
-    "**/darts.models.forecasting.torch_forecasting_model.rst",
-    "**/darts.models.forecasting.pl_forecasting_module.rst",
-    "**/darts.utils.data.tabularization.*",
-    "**/darts.utils.data.torch_datasets.dataset.rst",
-    "**/darts.utils.data.torch_datasets.utils.rst",
-    "**/darts.utils.data.utils.rst",
-    "**/darts.utils.historical_forecasts.*",
-    "**/darts.utils.likelihood_models.base.rst",
-    "**/darts.utils.multioutput.rst",
-    "**/darts.utils.onnx_utils.rst",
-    "**/darts.utils.ts_utils.rst",
 ]
 
 suppress_warnings = [
@@ -142,13 +123,15 @@ numpydoc_class_members_toctree = False
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-html_logo = "static/darts-logo-trim.png"
 html_favicon = "static/docs-favicon.ico"
 
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
     "twitter_url": "https://twitter.com/unit8co",
-    "search_bar_position": "navbar",
+    "logo": {
+        "image_light": "static/darts-logo-light.png",
+        "image_dark": "static/darts-logo-dark.png",
+    },
 }
 
 
@@ -156,6 +139,9 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["static"]
+
+# Add custom CSS files
+html_css_files = ["custom.css"]
 
 
 # -- Extension configuration -------------------------------------------------
@@ -181,5 +167,24 @@ def skip(app, what, name, obj, skip, options):
     return skip
 
 
+# -- Package title and docstring extraction for API documentation ---------------
+#
+# This function uses the generated *.rst files and processes the generated API documentation to:
+# 1. Replace package path titles (e.g., "darts.models.forecasting") with
+#    descriptive titles from package docstrings (e.g., "Forecasting Models")
+# 2. Insert the full docstring content from package __init__.py files
+# 3. Fix inline :doc: link titles to use descriptive names
+#
+# Note: the *.rst files were generated using the templates in `docs/templates`.
+#
+# This runs automatically during the Sphinx build via the 'source-read' event.
+# Logic is in fix_package_titles.py for easier maintenance.
+# ---------------------------------------------------------------------------------
+
+sys.path.insert(0, os.path.abspath(".."))
+from fix_package_titles import process_package_docstrings
+
+
 def setup(app):
     app.connect("autodoc-skip-member", skip)
+    app.connect("source-read", process_package_docstrings)

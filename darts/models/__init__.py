@@ -1,6 +1,11 @@
 """
 Models
 ------
+
+A comprehensive collection of forecasting and filtering models, including baseline models
+(NaiveSeasonal, NaiveMovingAverage, ...), statistical models (ARIMA, exponential smoothing, ...),
+machine learning models (LightGBM, CatBoost, sklearn-based, ...), neural network models (RNN,
+N-BEATS, TiDE...), and foundation models (Chronos2).
 """
 
 from darts.logging import get_logger
@@ -81,6 +86,11 @@ except ModuleNotFoundError:
     TiDEModel = NotImportedModule(module_name="(Py)Torch", warn=False)
     TransformerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
     TSMixerModel = NotImportedModule(module_name="(Py)Torch", warn=False)
+
+try:
+    from darts.models.forecasting.chronos2_model import Chronos2Model
+except ModuleNotFoundError:
+    Chronos2Model = NotImportedModule(module_name="(Py)Torch", warn=False)
 
 try:
     from darts.models.forecasting.prophet_model import Prophet
@@ -192,4 +202,5 @@ __all__ = [
     "EnsembleModel",
     "ConformalNaiveModel",
     "ConformalQRModel",
+    "Chronos2Model",
 ]

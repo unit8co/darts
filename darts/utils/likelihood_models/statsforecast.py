@@ -1,6 +1,6 @@
 """
-Likelihoods for `StatsForecast` Models
---------------------------------------
+Likelihoods for StatsForecastModel
+----------------------------------
 """
 
 from abc import ABC

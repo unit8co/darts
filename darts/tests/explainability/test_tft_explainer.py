@@ -285,6 +285,22 @@ class TestTFTExplainer:
         ])
         assert all([att.n_components == ocl for att in attention])
 
+        # cannot explain more series than the batch size
+        with pytest.raises(ValueError) as exc:
+            explainer.explain(
+                foreground_series=[series[0]] * (model.batch_size + 1),
+                foreground_past_covariates=[pc[0]] * (model.batch_size + 1)
+                if use_pc
+                else None,
+                foreground_future_covariates=[fc[0]] * (model.batch_size + 1)
+                if use_fc
+                else None,
+            )
+        assert str(exc.value) == (
+            "The number of back- or foreground series to explain (33) must be smaller than "
+            "or equal to the model's batch size (32)."
+        )
+
     def test_variable_selection_explanation(self):
         """Test variable selection (feature importance) explanation results and plotting."""
         model = self.helper_create_model(use_encoders=True, add_relative_idx=True)

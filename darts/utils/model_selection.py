@@ -1,6 +1,7 @@
 """
 Model selection utilities
 -------------------------
+
 Utilities that help in model selection e.g. by splitting a dataset.
 """
 

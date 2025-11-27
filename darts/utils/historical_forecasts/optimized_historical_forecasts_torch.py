@@ -1,6 +1,6 @@
 """
-Optimized Historical Forecasts for `TorchForecastingModel`
-----------------------------------------------------------
+Optimized Historical Forecasts for TorchForecastingModel
+--------------------------------------------------------
 """
 
 import inspect

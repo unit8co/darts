@@ -14,16 +14,16 @@ We assume that you already know about covariates in Darts. If you're new to the 
 2. Input data usage section gives an in-depth guide of how input data is used when training and predicting with TFMs:
     - [Simple training](#training)
     - [Training with validation set](#training-with-a-validation-dataset)
-    - [Forecast / Prediction](#forecastprediction)
+    - [Forecast and prediction](#forecasting)
 
 3. Advanced functionalities section provides some example of TFMs advanced features:
     - [Model saving and loading](#saving-and-loading-model-states)
-      - [Checkpoint saving / loading](#automatic-checkpointing)
-      - [Manual saving / loading](#manual-saving--loading)
-      - [Train & save on GPU, load on CPU](#trainingsaving-on-gpu-and-loading-on-cpu)
+      - [Checkpoint saving and loading](#automatic-checkpointing)
+      - [Manual model saving and loading](#manual-saving-and-loading)
+      - [GPU training and CPU loading](#training-and-saving-on-gpu-loading-on-cpu)
       - [Load pre-trained model for fine-tuning](#re-training-or-fine-tuning-a-pre-trained-model)
-      - [Exporting model to ONNX format for inference](#exporting-model-to-ONNX-format-for-inference)
-    - [Callbacks](#callbacks)
+      - [ONNX export for inference](#exporting-model-to-onnx-format-for-inference)
+    - [Using callbacks](#callbacks)
       - [Early Stopping](#example-with-early-stopping)
       - [Custom Callback](#example-of-custom-callback-to-store-losses)
 
@@ -219,7 +219,7 @@ Instead of splitting by time, you can also use another subset of time series as 
 
 The model trains itself the same way as before but additionally evaluates the loss on the validation dataset. If you want to keep track of the best performing model on the validation set, you have to enable checkpoint saving as shown next.
 
-## Forecast/Prediction
+## Forecasting
 
 After having trained the model, we want to predict the future ice-cream sales for any number of days after our 365 days training data.
 
@@ -279,7 +279,7 @@ model.fit(...)
 best_model = model.load_from_checkpoint(model_name='my_model', best=True)
 ```
 
-#### Manual saving / loading
+#### Manual saving and loading
 
 You can also manually save the model at its current state and load it:
 
@@ -288,7 +288,7 @@ model.save("/your/path/to/save/model.pt")
 loaded_model = model.load("/your/path/to/save/model.pt")
 ```
 
-#### Training/Saving on GPU and loading on CPU
+#### Training and saving on GPU, loading on CPU
 
 You can load a model to CPU that was trained and saved on GPU (see detailed [documentation](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html)):
 

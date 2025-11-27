@@ -315,6 +315,7 @@ class TestTimeSeries:
             isinstance(ts_from_int_idx.time_index, pd.RangeIndex)
             and ts_from_int_idx.freq == 1
         )
+        assert ts_from_int_idx.freq_str == "1"
         assert ts_from_int_idx.time_index.equals(ts_from_range_idx.time_index)
 
         for step in [2, 3]:
