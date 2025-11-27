@@ -311,7 +311,6 @@ def _optimized_historical_forecasts_regression(
         # so X will be of shape (n_forecasts, n_lags, n_samples = 1)
         # Otherwise, X will be of shape (n_forecasts, n_lags, n_samples = 1, n_prediction_iterations)
         # where n_prediction_iterations = ceil(forecast_horizon / step)
-        # TODO: why don't we slice the covs anymore with [hist_fc_*start:hist_fc_*end]?
         X, _ = create_lagged_prediction_data(
             target_series=(
                 None
