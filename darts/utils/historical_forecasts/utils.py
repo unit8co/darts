@@ -1211,7 +1211,7 @@ def _get_historical_forecast_boundaries(
     # re-adjust the slicing indexes to account for the lags
     (
         min_target_lag,
-        _,
+        max_target_lag,
         min_past_cov_lag,
         max_past_cov_lag,
         min_future_cov_lag,
@@ -1219,10 +1219,28 @@ def _get_historical_forecast_boundaries(
         output_chunk_shift,
     ) = model.extreme_lags
 
-    # target lags are <= 0
+    # SKLearn models with `multi_models=False` require additional lookback
+    if not getattr(model, "multi_models", True) and model.output_chunk_length > 1:
+        shift_start = model.output_chunk_length - 1
+    else:
+        shift_start = 0
+
+    # check for auto-regression, to extract additional covariates;
+    # max_target_lag < 0 are local models which can predict for n (horizon) -> infinity (no auto-regression)
+    if (
+        max_target_lag >= 0
+        and forecast_horizon > max_target_lag - output_chunk_shift + 1
+    ):
+        auto_reg_steps = max(
+            forecast_horizon - (max_target_lag - output_chunk_shift + 1), 0
+        )
+    else:
+        auto_reg_steps = 0
+
+    # target lags are < 0
     hist_fct_tgt_start, hist_fct_tgt_end = historical_forecasts_time_index
     if min_target_lag is not None:
-        hist_fct_tgt_start += min_target_lag * freq
+        hist_fct_tgt_start += (min_target_lag - shift_start) * freq
 
     # target lag has a gap between the max lag and the present
     if hasattr(model, "lags") and model._get_lags("target"):
@@ -1230,18 +1248,19 @@ def _get_historical_forecast_boundaries(
     else:
         hist_fct_tgt_end -= 1 * freq
 
-    # past lags are <= 0
+    # past covariate lags are < 0
     hist_fct_pc_start, hist_fct_pc_end = historical_forecasts_time_index
     if min_past_cov_lag is not None:
-        hist_fct_pc_start += min_past_cov_lag * freq
+        hist_fct_pc_start += (min_past_cov_lag - shift_start) * freq
     if max_past_cov_lag is not None:
-        hist_fct_pc_end += max_past_cov_lag * freq
+        hist_fct_pc_end += (max_past_cov_lag + auto_reg_steps) * freq
+
     # future lags can be anything
     hist_fct_fc_start, hist_fct_fc_end = historical_forecasts_time_index
     if min_future_cov_lag is not None:
-        hist_fct_fc_start += min_future_cov_lag * freq
+        hist_fct_fc_start += (min_future_cov_lag - shift_start) * freq
     if max_future_cov_lag is not None:
-        hist_fct_fc_end += max_future_cov_lag * freq
+        hist_fct_fc_end += (max_future_cov_lag + auto_reg_steps) * freq
 
     # convert actual integer index values (points) to positional index, make end bound inclusive
     if series.has_range_index:

@@ -22,6 +22,183 @@ from darts.utils.utils import generate_index
 logger = get_logger(__name__)
 
 
+def _optimized_historical_forecasts_last_points_only(
+    model,
+    series: Sequence[TimeSeries],
+    past_covariates: Optional[Sequence[TimeSeries]] = None,
+    future_covariates: Optional[Sequence[TimeSeries]] = None,
+    num_samples: int = 1,
+    start: Optional[Union[pd.Timestamp, float, int]] = None,
+    start_format: Literal["position", "value"] = "value",
+    forecast_horizon: int = 1,
+    stride: int = 1,
+    overlap_end: bool = False,
+    show_warnings: bool = True,
+    verbose: bool = False,
+    predict_likelihood_parameters: bool = False,
+    random_state: Optional[int] = None,
+    predict_kwargs: Optional[dict[str, Any]] = None,
+) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+    """
+    Optimized historical forecasts for SKLearnModel with last_points_only = True
+
+    Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
+
+    The data_transformers are applied in historical_forecasts (input and predictions)
+    """
+    predict_kwargs = predict_kwargs or {}
+    forecasts_list = []
+    iterator = _build_tqdm_iterator(
+        series, verbose, total=len(series), desc="historical forecasts"
+    )
+    for idx, series_ in enumerate(iterator):
+        past_covariates_ = past_covariates[idx] if past_covariates is not None else None
+        future_covariates_ = (
+            future_covariates[idx] if future_covariates is not None else None
+        )
+        freq = series_.freq
+        forecast_components = (
+            model.likelihood.component_names(series=series_)
+            if predict_likelihood_parameters
+            else series_.columns
+        )
+
+        # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
+        (
+            hist_fct_start,
+            hist_fct_end,
+            hist_fct_tgt_start,
+            hist_fct_tgt_end,
+            hist_fct_pc_start,
+            hist_fct_pc_end,
+            hist_fct_fc_start,
+            hist_fct_fc_end,
+        ) = _get_historical_forecast_boundaries(
+            model=model,
+            series=series_,
+            series_idx=idx,
+            past_covariates=past_covariates_,
+            future_covariates=future_covariates_,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            overlap_end=overlap_end,
+            stride=stride,
+            freq=freq,
+            show_warnings=show_warnings,
+        )
+
+        # Additional shift, to account for the model output_chunk_length
+        if model.output_chunk_length != forecast_horizon and not model.multi_models:
+            # used to convert the shift into the appropriate unit
+            unit = freq if series_.has_datetime_index else 1
+
+            shift = model.output_chunk_length - forecast_horizon
+
+            hist_fct_tgt_start -= shift * unit
+            hist_fct_pc_start -= (
+                shift * unit if hist_fct_pc_start is not None else hist_fct_pc_start
+            )
+            hist_fct_fc_start -= (
+                shift * unit if hist_fct_fc_start is not None else hist_fct_fc_start
+            )
+
+            hist_fct_tgt_end -= shift * unit
+            hist_fct_pc_end -= (
+                shift * unit if hist_fct_pc_end is not None else hist_fct_pc_end
+            )
+            hist_fct_fc_end -= (
+                shift * unit if hist_fct_fc_end is not None else hist_fct_fc_end
+            )
+
+        X, times = create_lagged_prediction_data(
+            target_series=(
+                None
+                if model._get_lags("target") is None
+                and not model.uses_static_covariates
+                else series_[hist_fct_tgt_start:hist_fct_tgt_end]
+            ),
+            past_covariates=(
+                None
+                if past_covariates_ is None
+                else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
+            ),
+            future_covariates=(
+                None
+                if future_covariates_ is None
+                else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
+            ),
+            lags=model._get_lags("target"),
+            lags_past_covariates=model._get_lags("past"),
+            lags_future_covariates=model._get_lags("future"),
+            uses_static_covariates=model.uses_static_covariates,
+            last_static_covariates_shape=model._static_covariates_shape,
+            max_samples_per_ts=None,
+            check_inputs=True,
+            use_moving_windows=True,
+            concatenate=False,
+        )
+
+        # stride can be applied directly (same for input and historical forecasts)
+        X = X[0][::stride, :, 0]
+
+        # repeat rows for probabilistic forecast
+        forecast = model._predict(
+            x=np.repeat(X, num_samples, axis=0),
+            num_samples=num_samples,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
+            **predict_kwargs,
+        )
+        # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
+        # where k = output_chunk length if multi_models, 1 otherwise
+        # reshape into (forecasted indexes, output_chunk_length, n_components, n_samples)
+        forecast = np.moveaxis(
+            forecast.reshape(
+                X.shape[0],
+                num_samples,
+                model.output_chunk_length if model.multi_models else 1,
+                -1,
+            ),
+            1,
+            -1,
+        )
+
+        # extract the last sub-model forecast for each component
+        if model.multi_models:
+            forecast = forecast[:, forecast_horizon - 1]
+        else:
+            forecast = forecast[:, 0]
+
+        if (
+            stride == 1
+            and model.output_chunk_length == 1
+            and model.output_chunk_shift == 0
+        ):
+            times = times[0]
+        else:
+            times = generate_index(
+                start=hist_fct_start
+                + (forecast_horizon + model.output_chunk_shift - 1) * freq,
+                length=forecast.shape[0],
+                freq=freq * stride,
+                name=series_._time_index.name,
+            )
+
+        forecasts_list.append(
+            TimeSeries(
+                times=times,
+                values=forecast,
+                components=forecast_components,
+                static_covariates=series_.static_covariates,
+                hierarchy=series_.hierarchy,
+                metadata=series_.metadata,
+                copy=False,
+            )
+        )
+    return forecasts_list
+
+
 def _optimized_historical_forecasts_regression(
     model,
     series: Sequence[TimeSeries],
@@ -103,49 +280,23 @@ def _optimized_historical_forecasts_regression(
             show_warnings=show_warnings,
         )
 
-        # Additional shift, to account for the model output_chunk_length
-        shift_start = 0
-        if model.output_chunk_length > 1:
-            # used to convert the shift into the appropriate unit
-            unit = freq if series_.has_datetime_index else 1
+        # latest possible prediction start is one time step after end of target series
+        if hist_fct_start > series_.end_time():
+            left_bound = len(series_)
+        else:
+            left_bound = series_.get_index_at_point(hist_fct_start)
 
-            if not model.multi_models:
-                shift_start = model.output_chunk_length - 1
+        if hist_fct_end > series_.end_time():
+            right_bound = len(series_)
+        else:
+            right_bound = series_.get_index_at_point(hist_fct_end)
 
-                hist_fct_tgt_start -= shift_start * unit
-                hist_fct_pc_start -= (
-                    shift_start * unit
-                    if hist_fct_pc_start is not None
-                    else hist_fct_pc_start
-                )
-                hist_fct_fc_start -= (
-                    shift_start * unit
-                    if hist_fct_fc_start is not None
-                    else hist_fct_fc_start
-                )
-
-        # Compute left and right bounds to know how many forecasts will be produced
-        left_bound = (
-            len(series_)
-            if hist_fct_start > series_.end_time()
-            else series_.get_index_at_point(hist_fct_start)
-        )
-        right_bound = (
-            len(series_)
-            if hist_fct_end > series_.end_time()
-            else series_.get_index_at_point(hist_fct_end)
-        )
-
-        bounds_array, _ = _process_predict_start_points_bounds(
+        bounds_array, cum_lengths = _process_predict_start_points_bounds(
             series=[series_],
             bounds=np.array([[left_bound, right_bound]]),
             stride=stride,
         )
-        left_bound, right_bound = bounds_array[0].astype(int)
-
-        n_forecasts = (
-            (right_bound - left_bound) // stride + 1 if right_bound >= left_bound else 0
-        )
+        n_forecasts = cum_lengths[0]
 
         # In case of multi-models, we predict all steps at once so autoregression is done
         # output_chunk_length by output_chunk_length. Without multi-models,
@@ -157,9 +308,10 @@ def _optimized_historical_forecasts_regression(
             step = 1
 
         # If forecast_horizon <= step, we can predict all steps in one go
-        # so X will be of shape (n_forecasts, n_lags, n_components)
-        # Otherwise, X will be of shape (n_forecasts, n_lags, n_components, n_prediction_iterations)
+        # so X will be of shape (n_forecasts, n_lags, n_samples = 1)
+        # Otherwise, X will be of shape (n_forecasts, n_lags, n_samples = 1, n_prediction_iterations)
         # where n_prediction_iterations = ceil(forecast_horizon / step)
+        # TODO: why don't we slice the covs anymore with [hist_fc_*start:hist_fc_*end]?
         X, _ = create_lagged_prediction_data(
             target_series=(
                 None
@@ -170,12 +322,12 @@ def _optimized_historical_forecasts_regression(
             past_covariates=(
                 None
                 if past_covariates_ is None
-                else past_covariates_[hist_fct_pc_start:]
+                else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
             ),
             future_covariates=(
                 None
                 if future_covariates_ is None
-                else future_covariates_[hist_fct_fc_start:]
+                else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
             ),
             lags=model._get_lags("target"),
             lags_past_covariates=model._get_lags("past"),
@@ -186,6 +338,7 @@ def _optimized_historical_forecasts_regression(
             check_inputs=True,
             use_moving_windows=True,
             concatenate=False,
+            show_warnings=False,
             forecast_horizon=forecast_horizon,
             step=step,
         )
@@ -194,7 +347,7 @@ def _optimized_historical_forecasts_regression(
         X = X[0][:, :, 0]
         predictions = []
 
-        # In case of not doing autoregression, n_prediction_iterations is 1,
+        # Without autoregression, n_prediction_iterations is 1,
         # so internally the last dimension has been collapsed.
         # Add a dummy dimension so the for loop works as expected
         if X.ndim == 2:
@@ -203,6 +356,7 @@ def _optimized_historical_forecasts_regression(
         # Trick to fix with stride, because NaN are in X at the end of the series, but
         # with stride, we might not get NaN in current_X, so we manually set the relevant
         # columns to NaN so that they get filled with previous predictions
+        # TODO: does not work yet with multivariate target
         if not model.multi_models and "target" in model.lags:
             offset_idx = 1
             end_idx = len(model.lags["target"])
@@ -229,6 +383,7 @@ def _optimized_historical_forecasts_regression(
             # current_X = X[::stride, :, pred_idx]
             current_X = X[::, :, pred_idx]
             if not model.multi_models:
+                # TODO: do we need :n_forecasts?
                 current_X = current_X[::stride][:n_forecasts, ...]
 
             current_X = np.repeat(current_X, num_samples, axis=0)

@@ -1184,6 +1184,7 @@ class SKLearnModel(GlobalForecastingModel):
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
         """
+        forecast_horizon = n
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
             if self.training_series is None:
@@ -1216,13 +1217,13 @@ class SKLearnModel(GlobalForecastingModel):
         # encoders regenerate the encodings
         if self.encoders.encoding_available:
             past_covariates, future_covariates = self.generate_predict_encodings(
-                n=n,
+                n=forecast_horizon,
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
             )
         super().predict(
-            n=n,
+            n=forecast_horizon,
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
@@ -1276,7 +1277,11 @@ class SKLearnModel(GlobalForecastingModel):
                 steps_back = -(min(lags) + 1) + shift
                 lags_diff = max(lags) - min(lags) + 1
                 # over how many steps the covariates range
-                n_steps = lags_diff + max(0, n - self.output_chunk_length) + shift
+                n_steps = (
+                    lags_diff
+                    + max(0, forecast_horizon - self.output_chunk_length)
+                    + shift
+                )
 
                 # calculate first and last required covariate time steps
                 start_ts = ts.end_time() - ts.freq * steps_back
@@ -1292,7 +1297,7 @@ class SKLearnModel(GlobalForecastingModel):
                     raise_log(
                         ValueError(
                             f"The `{cov_type}_covariates`{index_text}are not long enough. "
-                            f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
+                            f"Given horizon `n={forecast_horizon}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
                             f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
                             f"`output_chunk_length={self.output_chunk_length}`, the `{cov_type}_covariates` have to "
                             f"range from {start_ts} until {end_ts} (inclusive), but they only range from "
@@ -1338,12 +1343,12 @@ class SKLearnModel(GlobalForecastingModel):
         predictions = []
         last_step_shift = 0
         # t_pred indicates the number of time steps after the first prediction
-        for t_pred in range(0, n, step):
+        for t_pred in range(0, forecast_horizon, step):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
             # we have to step back `step` from `n` in the last iteration
-            if 0 < n - t_pred < step and t_pred > 0:
-                last_step_shift = t_pred - (n - step)
-                t_pred = n - step
+            if 0 < forecast_horizon - t_pred < step and t_pred > 0:
+                last_step_shift = t_pred - (forecast_horizon - step)
+                t_pred = forecast_horizon - step
 
             # concatenate previous iteration forecasts
             if "target" in self.lags and predictions:
@@ -1380,11 +1385,11 @@ class SKLearnModel(GlobalForecastingModel):
             predictions.append(prediction[:, last_step_shift:])
 
         # concatenate and use first n points as prediction
-        predictions = np.concatenate(predictions, axis=1)[:, :n]
+        predictions = np.concatenate(predictions, axis=1)[:, :forecast_horizon]
 
         # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
         predictions = np.moveaxis(
-            predictions.reshape(len(series), num_samples, n, -1), 1, -1
+            predictions.reshape(len(series), num_samples, forecast_horizon, -1), 1, -1
         )
 
         # build time series from the predicted values starting after end of series

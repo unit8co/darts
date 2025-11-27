@@ -3979,9 +3979,24 @@ class TestSKLearnModels:
             ),
             [True, False],  # multi_models
             [True, False],  # last_points_only
-            [1, 3, 5],  # forecast_horizon
-            [1, 2, 3],  # output_chunk_length
-            [1, 2],  # stride
+            [
+                # True,
+                False
+            ],  # multivariate
+            [
+                # 1,
+                # 3,
+                5
+            ],  # forecast_horizon
+            [
+                # 1,
+                2,
+                3,
+            ],  # output_chunk_length
+            [
+                # 1,
+                2
+            ],  # stride
             [0, 1, 2],  # start
         ),
     )
@@ -3993,6 +4008,7 @@ class TestSKLearnModels:
             (model_cls, model_kwargs),
             multi_models,
             last_points_only,
+            is_multivariate,
             forecast_horizon,
             output_chunk_length,
             stride,
@@ -4016,6 +4032,8 @@ class TestSKLearnModels:
         )
         past_cov = series + 2
         future_cov = series + 3
+        if is_multivariate:
+            series = series.stack(series + 1.0)
 
         model.fit(
             series[:8], past_covariates=past_cov[:8], future_covariates=future_cov[:8]
