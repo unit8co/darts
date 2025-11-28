@@ -14,6 +14,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed an issue in `TFTExplainer` where attempting to explain a list of series longer than the model's batch size resulted in an `IndexError`. A more informative error message is now raised instead. [#2957](https://github.com/unit8co/darts/pull/2957) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a limitation in `PLTorchForecastingModule.torch_metrics=` where we did not support all types as the resulting `torchmetrics.MetricCollection()` does. Eg. metrics can now be set with user-configurable keys in a `Dict[str, Metric]`. [#2958](https://github.com/unit8co/darts/pull/2958) by [CorticallyAI](https://github.com/CorticallyAI).  
 
 **Dependencies**
 
