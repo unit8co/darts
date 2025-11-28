@@ -3972,7 +3972,10 @@ class TestSKLearnModels:
         "config",
         product(
             (
-                [(LinearRegressionModel, {})]
+                [
+                    (LinearRegressionModel, {"lags": {"sine": 2, "default_lags": 2}}),
+                    (LinearRegressionModel, {}),
+                ]
                 + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
                 + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
                 + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
@@ -3980,8 +3983,8 @@ class TestSKLearnModels:
             [True, False],  # multi_models
             [True, False],  # last_points_only
             [
-                # True,
-                False
+                True,
+                # False
             ],  # multivariate
             [
                 # 1,
@@ -4017,7 +4020,8 @@ class TestSKLearnModels:
 
         random_state = 42
         model_kwargs = dict(model_kwargs)  # make a copy
-        model_kwargs["lags"] = 2
+        if "lags" not in model_kwargs:
+            model_kwargs["lags"] = 2
         model_kwargs["multi_models"] = multi_models
         model_kwargs["output_chunk_length"] = output_chunk_length
 

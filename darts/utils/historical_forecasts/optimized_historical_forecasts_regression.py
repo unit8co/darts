@@ -17,9 +17,13 @@ from darts.utils.historical_forecasts.utils import (
     _get_historical_forecast_boundaries,
     _process_predict_start_points_bounds,
 )
+from darts.utils.ts_utils import get_single_series
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
+
+_NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
+_STABLE_SORT_KWARGS = {"stable": True} if _NP_2_OR_ABOVE else {"kind": "stable"}
 
 
 def _optimized_historical_forecasts_last_points_only(
@@ -224,7 +228,26 @@ def _optimized_historical_forecasts_regression(
 
     The data_transformers are applied in historical_forecasts (input and predictions)
     """
+    # # TODO: make this better
+    # target_lag_tag = "_target_lag"
+    # lagged_target_names = [
+    #     name for name in model.lagged_feature_names if target_lag_tag in name
+    # ]
+    # target_lags_order = [
+    #     int(name.split(target_lag_tag)[-1]) for name in lagged_target_names
+    # ]
 
+    # prepare index to reorder features by lags across components
+    if "target" in model.component_lags:
+        component_lags = [
+            comp_lags for comp_lags in model.component_lags["target"].values()
+        ]
+    else:
+        component_lags = [model.lags["target"]] * get_single_series(series).n_components
+    component_lags_reordered = np.concatenate(component_lags).argsort(
+        **_STABLE_SORT_KWARGS
+    )
+    _ = component_lags_reordered
     # # Calling super().predict() to perform sanity checks
     # # e.g. is autoregression allowed, are parameters coherent, etc.
     # super().predict(
@@ -377,13 +400,12 @@ def _optimized_historical_forecasts_regression(
                 last_step_shift = t_pred - (forecast_horizon - step)
                 t_pred = forecast_horizon - step
 
-            # Select the appropriate slice of X to process and cut according to stride
-            # X can have more samples than needed, so cut to n_forecasts
-            # current_X = X[::stride, :, pred_idx]
+            # Select the X for the current forecast iteration
             current_X = X[::, :, pred_idx]
             if not model.multi_models:
-                # TODO: do we need :n_forecasts?
-                current_X = current_X[::stride][:n_forecasts, ...]
+                # TODO: why can't we take stride directly?
+                # with multi-models we can directly take the stridden examples
+                current_X = current_X[::stride]
 
             current_X = np.repeat(current_X, num_samples, axis=0)
 
@@ -396,6 +418,7 @@ def _optimized_historical_forecasts_regression(
             # Fill history is when we are doing autoregression
             fill_history = t_pred + 1 > model.output_chunk_length
 
+            # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
             if np.isnan(current_X).any():
                 # When we have NaN in current_X, we need to fill them
                 _, col = np.where(np.isnan(current_X))
