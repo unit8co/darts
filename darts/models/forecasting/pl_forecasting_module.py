@@ -9,7 +9,7 @@ import copy
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import wraps
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, Dict
 
 import pytorch_lightning as pl
 import torch
@@ -130,8 +130,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
+            A torchmetric.Metric or a collection used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/ , see `torchmetrics.MetricCollection()`.
+            Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
@@ -799,20 +800,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @staticmethod
     def configure_torch_metrics(
-        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection],
+        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection, Sequence[torchmetrics.Metric | torchmetrics.MetricCollection], Dict[str, torchmetrics.Metric | torchmetrics.MetricCollection]],
     ) -> torchmetrics.MetricCollection:
         """process the torch_metrics parameter."""
         if torch_metrics is None:
             torch_metrics = torchmetrics.MetricCollection([])
-        elif isinstance(torch_metrics, torchmetrics.Metric):
-            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
-        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
-            pass
         else:
-            raise_log(
-                AttributeError(
-                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
-                ),
-                logger,
-            )
+            torch_metrics = torchmetrics.MetricCollection(torch_metrics)
         return torch_metrics
