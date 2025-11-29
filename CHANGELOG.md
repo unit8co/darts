@@ -16,6 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Fixed**
 
 - Fixed an issue in `TFTExplainer` where attempting to explain a list of series longer than the model's batch size resulted in an `IndexError`. A more informative error message is now raised instead. [#2957](https://github.com/unit8co/darts/pull/2957) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed an issue in `SKLearnModel` where attempting to run historical forecasts on a multivariate target series with component-specific lags did not work. [#2921](https://github.com/unit8co/darts/pull/2921) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
 

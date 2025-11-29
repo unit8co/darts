@@ -365,8 +365,18 @@ def _optimized_historical_forecasts_regression(
             step=step,
         )
 
-        # stride must be applied post-hoc to avoid missing values
         X = X[0][:, :, 0]
+
+        # stride can be applied directly without auto-regression, or when forecast horizon is a
+        # round-multiple of output chunk length
+        if (
+            forecast_horizon <= model.output_chunk_length + model.output_chunk_shift
+        ) or (forecast_horizon % model.output_chunk_length == 0):
+            X = X[::stride]
+            stride_applied = True
+        else:
+            stride_applied = False
+
         predictions = []
 
         # Without autoregression, n_prediction_iterations is 1,
@@ -387,12 +397,14 @@ def _optimized_historical_forecasts_regression(
                 X[:, start_idx:end_idx, i] = np.nan
                 offset_idx += 1
 
+        lags_output = np.array([i for i in range(model.output_chunk_length)])
+
         last_step_shift = 0
         t_pred = 0
-        start_idx = 0
+        # start_idx = 0
 
-        forecasts = []
-        forecast = None
+        # forecasts = []
+        # forecast = None
         for pred_idx in range(X.shape[-1]):
             # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
             # we have to step back `step` from `n` in the last iteration
@@ -401,11 +413,11 @@ def _optimized_historical_forecasts_regression(
                 t_pred = forecast_horizon - step
 
             # Select the X for the current forecast iteration
-            current_X = X[::, :, pred_idx]
-            if not model.multi_models:
-                # TODO: why can't we take stride directly?
-                # with multi-models we can directly take the stridden examples
-                current_X = current_X[::stride]
+            current_X = X[:, :, pred_idx]
+            # if not model.multi_models:
+            #     # TODO: why can't we take stride directly?
+            #     # with multi-models we can directly take the stridden examples
+            #     current_X = current_X[::stride]
 
             current_X = np.repeat(current_X, num_samples, axis=0)
 
@@ -415,54 +427,61 @@ def _optimized_historical_forecasts_regression(
             # (so when model.lags contains "target")
             # if predictions and "target" in model.lags:
 
-            # Fill history is when we are doing autoregression
-            fill_history = t_pred + 1 > model.output_chunk_length
-
-            # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
-            if np.isnan(current_X).any():
-                # When we have NaN in current_X, we need to fill them
-                _, col = np.where(np.isnan(current_X))
-                col = np.unique(col)
-
-                if fill_history:
-                    if model.multi_models:
-                        # Flatten the forecasts as a 2D array for easier indexing
-                        # Instead of having (n_series * n_samples, output_chunk_length, n_components),
-                        # we have (n_series * n_samples, output_chunk_length * n_components)
-                        # Because X is built the same way, so the indexing will be coherent
-                        flattened_forecasts = forecasts.reshape(forecasts.shape[0], -1)
-                        # Find which prediction steps we need to fill in current_X. It's the last len(col) steps
-                        # but if last_step_shift > 0, we need to shift accordingly
-                        slice_start = flattened_forecasts.shape[1] - (
-                            col.size + last_step_shift
-                        )
-                        slice_start = 0 if slice_start < 0 else slice_start
-                        slice_end = slice_start + len(col)
-                        slice_end = (
-                            flattened_forecasts.shape[1]
-                            if slice_end > flattened_forecasts.shape[1]
-                            else slice_end
-                        )
-
-                        # Fill the current X columns with the corresponding forecasts
-                        current_X[:, col] = flattened_forecasts[
-                            :,
-                            slice_start:slice_end,
-                        ].reshape(current_X[:, col].shape)
-                    else:
-                        # When not using multi_models, we predict one step at a time so we only need to
-                        # shift the start_idx one by one each prediction iteration
-                        flattened_forecasts = forecasts.reshape(forecasts.shape[0], -1)
-                        current_X[:, col] = flattened_forecasts[
-                            :,
-                            start_idx : start_idx + col.size,
-                        ].reshape(current_X[:, col].shape)
-                    if col.size == len(model.lags["target"]) and forecast is not None:
-                        start_idx += forecast.shape[-1]
-                else:
-                    current_X[:, col] = forecasts.reshape(forecasts.shape[0], -1)[
-                        :, : col.size
-                    ].reshape(current_X[:, col].shape)
+            # # Fill history is when we are doing autoregression
+            # fill_history = t_pred + 1 > model.output_chunk_length
+            #
+            # if fill_history:
+            #     lags_output = np.array([[i for i in range(model.output_chunk_length)]] * series_.n_components)
+            #     lags_output_adjust = lags_output - step
+            #     for comp_idx, (comp_lags, output_lags) in enumerate(zip(component_lags, lags_output_adjust)):
+            #         for lag_idx, lag in enumerate(comp_lags):
+            #             if lag in output_lags:
+            #
+            # # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
+            # if np.isnan(current_X).any():
+            #     # When we have NaN in current_X, we need to fill them
+            #     _, col = np.where(np.isnan(current_X))
+            #     col = np.unique(col)
+            #
+            #     if fill_history:
+            #         if model.multi_models:
+            #             # Flatten the forecasts as a 2D array for easier indexing
+            #             # Instead of having (n_series * n_samples, output_chunk_length, n_components),
+            #             # we have (n_series * n_samples, output_chunk_length * n_components)
+            #             # Because X is built the same way, so the indexing will be coherent
+            #             flattened_forecasts = forecasts.reshape(forecasts.shape[0], -1)
+            #             # Find which prediction steps we need to fill in current_X. It's the last len(col) steps
+            #             # but if last_step_shift > 0, we need to shift accordingly
+            #             slice_start = flattened_forecasts.shape[1] - (
+            #                 col.size + last_step_shift
+            #             )
+            #             slice_start = 0 if slice_start < 0 else slice_start
+            #             slice_end = slice_start + len(col)
+            #             slice_end = (
+            #                 flattened_forecasts.shape[1]
+            #                 if slice_end > flattened_forecasts.shape[1]
+            #                 else slice_end
+            #             )
+            #
+            #             # Fill the current X columns with the corresponding forecasts
+            #             current_X[:, col] = flattened_forecasts[
+            #                 :,
+            #                 slice_start:slice_end,
+            #             ].reshape(current_X[:, col].shape)
+            #         else:
+            #             # When not using multi_models, we predict one step at a time so we only need to
+            #             # shift the start_idx one by one each prediction iteration
+            #             flattened_forecasts = forecasts.reshape(forecasts.shape[0], -1)
+            #             current_X[:, col] = flattened_forecasts[
+            #                 :,
+            #                 start_idx : start_idx + col.size,
+            #             ].reshape(current_X[:, col].shape)
+            #         if col.size == len(model.lags["target"]) and forecast is not None:
+            #             start_idx += forecast.shape[-1]
+            #     else:
+            #         current_X[:, col] = forecasts.reshape(forecasts.shape[0], -1)[
+            #             :, : col.size
+            #         ].reshape(current_X[:, col].shape)
 
             # repeat rows for probabilistic forecast
             forecast = model._predict(
@@ -472,8 +491,33 @@ def _optimized_historical_forecasts_regression(
                 random_state=random_state,
                 **predict_kwargs,
             )
-            predictions.append(forecast[:, last_step_shift:, ...])
-            forecasts = np.concatenate(predictions, axis=1)
+            forecast = forecast[:, last_step_shift:, ...]
+            predictions.append(forecast)
+
+            # update history of future X in case of auto-regression
+            # TODO, make it work for
+            #  - auto-reg with forecast_horizon % ocl > 0
+            #  - multi_models=False
+            for auto_reg_idx in range(1, X.shape[-1] - pred_idx):
+                lags_output_adjust = lags_output - (step * auto_reg_idx)
+                next_X = X[:, :, pred_idx + auto_reg_idx]
+
+                update_x_indices = []
+                take_y_indices = []
+                counter = 0
+                for comp_idx, comp_lags in enumerate(component_lags):
+                    for lag_idx, lag in enumerate(comp_lags):
+                        y_pos = np.argwhere(lags_output_adjust == lag)
+                        if len(y_pos) > 0:
+                            update_x_indices.append(component_lags_reordered[counter])
+                            take_y_indices.append(
+                                comp_idx + y_pos[0, 0] * series_.n_components
+                            )
+                        counter += 1
+                next_X[:, update_x_indices] = forecast.reshape(forecast.shape[0], -1)[
+                    :, take_y_indices
+                ]
+
             t_pred += step
         forecast = np.concatenate(predictions, axis=1)
 
@@ -494,7 +538,7 @@ def _optimized_historical_forecasts_regression(
         )
         # For multi-models, we need to apply the stride now, as we predicted all steps at once
         # For non-multi-models, we already applied the stride when building X
-        if model.multi_models:
+        if model.multi_models and not stride_applied:
             forecast = forecast[::stride][:n_forecasts]
         else:
             forecast = forecast[:n_forecasts]
