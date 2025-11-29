@@ -1610,7 +1610,7 @@ class TestTorchForecastingModel:
 
     def test_invalid_metrics(self):
         torch_metrics = ["invalid"]
-        with pytest.raises(AttributeError):
+        with pytest.raises(ValueError):
             model = RNNModel(
                 12,
                 "RNN",
