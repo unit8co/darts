@@ -427,14 +427,14 @@ class TestHistoricalforecast:
 
     ts_past_cov_train_range = tg.gaussian_timeseries(
         length=len(ts_pass_train_range),
-        freq=ts_pass_train_range.freq_str,
+        freq=ts_pass_train_range.freq,
         start=ts_pass_train_range.start_time(),
     )
 
     # same starting point
     ts_past_cov_valid_range_same_start = tg.gaussian_timeseries(
         length=len(ts_pass_val_range),
-        freq=ts_pass_val_range.freq_str,
+        freq=ts_pass_val_range.freq,
         start=ts_pass_val_range.start_time(),
     )
 

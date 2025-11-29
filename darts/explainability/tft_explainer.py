@@ -36,6 +36,7 @@ from darts.explainability import TFTExplainabilityResult
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
+from darts.utils.ts_utils import SeriesType, get_series_seq_type
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -192,6 +193,18 @@ class TFTExplainer(_ForecastingModelExplainer):
             foreground_past_covariates,
             foreground_future_covariates,
         )
+        if (
+            get_series_seq_type(foreground_series) is SeriesType.SEQ
+            and len(foreground_series) > self.model.batch_size
+        ):
+            raise_log(
+                ValueError(
+                    f"The number of back- or foreground series to explain ({len(foreground_series)}) "
+                    f"must be smaller than or equal to the model's batch size ({self.model.batch_size})."
+                ),
+                logger=logger,
+            )
+
         horizons, _ = self._process_horizons_and_targets(None, None)
         preds = self.model.predict(
             n=self.n,
