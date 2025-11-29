@@ -867,9 +867,9 @@ def datetime_attribute_timeseries(
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
     one_hot_freq_aware
-        Boolean value that controls the behavior of one-hot encoding. If `True`, the one-hot encoding includes only the
-        actual possible values based on the frequency and start of the time index. If `False`, the encoding includes
-        all possibl values for the attribute.
+        If `True`, the one-hot encoding infers which values are actually possible based on the frequency and start of
+        the time index. If `False`, the encoding includes all possible values for the attribute. Only has an effect if
+        `one_hot` is `True`.
     cyclic
         Boolean value indicating whether to add the specified attribute as a cyclic encoding.
         Alternative to one_hot encoding, enable only one of the two.
@@ -957,8 +957,7 @@ def datetime_attribute_timeseries(
 
             if with_columns is None:
                 with_columns = [
-                    attribute + "_" + str(column_name)
-                    for column_name in values_df.columns
+                    f"{attribute}_{column_name}" for column_name in values_df.columns
                 ]
             else:
                 raise_if_not(
