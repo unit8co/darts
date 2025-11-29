@@ -9,7 +9,7 @@ import copy
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from functools import wraps
-from typing import Any, Optional, Union, Dict
+from typing import Any, Optional, Union
 
 import pytorch_lightning as pl
 import torch
@@ -800,7 +800,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @staticmethod
     def configure_torch_metrics(
-        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection, Sequence[torchmetrics.Metric | torchmetrics.MetricCollection], Dict[str, torchmetrics.Metric | torchmetrics.MetricCollection]],
+        torch_metrics: Union[
+            torchmetrics.Metric,
+            torchmetrics.MetricCollection,
+            Sequence[torchmetrics.Metric | torchmetrics.MetricCollection],
+            dict[str, torchmetrics.Metric | torchmetrics.MetricCollection],
+        ],
     ) -> torchmetrics.MetricCollection:
         """process the torch_metrics parameter."""
         if torch_metrics is None:
