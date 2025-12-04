@@ -592,6 +592,13 @@ class Chronos2Model(FoundationModel):
         (amazon/chronos-2). Alternatively, you can specify a local directory containing the model config and weights
         using the ``local_dir`` parameter.
 
+        Two variants of Chronos-2 are available on HuggingFace Hub:
+        - `autogluon/chronos-2-small <https://huggingface.co/autogluon/chronos-2-small>`_: a smaller 28M parameter
+            Chronos-2 model.
+        - `autogluon/chronos-2-synth <https://huggingface.co/autogluon/chronos-2-synth>`_: a 120M parameter Chronos-2
+            model trained on synthetic data only.
+        To use either of those variants, specify the ``hub_model_name`` parameter to the desired model ID.
+
         By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
         forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
         ``likelihood`` parameter. The quantiles used must be a subset of those used during Chronos-2 pre-training, see
@@ -625,9 +632,10 @@ class Chronos2Model(FoundationModel):
             the quantiles must be a subset of those used during Chronos-2 pre-training:
             [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
             0.95, 0.99].
-            Default is ``None``, which will make Chronos-2 deterministic (median quantile only).
+            Default: ``None``, which will make Chronos-2 deterministic (median quantile only).
         hub_model_name
-            The model ID on HuggingFace Hub. Default is ``"amazon/chronos-2"``.
+            The model ID on HuggingFace Hub. Default: ``"amazon/chronos-2"``. Other available variants include
+            ``"autogluon/chronos-2-small"`` and ``"autogluon/chronos-2-synth"``.
         hub_model_revision
             The model version to use. This can be a branch name, tag name, or commit hash. Default is ``None``, which
             will use the default branch from ``hub_model_name``.
