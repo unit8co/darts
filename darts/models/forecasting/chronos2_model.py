@@ -592,11 +592,13 @@ class Chronos2Model(FoundationModel):
         (amazon/chronos-2). Alternatively, you can specify a local directory containing the model config and weights
         using the ``local_dir`` parameter.
 
-        Two variants of Chronos-2 are available on HuggingFace Hub:
+        Two other variants of Chronos-2 are available on HuggingFace Hub:
+
         - `autogluon/chronos-2-small <https://huggingface.co/autogluon/chronos-2-small>`_: a smaller 28M parameter
-            Chronos-2 model.
-        - `autogluon/chronos-2-synth <https://huggingface.co/autogluon/chronos-2-synth>`_: a 120M parameter Chronos-2
-            model trained on synthetic data only.
+          Chronos-2 model.
+        - `autogluon/chronos-2-synth <https://huggingface.co/autogluon/chronos-2-synth>`_: a 120M parameter
+          Chronos-2 model trained on synthetic data only.
+
         To use either of those variants, specify the ``hub_model_name`` parameter to the desired model ID.
 
         By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
