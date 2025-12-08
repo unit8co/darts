@@ -46,4 +46,4 @@ jobs:
       - name: "Install Latest Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
