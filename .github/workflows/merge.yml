@@ -52,9 +52,9 @@ jobs:
           if [ "${{ matrix.flavour }}" == "core" ]; then
             pip install -r requirements/core.txt -r requirements/dev.txt
           elif [ "${{ matrix.flavour }}" == "torch" ]; then
-            pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/dev.txt
+            pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/core.txt -r requirements/torch.txt -r requirements/dev.txt
           elif [ "${{ matrix.flavour }}" == "all" ]; then
-            pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/optional.txt -r requirements/dev.txt
+            pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/optional.txt -r requirements/dev.txt
           fi
 
       - name: "Install libomp (for LightGBM)"
@@ -116,7 +116,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -168,7 +168,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |
