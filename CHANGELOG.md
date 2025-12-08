@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- `TorchForecastingModel` parameter `torch_metrics` now supports all input metric types from ``torchmetrics.MetricCollection``. Eg. now you can also pass a dictionary or sequence of metrics. [#2958](https://github.com/unit8co/darts/pull/2958) by [CorticallyAI](https://github.com/CorticallyAI).
+
 **Fixed**
 
 - Fixed an issue in `TFTExplainer` where attempting to explain a list of series longer than the model's batch size resulted in an `IndexError`. A more informative error message is now raised instead. [#2957](https://github.com/unit8co/darts/pull/2957) by [Dennis Bader](https://github.com/dennisbader).

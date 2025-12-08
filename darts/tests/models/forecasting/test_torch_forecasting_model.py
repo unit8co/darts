@@ -1508,14 +1508,20 @@ class TestTorchForecastingModel:
         with pytest.raises(ValueError):
             _ = RnnModelLambda(0, input_chunk_length=12, **invalid_kwargs)
 
-    def test_metrics(self):
-        metric = MeanAbsolutePercentageError()
-        metric_collection = MetricCollection([
-            MeanAbsolutePercentageError(),
-            MeanAbsoluteError(),
-            R2Score(),
-        ])
-
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            MeanAbsolutePercentageError(),  # single metric
+            MetricCollection([
+                MeanAbsolutePercentageError(),
+                MeanAbsoluteError(),
+                R2Score(),
+            ]),  # metric collection
+            {"metric_name": MeanAbsolutePercentageError()},  # dict of metrics
+            [MeanAbsolutePercentageError()],  # sequence of metrics
+        ],
+    )
+    def test_metrics(self, metric):
         model_kwargs = {
             "logger": DummyLogger(),
             "log_every_n_steps": 1,
@@ -1533,18 +1539,6 @@ class TestTorchForecastingModel:
         )
         model.fit(self.series)
 
-        # test metric collection
-        model = RNNModel(
-            12,
-            "RNN",
-            10,
-            10,
-            n_epochs=1,
-            torch_metrics=metric_collection,
-            pl_trainer_kwargs=model_kwargs,
-        )
-        model.fit(self.series)
-
         # test multivariate series
         model = RNNModel(
             12,
@@ -1552,7 +1546,7 @@ class TestTorchForecastingModel:
             10,
             10,
             n_epochs=1,
-            torch_metrics=metric_collection,
+            torch_metrics=metric,
             pl_trainer_kwargs=model_kwargs,
         )
         model.fit(self.multivariate_series)
@@ -1610,7 +1604,7 @@ class TestTorchForecastingModel:
 
     def test_invalid_metrics(self):
         torch_metrics = ["invalid"]
-        with pytest.raises(AttributeError):
+        with pytest.raises(ValueError):
             model = RNNModel(
                 12,
                 "RNN",
