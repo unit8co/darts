@@ -5,7 +5,6 @@ Data Tabularization Methods
 Tabularization methods to convert time series data into tabular format for usage with SKLearn-like models.
 """
 
-import copy
 import warnings
 from collections.abc import Sequence
 from functools import reduce
@@ -373,6 +372,8 @@ def create_lagged_data(
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
 
+    is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
+
     # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
     lags_extract, lags_order = _get_lagged_indices(
         lags,
@@ -397,11 +398,12 @@ def create_lagged_data(
                 logger,
             )
 
-        target_i_old = copy.deepcopy(target_i)
-        if target_i and forecast_horizon > output_chunk_length:
+        # TODO: remove?
+        # target_i_old = copy.deepcopy(target_i)
+        if target_i and is_auto_regression:
             target_i = target_i.append_values(
                 [[np.nan] * target_i.shape[1]]
-                * (forecast_horizon - output_chunk_length)
+                * (forecast_horizon - (output_chunk_length + output_chunk_shift))
             )
 
         if use_moving_windows and series_equal_freq:
@@ -450,95 +452,97 @@ def create_lagged_data(
         )
 
         # TODO: step and output_chunk_length are a bit ambiguous
-        X_i_array = []
-        for t_pred in range(0, forecast_horizon, step):
-            # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
-            # we have to step back `step` from `n` in the last iteration
-            if 0 < forecast_horizon - t_pred < step and t_pred > 0:
-                t_pred = forecast_horizon - step
-            start = t_pred
-            end = -(forecast_horizon - (t_pred + step)) or None
-            X_i_array.append(X_i[start:end, :, :, np.newaxis])
-
-        X_i_array_ = np.concatenate(X_i_array, axis=-1)
-        if X_i_array_.shape[-1] == 1:
-            X_i_array_ = X_i_array_[:, :, :, 0]
-
-        # variables for autoregression
-        X_i_array = []
-        target_i = target_i_old
-        for t_pred in range(0, forecast_horizon, step):
-            # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
-            # we have to step back `step` from `n` in the last iteration
-            if 0 < forecast_horizon - t_pred < step and t_pred > 0:
-                t_pred = forecast_horizon - step
-
-            # append NaN values to target series for autoregressive prediction
-            if target_i and t_pred > 0:
-                target_i = target_i.append_values(
-                    [[np.nan] * target_i.shape[1]] * t_pred
+        if is_auto_regression:
+            # auto-regression requires updating X matrices; stack in last dimension
+            X_i_array = []
+            for start_idx, t_pred in enumerate(
+                range(
+                    output_chunk_length + output_chunk_shift,
+                    forecast_horizon + step,
+                    step,
                 )
-            if use_moving_windows and series_equal_freq:
-                X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
-                    target_series=target_i,
-                    output_chunk_length=output_chunk_length,
-                    output_chunk_shift=output_chunk_shift,
-                    past_covariates=past_i,
-                    future_covariates=future_i,
-                    sample_weight=sample_weight_i,
-                    lags=lags,
-                    lags_past_covariates=lags_past_covariates,
-                    lags_future_covariates=lags_future_covariates,
-                    lags_extract=lags_extract,
-                    lags_order=lags_order,
-                    max_samples_per_ts=max_samples_per_ts,
-                    multi_models=multi_models,
-                    check_inputs=check_inputs,
-                    is_training=is_training,
-                    stride=stride,
-                    offset=t_pred,
-                    show_warnings=show_warnings,
-                )
-            else:
-                # TODO maybe need to add t_pred below as well
-                X_i, y_i, times_i, weights_i = (
-                    _create_lagged_data_by_intersecting_times(
-                        target_series=target_i,
-                        output_chunk_length=output_chunk_length,
-                        output_chunk_shift=output_chunk_shift,
-                        past_covariates=past_i,
-                        future_covariates=future_i,
-                        sample_weight=sample_weight_i,
-                        lags=lags,
-                        lags_past_covariates=lags_past_covariates,
-                        lags_future_covariates=lags_future_covariates,
-                        max_samples_per_ts=max_samples_per_ts,
-                        multi_models=multi_models,
-                        check_inputs=check_inputs,
-                        is_training=is_training,
-                        stride=stride,
-                        show_warnings=show_warnings,
-                    )
-                )
-
-            X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
-                features=X_i,
-                target_series=target_i,
-                uses_static_covariates=uses_static_covariates,
-                last_shape=last_static_covariates_shape,
-            )
-            X_i_array.append(X_i)
-
-        if len(X_i_array) > 1:
-            min_forecast_len = min(X_i_part.shape[0] for X_i_part in X_i_array)
-            X_i_array = np.stack(
-                [array[:min_forecast_len] for array in X_i_array], axis=-1
-            )
+            ):
+                end = -(forecast_horizon - t_pred) or None
+                X_i_array.append(X_i[start_idx:end, :, :, np.newaxis])
+            X_i_array = np.concatenate(X_i_array, axis=-1)
         else:
-            X_i_array = X_i_array[0]
+            X_i_array = X_i
 
-        # TODO: remove duplicated logic
-        np.testing.assert_array_almost_equal(X_i_array_, X_i_array)
+        # # variables for autoregression
+        # X_i_array = []
+        # target_i = target_i_old
+        # for t_pred in range(0, forecast_horizon, step):
+        #     # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
+        #     # we have to step back `step` from `n` in the last iteration
+        #     if 0 < forecast_horizon - t_pred < step and t_pred > 0:
+        #         t_pred = forecast_horizon - step
+        #
+        #     # append NaN values to target series for autoregressive prediction
+        #     if target_i and t_pred > 0:
+        #         target_i = target_i.append_values(
+        #             [[np.nan] * target_i.shape[1]] * t_pred
+        #         )
+        #     if use_moving_windows and series_equal_freq:
+        #         X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
+        #             target_series=target_i,
+        #             output_chunk_length=output_chunk_length,
+        #             output_chunk_shift=output_chunk_shift,
+        #             past_covariates=past_i,
+        #             future_covariates=future_i,
+        #             sample_weight=sample_weight_i,
+        #             lags=lags,
+        #             lags_past_covariates=lags_past_covariates,
+        #             lags_future_covariates=lags_future_covariates,
+        #             lags_extract=lags_extract,
+        #             lags_order=lags_order,
+        #             max_samples_per_ts=max_samples_per_ts,
+        #             multi_models=multi_models,
+        #             check_inputs=check_inputs,
+        #             is_training=is_training,
+        #             stride=stride,
+        #             offset=t_pred,
+        #             show_warnings=show_warnings,
+        #         )
+        #     else:
+        #         # TODO maybe need to add t_pred below as well
+        #         X_i, y_i, times_i, weights_i = (
+        #             _create_lagged_data_by_intersecting_times(
+        #                 target_series=target_i,
+        #                 output_chunk_length=output_chunk_length,
+        #                 output_chunk_shift=output_chunk_shift,
+        #                 past_covariates=past_i,
+        #                 future_covariates=future_i,
+        #                 sample_weight=sample_weight_i,
+        #                 lags=lags,
+        #                 lags_past_covariates=lags_past_covariates,
+        #                 lags_future_covariates=lags_future_covariates,
+        #                 max_samples_per_ts=max_samples_per_ts,
+        #                 multi_models=multi_models,
+        #                 check_inputs=check_inputs,
+        #                 is_training=is_training,
+        #                 stride=stride,
+        #                 show_warnings=show_warnings,
+        #             )
+        #         )
+        #
+        #     X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
+        #         features=X_i,
+        #         target_series=target_i,
+        #         uses_static_covariates=uses_static_covariates,
+        #         last_shape=last_static_covariates_shape,
+        #     )
+        #     X_i_array.append(X_i)
+        #
+        # if len(X_i_array) > 1:
+        #     min_forecast_len = min(X_i_part.shape[0] for X_i_part in X_i_array)
+        #     X_i_array = np.stack(
+        #         [array[:min_forecast_len] for array in X_i_array], axis=-1
+        #     )
+        # else:
+        #     X_i_array = X_i_array[0]
+        #
+        # # TODO: remove duplicated logic
+        # np.testing.assert_array_almost_equal(X_i_array_, X_i_array)
 
         X.append(X_i_array)
         y.append(y_i)
@@ -727,6 +731,8 @@ def create_lagged_training_data(
 
 
 def create_lagged_prediction_data(
+    output_chunk_length: int,
+    output_chunk_shift: int,
     target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -755,6 +761,10 @@ def create_lagged_prediction_data(
 
     Parameters
     ----------
+    output_chunk_length
+        The number of time steps ahead into the future the `SKLearnModel` is to predict.
+    output_chunk_shift
+        Optionally, the number of time steps to shift the output chunk ahead into the future.
     target_series
         Optionally, the series for the `SKLearnModel` to predict.
     past_covariates
@@ -856,6 +866,8 @@ def create_lagged_prediction_data(
         lags=lags,
         lags_past_covariates=lags_past_covariates,
         lags_future_covariates=lags_future_covariates,
+        output_chunk_length=output_chunk_length,
+        output_chunk_shift=output_chunk_shift,
         uses_static_covariates=uses_static_covariates,
         last_static_covariates_shape=last_static_covariates_shape,
         max_samples_per_ts=max_samples_per_ts,

@@ -116,6 +116,8 @@ def _optimized_historical_forecasts_last_points_only(
             )
 
         X, times = create_lagged_prediction_data(
+            output_chunk_length=model.output_chunk_length,
+            output_chunk_shift=model.output_chunk_shift,
             target_series=(
                 None
                 if model._get_lags("target") is None
@@ -319,11 +321,12 @@ def _optimized_historical_forecasts_regression(
             bounds=np.array([[left_bound, right_bound]]),
             stride=stride,
         )
-        n_forecasts = cum_lengths[0]
 
+        # n_forecasts = cum_lengths[0]
+        # TODO: remove?
         # TODO: update comment and explain
         if (
-            forecast_horizon <= model.output_chunk_length + model.output_chunk_length
+            forecast_horizon <= model.output_chunk_length + model.output_chunk_shift
         ) or (forecast_horizon % model.output_chunk_length == 0):
             is_simple_forecast = True
         else:
@@ -345,6 +348,8 @@ def _optimized_historical_forecasts_regression(
         # Otherwise, X will be of shape (n_forecasts, n_lags, n_samples = 1, n_prediction_iterations)
         # where n_prediction_iterations = ceil(forecast_horizon / step)
         X, _ = create_lagged_prediction_data(
+            output_chunk_length=model.output_chunk_length,
+            output_chunk_shift=model.output_chunk_shift,
             target_series=(
                 None
                 if model._get_lags("target") is None
@@ -375,13 +380,19 @@ def _optimized_historical_forecasts_regression(
             step=step,
         )
 
+        # -> (n_forecasts, n_lags, n_prediction_iterations)
         X = X[0][:, :, 0]
 
+        # TODO: directly?
         # # stride can be applied directly without auto-regression, or when forecast horizon is a
         # # round-multiple of output chunk length
         # if is_simple_forecast:
         #     X = X[::stride]
         X = X[::stride]
+
+        # Try new:
+        # -> (n_forecasts * n_samples, n_lags, n_prediction_iterations)
+        X = np.repeat(X, num_samples, axis=0)
 
         predictions = []
 
@@ -391,6 +402,7 @@ def _optimized_historical_forecasts_regression(
         if X.ndim == 2:
             X = X[:, :, np.newaxis]
 
+        # TODO: remove?
         # Trick to fix with stride, because NaN are in X at the end of the series, but
         # with stride, we might not get NaN in current_X, so we manually set the relevant
         # columns to NaN so that they get filled with previous predictions
@@ -405,9 +417,10 @@ def _optimized_historical_forecasts_regression(
 
         lags_output = np.array([i for i in range(model.output_chunk_length)])
 
+        t_pred_new = model.output_chunk_length
+        # TODO: remove?
         # last_step_shift = 0
         # t_pred = 0
-        t_pred_new = output_step
         # start_idx = 0
 
         # forecasts = []
@@ -420,8 +433,9 @@ def _optimized_historical_forecasts_regression(
             #     # with multi-models we can directly take the stridden examples
             #     current_X = current_X[::stride]
 
-            current_X = np.repeat(current_X, num_samples, axis=0)
+            # current_X = np.repeat(current_X, num_samples, axis=0)
 
+            # TODO: remove?
             # When predictions exist, we are either doing autoregression, or predicting multiple steps with
             # multi_models=False
             # We are also interested in filling current_X with previous predictions when we use target
@@ -493,17 +507,20 @@ def _optimized_historical_forecasts_regression(
                 **predict_kwargs,
             )
 
-            # update history of future X in case of auto-regression
             # TODO, make it work for
-            #  - auto-reg with forecast_horizon % ocl > 0
             #  - multi_models=False
+            # in case of auto-regression: update history of future X with forecast
             for auto_reg_idx in range(1, X.shape[-1] - pred_idx):
-                lags_output_adjust = lags_output - (step * auto_reg_idx)
+                # get the future iteration's lagged features
                 next_X = X[:, :, pred_idx + auto_reg_idx]
 
-                update_x_indices = []
-                take_y_indices = []
+                # determine which lags the forecasts correspond to in the future iteration
+                lags_output_adjust = lags_output - (step * auto_reg_idx)
+
+                # find matches between forecasted components and component-specific lags of the future iteration
                 counter = 0
+                take_y_indices = []
+                update_x_indices = []
                 for comp_idx, comp_lags in enumerate(component_lags):
                     for lag_idx, lag in enumerate(comp_lags):
                         y_pos = np.argwhere(lags_output_adjust == lag)
@@ -513,12 +530,35 @@ def _optimized_historical_forecasts_regression(
                                 comp_idx + y_pos[0, 0] * series_.n_components
                             )
                         counter += 1
+
+                # update future X with current matched predictions
                 next_X[:, update_x_indices] = forecast.reshape(forecast.shape[0], -1)[
                     :, take_y_indices
                 ]
 
-            if t_pred_new % output_step == 0 or t_pred_new + step == forecast_horizon:
-                predictions.append(forecast)
+            # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
+            # where k = output_chunk length if multi_models, 1 otherwise
+            # reshape into (forecasted indexes, output_chunk_length, n_components, n_samples)
+            forecast = np.moveaxis(
+                forecast.reshape(
+                    X.shape[0] // num_samples,
+                    num_samples,
+                    model.output_chunk_length if model.multi_models else 1,
+                    -1,
+                ),
+                1,
+                -1,
+            )
+
+            if t_pred_new % output_step == 0 or t_pred_new > forecast_horizon:
+                predictions.append(forecast[:, :forecast_horizon])
+            elif t_pred_new + model.output_chunk_shift == forecast_horizon:
+                take_last_n = (
+                    forecast_horizon - model.output_chunk_shift
+                ) % model.output_chunk_length
+                predictions.append(forecast[:, -take_last_n:])
+
+            # TODO: remove?
             # elif pred_idx + 1 == X.shape[-1]:
             #     last_step_shift = t_pred - (forecast_horizon - step)
             #     d = 1
@@ -530,32 +570,36 @@ def _optimized_historical_forecasts_regression(
             #     t_pred = forecast_horizon - step
             t_pred_new += step
 
+            # TODO: remove?
             # forecast = forecast[:, last_step_shift:, ...]
             # predictions.append(forecast)
             # t_pred += step
         forecast = np.concatenate(predictions, axis=1)
 
+        # TODO: remove?
         # Cut up to forecast_horizon because we might have predicted to much in the last
         # iteration (if step does not divide forecast_horizon)
-        forecast = forecast[:, :forecast_horizon, :]
+        # forecast = forecast[:, :forecast_horizon, :]
 
         # bring into correct shape: (n_forecasts, n_components, n_samples)
-        forecast = np.moveaxis(
-            forecast.reshape(
-                -1,
-                num_samples,
-                forecast_horizon,
-                len(forecast_components),
-            ),
-            1,
-            -1,
-        )
-        # For multi-models, we need to apply the stride now, as we predicted all steps at once
-        # For non-multi-models, we already applied the stride when building X
-        if not is_simple_forecast:
-            forecast = forecast[::stride][:n_forecasts]
-        else:
-            forecast = forecast[:n_forecasts]
+
+        # forecast = np.moveaxis(
+        #     forecast.reshape(
+        #         -1,
+        #         num_samples,
+        #         forecast_horizon,
+        #         len(forecast_components),
+        #     ),
+        #     1,
+        #     -1,
+        # )
+        # TODO: remove?
+        # # For multi-models, we need to apply the stride now, as we predicted all steps at once
+        # # For non-multi-models, we already applied the stride when building X
+        # if not is_simple_forecast:
+        #     forecast = forecast[::stride][:n_forecasts]
+        # else:
+        #     forecast = forecast[:n_forecasts]
 
         # Construct TimeSeries objects
         # Depending on last_points_only, either return only the last points of each forecast

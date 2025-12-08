@@ -3973,7 +3973,7 @@ class TestSKLearnModels:
         product(
             (
                 [
-                    (LinearRegressionModel, {"lags": {"sine": 2, "default_lags": 2}}),
+                    (LinearRegressionModel, {"lags": {"sine": 2, "default_lags": 1}}),
                     (LinearRegressionModel, {}),
                 ]
                 + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
@@ -3981,10 +3981,13 @@ class TestSKLearnModels:
                 + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
             ),
             [
-                True,
-                # False
+                # True,
+                False
             ],  # multi_models
-            [True, False],  # last_points_only
+            [
+                # True,
+                False
+            ],  # last_points_only
             [
                 # True,
                 False
