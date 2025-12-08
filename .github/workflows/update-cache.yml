@@ -30,10 +30,8 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
 
-      # Temporarily disable caching for macOS-14 due to GitHub Actions runner issues
       - name: "Cache python environment"
         uses: actions/cache@v4
-        if: runner.os != 'macOS'
         id: pythonenv-cache
         with:
           path: ${{ env.pythonLocation }}
