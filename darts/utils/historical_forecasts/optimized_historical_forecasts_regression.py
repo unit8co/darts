@@ -24,185 +24,6 @@ _NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
 _STABLE_SORT_KWARGS = {"stable": True} if _NP_2_OR_ABOVE else {"kind": "stable"}
 
 
-def _optimized_historical_forecasts_last_points_only(
-    model,
-    series: Sequence[TimeSeries],
-    past_covariates: Optional[Sequence[TimeSeries]] = None,
-    future_covariates: Optional[Sequence[TimeSeries]] = None,
-    num_samples: int = 1,
-    start: Optional[Union[pd.Timestamp, float, int]] = None,
-    start_format: Literal["position", "value"] = "value",
-    forecast_horizon: int = 1,
-    stride: int = 1,
-    overlap_end: bool = False,
-    show_warnings: bool = True,
-    verbose: bool = False,
-    predict_likelihood_parameters: bool = False,
-    random_state: Optional[int] = None,
-    predict_kwargs: Optional[dict[str, Any]] = None,
-) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
-    """
-    Optimized historical forecasts for SKLearnModel with last_points_only = True
-
-    Rely on _check_optimizable_historical_forecasts() to check that the assumptions are verified.
-
-    The data_transformers are applied in historical_forecasts (input and predictions)
-    """
-    predict_kwargs = predict_kwargs or {}
-    forecasts_list = []
-    iterator = _build_tqdm_iterator(
-        series, verbose, total=len(series), desc="historical forecasts"
-    )
-    for idx, series_ in enumerate(iterator):
-        past_covariates_ = past_covariates[idx] if past_covariates is not None else None
-        future_covariates_ = (
-            future_covariates[idx] if future_covariates is not None else None
-        )
-        freq = series_.freq
-        forecast_components = (
-            model.likelihood.component_names(series=series_)
-            if predict_likelihood_parameters
-            else series_.columns
-        )
-
-        # obtain forecastable indexes boundaries, adjust target & covariates boundaries accordingly
-        (
-            hist_fct_start,
-            hist_fct_end,
-            hist_fct_tgt_start,
-            hist_fct_tgt_end,
-            hist_fct_pc_start,
-            hist_fct_pc_end,
-            hist_fct_fc_start,
-            hist_fct_fc_end,
-        ) = _get_historical_forecast_boundaries(
-            model=model,
-            series=series_,
-            series_idx=idx,
-            past_covariates=past_covariates_,
-            future_covariates=future_covariates_,
-            start=start,
-            start_format=start_format,
-            forecast_horizon=forecast_horizon,
-            overlap_end=overlap_end,
-            stride=stride,
-            freq=freq,
-            show_warnings=show_warnings,
-        )
-
-        # Additional shift, to account for the model output_chunk_length
-        if model.output_chunk_length != forecast_horizon and not model.multi_models:
-            # used to convert the shift into the appropriate unit
-            unit = freq if series_.has_datetime_index else 1
-
-            shift = model.output_chunk_length - forecast_horizon
-
-            hist_fct_tgt_start -= shift * unit
-            hist_fct_pc_start -= (
-                shift * unit if hist_fct_pc_start is not None else hist_fct_pc_start
-            )
-            hist_fct_fc_start -= (
-                shift * unit if hist_fct_fc_start is not None else hist_fct_fc_start
-            )
-
-            hist_fct_tgt_end -= shift * unit
-            hist_fct_pc_end -= (
-                shift * unit if hist_fct_pc_end is not None else hist_fct_pc_end
-            )
-            hist_fct_fc_end -= (
-                shift * unit if hist_fct_fc_end is not None else hist_fct_fc_end
-            )
-
-        X, times = create_lagged_prediction_data(
-            output_chunk_length=model.output_chunk_length,
-            output_chunk_shift=model.output_chunk_shift,
-            target_series=(
-                None
-                if model._get_lags("target") is None
-                and not model.uses_static_covariates
-                else series_[hist_fct_tgt_start:hist_fct_tgt_end]
-            ),
-            past_covariates=(
-                None
-                if past_covariates_ is None
-                else past_covariates_[hist_fct_pc_start:hist_fct_pc_end]
-            ),
-            future_covariates=(
-                None
-                if future_covariates_ is None
-                else future_covariates_[hist_fct_fc_start:hist_fct_fc_end]
-            ),
-            lags=model._get_lags("target"),
-            lags_past_covariates=model._get_lags("past"),
-            lags_future_covariates=model._get_lags("future"),
-            uses_static_covariates=model.uses_static_covariates,
-            last_static_covariates_shape=model._static_covariates_shape,
-            max_samples_per_ts=None,
-            check_inputs=True,
-            use_moving_windows=True,
-            concatenate=False,
-        )
-
-        # stride can be applied directly (same for input and historical forecasts)
-        X = X[0][::stride, :, 0]
-
-        # repeat rows for probabilistic forecast
-        forecast = model._predict(
-            x=np.repeat(X, num_samples, axis=0),
-            num_samples=num_samples,
-            predict_likelihood_parameters=predict_likelihood_parameters,
-            random_state=random_state,
-            **predict_kwargs,
-        )
-        # forecast has shape ((forecastable_index_length-1)*num_samples, k, n_component)
-        # where k = output_chunk length if multi_models, 1 otherwise
-        # reshape into (forecasted indexes, output_chunk_length, n_components, n_samples)
-        forecast = np.moveaxis(
-            forecast.reshape(
-                X.shape[0],
-                num_samples,
-                model.output_chunk_length if model.multi_models else 1,
-                -1,
-            ),
-            1,
-            -1,
-        )
-
-        # extract the last sub-model forecast for each component
-        if model.multi_models:
-            forecast = forecast[:, forecast_horizon - 1]
-        else:
-            forecast = forecast[:, 0]
-
-        if (
-            stride == 1
-            and model.output_chunk_length == 1
-            and model.output_chunk_shift == 0
-        ):
-            times = times[0]
-        else:
-            times = generate_index(
-                start=hist_fct_start
-                + (forecast_horizon + model.output_chunk_shift - 1) * freq,
-                length=forecast.shape[0],
-                freq=freq * stride,
-                name=series_._time_index.name,
-            )
-
-        forecasts_list.append(
-            TimeSeries(
-                times=times,
-                values=forecast,
-                components=forecast_components,
-                static_covariates=series_.static_covariates,
-                hierarchy=series_.hierarchy,
-                metadata=series_.metadata,
-                copy=False,
-            )
-        )
-    return forecasts_list
-
-
 def _optimized_historical_forecasts_regression(
     model,
     series: Sequence[TimeSeries],
@@ -228,15 +49,11 @@ def _optimized_historical_forecasts_regression(
 
     The data_transformers are applied in historical_forecasts (input and predictions)
     """
-    # # TODO: make this better
-    # target_lag_tag = "_target_lag"
-    # lagged_target_names = [
-    #     name for name in model.lagged_feature_names if target_lag_tag in name
-    # ]
-    # target_lags_order = [
-    #     int(name.split(target_lag_tag)[-1]) for name in lagged_target_names
-    # ]
+    multi_models = model.multi_models
+    output_chunk_length = model.output_chunk_length
+    output_chunk_shift = model.output_chunk_shift
 
+    # # TODO: make this better
     # prepare index to reorder features by lags across components
     if "target" in model.component_lags:
         component_lags = [
@@ -247,19 +64,12 @@ def _optimized_historical_forecasts_regression(
     component_lags_reordered = np.concatenate(component_lags).argsort(
         **_STABLE_SORT_KWARGS
     )
-    _ = component_lags_reordered
-    # # Calling super().predict() to perform sanity checks
-    # # e.g. is autoregression allowed, are parameters coherent, etc.
-    # super().predict(
-    #     n=forecast_horizon,
-    #     series=series,
-    #     past_covariates=past_covariates,
-    #     future_covariates=future_covariates,
-    #     num_samples=num_samples,
-    #     verbose=verbose,
-    #     predict_likelihood_parameters=predict_likelihood_parameters,
-    #     show_warnings=show_warnings,
-    # )
+
+    # get the output lags
+    if multi_models:
+        lags_output = np.array([i for i in range(output_chunk_length)])
+    else:
+        lags_output = np.array([output_chunk_length - 1])
 
     predict_kwargs = predict_kwargs or {}
     forecasts_list = []
@@ -303,38 +113,35 @@ def _optimized_historical_forecasts_regression(
             show_warnings=show_warnings,
         )
 
-        # n_forecasts = cum_lengths[0]
-        # TODO: remove?
-        # TODO: update comment and explain
-        if (
-            forecast_horizon <= model.output_chunk_length + model.output_chunk_shift
-        ) or (forecast_horizon % model.output_chunk_length == 0):
+        is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
+
+        # a simple forecast
+        if (not is_auto_regression) or (forecast_horizon % output_chunk_length == 0):
             is_simple_forecast = True
         else:
             is_simple_forecast = False
 
-        is_auto_regression = (
-            forecast_horizon > model.output_chunk_length + model.output_chunk_shift
-        )
-
+        # TODO: update docs
         # In case of multi-models, we predict all steps at once so autoregression is done
         # output_chunk_length by output_chunk_length. Without multi-models,
         # a single model predicts one step at a time and we shift
         # the input sequence by one time step after each prediction.
-        if model.multi_models and is_simple_forecast:
-            step = model.output_chunk_length
+        if multi_models and is_simple_forecast:
+            step = output_chunk_length
         else:
+            # without multi-models: we must predict each output time with step=1
+            # or  multi-models: we must predict each output time with step=1
             step = 1
 
-        output_step = model.output_chunk_length if model.multi_models else 1
+        output_step = output_chunk_length if multi_models else 1
 
         # If forecast_horizon <= step, we can predict all steps in one go
         # so X will be of shape (n_forecasts, n_lags, n_samples = 1)
         # Otherwise, X will be of shape (n_forecasts, n_lags, n_samples = 1, n_prediction_iterations)
         # where n_prediction_iterations = ceil(forecast_horizon / step)
         X, _ = create_lagged_prediction_data(
-            output_chunk_length=model.output_chunk_length,
-            output_chunk_shift=model.output_chunk_shift,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=output_chunk_shift,
             target_series=(
                 None
                 if model._get_lags("target") is None
@@ -361,116 +168,30 @@ def _optimized_historical_forecasts_regression(
             use_moving_windows=True,
             concatenate=False,
             show_warnings=False,
-            multi_models=model.multi_models,
+            multi_models=multi_models,
             forecast_horizon=forecast_horizon,
             step=step,
         )
 
         # -> (n_forecasts, n_lags, n_prediction_iterations)
         X = X[0][:, :, 0]
+        if X.ndim == 2:
+            # without autoregression, the last dimension was collapsed; bring back dimension
+            X = X[:, :, np.newaxis]
 
-        # # stride can be applied directly without auto-regression, or when forecast horizon is a
-        if model.multi_models or is_auto_regression:
+        # TODO: update comment
+        # stride can be applied directly without auto-regression, or when forecast horizon is a
+        if multi_models or is_auto_regression:
             X = X[::stride]
 
-        # Try new:
         # -> (n_forecasts * n_samples, n_lags, n_prediction_iterations)
         X = np.repeat(X, num_samples, axis=0)
 
         predictions = []
-
-        # Without autoregression, n_prediction_iterations is 1,
-        # so internally the last dimension has been collapsed.
-        # Add a dummy dimension so the for loop works as expected
-        if X.ndim == 2:
-            X = X[:, :, np.newaxis]
-
-        if model.multi_models:
-            lags_output = np.array([i for i in range(model.output_chunk_length)])
-            t_pred_new = model.output_chunk_length
-        else:
-            lags_output = np.array([model.output_chunk_length - 1])
-            t_pred_new = 1
-
-        # TODO: remove?
-        # last_step_shift = 0
-        # t_pred = 0
-        # start_idx = 0
-
-        # forecasts = []
-        # forecast = None
+        t_pred = output_chunk_length if multi_models else 1
         for pred_idx in range(X.shape[-1]):
             # Select the X for the current forecast iteration
             current_X = X[:, :, pred_idx]
-            # if not model.multi_models:
-            #     # TODO: why can't we take stride directly?
-            #     # with multi-models we can directly take the stridden examples
-            #     current_X = current_X[::stride]
-
-            # current_X = np.repeat(current_X, num_samples, axis=0)
-
-            # TODO: remove?
-            # When predictions exist, we are either doing autoregression, or predicting multiple steps with
-            # multi_models=False
-            # We are also interested in filling current_X with previous predictions when we use target
-            # (so when model.lags contains "target")
-            # if predictions and "target" in model.lags:
-
-            # # Fill history is when we are doing autoregression
-            # fill_history = t_pred + 1 > model.output_chunk_length
-            #
-            # if fill_history:
-            #     lags_output = np.array([[i for i in range(model.output_chunk_length)]] * series_.n_components)
-            #     lags_output_adjust = lags_output - step
-            #     for comp_idx, (comp_lags, output_lags) in enumerate(zip(component_lags, lags_output_adjust)):
-            #         for lag_idx, lag in enumerate(comp_lags):
-            #             if lag in output_lags:
-            #
-            # # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
-            # if np.isnan(current_X).any():
-            #     # When we have NaN in current_X, we need to fill them
-            #     _, col = np.where(np.isnan(current_X))
-            #     col = np.unique(col)
-            #
-            #     if fill_history:
-            #         if model.multi_models:
-            #             # Flatten the forecasts as a 2D array for easier indexing
-            #             # Instead of having (n_series * n_samples, output_chunk_length, n_components),
-            #             # we have (n_series * n_samples, output_chunk_length * n_components)
-            #             # Because X is built the same way, so the indexing will be coherent
-            #             flattened_forecasts = forecasts.reshape(forecasts.shape[0], -1)
-            #             # Find which prediction steps we need to fill in current_X. It's the last len(col) steps
-            #             # but if last_step_shift > 0, we need to shift accordingly
-            #             slice_start = flattened_forecasts.shape[1] - (
-            #                 col.size + last_step_shift
-            #             )
-            #             slice_start = 0 if slice_start < 0 else slice_start
-            #             slice_end = slice_start + len(col)
-            #             slice_end = (
-            #                 flattened_forecasts.shape[1]
-            #                 if slice_end > flattened_forecasts.shape[1]
-            #                 else slice_end
-            #             )
-            #
-            #             # Fill the current X columns with the corresponding forecasts
-            #             current_X[:, col] = flattened_forecasts[
-            #                 :,
-            #                 slice_start:slice_end,
-            #             ].reshape(current_X[:, col].shape)
-            #         else:
-            #             # When not using multi_models, we predict one step at a time so we only need to
-            #             # shift the start_idx one by one each prediction iteration
-            #             flattened_forecasts = forecasts.reshape(forecasts.shape[0], -1)
-            #             current_X[:, col] = flattened_forecasts[
-            #                 :,
-            #                 start_idx : start_idx + col.size,
-            #             ].reshape(current_X[:, col].shape)
-            #         if col.size == len(model.lags["target"]) and forecast is not None:
-            #             start_idx += forecast.shape[-1]
-            #     else:
-            #         current_X[:, col] = forecasts.reshape(forecasts.shape[0], -1)[
-            #             :, : col.size
-            #         ].reshape(current_X[:, col].shape)
 
             # repeat rows for probabilistic forecast
             forecast = model._predict(
@@ -481,11 +202,7 @@ def _optimized_historical_forecasts_regression(
                 **predict_kwargs,
             )
 
-            # TODO, make it work for
-            #  - multi_models=False
-            # in case of auto-regression: update history of future X with forecast
-            # TODO: fix this for multi_models=False
-            # for auto_reg_idx in range(1 if model.multi_models else model.output_chunk_length, X.shape[-1] - pred_idx):
+            # in case of auto-regression: update history of future Xs with current forecast
             for auto_reg_idx in range(1, X.shape[-1] - pred_idx):
                 # get the future iteration's lagged features
                 next_X = X[:, :, pred_idx + auto_reg_idx]
@@ -519,14 +236,14 @@ def _optimized_historical_forecasts_regression(
                 forecast.reshape(
                     X.shape[0] // num_samples,
                     num_samples,
-                    model.output_chunk_length if model.multi_models else 1,
+                    output_chunk_length if multi_models else 1,
                     -1,
                 ),
                 1,
                 -1,
             )
 
-            if not model.multi_models and not is_auto_regression:
+            if not multi_models and not is_auto_regression:
                 # entire forecast horizon is given by multiple (previous) forecasts -> apply sliding window
                 forecast = sliding_window_view(
                     forecast[:, 0],
@@ -534,11 +251,11 @@ def _optimized_historical_forecasts_regression(
                 )
 
                 # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values
-                if forecast_horizon != model.output_chunk_length:
+                if forecast_horizon != output_chunk_length:
                     # Additional shift, to account for the model output_chunk_length
                     # used to convert the shift into the appropriate unit
                     forecast = forecast[
-                        : forecast_horizon - model.output_chunk_length : stride,
+                        : forecast_horizon - output_chunk_length : stride,
                         0,
                         0,
                         :forecast_horizon,
@@ -549,64 +266,24 @@ def _optimized_historical_forecasts_regression(
                 else:
                     forecast = forecast[::stride, 0, 0, :, :, :]
 
-            if t_pred_new % output_step == 0 or t_pred_new > forecast_horizon:
+            if t_pred % output_step == 0 or t_pred > forecast_horizon:
                 predictions.append(forecast[:, :forecast_horizon])
-            elif t_pred_new + model.output_chunk_shift == forecast_horizon:
+            elif t_pred + output_chunk_shift == forecast_horizon:
                 take_last_n = (
-                    forecast_horizon - model.output_chunk_shift
-                ) % model.output_chunk_length
+                    forecast_horizon - output_chunk_shift
+                ) % output_chunk_length
                 predictions.append(forecast[:, -take_last_n:])
 
-            # TODO: remove?
-            # elif pred_idx + 1 == X.shape[-1]:
-            #     last_step_shift = t_pred - (forecast_horizon - step)
-            #     d = 1
+            t_pred += step
 
-            # # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
-            # # we have to step back `step` from `n` in the last iteration
-            # if 0 < forecast_horizon - t_pred < step and t_pred > 0:
-            #     last_step_shift = t_pred - (forecast_horizon - step)
-            #     t_pred = forecast_horizon - step
-            t_pred_new += step
-
-            # TODO: remove?
-            # forecast = forecast[:, last_step_shift:, ...]
-            # predictions.append(forecast)
-            # t_pred += step
         forecast = np.concatenate(predictions, axis=1)
 
-        # TODO: remove?
-        # Cut up to forecast_horizon because we might have predicted to much in the last
-        # iteration (if step does not divide forecast_horizon)
-        # forecast = forecast[:, :forecast_horizon, :]
-
-        # bring into correct shape: (n_forecasts, n_components, n_samples)
-
-        # forecast = np.moveaxis(
-        #     forecast.reshape(
-        #         -1,
-        #         num_samples,
-        #         forecast_horizon,
-        #         len(forecast_components),
-        #     ),
-        #     1,
-        #     -1,
-        # )
-        # TODO: remove?
-        # # For multi-models, we need to apply the stride now, as we predicted all steps at once
-        # # For non-multi-models, we already applied the stride when building X
-        # if not is_simple_forecast:
-        #     forecast = forecast[::stride][:n_forecasts]
-        # else:
-        #     forecast = forecast[:n_forecasts]
-
-        # Construct TimeSeries objects
-        # Depending on last_points_only, either return only the last points of each forecast
+        # depending on last_points_only, either return only the last points of each forecast
         # or all forecasts as a list of TimeSeries
         if last_points_only:
             new_times = generate_index(
                 start=hist_fct_start
-                + (forecast_horizon + model.output_chunk_shift - 1) * freq,
+                + (forecast_horizon + output_chunk_shift - 1) * freq,
                 length=forecast.shape[0],
                 freq=freq * stride,
                 name=series_._time_index.name,
@@ -624,7 +301,7 @@ def _optimized_historical_forecasts_regression(
             forecasts_ = []
 
             new_times = generate_index(
-                start=hist_fct_start + model.output_chunk_shift * series_.freq,
+                start=hist_fct_start + output_chunk_shift * series_.freq,
                 length=forecast_horizon + (forecast.shape[0] - 1) * stride,
                 freq=freq,
                 name=series_._time_index.name,

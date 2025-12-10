@@ -323,12 +323,6 @@ def create_lagged_data(
             logger=logger,
         )
 
-    # Setup values used for autoregression
-    if not isinstance(output_chunk_length, int) or output_chunk_length < 1:
-        raise_log(
-            ValueError("`output_chunk_length` must be a positive `int`."),
-            logger=logger,
-        )
     if forecast_horizon is None:
         forecast_horizon = output_chunk_length
     if step is None:
@@ -398,8 +392,7 @@ def create_lagged_data(
                 logger,
             )
 
-        # TODO: remove?
-        # target_i_old = copy.deepcopy(target_i)
+        # add values to end of target series, to get all examples for auto-regression
         if target_i and is_auto_regression:
             target_i = target_i.append_values(
                 [[np.nan] * target_i.shape[1]]
@@ -451,7 +444,6 @@ def create_lagged_data(
             last_shape=last_static_covariates_shape,
         )
 
-        # TODO: step and output_chunk_length are a bit ambiguous
         if is_auto_regression:
             # auto-regression requires updating X matrices; stack in last dimension
             X_i_array = []
@@ -467,82 +459,6 @@ def create_lagged_data(
             X_i_array = np.concatenate(X_i_array, axis=-1)
         else:
             X_i_array = X_i
-
-        # # variables for autoregression
-        # X_i_array = []
-        # target_i = target_i_old
-        # for t_pred in range(0, forecast_horizon, step):
-        #     # in case of autoregressive forecast `(t_pred > 0)` and if `n` is not a round multiple of `step`,
-        #     # we have to step back `step` from `n` in the last iteration
-        #     if 0 < forecast_horizon - t_pred < step and t_pred > 0:
-        #         t_pred = forecast_horizon - step
-        #
-        #     # append NaN values to target series for autoregressive prediction
-        #     if target_i and t_pred > 0:
-        #         target_i = target_i.append_values(
-        #             [[np.nan] * target_i.shape[1]] * t_pred
-        #         )
-        #     if use_moving_windows and series_equal_freq:
-        #         X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
-        #             target_series=target_i,
-        #             output_chunk_length=output_chunk_length,
-        #             output_chunk_shift=output_chunk_shift,
-        #             past_covariates=past_i,
-        #             future_covariates=future_i,
-        #             sample_weight=sample_weight_i,
-        #             lags=lags,
-        #             lags_past_covariates=lags_past_covariates,
-        #             lags_future_covariates=lags_future_covariates,
-        #             lags_extract=lags_extract,
-        #             lags_order=lags_order,
-        #             max_samples_per_ts=max_samples_per_ts,
-        #             multi_models=multi_models,
-        #             check_inputs=check_inputs,
-        #             is_training=is_training,
-        #             stride=stride,
-        #             offset=t_pred,
-        #             show_warnings=show_warnings,
-        #         )
-        #     else:
-        #         # TODO maybe need to add t_pred below as well
-        #         X_i, y_i, times_i, weights_i = (
-        #             _create_lagged_data_by_intersecting_times(
-        #                 target_series=target_i,
-        #                 output_chunk_length=output_chunk_length,
-        #                 output_chunk_shift=output_chunk_shift,
-        #                 past_covariates=past_i,
-        #                 future_covariates=future_i,
-        #                 sample_weight=sample_weight_i,
-        #                 lags=lags,
-        #                 lags_past_covariates=lags_past_covariates,
-        #                 lags_future_covariates=lags_future_covariates,
-        #                 max_samples_per_ts=max_samples_per_ts,
-        #                 multi_models=multi_models,
-        #                 check_inputs=check_inputs,
-        #                 is_training=is_training,
-        #                 stride=stride,
-        #                 show_warnings=show_warnings,
-        #             )
-        #         )
-        #
-        #     X_i, last_static_covariates_shape = add_static_covariates_to_lagged_data(
-        #         features=X_i,
-        #         target_series=target_i,
-        #         uses_static_covariates=uses_static_covariates,
-        #         last_shape=last_static_covariates_shape,
-        #     )
-        #     X_i_array.append(X_i)
-        #
-        # if len(X_i_array) > 1:
-        #     min_forecast_len = min(X_i_part.shape[0] for X_i_part in X_i_array)
-        #     X_i_array = np.stack(
-        #         [array[:min_forecast_len] for array in X_i_array], axis=-1
-        #     )
-        # else:
-        #     X_i_array = X_i_array[0]
-        #
-        # # TODO: remove duplicated logic
-        # np.testing.assert_array_almost_equal(X_i_array_, X_i_array)
 
         X.append(X_i_array)
         y.append(y_i)
@@ -1201,7 +1117,6 @@ def _create_lagged_data_by_moving_window(
     is_training: bool,
     stride: int,
     show_warnings: bool = True,
-    offset: int = 0,
 ) -> tuple[np.ndarray, Optional[np.ndarray], pd.Index, Optional[np.ndarray]]:
     """
     Helper function called by `create_lagged_data` that computes `X`, `y`, and `times` by
@@ -1301,15 +1216,12 @@ def _create_lagged_data_by_moving_window(
             # by `stride` position each time; to create `(num_samples - 1)` more windows
             # in addition to the first window, need to take `(num_samples - 1) * stride`
             # values after `first_window_end_idx`:
-
             vals = series_i.all_values(copy=False)[
-                first_window_start_idx + offset : first_window_end_idx
-                + offset
+                first_window_start_idx : first_window_end_idx
                 + (num_samples - 1) * stride,
                 :,
                 :,
             ]
-
             windows = strided_moving_window(
                 x=vals, window_len=window_len, stride=stride, axis=0, check_inputs=False
             )
@@ -1321,15 +1233,11 @@ def _create_lagged_data_by_moving_window(
             lagged_vals = _extract_lagged_vals_from_windows(
                 windows, lags_extract_i, lags_shift=min_lag_i - 1
             )
-            series_vals = lagged_vals[:, lags_order_i]
             # extract and append the reordered lagged values
-            X.append(series_vals)
+            X.append(lagged_vals[:, lags_order_i])
         # Cache `start_time_idx` for label creation:
         if is_target_series:
             target_start_time_idx = start_time_idx
-
-    num_windows = min([x.shape[0] for x in X])
-    X = [x[:num_windows, :, :] for x in X]
     X = np.concatenate(X, axis=1)
     # Construct labels array `y`:
     if is_training:
