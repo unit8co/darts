@@ -457,7 +457,7 @@ def create_lagged_data(
             X_i_array = []
             for start_idx, t_pred in enumerate(
                 range(
-                    output_chunk_length + output_chunk_shift,
+                    (output_chunk_length if multi_models else 1) + output_chunk_shift,
                     forecast_horizon + step,
                     step,
                 )
@@ -747,6 +747,7 @@ def create_lagged_prediction_data(
     concatenate: bool = True,
     stride: int = 1,
     show_warnings: bool = True,
+    multi_models: bool = True,
     forecast_horizon: Optional[int] = None,
     step: Optional[int] = None,
 ) -> tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
@@ -879,6 +880,7 @@ def create_lagged_prediction_data(
         show_warnings=show_warnings,
         forecast_horizon=forecast_horizon,
         step=step,
+        multi_models=multi_models,
     )
     return X, times
 

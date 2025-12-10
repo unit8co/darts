@@ -3980,32 +3980,20 @@ class TestSKLearnModels:
                 + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
                 + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
             ),
+            [True, False],  # multi_models
+            [True, False],  # last_points_only
+            [True, False],  # multivariate
             [
-                # True,
-                False
-            ],  # multi_models
-            [
-                # True,
-                False
-            ],  # last_points_only
-            [
-                # True,
-                False
-            ],  # multivariate
-            [
-                # 1,
-                # 3,
+                1,
+                3,
                 5,
             ],  # forecast_horizon
             [
-                # 1,
-                2,
-                # 3,
-            ],  # output_chunk_length
-            [
                 1,
-                # 2
-            ],  # stride
+                2,
+                3,
+            ],  # output_chunk_length
+            [1, 2],  # stride
             [0, 1, 2],  # start
         ),
     )

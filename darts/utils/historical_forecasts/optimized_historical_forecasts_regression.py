@@ -8,15 +8,13 @@ from typing import Any, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
+from numpy.lib.stride_tricks import sliding_window_view
 
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.utils import _build_tqdm_iterator
 from darts.utils.data.tabularization import create_lagged_prediction_data
-from darts.utils.historical_forecasts.utils import (
-    _get_historical_forecast_boundaries,
-    _process_predict_start_points_bounds,
-)
+from darts.utils.historical_forecasts.utils import _get_historical_forecast_boundaries
 from darts.utils.ts_utils import get_single_series
 from darts.utils.utils import generate_index
 
@@ -305,23 +303,6 @@ def _optimized_historical_forecasts_regression(
             show_warnings=show_warnings,
         )
 
-        # latest possible prediction start is one time step after end of target series
-        if hist_fct_start > series_.end_time():
-            left_bound = len(series_)
-        else:
-            left_bound = series_.get_index_at_point(hist_fct_start)
-
-        if hist_fct_end > series_.end_time():
-            right_bound = len(series_)
-        else:
-            right_bound = series_.get_index_at_point(hist_fct_end)
-
-        bounds_array, cum_lengths = _process_predict_start_points_bounds(
-            series=[series_],
-            bounds=np.array([[left_bound, right_bound]]),
-            stride=stride,
-        )
-
         # n_forecasts = cum_lengths[0]
         # TODO: remove?
         # TODO: update comment and explain
@@ -331,6 +312,10 @@ def _optimized_historical_forecasts_regression(
             is_simple_forecast = True
         else:
             is_simple_forecast = False
+
+        is_auto_regression = (
+            forecast_horizon > model.output_chunk_length + model.output_chunk_shift
+        )
 
         # In case of multi-models, we predict all steps at once so autoregression is done
         # output_chunk_length by output_chunk_length. Without multi-models,
@@ -376,6 +361,7 @@ def _optimized_historical_forecasts_regression(
             use_moving_windows=True,
             concatenate=False,
             show_warnings=False,
+            multi_models=model.multi_models,
             forecast_horizon=forecast_horizon,
             step=step,
         )
@@ -383,12 +369,9 @@ def _optimized_historical_forecasts_regression(
         # -> (n_forecasts, n_lags, n_prediction_iterations)
         X = X[0][:, :, 0]
 
-        # TODO: directly?
         # # stride can be applied directly without auto-regression, or when forecast horizon is a
-        # # round-multiple of output chunk length
-        # if is_simple_forecast:
-        #     X = X[::stride]
-        X = X[::stride]
+        if model.multi_models or is_auto_regression:
+            X = X[::stride]
 
         # Try new:
         # -> (n_forecasts * n_samples, n_lags, n_prediction_iterations)
@@ -402,22 +385,13 @@ def _optimized_historical_forecasts_regression(
         if X.ndim == 2:
             X = X[:, :, np.newaxis]
 
-        # TODO: remove?
-        # Trick to fix with stride, because NaN are in X at the end of the series, but
-        # with stride, we might not get NaN in current_X, so we manually set the relevant
-        # columns to NaN so that they get filled with previous predictions
-        # TODO: does not work yet with multivariate target
-        if not model.multi_models and "target" in model.lags:
-            offset_idx = 1
-            end_idx = len(model.lags["target"])
-            for i in range(model.output_chunk_length, X.shape[-1]):
-                start_idx = end_idx - offset_idx
-                X[:, start_idx:end_idx, i] = np.nan
-                offset_idx += 1
+        if model.multi_models:
+            lags_output = np.array([i for i in range(model.output_chunk_length)])
+            t_pred_new = model.output_chunk_length
+        else:
+            lags_output = np.array([model.output_chunk_length - 1])
+            t_pred_new = 1
 
-        lags_output = np.array([i for i in range(model.output_chunk_length)])
-
-        t_pred_new = model.output_chunk_length
         # TODO: remove?
         # last_step_shift = 0
         # t_pred = 0
@@ -510,6 +484,8 @@ def _optimized_historical_forecasts_regression(
             # TODO, make it work for
             #  - multi_models=False
             # in case of auto-regression: update history of future X with forecast
+            # TODO: fix this for multi_models=False
+            # for auto_reg_idx in range(1 if model.multi_models else model.output_chunk_length, X.shape[-1] - pred_idx):
             for auto_reg_idx in range(1, X.shape[-1] - pred_idx):
                 # get the future iteration's lagged features
                 next_X = X[:, :, pred_idx + auto_reg_idx]
@@ -549,6 +525,29 @@ def _optimized_historical_forecasts_regression(
                 1,
                 -1,
             )
+
+            if not model.multi_models and not is_auto_regression:
+                # entire forecast horizon is given by multiple (previous) forecasts -> apply sliding window
+                forecast = sliding_window_view(
+                    forecast[:, 0],
+                    (forecast_horizon, len(forecast_components), num_samples),
+                )
+
+                # apply stride, remove the last windows, slice output_chunk_length to keep forecast_horizon values
+                if forecast_horizon != model.output_chunk_length:
+                    # Additional shift, to account for the model output_chunk_length
+                    # used to convert the shift into the appropriate unit
+                    forecast = forecast[
+                        : forecast_horizon - model.output_chunk_length : stride,
+                        0,
+                        0,
+                        :forecast_horizon,
+                        :,
+                        :,
+                    ]
+                # apply stride
+                else:
+                    forecast = forecast[::stride, 0, 0, :, :, :]
 
             if t_pred_new % output_step == 0 or t_pred_new > forecast_horizon:
                 predictions.append(forecast[:, :forecast_horizon])
