@@ -85,7 +85,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
         train_sample_shape: Optional[tuple] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         torch_metrics: Optional[
-            Union[torchmetrics.Metric, torchmetrics.MetricCollection]
+            Union[
+                torchmetrics.Metric,
+                torchmetrics.MetricCollection,
+                Sequence[Union[torchmetrics.Metric, torchmetrics.MetricCollection]],
+                dict[str, Union[torchmetrics.Metric, torchmetrics.MetricCollection]],
+            ]
         ] = None,
         likelihood: Optional[TorchLikelihood] = None,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
@@ -130,8 +135,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
+            A ``torchmetric.Metric`` or a ``MetricCollection`` used for evaluation. A full list of available metrics
+            can be found `here <https://torchmetrics.readthedocs.io/en/latest/>`__. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
@@ -799,20 +804,14 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @staticmethod
     def configure_torch_metrics(
-        torch_metrics: Union[torchmetrics.Metric, torchmetrics.MetricCollection],
+        torch_metrics: Union[
+            torchmetrics.Metric,
+            torchmetrics.MetricCollection,
+            Sequence[Union[torchmetrics.Metric, torchmetrics.MetricCollection]],
+            dict[str, Union[torchmetrics.Metric, torchmetrics.MetricCollection]],
+        ],
     ) -> torchmetrics.MetricCollection:
         """process the torch_metrics parameter."""
-        if torch_metrics is None:
-            torch_metrics = torchmetrics.MetricCollection([])
-        elif isinstance(torch_metrics, torchmetrics.Metric):
-            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
-        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
-            pass
-        else:
-            raise_log(
-                AttributeError(
-                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
-                ),
-                logger,
-            )
-        return torch_metrics
+        return torchmetrics.MetricCollection(
+            torch_metrics if torch_metrics is not None else []
+        )
