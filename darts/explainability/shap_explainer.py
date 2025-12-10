@@ -775,6 +775,7 @@ class _RegressionShapExplainers:
             ),
             uses_static_covariates=self.model.uses_static_covariates,
             last_static_covariates_shape=self.model._static_covariates_shape,
+            multi_models=self.model.multi_models,
         )
         # Remove sample axis:
         X = X[:, :, 0]
