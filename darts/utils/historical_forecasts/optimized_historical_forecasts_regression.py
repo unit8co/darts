@@ -53,23 +53,32 @@ def _optimized_historical_forecasts_regression(
     output_chunk_length = model.output_chunk_length
     output_chunk_shift = model.output_chunk_shift
 
-    # # TODO: make this better
-    # prepare index to reorder features by lags across components
-    if "target" in model.component_lags:
-        component_lags = [
-            comp_lags for comp_lags in model.component_lags["target"].values()
-        ]
+    # get target lags and X positions for auto-regression
+    if model._get_lags("target") is not None:
+        if "target" in model.component_lags:
+            target_lags = model.component_lags["target"].values()
+        else:
+            target_lags = [model.lags["target"]] * get_single_series(
+                series
+            ).n_components
+
+        # map which target component lag belongs to which position in X
+        counter = 0
+        target_lag_positions = [[] for _ in range(len(target_lags))]
+        for lag in range(min(model.lags["target"]), max(model.lags["target"]) + 1):
+            for comp_idx, comp_lags in enumerate(target_lags):
+                if lag in comp_lags:
+                    target_lag_positions[comp_idx].append(counter)
+                    counter += 1
     else:
-        component_lags = [model.lags["target"]] * get_single_series(series).n_components
-    component_lags_reordered = np.concatenate(component_lags).argsort(
-        **_STABLE_SORT_KWARGS
-    )
+        target_lags, target_lag_positions = [], []
 
     # get the output lags
     if multi_models:
         lags_output = np.array([i for i in range(output_chunk_length)])
     else:
         lags_output = np.array([output_chunk_length - 1])
+    lags_output += output_chunk_shift
 
     predict_kwargs = predict_kwargs or {}
     forecasts_list = []
@@ -211,18 +220,18 @@ def _optimized_historical_forecasts_regression(
                 lags_output_adjust = lags_output - (step * auto_reg_idx)
 
                 # find matches between forecasted components and component-specific lags of the future iteration
-                counter = 0
                 take_y_indices = []
                 update_x_indices = []
-                for comp_idx, comp_lags in enumerate(component_lags):
+                for comp_idx, comp_lags in enumerate(target_lags):
                     for lag_idx, lag in enumerate(comp_lags):
                         y_pos = np.argwhere(lags_output_adjust == lag)
                         if len(y_pos) > 0:
-                            update_x_indices.append(component_lags_reordered[counter])
+                            update_x_indices.append(
+                                target_lag_positions[comp_idx][lag_idx]
+                            )
                             take_y_indices.append(
                                 comp_idx + y_pos[0, 0] * series_.n_components
                             )
-                        counter += 1
 
                 # update future X with current matched predictions
                 next_X[:, update_x_indices] = forecast.reshape(forecast.shape[0], -1)[
