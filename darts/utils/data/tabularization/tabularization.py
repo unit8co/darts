@@ -455,7 +455,7 @@ def create_lagged_data(
                 )
             ):
                 end = -(forecast_horizon - t_pred) or None
-                X_i_array.append(X_i[start_idx:end, :, :, np.newaxis])
+                X_i_array.append(X_i[start_idx * step : end, :, :, np.newaxis])
             X_i_array = np.concatenate(X_i_array, axis=-1)
         else:
             X_i_array = X_i

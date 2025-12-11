@@ -3985,7 +3985,7 @@ class TestSKLearnModels:
             [True, False],  # multivariate
             [
                 1,
-                3,
+                4,
                 5,
             ],  # forecast_horizon
             [
