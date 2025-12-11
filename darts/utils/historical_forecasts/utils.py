@@ -1326,7 +1326,6 @@ def _process_historical_forecast_input(
     past_covariates: Optional[Sequence[TimeSeries]] = None,
     future_covariates: Optional[Sequence[TimeSeries]] = None,
     forecast_horizon: int = 1,
-    allow_autoregression: bool = False,
 ) -> Union[
     Sequence[TimeSeries],
     Optional[Sequence[TimeSeries]],
@@ -1335,15 +1334,6 @@ def _process_historical_forecast_input(
     if not model._fit_called:
         raise_log(
             ValueError("Model has not been fit yet."),
-            logger,
-        )
-
-    if not allow_autoregression and forecast_horizon > model.output_chunk_length:
-        raise_log(
-            ValueError(
-                "`forecast_horizon > model.output_chunk_length` requires auto-regression which is not "
-                "supported in this optimized routine."
-            ),
             logger,
         )
 

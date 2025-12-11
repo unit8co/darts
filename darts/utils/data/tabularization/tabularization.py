@@ -51,7 +51,7 @@ def create_lagged_data(
     stride: int = 1,
     show_warnings: bool = True,
     forecast_horizon: Optional[int] = None,
-    step: Optional[int] = None,
+    roll_size: Optional[int] = None,
 ) -> tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
@@ -257,12 +257,11 @@ def create_lagged_data(
     show_warnings
         Whether to show warnings.
     forecast_horizon
-        Optionally, the total forecast horizon for autoregressive prediction. Only used when `is_training = False`.
-        If not specified, it defaults to `output_chunk_length`.
-    step
-        The number of time steps to forecast in each iteration. Only used when `is_training = False`.
-        If not specified, it defaults to `model.output_chunk_length`. Usually, if `multi_models = True`,
-        `step` will be equal to `output_chunk_length`. If `multi_models = False`, `step` will usually be `1`.
+        Optionally, the total forecast horizon for prediction. Only used when `is_training = False`. If not specified,
+        defaults to `output_chunk_length`.
+    roll_size
+        The number of time steps to roll ahead between two consecutive forecast iteration (e.g. for auto-regression).
+        Only effective with `is_training = False`. If not specified, defaults to `output_chunk_length`.
 
     Returns
     -------
@@ -270,7 +269,7 @@ def create_lagged_data(
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
         In case of autoregressive prediction (`forecast_horizon > output_chunk_length`), `X` is of shape
         `(n_observations, n_lagged_features, n_samples, n_prediction_iterations)` where
-        `n_prediction_iterations = ceil(forecast_horizon / step)`.
+        `n_prediction_iterations = ceil(forecast_horizon / roll_size)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     y
@@ -325,8 +324,8 @@ def create_lagged_data(
 
     if forecast_horizon is None:
         forecast_horizon = output_chunk_length
-    if step is None:
-        step = output_chunk_length
+    if roll_size is None:
+        roll_size = output_chunk_length
 
     # ensure list of TimeSeries format
     target_series = series2seq(target_series)
@@ -392,12 +391,13 @@ def create_lagged_data(
                 logger,
             )
 
-        # add values to end of target series, to get all examples for auto-regression
         if target_i and is_auto_regression:
-            target_i = target_i.append_values(
+            # add values to end of target series, to get all examples for auto-regression
+            nan_values = np.array(
                 [[np.nan] * target_i.shape[1]]
                 * (forecast_horizon - (output_chunk_length + output_chunk_shift))
             )
+            target_i = target_i.append_values(nan_values)
 
         if use_moving_windows and series_equal_freq:
             X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
@@ -450,12 +450,12 @@ def create_lagged_data(
             for start_idx, t_pred in enumerate(
                 range(
                     (output_chunk_length if multi_models else 1) + output_chunk_shift,
-                    forecast_horizon + step,
-                    step,
+                    forecast_horizon + roll_size,
+                    roll_size,
                 )
             ):
                 end = -(forecast_horizon - t_pred) or None
-                X_i_array.append(X_i[start_idx * step : end, :, :, np.newaxis])
+                X_i_array.append(X_i[start_idx * roll_size : end, :, :, np.newaxis])
             X_i_array = np.concatenate(X_i_array, axis=-1)
         else:
             X_i_array = X_i
@@ -665,7 +665,7 @@ def create_lagged_prediction_data(
     show_warnings: bool = True,
     multi_models: bool = True,
     forecast_horizon: Optional[int] = None,
-    step: Optional[int] = None,
+    roll_size: Optional[int] = None,
 ) -> tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
     """
     Creates the features array `X` to produce a series of prediction from an already-trained `SKLearnModel`; the
@@ -739,13 +739,16 @@ def create_lagged_prediction_data(
         be used with caution as it will cause gaps in the forecasts.
     show_warnings
         Whether to show warnings.
+    multi_models
+        Optionally, specifies whether the `SKLearnModel` predicts multiple time steps into the future. If `True`,
+        then the `SKLearnModel` is assumed to predict all time steps from time `t` to `t+output_chunk_length`.
+        If `False`, then the `SKLearnModel` is assumed to predict *only* the time step at `t+output_chunk_length`.
     forecast_horizon
-        Optionally, the total forecast horizon for autoregressive prediction. Only used when `is_training = False`.
-        If not specified, it defaults to `output_chunk_length`.
-    step
-        The number of time steps to forecast in each iteration. Only used when `is_training = False`.
-        If not specified, it defaults to `model.output_chunk_length`. Usually, if `multi_models = True`,
-        `step` will be equal to `output_chunk_length`. If `multi_models = False`, `step` will usually be `1`.
+        Optionally, the total forecast horizon for prediction. If not specified, defaults to `output_chunk_length`.
+    roll_size
+        The number of time steps to roll ahead between two consecutive forecast iteration (e.g. for auto-regression).
+        If not specified, defaults to `output_chunk_length`.
+    multi_models
 
 
     Returns
@@ -754,7 +757,7 @@ def create_lagged_prediction_data(
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
         In case of autoregressive prediction (`forecast_horizon > output_chunk_length`), `X` is of shape
         `(n_observations, n_lagged_features, n_samples, n_prediction_iterations)` where
-        `n_prediction_iterations = ceil(forecast_horizon / step)`.
+        `n_prediction_iterations = ceil(forecast_horizon / roll_size)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     times
@@ -795,7 +798,7 @@ def create_lagged_prediction_data(
         stride=stride,
         show_warnings=show_warnings,
         forecast_horizon=forecast_horizon,
-        step=step,
+        roll_size=roll_size,
         multi_models=multi_models,
     )
     return X, times

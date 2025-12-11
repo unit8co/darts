@@ -2521,7 +2521,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
-            allow_autoregression=True,
         )
         forecasts_list = _optimized_historical_forecasts(
             model=self,

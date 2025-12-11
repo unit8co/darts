@@ -1551,7 +1551,6 @@ class SKLearnModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
-            allow_autoregression=True,
         )
 
         hfc = _optimized_historical_forecasts_regression(
