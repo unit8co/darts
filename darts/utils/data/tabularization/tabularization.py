@@ -326,6 +326,19 @@ def create_lagged_data(
         forecast_horizon = output_chunk_length
     if roll_size is None:
         roll_size = output_chunk_length
+    is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
+
+    if (
+        is_auto_regression
+        and (forecast_horizon - (output_chunk_length + output_chunk_shift)) % roll_size
+        > 0
+    ):
+        raise_log(
+            ValueError(
+                "`roll_size` must allow auto-regressive forecast to end exactly at `forecast_horizon`."
+            ),
+            logger=logger,
+        )
 
     # ensure list of TimeSeries format
     target_series = series2seq(target_series)
@@ -364,8 +377,6 @@ def create_lagged_data(
 
     if max_samples_per_ts is None:
         max_samples_per_ts = inf
-
-    is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
 
     # lags are identical for multiple series: pre-compute lagged features and reordered lagged features
     lags_extract, lags_order = _get_lagged_indices(

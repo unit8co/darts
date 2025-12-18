@@ -1292,32 +1292,12 @@ def _get_historical_forecast_boundaries(
 
 
 def _check_optimizable_historical_forecasts_global_models(
-    model,
-    forecast_horizon: int,
     retrain: Union[bool, int, Callable[..., bool]],
-    show_warnings: bool,
-    allow_autoregression: bool,
 ) -> bool:
     """
-    Historical forecast can be optimized only if `retrain=False`. If `allow_autoregression=False`, historical forecasts
-    can be optimized only if `forecast_horizon <= model.output_chunk_length` (no auto-regression required).
+    Historical forecast can be optimized only if `retrain=False`.
     """
-
-    retrain_off = (retrain is False) or (retrain == 0)
-    is_autoregressive = forecast_horizon > model.output_chunk_length
-    if retrain_off and (
-        not is_autoregressive or (is_autoregressive and allow_autoregression)
-    ):
-        return True
-
-    if show_warnings:
-        if is_autoregressive:
-            logger.warning(
-                "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`. "
-                "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
-            )
-
-    return False
+    return (retrain is False) or (retrain == 0)
 
 
 def _process_historical_forecast_input(
