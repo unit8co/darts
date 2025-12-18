@@ -1327,14 +1327,24 @@ class TestCreateLaggedPredictionData:
         shifted feature values.
         """
         roll_size, ocl, ocs, lags, is_multivariate, use_covs, multi_models = config
-        ocl = 3
+
+        if not multi_models and roll_size != 1:
+            # roll_size must be 1 for multi_models=False, roll_size validity is checked in upcoming tests
+            return
+
         expected_forecast_examples = 10
         expected_iterations = 3
 
+        # `multi_models=False` requires additional iterations at the start to compute all
+        # forecasted values up until output_chunk_length
+        if not multi_models:
+            add_steps = ocl - 1
+        else:
+            add_steps = 0
         # Target with distinct values for easy verification
         target = linear_timeseries(
             start=0,
-            length=expected_forecast_examples + max(lags) - min(lags),
+            length=expected_forecast_examples + max(lags) - min(lags) + add_steps,
             start_value=0,
             end_value=9,
         )
@@ -1343,6 +1353,8 @@ class TestCreateLaggedPredictionData:
 
         # forecast_horizon must be divisible such that (forecast_horizon - ocl) % roll_size == 0
         forecast_horizon = ocl + ocs + roll_size * (expected_iterations - 1)
+        # potentially, adjust for multi_models=False
+        expected_iterations += add_steps
 
         # optionally, add long enough future covariates for auto-regression
         fc, lags_fc = None, None
@@ -1370,9 +1382,16 @@ class TestCreateLaggedPredictionData:
                 lags=lags,
                 lags_future_covariates=lags_fc,
                 uses_static_covariates=False,
+                multi_models=multi_models,
             )
+
+            # multi_models=False requires a sliding window because it needs to step back to generate first
+            # prediction step < output_chunk_length
+            if not multi_models:
+                X_direct = X_direct[:expected_forecast_examples]
+
             # should only have 3 dimensions
-            assert len(X_direct) == expected_forecast_examples
+            assert len(X_direct) == 10
             assert X_direct.ndim == 3
             expected_X.append(X_direct[:, :, :, np.newaxis])
 
@@ -1394,6 +1413,7 @@ class TestCreateLaggedPredictionData:
             uses_static_covariates=False,
             forecast_horizon=forecast_horizon,
             roll_size=roll_size,
+            multi_models=multi_models,
         )
         # extra dimension for autoregressive iterations
         assert X.ndim == 4
