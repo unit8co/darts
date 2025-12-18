@@ -325,20 +325,28 @@ def create_lagged_data(
     if forecast_horizon is None:
         forecast_horizon = output_chunk_length
     if roll_size is None:
-        roll_size = output_chunk_length
+        roll_size = output_chunk_length if multi_models else 1
+
     is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
 
-    if (
-        is_auto_regression
-        and (forecast_horizon - (output_chunk_length + output_chunk_shift)) % roll_size
-        > 0
-    ):
-        raise_log(
-            ValueError(
-                "`roll_size` must allow auto-regressive forecast to end exactly at `forecast_horizon`."
-            ),
-            logger=logger,
-        )
+    if is_auto_regression:
+        if not multi_models and roll_size != 1:
+            raise_log(
+                ValueError(
+                    "`roll_size` must be `1` for auto-regression with `multi_models=False`."
+                ),
+                logger=logger,
+            )
+
+        if (
+            forecast_horizon - (output_chunk_length + output_chunk_shift)
+        ) % roll_size > 0:
+            raise_log(
+                ValueError(
+                    "`roll_size` must allow autoregressive forecast to end exactly at `forecast_horizon`."
+                ),
+                logger=logger,
+            )
 
     # ensure list of TimeSeries format
     target_series = series2seq(target_series)

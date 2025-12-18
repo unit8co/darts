@@ -1252,3 +1252,222 @@ class TestCreateLaggedPredictionData:
                     "`lags` was specified without accompanying "
                     "`target_series` and, thus, will be ignored."
                 )
+
+    #
+    #   Auto-Regression Tests
+    #
+
+    @pytest.mark.parametrize("roll_size", [1, 2])
+    def test_lagged_prediction_data_autoregression_x_matrix(self, roll_size):
+        """
+        Tests that `create_lagged_prediction_data` correctly constructs the X matrix
+        for auto-regressive predictions (when forecast_horizon > output_chunk_length).
+
+        The X matrix should have shape (n_observations, n_lagged_features, n_samples, n_iterations)
+        where n_iterations = ceil(forecast_horizon / roll_size).
+        """
+        # Simple target series: values 0.0 to 5.0
+        target = linear_timeseries(start=0, length=6, start_value=0, end_value=5)
+        lags = [-1]
+        output_chunk_length = 2
+        forecast_horizon = 4
+
+        # Calculate expected number of iterations
+        # range((ocl if multi_models else 1), forecast_horizon + roll_size, roll_size)
+        n_iterations = len(
+            range(output_chunk_length, forecast_horizon + roll_size, roll_size)
+        )
+
+        X, times = create_lagged_prediction_data(
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=0,
+            target_series=target,
+            lags=lags,
+            uses_static_covariates=False,
+            forecast_horizon=forecast_horizon,
+            roll_size=roll_size,
+        )
+
+        # Check that X has 4 dimensions (auto-regression mode)
+        assert X.ndim == 4, f"Expected 4D array for auto-regression, got {X.ndim}D"
+
+        # Check the last dimension equals the number of iterations
+        assert X.shape[-1] == n_iterations, (
+            f"Expected {n_iterations} iterations, got {X.shape[-1]}"
+        )
+
+        # Verify shape: (n_observations, n_features, n_samples, n_iterations)
+        # With lags=[-1], we have 1 feature per observation
+        assert X.shape[1] == 1, f"Expected 1 feature, got {X.shape[1]}"
+        assert X.shape[2] == 1, f"Expected 1 sample, got {X.shape[2]}"
+
+        # Verify the values in each iteration slice
+        # First iteration should use the original target values
+        # Later iterations will include NaN values (representing predicted values to be filled)
+        first_iter_X = X[:, :, :, 0]
+        assert not np.any(np.isnan(first_iter_X)), (
+            "First iteration should not have NaN values"
+        )
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            [1, 2, 3],  # roll_size
+            [2, 3, 5],  # output_chunk_length
+            [0, 1],  # output_chunk_shift
+            [[-1], [-4, -3, -2]],  # target lags
+            [False, True],  # multivariate series
+            [False, True],  # use covariates
+            [True, False],  # multi_models
+        ),
+    )
+    def test_lagged_prediction_data_autoregression_iteration_values(self, config):
+        """
+        Tests that each iteration of the auto-regressive X matrix contains the correct
+        shifted feature values.
+        """
+        roll_size, ocl, ocs, lags, is_multivariate, use_covs, multi_models = config
+        ocl = 3
+        expected_forecast_examples = 10
+        expected_iterations = 3
+
+        # Target with distinct values for easy verification
+        target = linear_timeseries(
+            start=0,
+            length=expected_forecast_examples + max(lags) - min(lags),
+            start_value=0,
+            end_value=9,
+        )
+        if is_multivariate:
+            target = target.stack(target)
+
+        # forecast_horizon must be divisible such that (forecast_horizon - ocl) % roll_size == 0
+        forecast_horizon = ocl + ocs + roll_size * (expected_iterations - 1)
+
+        # optionally, add long enough future covariates for auto-regression
+        fc, lags_fc = None, None
+        if use_covs:
+            fc = target.append_values(
+                [[1.0] * target.n_components] * (forecast_horizon + abs(max(lags)) - 1)
+            )
+            lags_fc = lags + [ocl - 1]
+
+        # construct all expected X matrices by rolling through the series and appending nans at the end
+        expected_X = []
+        for roll_step in range(0, expected_iterations * roll_size, roll_size):
+            if roll_step > 0:
+                target_current = target.append_values(
+                    np.array([[np.nan] * target.n_components] * roll_step)
+                )[roll_step:]
+            else:
+                target_current = target
+
+            X_direct, _ = create_lagged_prediction_data(
+                output_chunk_length=ocl,
+                output_chunk_shift=ocs,
+                target_series=target_current,
+                future_covariates=fc,
+                lags=lags,
+                lags_future_covariates=lags_fc,
+                uses_static_covariates=False,
+            )
+            # should only have 3 dimensions
+            assert len(X_direct) == expected_forecast_examples
+            assert X_direct.ndim == 3
+            expected_X.append(X_direct[:, :, :, np.newaxis])
+
+            # tabularization correctness is already checked in previous tests;
+            # here just a simple sanity check that the last iteration contains some missing values
+            if roll_step == (expected_iterations - 1) * roll_size:
+                assert np.isnan(X_direct).any()
+
+        expected_X = np.concatenate(expected_X, axis=-1)
+
+        # with auto-regression
+        X, _ = create_lagged_prediction_data(
+            output_chunk_length=ocl,
+            output_chunk_shift=ocs,
+            target_series=target,
+            future_covariates=fc,
+            lags=lags,
+            lags_future_covariates=lags_fc,
+            uses_static_covariates=False,
+            forecast_horizon=forecast_horizon,
+            roll_size=roll_size,
+        )
+        # extra dimension for autoregressive iterations
+        assert X.ndim == 4
+
+        # Should have 3 iterations: initial + 2 autoregressive rolls
+        assert X.shape[-1] == expected_iterations
+
+        np.testing.assert_array_equal(X, expected_X)
+
+    def test_lagged_prediction_data_autoregression_invalid_roll_size(self):
+        """
+        Tests invalid roll_size values.
+        """
+        target = linear_timeseries(start=0, length=6, start_value=0, end_value=5)
+        lags = [-1]
+        output_chunk_length = 3
+        forecast_horizon = 4
+
+        # roll size must allow the last iteration to end exactly at `forecast_horizon`
+        # with `roll_size = 3`, we cannot achieve `forecast_horizon=4`
+        with pytest.raises(ValueError) as exc:
+            _, _ = create_lagged_prediction_data(
+                roll_size=3,
+                multi_models=True,
+                output_chunk_length=output_chunk_length,
+                output_chunk_shift=0,
+                target_series=target,
+                lags=lags,
+                uses_static_covariates=False,
+                forecast_horizon=forecast_horizon,
+            )
+        assert (
+            str(exc.value)
+            == "`roll_size` must allow autoregressive forecast to end exactly at `forecast_horizon`."
+        )
+
+        # but works with `roll_size = 1`
+        _, _ = create_lagged_prediction_data(
+            roll_size=1,
+            multi_models=True,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=0,
+            target_series=target,
+            lags=lags,
+            uses_static_covariates=False,
+            forecast_horizon=forecast_horizon,
+        )
+
+        # roll size cannot be != 1 with `multi_models=False`
+        with pytest.raises(ValueError) as exc:
+            _, _ = create_lagged_prediction_data(
+                roll_size=2,
+                multi_models=False,
+                output_chunk_length=output_chunk_length,
+                output_chunk_shift=0,
+                target_series=target,
+                lags=lags,
+                uses_static_covariates=False,
+                forecast_horizon=forecast_horizon,
+            )
+        assert (
+            str(exc.value)
+            == "`roll_size` must be `1` for auto-regression with `multi_models=False`."
+        )
+
+        # it works `roll_size = 1`
+        _, _ = create_lagged_prediction_data(
+            roll_size=1,
+            multi_models=False,
+            output_chunk_length=output_chunk_length,
+            output_chunk_shift=0,
+            target_series=target,
+            lags=lags,
+            uses_static_covariates=False,
+            forecast_horizon=forecast_horizon,
+        )
+        "`roll_size` must be `1` for auto-regression with `multi_models=False`."
