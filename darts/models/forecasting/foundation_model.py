@@ -10,11 +10,14 @@ This file contains several abstract classes:
 """
 
 from abc import ABC
+from typing import Optional
+
+from peft import PeftConfig, get_peft_model
+from torch import nn
 
 from darts.logging import get_logger, raise_log
-from darts.models.forecasting.torch_forecasting_model import (
-    MixedCovariatesTorchModel,
-)
+from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -24,7 +27,7 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
 
     def __init__(
         self,
-        enable_finetuning: bool = False,
+        peft_config: Optional[PeftConfig] = None,
         **kwargs,
     ):
         """Foundation Forecasting Model with PyTorch Lightning backend.
@@ -161,6 +164,8 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         # initialize `TorchForecastingModel` base class
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
+        enable_finetuning = peft_config is not None
+
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
@@ -174,8 +179,27 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
                 logger,
             )
 
-        self._enable_finetuning = enable_finetuning
+        self.peft_config = peft_config
 
     @property
     def _requires_training(self) -> bool:
-        return self._enable_finetuning
+        return self.peft_config is not None
+
+
+class FoundationPLModule(PLForecastingModule):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.model: nn.Module
+
+    def apply_peft(self, peft_config: PeftConfig) -> None:
+        """Apply PEFT to the underlying model.
+
+        Parameters
+        ----------
+        peft_config
+            The PEFT configuration to apply.
+        """
+        if not peft_config:
+            return
+        self.model = get_peft_model(self.model, peft_config)
+        self.model.print_trainable_parameters()
