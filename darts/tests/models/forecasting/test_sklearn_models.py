@@ -1297,6 +1297,71 @@ class TestSKLearnModels:
         model = model_cls(lags=None, lags_past_covariates=5, multi_models=mode)
         assert model.min_train_series_length == 0 + 1 + 0 + add_min_samples
 
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_predict_target_too_short(self, multi_models):
+        """Test too short target series for prediction."""
+        lags = [-3, -1]
+        ocl = 5
+        model = LinearRegressionModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+        )
+
+        series = tg.linear_timeseries(length=model.min_train_series_length)
+        model.fit(series)
+
+        min_prediction_steps = abs(min(lags))
+        if not multi_models:
+            min_prediction_steps += ocl - 1
+
+        series = series[:min_prediction_steps]
+
+        # series too short
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=ocl, series=series[:-1])
+        assert str(exc.value).startswith("The `series` is not long enough.")
+
+        # series long enough
+        _ = model.predict(n=ocl, series=series)
+
+    @pytest.mark.parametrize("config", product([True, False], ["past", "future"]))
+    def test_predict_covs_too_short(self, config):
+        """Test too short covariates for prediction."""
+        multi_models, use_covs = config
+        lags = [-3, -1]
+        ocl = 5
+        kwargs = {f"lags_{use_covs}_covariates": lags}
+        model = LinearRegressionModel(
+            lags=None,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+            **kwargs,
+        )
+
+        min_train_steps = abs(min(lags)) + ocl + 1
+        series = tg.linear_timeseries(length=min_train_steps)
+        fit_kwargs = {f"{use_covs}_covariates": series}
+        model.fit(series, **fit_kwargs)
+
+        min_prediction_steps = abs(min(lags))
+        if not multi_models:
+            min_prediction_steps += ocl - 1
+
+        series = series[:min_prediction_steps]
+        pred_kwargs = {f"{use_covs}_covariates": series[:-1]}
+
+        # covs too short
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=ocl, series=series, **pred_kwargs)
+        assert str(exc.value).startswith(
+            f"The `{use_covs}_covariates` are not long enough."
+        )
+
+        # series long enough
+        pred_kwargs = {f"{use_covs}_covariates": series}
+        _ = model.predict(n=ocl, series=series, **pred_kwargs)
+
     @pytest.mark.parametrize("mode", [True, False])
     def test_historical_forecast(self, mode):
         model = self.models[1](lags=5, multi_models=mode)
@@ -4082,6 +4147,39 @@ class TestSKLearnModels:
             np.testing.assert_array_almost_equal(
                 hfc_non_optimized.values(), hfc_optimized.values()
             )
+
+    @pytest.mark.parametrize("retrain", [True, False])
+    def test_historical_forecasts_single_model(self, retrain):
+        """Tests that hfc for single models can start at the correct minimum time index as with `predict()` directly."""
+        lags = [-3, -1]
+        ocl = 5
+        model = LinearRegressionModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=False,
+        )
+
+        series = tg.linear_timeseries(length=model.min_train_series_length)
+        model.fit(series)
+
+        # we want to generate only a single forecast, without retraining, we have to shorten the series
+        if not retrain:
+            series = series[: abs(min(lags)) + ocl - 1]
+            with pytest.raises(ValueError) as exc:
+                _ = model.predict(n=ocl, series=series[:-1])
+            assert str(exc.value).startswith("The `series` is not long enough.")
+
+        start_time_pred = model.predict(n=ocl, series=series).start_time()
+        for horizon_shift in [-1, 0, 1]:
+            hfc = model.historical_forecasts(
+                forecast_horizon=ocl + horizon_shift,
+                series=series,
+                overlap_end=True,
+                last_points_only=False,
+                retrain=retrain,
+            )
+            assert len(hfc) == 1
+            assert hfc[0].start_time() == start_time_pred
 
 
 class TestProbabilisticSKLearnModels:

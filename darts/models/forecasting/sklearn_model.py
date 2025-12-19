@@ -1261,6 +1261,33 @@ class SKLearnModel(GlobalForecastingModel):
             shift = self.output_chunk_length - 1
             step = 1
 
+        # check all target series are long enough
+        target_lags = self.lags.get("target")
+        if target_lags is not None:
+            min_target_length = abs(min(target_lags)) + shift
+            for idx, series_ in enumerate(series):
+                if len(series_) < min_target_length:
+                    index_text = (
+                        " "
+                        if called_with_single_series
+                        else f" at list/sequence index {idx} "
+                    )
+                    end_ts = series_.end_time()
+                    start_ts = (
+                        series_.end_time() - (min_target_length - 1) * series_.freq
+                    )
+                    raise_log(
+                        ValueError(
+                            f"The `series`{index_text}is not long enough. "
+                            f"Given horizon `n={n}`, `min(lags)={target_lags[0]}`, "
+                            f"`max(lags)={target_lags[-1]}` and "
+                            f"`output_chunk_length={self.output_chunk_length}`, the `series` has to "
+                            f"range from {start_ts} until {end_ts} (inclusive), but it only ranges from "
+                            f"{series_.start_time()} until {end_ts}."
+                        ),
+                        logger=logger,
+                    )
+
         # dictionary containing covariate data over time span required for prediction
         covariate_matrices = {}
         # dictionary containing covariate lags relative to minimum covariate lag

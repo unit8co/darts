@@ -745,19 +745,19 @@ def _get_historical_forecasts_setup(
         is_training=bool(retrain),
     )
 
+    if historical_forecasts_time_index is None:
+        raise_log(
+            ValueError(
+                f"Cannot build any dataset {'to train the model' if retrain else 'for prediction'} "
+                f"with the provided `series` and `*_covariates` at series index: {series_idx}. "
+                f"The minimum {'training' if retrain else 'prediction'} input time index requirements "
+                f"were not met. Please check the time index of `series` and `*_covariates`."
+            ),
+            logger,
+        )
+
     if retrain:
         # trainable time indexes (considering lags and available covariates)
-        if not model._fit_called and historical_forecasts_time_index is None:
-            raise_log(
-                ValueError(
-                    "Cannot build any dataset to train the model with the provided "
-                    f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                    "training input time index requirements were not met. Please check the time "
-                    "index of `series` and `*_covariates`."
-                ),
-                logger,
-            )
-
         # We need the first value timestamp to be used in order to properly shift the series
         # Look at both past and future, since the target lags must be taken in consideration
         min_timestamp_series = (
@@ -766,16 +766,6 @@ def _get_historical_forecasts_setup(
         )
     else:
         # predictable time indexes (assuming model is already trained)
-        if historical_forecasts_time_index is None:
-            raise_log(
-                ValueError(
-                    "Cannot build any dataset for prediction with the provided model, "
-                    f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                    "prediction input time index requirements were not met. "
-                    "Please check the time index of `series` and `*_covariates`."
-                )
-            )
-
         # we are only predicting: start of the series does not have to change
         min_timestamp_series = series.start_time()
 
@@ -926,13 +916,20 @@ def _get_maximum_historical_forecastable_time_index(
     if min_target_lag is None:
         min_target_lag = 0
 
+    # if SKLearnModel is not multi_models, prediction steps < output_chunk_length must look further into the past
+    is_single_sklearn_model = getattr(model, "multi_models", None) is False
+    if is_single_sklearn_model:
+        extra_lookback = model.output_chunk_length - 1
+    else:
+        extra_lookback = 0
+
     # longest possible time index for target
     if is_training:
         start = (
             series.start_time() + (max_target_lag - min_target_lag + 1) * series.freq
         )
     else:
-        start = series.start_time() - min_target_lag * series.freq
+        start = series.start_time() + (extra_lookback - min_target_lag) * series.freq
     end = series.end_time() + 1 * series.freq
 
     intersect_ = (start, end)
@@ -946,7 +943,8 @@ def _get_maximum_historical_forecastable_time_index(
             )
         else:
             start_pc = (
-                past_covariates.start_time() - min_past_cov_lag * past_covariates.freq
+                past_covariates.start_time()
+                + (extra_lookback - min_past_cov_lag) * past_covariates.freq
             )
 
         shift_pc_end = max_past_cov_lag
@@ -970,7 +968,7 @@ def _get_maximum_historical_forecastable_time_index(
         else:
             start_fc = (
                 future_covariates.start_time()
-                - min_future_cov_lag * future_covariates.freq
+                + (extra_lookback - min_future_cov_lag) * future_covariates.freq
             )
 
         shift_fc_end = max_future_cov_lag
@@ -993,14 +991,6 @@ def _get_maximum_historical_forecastable_time_index(
         intersect_ = (
             intersect_[0],
             end - (forecast_horizon + output_chunk_shift) * series.freq,
-        )
-
-    # if SKLearnModel is not multi_models, it looks further in the past
-    is_multi_models = getattr(model, "multi_models", None)
-    if is_multi_models is not None and not is_multi_models:
-        intersect_ = (
-            intersect_[0] + (model.output_chunk_length - 1) * series.freq,
-            intersect_[1],
         )
 
     # more than one training sample is required; start later
