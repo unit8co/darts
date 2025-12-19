@@ -19,6 +19,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- Moved `xarray` from core dependencies to optional dependencies. [#2974](https://github.com/unit8co/darts/pull/2974) by [Jakub Chłapek](https://github.com/jakubchlapek).
+
 ### For developers of the library:
 
 ## [0.39.0](https://github.com/unit8co/darts/tree/0.39.0) (2025-11-23)
