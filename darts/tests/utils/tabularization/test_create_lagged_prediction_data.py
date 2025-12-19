@@ -1319,6 +1319,7 @@ class TestCreateLaggedPredictionData:
             [False, True],  # multivariate series
             [False, True],  # use covariates
             [True, False],  # multi_models
+            [1, 2, 3],  # stride
         ),
     )
     def test_lagged_prediction_data_autoregression_iteration_values(self, config):
@@ -1326,7 +1327,9 @@ class TestCreateLaggedPredictionData:
         Tests that each iteration of the auto-regressive X matrix contains the correct
         shifted feature values.
         """
-        roll_size, ocl, ocs, lags, is_multivariate, use_covs, multi_models = config
+        roll_size, ocl, ocs, lags, is_multivariate, use_covs, multi_models, stride = (
+            config
+        )
 
         if not multi_models and roll_size != 1:
             # roll_size must be 1 for multi_models=False, roll_size validity is checked in upcoming tests
@@ -1391,7 +1394,7 @@ class TestCreateLaggedPredictionData:
                 X_direct = X_direct[:expected_forecast_examples]
 
             # should only have 3 dimensions
-            assert len(X_direct) == 10
+            assert len(X_direct) == expected_forecast_examples
             assert X_direct.ndim == 3
             expected_X.append(X_direct[:, :, :, np.newaxis])
 
@@ -1400,7 +1403,7 @@ class TestCreateLaggedPredictionData:
             if roll_step == (expected_iterations - 1) * roll_size:
                 assert np.isnan(X_direct).any()
 
-        expected_X = np.concatenate(expected_X, axis=-1)
+        expected_X = np.concatenate(expected_X, axis=-1)[::stride]
 
         # with auto-regression
         X, _ = create_lagged_prediction_data(
@@ -1414,6 +1417,7 @@ class TestCreateLaggedPredictionData:
             forecast_horizon=forecast_horizon,
             roll_size=roll_size,
             multi_models=multi_models,
+            stride=stride,
         )
         # extra dimension for autoregressive iterations
         assert X.ndim == 4

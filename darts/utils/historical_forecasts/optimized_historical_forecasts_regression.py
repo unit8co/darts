@@ -165,6 +165,11 @@ def _optimized_historical_forecasts_regression(
         # - with auto-regression: requires multiple forecast iterations `n_forecast_iters > 1`
         #   - `roll_size` gives the number of steps between to consecutive forecast iterations
         # X shape: (n_forecasts, n_lagged_features, n_samples = 1, n_prediction_iterations)
+
+        # stride can be applied directly in most cases; only with `multi_models=False` and `is_auto_regression=False`
+        # all rows must be kept since the final forecast may include earlier forecasts (single model must step back to
+        # produce all forecasts for `1 < horizon < output_chunk_length`
+        stride_tabularization = stride if multi_models or is_auto_regression else 1
         X, _ = create_lagged_prediction_data(
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
@@ -196,6 +201,7 @@ def _optimized_historical_forecasts_regression(
             multi_models=multi_models,
             forecast_horizon=forecast_horizon,
             roll_size=roll_size,
+            stride=stride_tabularization,
         )
 
         # -> (n_forecasts, n_lags, n_prediction_iterations)
@@ -204,12 +210,6 @@ def _optimized_historical_forecasts_regression(
         if X.ndim == 2:
             # without autoregression, the last dimension was collapsed; bring back dimension
             X = X[:, :, np.newaxis]
-
-        # stride can be applied directly in most cases; only with `multi_models=False` and `is_auto_regression=False`
-        # all rows must be kept since the final forecast may include earlier forecasts (single model must step back to
-        # produce all forecasts for `1 < horizon < n`
-        if multi_models or is_auto_regression:
-            X = X[::stride]
 
         # generate `num_samples` examples for probabilistic predictions
         # -> (n_forecasts * n_samples, n_lags, n_prediction_iterations)

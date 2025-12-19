@@ -321,6 +321,12 @@ def create_lagged_data(
             ValueError("Must specify `target_series` if `is_training = True`."),
             logger=logger,
         )
+    if not is_training:
+        # for prediction, stride must be applied post-tabularization due to potential auto-regression
+        stride_predict = stride
+        stride = 1
+    else:
+        stride_predict = 1
 
     if forecast_horizon is None:
         forecast_horizon = output_chunk_length
@@ -474,10 +480,12 @@ def create_lagged_data(
                 )
             ):
                 end = -(forecast_horizon - t_pred) or None
-                X_i_array.append(X_i[start_idx * roll_size : end, :, :, np.newaxis])
+                X_i_array.append(
+                    X_i[start_idx * roll_size : end : stride_predict, :, :, np.newaxis]
+                )
             X_i_array = np.concatenate(X_i_array, axis=-1)
         else:
-            X_i_array = X_i
+            X_i_array = X_i[::stride_predict]
 
         X.append(X_i_array)
         y.append(y_i)
