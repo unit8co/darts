@@ -62,8 +62,6 @@ class _Chronos2Module(nn.Module):
         attn_implementation: Literal["eager", "sdpa"] | None = None,
         chronos_config: Optional[dict[str, Any]] = None,
         quantiles: list[float] = None,
-        device: Optional[torch.device] = None,
-        dtype: Optional[torch.dtype] = None,
         **kwargs,
     ):
         """Core Chronos-2 model containing all the modules and forward logic.
@@ -111,8 +109,6 @@ class _Chronos2Module(nn.Module):
         act_info = self.feed_forward_proj.split("-")
         self.dense_act_fn = act_info[-1]
         self.is_gated_act = act_info[0] == "gated"
-        self.device = device or torch.device("cpu")
-        self.dtype = dtype or torch.float32
 
         if self.is_gated_act:
             raise_log(
@@ -198,6 +194,14 @@ class _Chronos2Module(nn.Module):
             act_fn_name=self.dense_act_fn,
             dropout_p=self.dropout_rate,
         )
+
+    @property
+    def device(self) -> torch.device:
+        return next(self.parameters()).device
+
+    @property
+    def dtype(self) -> torch.dtype:
+        return next(self.parameters()).dtype
 
     def _prepare_patched_context(
         self,
@@ -523,8 +527,6 @@ class _Chronos2PLModule(FoundationPLModule):
             attn_implementation=attn_implementation,
             chronos_config=chronos_config,
             quantiles=quantiles,
-            device=self.device,
-            dtype=self.dtype,
         )
 
     # TODO: fine-tuning support w/ normalized loss
