@@ -11,6 +11,12 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀 Added a new configuration system for Darts, similar to pandas' options and settings. [#2956](https://github.com/unit8co/darts/pull/2956) by [Dennis Bader](https://github.com/dennisbader).
+  - Users can now configure global behavior such as:
+    - `display.[max_rows, max_cols]`: Maximum number of rows or columns to display in TimeSeries representation (default: 10)
+    - `plotting.use_darts_style`: Whether to apply Darts' custom matplotlib plotting style (default: True). Changes take effect immediately and apply to all subsequent plots.
+  - The configuration API includes: `get_option()`, `set_option()`, `reset_option()`, `describe_option()`, and `option_context()` for temporary changes.
+  - 🟠 The Darts plotting style is now not applied anymore by default. To activate it call `set_option('plotting.use_darts_style', True)` before plotting.
 - `TorchForecastingModel` parameter `torch_metrics` now supports all input metric types from ``torchmetrics.MetricCollection``. Eg. now you can also pass a dictionary or sequence of metrics. [#2958](https://github.com/unit8co/darts/pull/2958) by [CorticallyAI](https://github.com/CorticallyAI).
 
 **Fixed**
