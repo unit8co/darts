@@ -17,7 +17,7 @@ from darts.timeseries import (
     STATIC_COV_TAG,
 )
 from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.utils import generate_index
+from darts.utils.utils import XARRAY_AVAILABLE, generate_index
 
 TEST_BACKENDS = ["pandas"]
 
@@ -92,7 +92,8 @@ class TestTimeSeriesStaticCovariate:
         ts, x = setup_tag(tag, ts)
         kwargs = {tag: x}
 
-        self.helper_test_transfer(tag, ts, TimeSeries.from_xarray(ts.data_array()))
+        if XARRAY_AVAILABLE:
+            self.helper_test_transfer(tag, ts, TimeSeries.from_xarray(ts.data_array()))
         self.helper_test_transfer(
             tag, ts, TimeSeries.from_dataframe(ts.to_dataframe(), **kwargs)
         )

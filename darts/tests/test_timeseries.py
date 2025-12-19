@@ -7,7 +7,6 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-import xarray as xr
 from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate, slice_intersect
@@ -17,7 +16,7 @@ from darts.utils.likelihood_models.base import (
     quantile_names,
 )
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
-from darts.utils.utils import expand_arr, freqs, generate_index
+from darts.utils.utils import XARRAY_AVAILABLE, expand_arr, freqs, generate_index
 
 TEST_BACKENDS = ["pandas"]
 
@@ -65,14 +64,16 @@ class TestTimeSeries:
         )
         assert ts.components.tolist() == ["a", "b", "a_1", "a_2", "b_1"]
 
-        # creation using from_xarray()
+    def test_xarray_creation(self):
+        import xarray as xr
+
         ar = xr.DataArray(
             np.random.randn(10, 2, 1),
             dims=("time", "component", "sample"),
             coords={"time": self.times, "component": ["a", "b"]},
-            name="time series",
         )
-        _ = TimeSeries.from_xarray(ar)
+        ts = TimeSeries.from_xarray(ar)
+        assert ts.components.tolist() == ["a", "b"]
 
     def test_from_times_and_values(self):
         # Test creation from times and values
@@ -401,7 +402,10 @@ class TestTimeSeries:
             # only the right static covariate column should be retained
             assert univ_series.static_covariates.sum().sum() == 1.1
 
+    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="requires xarray")
     def test_column_names(self):
+        import xarray as xr
+
         # test the column names resolution
         columns_before = [
             ["0", "1", "2"],
@@ -810,7 +814,8 @@ class TestTimeSeries:
             # Cannot divide by 0.
             self.series1 / 0
 
-    def test_ops_array(self):
+    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="xarray required")
+    def test_ops_xarray(self):
         # can work with xarray directly
         series2_x = self.series2.data_array(copy=False)
         assert self.series1 + self.series2 == self.series1 + series2_x
@@ -818,6 +823,8 @@ class TestTimeSeries:
         assert self.series1 * self.series2 == self.series1 * series2_x
         assert self.series1 / self.series2 == self.series1 / series2_x
         assert self.series1**self.series2 == self.series1**series2_x
+
+    def test_ops_ndarray(self):
         # can work with ndarray directly
         series2_nd = self.series2.all_values(copy=False)
         assert self.series1 + self.series2 == self.series1 + series2_nd
@@ -1277,6 +1284,7 @@ class TestTimeSeries:
             assert not np.isnan(series_no_nan.all_values(copy=False)).any()
             assert series_1 == series_no_nan
 
+    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="xarray required")
     def test_resample_timeseries(self):
         # 01/01/2013 -> 10/01/2013, one value per day: 0 1 2 3 ... 9
         times = pd.date_range("20130101", "20130110")
@@ -2404,7 +2412,7 @@ def helper_test_prepend(test_series: TimeSeries):
 def helper_test_prepend_values(test_series: TimeSeries):
     # reconstruct series
     seriesA, seriesB = test_series.split_after(pd.Timestamp("20130106"))
-    arrayA = seriesA.data_array().values
+    arrayA = seriesA._values
     prepended = seriesB.prepend_values(arrayA)
     assert prepended == test_series
     assert test_series.time_index.equals(prepended.time_index)
