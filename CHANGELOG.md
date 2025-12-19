@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- 🚀 Added a new configuration system for Darts, similar to pandas' options and settings. [#2955](https://github.com/unit8co/darts/pull/2955) by [Dennis Bader](https://github.com/dennisbader).
+- 🚀 Added a new configuration system for Darts, similar to pandas' options and settings. [#2956](https://github.com/unit8co/darts/pull/2956) by [Dennis Bader](https://github.com/dennisbader).
   - Users can now configure global behavior such as:
     - `display.[max_rows, max_cols]`: Maximum number of rows or columns to display in TimeSeries representation (default: 10)
     - `plotting.use_darts_style`: Whether to apply Darts' custom matplotlib plotting style (default: True). Changes take effect immediately and apply to all subsequent plots.

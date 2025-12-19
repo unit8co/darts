@@ -37,7 +37,12 @@ class TestTimeSeriesPlot:
     @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize(
         "config",
-        product(["dt", "ri"], ["d", "p"], [True, False], [True, False]),
+        product(
+            ["dt", "ri"],
+            ["d", "p"],
+            [True, False],
+            [True, False],
+        ),
     )
     def test_plot_single_series(self, mock_show, config):
         index_type, stoch_type, use_ax, use_darts_style = config

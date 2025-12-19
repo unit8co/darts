@@ -44,7 +44,7 @@ Examples
 
 from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from darts.logging import get_logger, raise_log
 
@@ -59,8 +59,8 @@ class _Option:
         key: str,
         default_value: Any,
         description: str,
-        validator: Optional[callable] = None,
-        callback: Optional[callable] = None,
+        validator: Optional[Callable] = None,
+        callback: Optional[Callable] = None,
     ):
         self.key = key
         self.default_value = default_value
@@ -374,7 +374,7 @@ def reset_option(pat: str) -> None:
     _global_options.reset_option(pat)
 
 
-def describe_option(pat: str) -> Optional[str]:
+def describe_option(pat: str) -> str:
     """
     Describe one or more options.
 
