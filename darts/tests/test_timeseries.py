@@ -76,6 +76,27 @@ class TestTimeSeries:
         ts = TimeSeries.from_xarray(ar)
         assert ts.components.tolist() == ["a", "b"]
 
+    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="xarray required")
+    def test_xarray_import_error_from_xarray(self):
+        """Test that from_xarray raises ImportError when xarray is not available."""
+        with pytest.raises(ImportError) as exc:
+            TimeSeries.from_xarray(None)
+        assert "xarray required" in str(exc.value)
+
+    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="xarray required")
+    def test_xarray_import_error_data_array(self):
+        """Test that data_array raises ImportError when xarray is not available."""
+        with pytest.raises(ImportError) as exc:
+            self.series1.data_array()
+        assert "xarray required" in str(exc.value)
+
+    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="xarray required")
+    def test_xarray_import_error_resample(self):
+        """Test that resample raises ImportError when xarray is not available."""
+        with pytest.raises(ImportError) as exc:
+            self.series1.resample(freq="2D")
+        assert "xarray required" in str(exc.value)
+
     def test_from_times_and_values(self):
         # Test creation from times and values
         kwargs = {
@@ -868,6 +889,55 @@ class TestTimeSeries:
         assert seriesA * arrayB == seriesMul
         assert seriesA / arrayB == seriesDiv
         assert seriesA**arrayB == seriesPow
+
+    def test_ops_unsupported_types(self):
+        invalid_operands = ["string", [1, 2, 3], {"key": "value"}, (1, 2)]
+
+        for invalid in invalid_operands:
+            # Test __add__
+            with pytest.raises(TypeError) as exc:
+                _ = self.series1 + invalid
+            assert "unsupported operand type(s) for + or add()" in str(exc.value)
+
+            # Test __sub__
+            with pytest.raises(TypeError) as exc:
+                _ = self.series1 - invalid
+            assert "unsupported operand type(s) for - or sub()" in str(exc.value)
+
+            # Test __mul__
+            with pytest.raises(TypeError) as exc:
+                _ = self.series1 * invalid
+            assert "unsupported operand type(s) for * or mul()" in str(exc.value)
+
+            # Test __truediv__
+            with pytest.raises(TypeError) as exc:
+                _ = self.series1 / invalid
+            assert "unsupported operand type(s) for / or truediv()" in str(exc.value)
+
+            # Test __pow__
+            with pytest.raises(TypeError) as exc:
+                _ = self.series1**invalid
+            assert "unsupported operand type(s) for ** or pow()" in str(exc.value)
+
+            # Test __lt__
+            with pytest.raises(TypeError) as exc:
+                _ = self.series1 < invalid
+            assert "unsupported operand type(s) for <" in str(exc.value)
+
+            # Test __gt__
+            with pytest.raises(TypeError) as exc:
+                _ = self.series1 > invalid
+            assert "unsupported operand type(s) for >" in str(exc.value)
+
+            # Test __le__
+            with pytest.raises(TypeError) as exc:
+                _ = self.series1 <= invalid
+            assert "unsupported operand type(s) for <=" in str(exc.value)
+
+            # Test __ge__
+            with pytest.raises(TypeError) as exc:
+                _ = self.series1 >= invalid
+            assert "unsupported operand type(s) for >=" in str(exc.value)
 
     def test_getitem_datetime_index(self):
         series_short: TimeSeries = self.series1.drop_after(pd.Timestamp("20130105"))

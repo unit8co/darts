@@ -210,6 +210,17 @@ class TestDynamicTimeWarping:
         align.plot_alignment()
         plt.close()
 
+    def test_plot_alignment_range_index(self):
+        series1 = TimeSeries.from_values(np.sin(np.linspace(0, 2 * np.pi, 20)))
+        series2 = TimeSeries.from_values(np.cos(np.linspace(0, 2 * np.pi, 20)))
+
+        assert not series1.has_datetime_index
+        assert not series2.has_datetime_index
+
+        align = dtw.dtw(series1, series2)
+        align.plot_alignment()
+        plt.close()
+
     def test_multivariate(self):
         n = 2
 
