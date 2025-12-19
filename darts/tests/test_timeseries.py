@@ -64,6 +64,7 @@ class TestTimeSeries:
         )
         assert ts.components.tolist() == ["a", "b", "a_1", "a_2", "b_1"]
 
+    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="xarray required")
     def test_xarray_creation(self):
         import xarray as xr
 

@@ -141,23 +141,17 @@ def plot_alignment(
     series1 += series1_y_offset
     series2 += series2_y_offset
 
-    xa1 = series1.data_array(copy=False)
-    xa2 = series2.data_array(copy=False)
-
     path = self.path()
     n = len(path)
 
-    time_dim1 = series1.time_dim
-    time_dim2 = series2.time_dim
-
-    x_coords1 = np.array(xa1[time_dim1], dtype=xa1[time_dim1].dtype)[path[:, 0]]
-    x_coords2 = np.array(xa2[time_dim2], dtype=xa2[time_dim2].dtype)[path[:, 1]]
+    x_coords1 = series1.time_index[path[:, 0]]
+    x_coords2 = series2.time_index[path[:, 1]]
 
     y_coords1 = series1.univariate_values()[path[:, 0]]
     y_coords2 = series2.univariate_values()[path[:, 1]]
 
     if series1.has_datetime_index:
-        x_dtype = xa1[time_dim1].dtype
+        x_dtype = series1.time_index.dtype
         x_nan = np.datetime64("NaT")
     else:
         x_dtype = np.float64
@@ -174,7 +168,7 @@ def plot_alignment(
     y_coords[1::3] = y_coords2
     y_coords[2::3] = np.nan
 
-    plt.plot(x_coords, y_coords, **args_line)
-
     series1.plot(**args_series1)
     series2.plot(**args_series2)
+
+    plt.plot(x_coords, y_coords, **args_line)

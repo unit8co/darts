@@ -923,7 +923,8 @@ class TestTimeSeriesStaticCovariate:
         self.helper_test_transfer(tag, ts, ts.diff())
         self.helper_test_transfer(tag, ts, ts.univariate_component(0))
         self.helper_test_transfer(tag, ts, ts.map(lambda x: x + 1))
-        self.helper_test_transfer(tag, ts, ts.resample(ts.freq))
+        if XARRAY_AVAILABLE:
+            self.helper_test_transfer(tag, ts, ts.resample(ts.freq))
         self.helper_test_transfer(tag, ts, ts[:5].append(ts[5:]))
         self.helper_test_transfer(tag, ts, ts.append_values(ts.all_values()))
 
