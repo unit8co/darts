@@ -5,3 +5,4 @@ optuna-integration[pytorch_lightning]
 polars
 ray
 pydantic
+xarray
