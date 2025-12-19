@@ -86,6 +86,10 @@ during fit and predict stage can have multiple dimensions. The model will then i
 
 Here is an example, using a `KalmanForecaster` to forecast a single multivariate series made of 2 components:
 ```python
+# use darts plotting style
+from darts import set_option
+set_option("plotting.use_darts_style", True)
+
 import darts.utils.timeseries_generation as tg
 from darts.models import KalmanForecaster
 import matplotlib.pyplot as plt
