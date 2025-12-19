@@ -1,7 +1,6 @@
 from typing import Union
 
 import numpy as np
-import xarray as xr
 from matplotlib import pyplot as plt
 
 
@@ -175,8 +174,7 @@ def plot_alignment(
     y_coords[1::3] = y_coords2
     y_coords[2::3] = np.nan
 
-    arr = xr.DataArray(y_coords, dims=["value"], coords={"value": x_coords})
-    xr.plot.line(arr, x="value", **args_line)
+    plt.plot(x_coords, y_coords, **args_line)
 
     series1.plot(**args_series1)
     series2.plot(**args_series2)
