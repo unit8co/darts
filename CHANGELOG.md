@@ -11,6 +11,17 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀 Added a new configuration system for Darts, similar to pandas' options and settings. [#2956](https://github.com/unit8co/darts/pull/2956) by [Dennis Bader](https://github.com/dennisbader).
+  - Users can now configure global behavior such as:
+    - `display.[max_rows, max_cols]`: Maximum number of rows or columns to display in TimeSeries representation (default: 10)
+    - `plotting.use_darts_style`: Whether to apply Darts' custom matplotlib plotting style (default: True). Changes take effect immediately and apply to all subsequent plots.
+  - The configuration API includes: `get_option()`, `set_option()`, `reset_option()`, `describe_option()`, and `option_context()` for temporary changes.
+  - 🟠 The Darts plotting style is now not applied anymore by default. To activate it call `set_option('plotting.use_darts_style', True)` before plotting.
+- Added support for two new variants (trained and released by Amazon) to foundation model `Chronos2Model` besides the original 120M-parameter model. [#2962](https://github.com/unit8co/darts/pull/2962) by [Zhihao Dai](https://github.com/daidahao).
+  - [`"autogluon/chronos-2-small"`](https://huggingface.co/autogluon/chronos-2-small) : a smaller 28M parameter Chronos-2 model.
+  - [`"autogluon/chronos-2-synth"`](https://huggingface.co/autogluon/chronos-2-synth) : a 120M parameter Chronos-2 model trained on synthetic data only.
+  - To use either variant, simply set `hub_model_name` parameter to the desired model ID, e.g., `"autogluon/chronos-2-small"`.
+  - Both models can be used in the same way as the original Chronos-2 model.
 - `TorchForecastingModel` parameter `torch_metrics` now supports all input metric types from ``torchmetrics.MetricCollection``. Eg. now you can also pass a dictionary or sequence of metrics. [#2958](https://github.com/unit8co/darts/pull/2958) by [CorticallyAI](https://github.com/CorticallyAI).
 - Added optimized historical forecast Routine for all `SKLearnModel` to handle autoregression (when `forecast_horizon > output_chunk_length`). [#2921](https://github.com/unit8co/darts/pull/2921) by [Alain Gysi](https://github.com/Kurokabe)
 - `SKLearnModel` now raises a more informative exception, when (any of) the input target `series` is (are) too short. [#2921](https://github.com/unit8co/darts/pull/2921) by [Dennis Bader](https://github.com/dennisbader).
