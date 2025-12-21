@@ -160,6 +160,18 @@ def _optimized_historical_forecasts_regression(
             show_warnings=show_warnings,
         )
 
+        if target_lags or model.uses_static_covariates:
+            series_adjusted = series_[hist_fct_tgt_start:hist_fct_tgt_end]
+            if is_auto_regression:
+                # add values to end of target series, to get all examples for auto-regression
+                nan_values = np.array(
+                    [[np.nan] * series_.shape[1]]
+                    * (forecast_horizon - (output_chunk_length + output_chunk_shift))
+                )
+                series_adjusted = series_adjusted.append_values(nan_values)
+        else:
+            series_adjusted = None
+
         # extract lagged features:
         # - without auto-regression: all steps can be predicted in a single forecast iteration `n_forecast_iters = 1`
         # - with auto-regression: requires multiple forecast iterations `n_forecast_iters > 1`
@@ -173,11 +185,7 @@ def _optimized_historical_forecasts_regression(
         X, _ = create_lagged_prediction_data(
             output_chunk_length=output_chunk_length,
             output_chunk_shift=output_chunk_shift,
-            target_series=(
-                None
-                if (not target_lags) and (not model.uses_static_covariates)
-                else series_[hist_fct_tgt_start:hist_fct_tgt_end]
-            ),
+            target_series=series_adjusted,
             past_covariates=(
                 None
                 if past_covariates_ is None
@@ -207,39 +215,65 @@ def _optimized_historical_forecasts_regression(
         # -> (n_forecasts, n_lags, n_prediction_iterations)
         X = X[0][:, :, 0]
 
-        if X.ndim == 2:
-            # without autoregression, the last dimension was collapsed; bring back dimension
-            X = X[:, :, np.newaxis]
-
-        # generate `num_samples` examples for probabilistic predictions
-        # -> (n_forecasts * n_samples, n_lags, n_prediction_iterations)
-        X = np.repeat(X, num_samples, axis=0)
-
         # generate forecasts for each forecast iteration (potential auto-regression)
-        predictions = []
-        for pred_idx in range(X.shape[-1]):
-            # the end time of the current iteration's prediction (ignoring output_chunk_shift)
-            t_pred = n_output_steps + pred_idx * roll_size
-
+        # `t_pred`: the end time of the current iteration's prediction
+        predictions = None
+        for pred_idx, t_pred in enumerate(
+            range(
+                n_output_steps + output_chunk_shift,
+                forecast_horizon + roll_size,
+                roll_size,
+            )
+        ):
             # run and store only the relevant forecast iterations
-            if t_pred % n_output_steps == 0:
+            if (t_pred - output_chunk_shift) % n_output_steps == 0:
                 # the main forecast iterations ending at a round multiple of output_chunk_length;
                 # take only forecast_horizon points in case forecast_horizon < output_chunk_length
+                roll_shift = 0
                 take_forecast_indices = slice(None, forecast_horizon)
-            elif t_pred + output_chunk_shift == forecast_horizon:
+            elif t_pred == forecast_horizon:
                 # the last autoregressive forecast iteration when forecast_horizon is not a round multiple
                 # of output_chunk_length
-                take_forecast_indices = slice(
+                roll_shift = (
                     n_output_steps
-                    - (forecast_horizon - output_chunk_shift) % output_chunk_length,
-                    None,
+                    - (forecast_horizon - output_chunk_shift) % output_chunk_length
                 )
+                take_forecast_indices = slice(roll_shift, None)
             else:
                 # iterations present solely for purpose of correct tabularization when
                 continue
 
-            # X for the current forecast iteration
-            current_X = X[:, :, pred_idx]
+            start_idx = pred_idx * roll_size
+            end_idx = min(-(forecast_horizon - t_pred), 0) or None
+            current_X = X[start_idx:end_idx:stride_tabularization]
+
+            # generate `num_samples` examples for probabilistic predictions
+            # -> (n_forecasts * n_samples, n_lags, n_prediction_iterations)
+            current_X = np.repeat(current_X, num_samples, axis=0)
+
+            if pred_idx > 0:
+                forecasted_steps = predictions.shape[1]
+                lags_output_adjust = {
+                    step - forecasted_steps + roll_shift: step
+                    for step in range(forecasted_steps)
+                }
+
+                # find matches between forecasted components and component-specific lags of the future iteration
+                for comp_idx, comp_lags in enumerate(target_lags):
+                    update_x_indices = []
+                    take_y_indices = []
+                    for lag_idx, lag in enumerate(comp_lags):
+                        y_pos = lags_output_adjust.get(lag, None)
+                        if y_pos is not None:
+                            update_x_indices.append(
+                                target_lag_positions[comp_idx][lag_idx]
+                            )
+                            take_y_indices.append(y_pos)
+
+                    # update X with matched predictions
+                    current_X[:, update_x_indices] = predictions[
+                        :, take_y_indices, comp_idx
+                    ].reshape(len(current_X), -1)
 
             # forecast shape: (n_forecasts * num_samples, k, n_components),
             # where k = output_chunk length if multi_models, 1 otherwise
@@ -251,38 +285,11 @@ def _optimized_historical_forecasts_regression(
                 **predict_kwargs,
             )
 
-            # for auto-regression: update history of future Xs with current forecast
-            for auto_reg_idx in range(1, X.shape[-1] - pred_idx):
-                # future iteration's lagged features
-                next_X = X[:, :, pred_idx + auto_reg_idx]
-
-                # determine which lags the forecasts correspond to in the future iteration
-                lags_output_adjust = lags_output - (roll_size * auto_reg_idx)
-
-                # find matches between forecasted components and component-specific lags of the future iteration
-                take_y_indices = []
-                update_x_indices = []
-                for comp_idx, comp_lags in enumerate(target_lags):
-                    for lag_idx, lag in enumerate(comp_lags):
-                        y_pos = np.argwhere(lags_output_adjust == lag)
-                        if len(y_pos) > 0:
-                            update_x_indices.append(
-                                target_lag_positions[comp_idx][lag_idx]
-                            )
-                            take_y_indices.append(
-                                comp_idx + y_pos[0, 0] * series_.n_components
-                            )
-
-                # update future X with current matched predictions
-                next_X[:, update_x_indices] = forecast.reshape(forecast.shape[0], -1)[
-                    :, take_y_indices
-                ]
-
             # reshape to separate forecasts and samples
             # -> (n_forecasts, output_chunk_length, n_components, n_samples)
             forecast = np.moveaxis(
                 forecast.reshape(
-                    X.shape[0] // num_samples,
+                    len(current_X),
                     num_samples,
                     output_chunk_length if multi_models else 1,
                     -1,
@@ -304,10 +311,12 @@ def _optimized_historical_forecasts_regression(
                 last_window = min(forecast_horizon - output_chunk_length, 0) or None
                 forecast = forecast[:last_window:stride, 0, 0, :forecast_horizon, :, :]
 
-            predictions.append(forecast[:, take_forecast_indices])
-
-        # -> (n_forecasts, forecast_horizon, n_components, n_samples)
-        forecast = np.concatenate(predictions, axis=1)
+            # -> (n_forecasts, forecast_horizon, n_components, n_samples)
+            forecast = forecast[:, take_forecast_indices]
+            if predictions is None:
+                predictions = forecast
+            else:
+                predictions = np.concatenate([predictions, forecast], axis=1)
 
         if last_points_only:
             # a single TimeSeries with only the last points of each forecast
@@ -315,13 +324,13 @@ def _optimized_historical_forecasts_regression(
             new_times = generate_index(
                 start=hist_fct_start
                 + (forecast_horizon + output_chunk_shift - 1) * freq,
-                length=forecast.shape[0],
+                length=predictions.shape[0],
                 freq=freq * stride,
                 name=series_._time_index.name,
             )
-            forecasts_ = TimeSeries(
+            forecasts = TimeSeries(
                 times=new_times,
-                values=forecast[:, -1],
+                values=predictions[:, -1],
                 components=forecast_components,
                 static_covariates=series_.static_covariates,
                 hierarchy=series_.hierarchy,
@@ -331,10 +340,10 @@ def _optimized_historical_forecasts_regression(
         else:
             # a list of TimeSeries with the complete forecasts
             # -> list[TimeSeries] each with shape: (forecast_horizon, n_components, n_samples)
-            forecasts_ = []
+            forecasts = []
             new_times = generate_index(
                 start=hist_fct_start + output_chunk_shift * series_.freq,
-                length=forecast_horizon + (forecast.shape[0] - 1) * stride,
+                length=forecast_horizon + (predictions.shape[0] - 1) * stride,
                 freq=freq,
                 name=series_._time_index.name,
             )
@@ -343,14 +352,14 @@ def _optimized_historical_forecasts_regression(
             ):
                 ts = TimeSeries(
                     times=new_times[step_fct : step_fct + forecast_horizon],
-                    values=forecast[idx_ftc],
+                    values=predictions[idx_ftc],
                     components=forecast_components,
                     static_covariates=series_.static_covariates,
                     hierarchy=series_.hierarchy,
                     metadata=series_.metadata,
                     copy=False,
                 )
-                forecasts_.append(ts)
+                forecasts.append(ts)
 
-        forecasts_list.append(forecasts_)
+        forecasts_list.append(forecasts)
     return forecasts_list

@@ -321,38 +321,38 @@ def create_lagged_data(
             ValueError("Must specify `target_series` if `is_training = True`."),
             logger=logger,
         )
-    if not is_training:
-        # for prediction, stride must be applied post-tabularization due to potential auto-regression
-        stride_predict = stride
-        stride = 1
-    else:
-        stride_predict = 1
-
-    if forecast_horizon is None:
-        forecast_horizon = output_chunk_length
-    if roll_size is None:
-        roll_size = output_chunk_length if multi_models else 1
-
-    is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
-
-    if is_auto_regression:
-        if not multi_models and roll_size != 1:
-            raise_log(
-                ValueError(
-                    "`roll_size` must be `1` for auto-regression with `multi_models=False`."
-                ),
-                logger=logger,
-            )
-
-        if (
-            forecast_horizon - (output_chunk_length + output_chunk_shift)
-        ) % roll_size > 0:
-            raise_log(
-                ValueError(
-                    "`roll_size` must allow autoregressive forecast to end exactly at `forecast_horizon`."
-                ),
-                logger=logger,
-            )
+    # if not is_training:
+    #     # for prediction, stride must be applied post-tabularization due to potential auto-regression
+    #     stride_predict = stride
+    #     stride = 1
+    # else:
+    #     stride_predict = 1
+    #
+    # if forecast_horizon is None:
+    #     forecast_horizon = output_chunk_length
+    # if roll_size is None:
+    #     roll_size = output_chunk_length if multi_models else 1
+    #
+    # is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
+    #
+    # if is_auto_regression:
+    #     if not multi_models and roll_size != 1:
+    #         raise_log(
+    #             ValueError(
+    #                 "`roll_size` must be `1` for auto-regression with `multi_models=False`."
+    #             ),
+    #             logger=logger,
+    #         )
+    #
+    #     if (
+    #         forecast_horizon - (output_chunk_length + output_chunk_shift)
+    #     ) % roll_size > 0:
+    #         raise_log(
+    #             ValueError(
+    #                 "`roll_size` must allow autoregressive forecast to end exactly at `forecast_horizon`."
+    #             ),
+    #             logger=logger,
+    #         )
 
     # ensure list of TimeSeries format
     target_series = series2seq(target_series)
@@ -416,13 +416,13 @@ def create_lagged_data(
                 logger,
             )
 
-        if target_i and is_auto_regression:
-            # add values to end of target series, to get all examples for auto-regression
-            nan_values = np.array(
-                [[np.nan] * target_i.shape[1]]
-                * (forecast_horizon - (output_chunk_length + output_chunk_shift))
-            )
-            target_i = target_i.append_values(nan_values)
+        # if target_i and is_auto_regression:
+        #     # add values to end of target series, to get all examples for auto-regression
+        #     nan_values = np.array(
+        #         [[np.nan] * target_i.shape[1]]
+        #         * (forecast_horizon - (output_chunk_length + output_chunk_shift))
+        #     )
+        #     target_i = target_i.append_values(nan_values)
 
         if use_moving_windows and series_equal_freq:
             X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
@@ -469,25 +469,25 @@ def create_lagged_data(
             last_shape=last_static_covariates_shape,
         )
 
-        if is_auto_regression:
-            # auto-regression requires updating X matrices; stack in last dimension
-            X_i_array = []
-            for start_idx, t_pred in enumerate(
-                range(
-                    (output_chunk_length if multi_models else 1) + output_chunk_shift,
-                    forecast_horizon + roll_size,
-                    roll_size,
-                )
-            ):
-                end = -(forecast_horizon - t_pred) or None
-                X_i_array.append(
-                    X_i[start_idx * roll_size : end : stride_predict, :, :, np.newaxis]
-                )
-            X_i_array = np.concatenate(X_i_array, axis=-1)
-        else:
-            X_i_array = X_i[::stride_predict]
+        # if is_auto_regression:
+        #     # auto-regression requires updating X matrices; stack in last dimension
+        #     X_i_array = []
+        #     for start_idx, t_pred in enumerate(
+        #         range(
+        #             (output_chunk_length if multi_models else 1) + output_chunk_shift,
+        #             forecast_horizon + roll_size,
+        #             roll_size,
+        #         )
+        #     ):
+        #         end = -(forecast_horizon - t_pred) or None
+        #         X_i_array.append(
+        #             X_i[start_idx * roll_size : end : stride_predict, :, :, np.newaxis]
+        #         )
+        #     X_i_array = np.concatenate(X_i_array, axis=-1)
+        # else:
+        #     X_i_array = X_i[::stride_predict]
 
-        X.append(X_i_array)
+        X.append(X_i)
         y.append(y_i)
         times.append(times_i)
         if weights_i is not None:
