@@ -399,8 +399,6 @@ class TestCreateLaggedPredictionData:
             if all(lags_is_none):
                 continue
             X, times = create_lagged_prediction_data(
-                output_chunk_length=1,
-                output_chunk_shift=0,
                 target_series=target if lags else None,
                 past_covariates=past if lags_past else None,
                 future_covariates=future if lags_future else None,
@@ -504,8 +502,6 @@ class TestCreateLaggedPredictionData:
             if all(lags_is_none):
                 continue
             X, times = create_lagged_prediction_data(
-                output_chunk_length=1,
-                output_chunk_shift=0,
                 target_series=target if lags else None,
                 past_covariates=past if lags_past else None,
                 future_covariates=future if lags_future else None,
@@ -608,8 +604,6 @@ class TestCreateLaggedPredictionData:
                 continue
             # Using moving window method:
             X_mw, times_mw = create_lagged_prediction_data(
-                output_chunk_length=1,
-                output_chunk_shift=0,
                 target_series=target if lags else None,
                 past_covariates=past if lags_past else None,
                 future_covariates=future if lags_future else None,
@@ -622,8 +616,6 @@ class TestCreateLaggedPredictionData:
             )
             # Using time intersection method:
             X_ti, times_ti = create_lagged_prediction_data(
-                output_chunk_length=1,
-                output_chunk_shift=0,
                 target_series=target if lags else None,
                 past_covariates=past if lags_past else None,
                 future_covariates=future if lags_future else None,
@@ -675,8 +667,6 @@ class TestCreateLaggedPredictionData:
             [expected_X_target, expected_X_past, expected_X_future], axis=1
         )
         X, times = create_lagged_prediction_data(
-            output_chunk_length=1,
-            output_chunk_shift=0,
             target_series=series,
             past_covariates=series,
             future_covariates=series,
@@ -748,9 +738,7 @@ class TestCreateLaggedPredictionData:
         # Check correctness for both 'moving window' method
         # and 'time intersection' method:
         X, times = create_lagged_prediction_data(
-            output_chunk_length=1,
-            output_chunk_shift=0,
-            target_series=target,
+            target,
             past_covariates=past,
             future_covariates=future,
             lags=lags,
@@ -785,9 +773,7 @@ class TestCreateLaggedPredictionData:
         # Prediction time extend beyond end of series:
         lag = 5
         X, times = create_lagged_prediction_data(
-            output_chunk_length=1,
-            output_chunk_shift=0,
-            target_series=target,
+            target,
             lags=[-lag],
             use_moving_windows=use_moving_windows,
             uses_static_covariates=False,
@@ -830,9 +816,7 @@ class TestCreateLaggedPredictionData:
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
         X, times = create_lagged_prediction_data(
-            output_chunk_length=1,
-            output_chunk_shift=0,
-            target_series=target,
+            target,
             future_covariates=future,
             lags=[-1],
             lags_future_covariates=[0],
@@ -876,9 +860,7 @@ class TestCreateLaggedPredictionData:
         # Check correctness for 'moving windows' and 'time intersection' methods, as
         # well as for different `multi_models` values:
         X, times = create_lagged_prediction_data(
-            output_chunk_length=1,
-            output_chunk_shift=0,
-            target_series=target,
+            target,
             future_covariates=future,
             lags=[-1],
             lags_future_covariates=[1],
@@ -908,8 +890,6 @@ class TestCreateLaggedPredictionData:
         expected_times_2 = target_2.append_values([0]).time_index[1:]
         # Check when `concatenate = True`:
         X, times = create_lagged_prediction_data(
-            output_chunk_length=1,
-            output_chunk_shift=0,
             target_series=(target_1, target_2),
             past_covariates=(past_1, past_2),
             future_covariates=(future_1, future_2),
@@ -924,8 +904,6 @@ class TestCreateLaggedPredictionData:
         assert times[1].equals(expected_times_2)
         # Check when `concatenate = False`:
         X, times = create_lagged_prediction_data(
-            output_chunk_length=1,
-            output_chunk_shift=0,
             target_series=(target_1, target_2),
             past_covariates=(past_1, past_2),
             future_covariates=(future_1, future_2),
@@ -959,8 +937,6 @@ class TestCreateLaggedPredictionData:
         # Need to account for fact that we can create feature for last time in series:
         expected_times = target_1.append_values([0]).time_index[1:]
         X, times = create_lagged_prediction_data(
-            output_chunk_length=1,
-            output_chunk_shift=0,
             target_series=target,
             past_covariates=past,
             future_covariates=future,
@@ -986,8 +962,6 @@ class TestCreateLaggedPredictionData:
         for use_moving_windows in (False, True):
             with pytest.raises(ValueError) as err:
                 create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     target_series=series_1,
                     lags=lags,
                     past_covariates=series_2,
@@ -1001,8 +975,6 @@ class TestCreateLaggedPredictionData:
             )
             with pytest.raises(ValueError) as err:
                 create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     target_series=series_1,
                     lags=lags,
                     past_covariates=series_2,
@@ -1030,8 +1002,6 @@ class TestCreateLaggedPredictionData:
                 warnings.simplefilter("ignore")
                 with pytest.raises(ValueError) as err:
                     create_lagged_prediction_data(
-                        output_chunk_length=1,
-                        output_chunk_shift=0,
                         target_series=series,
                         lags_future_covariates=[-1],
                         past_covariates=series,
@@ -1050,8 +1020,6 @@ class TestCreateLaggedPredictionData:
         for use_moving_windows in (False, True):
             with pytest.raises(ValueError) as err:
                 create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     target_series=target,
                     use_moving_windows=use_moving_windows,
                     uses_static_covariates=False,
@@ -1072,8 +1040,6 @@ class TestCreateLaggedPredictionData:
         for use_moving_windows in (False, True):
             with pytest.raises(ValueError) as err:
                 create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     target_series=series,
                     lags=[-20, -1],
                     uses_static_covariates=False,
@@ -1086,8 +1052,6 @@ class TestCreateLaggedPredictionData:
             ) == str(err.value)
             with pytest.raises(ValueError) as err:
                 create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     past_covariates=series,
                     lags_past_covariates=[-20, -1],
                     uses_static_covariates=False,
@@ -1115,8 +1079,6 @@ class TestCreateLaggedPredictionData:
             # Test invalid `lags` values:
             with pytest.raises(ValueError) as err:
                 create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     target_series=series,
                     lags=[0],
                     uses_static_covariates=False,
@@ -1128,8 +1090,6 @@ class TestCreateLaggedPredictionData:
             # Test invalid `lags_past_covariates` values:
             with pytest.raises(ValueError) as err:
                 create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     past_covariates=series,
                     lags_past_covariates=[0],
                     uses_static_covariates=False,
@@ -1140,8 +1100,6 @@ class TestCreateLaggedPredictionData:
             ) == str(err.value)
             # This should *not* throw an error:
             create_lagged_prediction_data(
-                output_chunk_length=1,
-                output_chunk_shift=0,
                 future_covariates=series,
                 lags_future_covariates=[-1, 0, 1],
                 uses_static_covariates=False,
@@ -1160,8 +1118,6 @@ class TestCreateLaggedPredictionData:
         for use_moving_windows in (False, True):
             with warnings.catch_warnings(record=True) as w:
                 _ = create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     target_series=series,
                     lags=lags,
                     future_covariates=series,
@@ -1177,8 +1133,6 @@ class TestCreateLaggedPredictionData:
             # Specify `lags_future_covariates` but not `future_covariates`:
             with warnings.catch_warnings(record=True) as w:
                 _ = create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     target_series=series,
                     lags=lags,
                     lags_future_covariates=lags,
@@ -1196,8 +1150,6 @@ class TestCreateLaggedPredictionData:
             # but not `lags`:
             with warnings.catch_warnings(record=True) as w:
                 _ = create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     target_series=series,
                     lags=lags,
                     past_covariates=series,
@@ -1220,8 +1172,6 @@ class TestCreateLaggedPredictionData:
             # a warning when creating prediction data:
             with warnings.catch_warnings(record=True) as w:
                 _ = create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     target_series=series,
                     past_covariates=series,
                     lags_past_covariates=lags,
@@ -1238,8 +1188,6 @@ class TestCreateLaggedPredictionData:
             # a warning when creating prediction data:
             with warnings.catch_warnings(record=True) as w:
                 _ = create_lagged_prediction_data(
-                    output_chunk_length=1,
-                    output_chunk_shift=0,
                     lags=lags,
                     past_covariates=series,
                     lags_past_covariates=lags,

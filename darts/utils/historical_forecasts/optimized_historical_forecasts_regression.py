@@ -183,8 +183,6 @@ def _optimized_historical_forecasts_regression(
         # produce all forecasts for `1 < horizon < output_chunk_length`
         stride_tabularization = stride if multi_models or is_auto_regression else 1
         X, _ = create_lagged_prediction_data(
-            output_chunk_length=output_chunk_length,
-            output_chunk_shift=output_chunk_shift,
             target_series=series_adjusted,
             past_covariates=(
                 None
@@ -206,9 +204,6 @@ def _optimized_historical_forecasts_regression(
             use_moving_windows=True,
             concatenate=False,
             show_warnings=False,
-            multi_models=multi_models,
-            forecast_horizon=forecast_horizon,
-            roll_size=roll_size,
             stride=stride_tabularization,
         )
 

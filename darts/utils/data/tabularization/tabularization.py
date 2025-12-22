@@ -50,8 +50,6 @@ def create_lagged_data(
     sample_weight: Optional[Union[str, TimeSeries, Sequence[TimeSeries]]] = None,
     stride: int = 1,
     show_warnings: bool = True,
-    forecast_horizon: Optional[int] = None,
-    roll_size: Optional[int] = None,
 ) -> tuple[
     ArrayOrArraySequence,
     Union[None, ArrayOrArraySequence],
@@ -256,20 +254,11 @@ def create_lagged_data(
         be used with caution as it might introduce bias in the forecasts.
     show_warnings
         Whether to show warnings.
-    forecast_horizon
-        Optionally, the total forecast horizon for prediction. Only used when `is_training = False`. If not specified,
-        defaults to `output_chunk_length`.
-    roll_size
-        The number of time steps to roll ahead between two consecutive forecast iteration (e.g. for auto-regression).
-        Only effective with `is_training = False`. If not specified, defaults to `output_chunk_length`.
 
     Returns
     -------
     X
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
-        In case of autoregressive prediction (`forecast_horizon > output_chunk_length`), `X` is of shape
-        `(n_observations, n_lagged_features, n_samples, n_prediction_iterations)` where
-        `n_prediction_iterations = ceil(forecast_horizon / roll_size)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     y
@@ -321,38 +310,6 @@ def create_lagged_data(
             ValueError("Must specify `target_series` if `is_training = True`."),
             logger=logger,
         )
-    # if not is_training:
-    #     # for prediction, stride must be applied post-tabularization due to potential auto-regression
-    #     stride_predict = stride
-    #     stride = 1
-    # else:
-    #     stride_predict = 1
-    #
-    # if forecast_horizon is None:
-    #     forecast_horizon = output_chunk_length
-    # if roll_size is None:
-    #     roll_size = output_chunk_length if multi_models else 1
-    #
-    # is_auto_regression = forecast_horizon > output_chunk_length + output_chunk_shift
-    #
-    # if is_auto_regression:
-    #     if not multi_models and roll_size != 1:
-    #         raise_log(
-    #             ValueError(
-    #                 "`roll_size` must be `1` for auto-regression with `multi_models=False`."
-    #             ),
-    #             logger=logger,
-    #         )
-    #
-    #     if (
-    #         forecast_horizon - (output_chunk_length + output_chunk_shift)
-    #     ) % roll_size > 0:
-    #         raise_log(
-    #             ValueError(
-    #                 "`roll_size` must allow autoregressive forecast to end exactly at `forecast_horizon`."
-    #             ),
-    #             logger=logger,
-    #         )
 
     # ensure list of TimeSeries format
     target_series = series2seq(target_series)
@@ -415,15 +372,6 @@ def create_lagged_data(
                 ),
                 logger,
             )
-
-        # if target_i and is_auto_regression:
-        #     # add values to end of target series, to get all examples for auto-regression
-        #     nan_values = np.array(
-        #         [[np.nan] * target_i.shape[1]]
-        #         * (forecast_horizon - (output_chunk_length + output_chunk_shift))
-        #     )
-        #     target_i = target_i.append_values(nan_values)
-
         if use_moving_windows and series_equal_freq:
             X_i, y_i, times_i, weights_i = _create_lagged_data_by_moving_window(
                 target_series=target_i,
@@ -468,25 +416,6 @@ def create_lagged_data(
             uses_static_covariates=uses_static_covariates,
             last_shape=last_static_covariates_shape,
         )
-
-        # if is_auto_regression:
-        #     # auto-regression requires updating X matrices; stack in last dimension
-        #     X_i_array = []
-        #     for start_idx, t_pred in enumerate(
-        #         range(
-        #             (output_chunk_length if multi_models else 1) + output_chunk_shift,
-        #             forecast_horizon + roll_size,
-        #             roll_size,
-        #         )
-        #     ):
-        #         end = -(forecast_horizon - t_pred) or None
-        #         X_i_array.append(
-        #             X_i[start_idx * roll_size : end : stride_predict, :, :, np.newaxis]
-        #         )
-        #     X_i_array = np.concatenate(X_i_array, axis=-1)
-        # else:
-        #     X_i_array = X_i[::stride_predict]
-
         X.append(X_i)
         y.append(y_i)
         times.append(times_i)
@@ -674,8 +603,6 @@ def create_lagged_training_data(
 
 
 def create_lagged_prediction_data(
-    output_chunk_length: int,
-    output_chunk_shift: int,
     target_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -690,9 +617,6 @@ def create_lagged_prediction_data(
     concatenate: bool = True,
     stride: int = 1,
     show_warnings: bool = True,
-    multi_models: bool = True,
-    forecast_horizon: Optional[int] = None,
-    roll_size: Optional[int] = None,
 ) -> tuple[ArrayOrArraySequence, Sequence[pd.Index]]:
     """
     Creates the features array `X` to produce a series of prediction from an already-trained `SKLearnModel`; the
@@ -705,10 +629,6 @@ def create_lagged_prediction_data(
 
     Parameters
     ----------
-    output_chunk_length
-        The number of time steps ahead into the future the `SKLearnModel` is to predict.
-    output_chunk_shift
-        Optionally, the number of time steps to shift the output chunk ahead into the future.
     target_series
         Optionally, the series for the `SKLearnModel` to predict.
     past_covariates
@@ -766,25 +686,11 @@ def create_lagged_prediction_data(
         be used with caution as it will cause gaps in the forecasts.
     show_warnings
         Whether to show warnings.
-    multi_models
-        Optionally, specifies whether the `SKLearnModel` predicts multiple time steps into the future. If `True`,
-        then the `SKLearnModel` is assumed to predict all time steps from time `t` to `t+output_chunk_length`.
-        If `False`, then the `SKLearnModel` is assumed to predict *only* the time step at `t+output_chunk_length`.
-    forecast_horizon
-        Optionally, the total forecast horizon for prediction. If not specified, defaults to `output_chunk_length`.
-    roll_size
-        The number of time steps to roll ahead between two consecutive forecast iteration (e.g. for auto-regression).
-        If not specified, defaults to `output_chunk_length`.
-    multi_models
-
 
     Returns
     -------
     X
         The constructed features array(s), with shape `(n_observations, n_lagged_features, n_samples)`.
-        In case of autoregressive prediction (`forecast_horizon > output_chunk_length`), `X` is of shape
-        `(n_observations, n_lagged_features, n_samples, n_prediction_iterations)` where
-        `n_prediction_iterations = ceil(forecast_horizon / roll_size)`.
         If the series inputs were specified as `Sequence[TimeSeries]` and `concatenate = False`, then `X`
         is returned as a `Sequence[np.array]`; otherwise, `X` is returned as a single `np.array`.
     times
@@ -813,8 +719,6 @@ def create_lagged_prediction_data(
         lags=lags,
         lags_past_covariates=lags_past_covariates,
         lags_future_covariates=lags_future_covariates,
-        output_chunk_length=output_chunk_length,
-        output_chunk_shift=output_chunk_shift,
         uses_static_covariates=uses_static_covariates,
         last_static_covariates_shape=last_static_covariates_shape,
         max_samples_per_ts=max_samples_per_ts,
@@ -824,9 +728,6 @@ def create_lagged_prediction_data(
         concatenate=concatenate,
         stride=stride,
         show_warnings=show_warnings,
-        forecast_horizon=forecast_horizon,
-        roll_size=roll_size,
-        multi_models=multi_models,
     )
     return X, times
 
