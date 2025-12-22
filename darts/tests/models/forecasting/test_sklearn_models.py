@@ -4053,19 +4053,20 @@ class TestSKLearnModels:
                 [True, False],  # last_points_only
                 [True, False],  # multivariate
                 [
-                    # 1,
-                    # 4,
+                    1,
+                    2,
+                    4,
                     5,
                 ],  # forecast_horizon
                 [
-                    # 1,
+                    1,
                     2,
                     3,
                 ],  # output_chunk_length
                 [1, 2],  # stride
                 [0, 1, 2],  # start
             )
-        )[3:],
+        ),
     )
     def test_optimized_historical_forecasts(self, config):
         """This test ensures that the optimized historical_forecasts method produces the same output as
