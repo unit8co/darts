@@ -4035,37 +4035,35 @@ class TestSKLearnModels:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            product(
-                (
-                    [
-                        (LinearRegressionModel, {}),
-                        (
-                            LinearRegressionModel,
-                            {"lags": {"sine": 2, "default_lags": 1}},
-                        ),
-                    ]
-                    + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
-                    + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
-                    + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
-                ),
-                [True, False],  # multi_models
-                [True, False],  # last_points_only
-                [True, False],  # multivariate
+        product(
+            (
                 [
-                    1,
-                    2,
-                    4,
-                    5,
-                ],  # forecast_horizon
-                [
-                    1,
-                    2,
-                    3,
-                ],  # output_chunk_length
-                [1, 2],  # stride
-                [0, 1, 2],  # start
-            )
+                    (LinearRegressionModel, {}),
+                    (
+                        LinearRegressionModel,
+                        {"lags": {"sine": 2, "default_lags": 1}},
+                    ),
+                ]
+                + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
+                + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
+                + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
+            ),
+            [True, False],  # multi_models
+            [True, False],  # last_points_only
+            [True, False],  # multivariate
+            [
+                1,
+                2,
+                4,
+                5,
+            ],  # forecast_horizon
+            [
+                1,
+                2,
+                3,
+            ],  # output_chunk_length
+            [1, 2],  # stride
+            [0, 1, 2],  # start
         ),
     )
     def test_optimized_historical_forecasts(self, config):
