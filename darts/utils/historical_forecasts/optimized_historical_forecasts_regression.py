@@ -278,7 +278,7 @@ def _optimized_historical_forecasts_regression(
             # -> (n_forecasts, n_output_steps, n_components, n_samples)
             forecast = np.moveaxis(
                 forecast.reshape(
-                    len(current_X),
+                    len(current_X) // num_samples,
                     num_samples,
                     n_output_steps,
                     -1,
