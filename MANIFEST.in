@@ -1,1 +1,2 @@
 graft requirements
+prune darts/tests
