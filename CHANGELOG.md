@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀 We optimized auto-regressive historical forecasts for `SKLearnModel` (when `forecast_horizon > output_chunk_length`), increasing throughput by multiple orders of magnitude! Now all historical forecasting scenarios for `SKLearnModel` are optimized. [#2921](https://github.com/unit8co/darts/pull/2921) by [Alain Gysi](https://github.com/Kurokabe)
 - 🚀 Added a new configuration system for Darts, similar to pandas' options and settings. [#2956](https://github.com/unit8co/darts/pull/2956) by [Dennis Bader](https://github.com/dennisbader).
   - Users can now configure global behavior such as:
     - `display.[max_rows, max_cols]`: Maximum number of rows or columns to display in TimeSeries representation (default: 10)
@@ -23,7 +24,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - To use either variant, simply set `hub_model_name` parameter to the desired model ID, e.g., `"autogluon/chronos-2-small"`.
   - Both models can be used in the same way as the original Chronos-2 model.
 - `TorchForecastingModel` parameter `torch_metrics` now supports all input metric types from ``torchmetrics.MetricCollection``. Eg. now you can also pass a dictionary or sequence of metrics. [#2958](https://github.com/unit8co/darts/pull/2958) by [CorticallyAI](https://github.com/CorticallyAI).
-- Added optimized historical forecast Routine for all `SKLearnModel` to handle autoregression (when `forecast_horizon > output_chunk_length`). [#2921](https://github.com/unit8co/darts/pull/2921) by [Alain Gysi](https://github.com/Kurokabe)
 - `SKLearnModel` now raises a more informative exception, when (any of) the input target `series` is (are) too short. [#2921](https://github.com/unit8co/darts/pull/2921) by [Dennis Bader](https://github.com/dennisbader).
 
 **Fixed**
