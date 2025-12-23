@@ -1763,19 +1763,16 @@ def _get_feature_times(
             # `target_series`/`past_covariates` in `Notes`:
             if max_lag_i > 0:
                 times_i = times_i[max_lag_i:]
-        elif (
-            show_warnings
-            and (not is_label_series)
-            and (series_specified ^ lags_specified)
-        ):
+        elif (not is_label_series) and (series_specified ^ lags_specified):
             # Warn user that series/lags input will be ignored:
             times_i = max_lag_i = None
             lags_name = "lags" if name_i == "target_series" else f"lags_{name_i}"
             specified = lags_name if lags_specified else name_i
             unspecified = name_i if lags_specified else lags_name
-            warnings.warn(
-                f"`{specified}` was specified without accompanying `{unspecified}` and, thus, will be ignored."
-            )
+            if show_warnings:
+                warnings.warn(
+                    f"`{specified}` was specified without accompanying `{unspecified}` and, thus, will be ignored."
+                )
 
         feature_times.append(times_i)
         # Note `max_lag_i` and `min_lag_i` if requested:

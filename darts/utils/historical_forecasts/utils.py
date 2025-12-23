@@ -745,19 +745,19 @@ def _get_historical_forecasts_setup(
         is_training=bool(retrain),
     )
 
+    if historical_forecasts_time_index is None:
+        raise_log(
+            ValueError(
+                f"Cannot build any dataset {'to train the model' if retrain else 'for prediction'} "
+                f"with the provided `series` and `*_covariates` at series index: {series_idx}. "
+                f"The minimum {'training' if retrain else 'prediction'} input time index requirements "
+                f"were not met. Please check the time index of `series` and `*_covariates`."
+            ),
+            logger,
+        )
+
     if retrain:
         # trainable time indexes (considering lags and available covariates)
-        if not model._fit_called and historical_forecasts_time_index is None:
-            raise_log(
-                ValueError(
-                    "Cannot build any dataset to train the model with the provided "
-                    f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                    "training input time index requirements were not met. Please check the time "
-                    "index of `series` and `*_covariates`."
-                ),
-                logger,
-            )
-
         # We need the first value timestamp to be used in order to properly shift the series
         # Look at both past and future, since the target lags must be taken in consideration
         min_timestamp_series = (
@@ -766,16 +766,6 @@ def _get_historical_forecasts_setup(
         )
     else:
         # predictable time indexes (assuming model is already trained)
-        if historical_forecasts_time_index is None:
-            raise_log(
-                ValueError(
-                    "Cannot build any dataset for prediction with the provided model, "
-                    f"`series` and `*_covariates` at series index: {series_idx}. The minimum "
-                    "prediction input time index requirements were not met. "
-                    "Please check the time index of `series` and `*_covariates`."
-                )
-            )
-
         # we are only predicting: start of the series does not have to change
         min_timestamp_series = series.start_time()
 
@@ -926,13 +916,20 @@ def _get_maximum_historical_forecastable_time_index(
     if min_target_lag is None:
         min_target_lag = 0
 
+    # if SKLearnModel is not multi_models, prediction steps < output_chunk_length must look further into the past
+    is_single_sklearn_model = getattr(model, "multi_models", None) is False
+    if is_single_sklearn_model:
+        extra_lookback = model.output_chunk_length - 1
+    else:
+        extra_lookback = 0
+
     # longest possible time index for target
     if is_training:
         start = (
             series.start_time() + (max_target_lag - min_target_lag + 1) * series.freq
         )
     else:
-        start = series.start_time() - min_target_lag * series.freq
+        start = series.start_time() + (extra_lookback - min_target_lag) * series.freq
     end = series.end_time() + 1 * series.freq
 
     intersect_ = (start, end)
@@ -946,7 +943,8 @@ def _get_maximum_historical_forecastable_time_index(
             )
         else:
             start_pc = (
-                past_covariates.start_time() - min_past_cov_lag * past_covariates.freq
+                past_covariates.start_time()
+                + (extra_lookback - min_past_cov_lag) * past_covariates.freq
             )
 
         shift_pc_end = max_past_cov_lag
@@ -970,7 +968,7 @@ def _get_maximum_historical_forecastable_time_index(
         else:
             start_fc = (
                 future_covariates.start_time()
-                - min_future_cov_lag * future_covariates.freq
+                + (extra_lookback - min_future_cov_lag) * future_covariates.freq
             )
 
         shift_fc_end = max_future_cov_lag
@@ -993,14 +991,6 @@ def _get_maximum_historical_forecastable_time_index(
         intersect_ = (
             intersect_[0],
             end - (forecast_horizon + output_chunk_shift) * series.freq,
-        )
-
-    # if SKLearnModel is not multi_models, it looks further in the past
-    is_multi_models = getattr(model, "multi_models", None)
-    if is_multi_models is not None and not is_multi_models:
-        intersect_ = (
-            intersect_[0] + (model.output_chunk_length - 1) * series.freq,
-            intersect_[1],
         )
 
     # more than one training sample is required; start later
@@ -1211,7 +1201,7 @@ def _get_historical_forecast_boundaries(
     # re-adjust the slicing indexes to account for the lags
     (
         min_target_lag,
-        _,
+        max_target_lag,
         min_past_cov_lag,
         max_past_cov_lag,
         min_future_cov_lag,
@@ -1219,29 +1209,50 @@ def _get_historical_forecast_boundaries(
         output_chunk_shift,
     ) = model.extreme_lags
 
-    # target lags are <= 0
+    # SKLearn models with `multi_models=False` require additional lookback
+    if not getattr(model, "multi_models", True) and model.output_chunk_length > 1:
+        shift_start = model.output_chunk_length - 1
+    else:
+        shift_start = 0
+
+    # check for auto-regression, to extract additional covariates;
+    # max_target_lag < 0 are local models which can predict for n (horizon) -> infinity (no auto-regression)
+    if (
+        max_target_lag >= 0
+        and forecast_horizon > max_target_lag - output_chunk_shift + 1
+    ):
+        auto_reg_steps = max(
+            forecast_horizon - (max_target_lag - output_chunk_shift + 1), 0
+        )
+    else:
+        auto_reg_steps = 0
+
+    # target lags are < 0
     hist_fct_tgt_start, hist_fct_tgt_end = historical_forecasts_time_index
     if min_target_lag is not None:
-        hist_fct_tgt_start += min_target_lag * freq
+        hist_fct_tgt_start += (min_target_lag - shift_start) * freq
 
-    # target lag has a gap between the max lag and the present
-    if hasattr(model, "lags") and model._get_lags("target"):
-        hist_fct_tgt_end += 1 * freq * model._get_lags("target")[-1]
+    # target lag has a gap between the max lag and the present;
+    if hasattr(model, "lags") and model.lags.get("target"):
+        # for SKLearnModel we use the 'lags' and ignore component lags since we are only
+        # interested in the maximum lags
+        hist_fct_tgt_end += 1 * freq * model.lags.get("target")[-1]
     else:
         hist_fct_tgt_end -= 1 * freq
 
-    # past lags are <= 0
+    # past covariate lags are < 0
     hist_fct_pc_start, hist_fct_pc_end = historical_forecasts_time_index
     if min_past_cov_lag is not None:
-        hist_fct_pc_start += min_past_cov_lag * freq
+        hist_fct_pc_start += (min_past_cov_lag - shift_start) * freq
     if max_past_cov_lag is not None:
-        hist_fct_pc_end += max_past_cov_lag * freq
+        hist_fct_pc_end += (max_past_cov_lag + auto_reg_steps) * freq
+
     # future lags can be anything
     hist_fct_fc_start, hist_fct_fc_end = historical_forecasts_time_index
     if min_future_cov_lag is not None:
-        hist_fct_fc_start += min_future_cov_lag * freq
+        hist_fct_fc_start += (min_future_cov_lag - shift_start) * freq
     if max_future_cov_lag is not None:
-        hist_fct_fc_end += max_future_cov_lag * freq
+        hist_fct_fc_end += (max_future_cov_lag + auto_reg_steps) * freq
 
     # convert actual integer index values (points) to positional index, make end bound inclusive
     if series.has_range_index:
@@ -1271,32 +1282,12 @@ def _get_historical_forecast_boundaries(
 
 
 def _check_optimizable_historical_forecasts_global_models(
-    model,
-    forecast_horizon: int,
     retrain: Union[bool, int, Callable[..., bool]],
-    show_warnings: bool,
-    allow_autoregression: bool,
 ) -> bool:
     """
-    Historical forecast can be optimized only if `retrain=False`. If `allow_autoregression=False`, historical forecasts
-    can be optimized only if `forecast_horizon <= model.output_chunk_length` (no auto-regression required).
+    Historical forecast can be optimized only if `retrain=False`.
     """
-
-    retrain_off = (retrain is False) or (retrain == 0)
-    is_autoregressive = forecast_horizon > model.output_chunk_length
-    if retrain_off and (
-        not is_autoregressive or (is_autoregressive and allow_autoregression)
-    ):
-        return True
-
-    if show_warnings:
-        if is_autoregressive:
-            logger.warning(
-                "`enable_optimization=True` is ignored because `forecast_horizon > model.output_chunk_length`. "
-                "To hide this warning, set `show_warnings=False` or `enable_optimization=False`."
-            )
-
-    return False
+    return (retrain is False) or (retrain == 0)
 
 
 def _process_historical_forecast_input(
@@ -1305,7 +1296,6 @@ def _process_historical_forecast_input(
     past_covariates: Optional[Sequence[TimeSeries]] = None,
     future_covariates: Optional[Sequence[TimeSeries]] = None,
     forecast_horizon: int = 1,
-    allow_autoregression: bool = False,
 ) -> Union[
     Sequence[TimeSeries],
     Optional[Sequence[TimeSeries]],
@@ -1314,15 +1304,6 @@ def _process_historical_forecast_input(
     if not model._fit_called:
         raise_log(
             ValueError("Model has not been fit yet."),
-            logger,
-        )
-
-    if not allow_autoregression and forecast_horizon > model.output_chunk_length:
-        raise_log(
-            ValueError(
-                "`forecast_horizon > model.output_chunk_length` requires auto-regression which is not "
-                "supported in this optimized routine."
-            ),
             logger,
         )
 
