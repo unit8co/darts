@@ -260,10 +260,11 @@ def _optimized_historical_forecasts_regression(
                             )
                             take_y_indices.append(y_pos)
 
-                    # update X with matched predictions
-                    current_X[:, update_x_indices] = predictions[
-                        :, take_y_indices, comp_idx
-                    ].reshape(len(current_X), -1)
+                    # update X with matched predictions (move around axes for correct reshaping
+                    # of samples)
+                    current_X[:, update_x_indices] = np.moveaxis(
+                        predictions[:, take_y_indices, comp_idx], 1, -1
+                    ).reshape(len(current_X), -1)
 
             # forecast shape: (n_forecasts * num_samples, n_output_steps, n_components),
             forecast = model._predict(
