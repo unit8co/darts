@@ -58,7 +58,7 @@
     <link rel="prev" title="Inference Datasets" href="darts.utils.data.torch_datasets.inference_dataset.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -808,6 +808,12 @@
 
 </ul>
 </details></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.config.html">Configuration</a></li>
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
 
 
@@ -946,7 +952,7 @@ before the end of the series. It is required that <cite>min_lh &gt;= 1</cite>.</
 multiple of <cite>output_chunk_length</cite>. For instance, <cite>lookback=3</cite> will emit “inputs” of lengths
 <cite>3 * output_chunk_length</cite>.</p></li>
 <li><p><strong>use_static_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to use/include static covariate data from the target <cite>series</cite>.</p></li>
-<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
 per label (each step in <cite>output_chunk_length</cite>), and per component.
 If a series or sequence of series, then those weights are used. If the weight series only have a single
 component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
@@ -1011,7 +1017,7 @@ series in advance (at dataset creation) to check their sizes. This might be expe
 If not <cite>None</cite>, will only keep a maximum of <cite>max_samples_per_ts</cite> samples per series, extracted from the most
 recent past.</p></li>
 <li><p><strong>use_static_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to use/include static covariate data from the target <cite>series</cite>.</p></li>
-<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
 per label (each step in <cite>output_chunk_length</cite>), and per component.
 If a series or sequence of series, then those weights are used. If the weight series only have a single
 component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for
@@ -1076,7 +1082,7 @@ series in advance (at dataset creation) to check their sizes. This might be expe
 If not <cite>None</cite>, will only keep a maximum of <cite>max_samples_per_ts</cite> samples per series, extracted from the most
 recent past.</p></li>
 <li><p><strong>use_static_covariates</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to use/include static covariate data from the target <cite>series</cite>.</p></li>
-<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
+<li><p><strong>sample_weight</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optionally, some sample weights to apply to the target <cite>series</cite> labels. They are applied per observation,
 per label (each step in <cite>output_chunk_length</cite>), and per component.
 If a series or sequence of series, then those weights are used. If the weight series only have a single
 component / column, then the weights are applied globally to all components in <cite>series</cite>. Otherwise, for

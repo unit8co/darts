@@ -61,7 +61,7 @@
     <link rel="prev" title="N-BEATS" href="07-NBEATS-examples.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -541,6 +541,17 @@
 </div>
 </div>
 <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># use darts plotting style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
@@ -623,7 +634,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_08-DeepAR-examples_6_1.png" src="../_images/examples_08-DeepAR-examples_6_1.png" />
+<img alt="../_images/examples_08-DeepAR-examples_7_1.png" src="../_images/examples_08-DeepAR-examples_7_1.png" />
 </div>
 </div>
 <p>In the following we train a probabilistic RNN to predict the targets series in an autoregressive fashion, but also by taking into consideration the modulation of the noise component as a covariate which is known in the future. So the RNN has information on when the noise component of the target is severe, but it doesn’t know the noise component itself. Let’s see if the RNN can make use of this information.</p>
@@ -687,7 +698,7 @@ RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=1, dropout=0, training_length=5
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_08-DeepAR-examples_9_1.png" src="../_images/examples_08-DeepAR-examples_9_1.png" />
+<img alt="../_images/examples_08-DeepAR-examples_10_1.png" src="../_images/examples_08-DeepAR-examples_10_1.png" />
 </div>
 </div>
 <p>We can see that, on top of correctly predicting the, granted, simple oscillatory behavior of the target, the RNN correctly expresses more uncertainty in its predictions when the noise component is higher.</p>
@@ -745,7 +756,7 @@ RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=1, dropout=0, training_length=5
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_08-DeepAR-examples_12_1.png" src="../_images/examples_08-DeepAR-examples_12_1.png" />
+<img alt="../_images/examples_08-DeepAR-examples_13_1.png" src="../_images/examples_08-DeepAR-examples_13_1.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">
@@ -869,7 +880,7 @@ RNNModel(model=LSTM, hidden_dim=20, n_rnn_layers=2, dropout=0.2, training_length
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_08-DeepAR-examples_19_1.png" src="../_images/examples_08-DeepAR-examples_19_1.png" />
+<img alt="../_images/examples_08-DeepAR-examples_20_1.png" src="../_images/examples_08-DeepAR-examples_20_1.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">

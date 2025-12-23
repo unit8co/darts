@@ -61,7 +61,7 @@
     <link rel="prev" title="Transformer Model" href="06-Transformer-examples.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -533,6 +533,17 @@
 </div>
 </div>
 <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># use darts plotting style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
@@ -607,7 +618,7 @@ Text(0.5, 1.0, &#39;Hourly generation hydro run-of-river and poundage&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_07-NBEATS-examples_6_1.png" src="../_images/examples_07-NBEATS-examples_6_1.png" />
+<img alt="../_images/examples_07-NBEATS-examples_7_1.png" src="../_images/examples_07-NBEATS-examples_7_1.png" />
 </div>
 </div>
 <p>To simplify things, we work with the daily generation, and we fill the missing values present in the data by using the <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code>:</p>
@@ -650,7 +661,7 @@ Text(0.5, 1.0, &#39;Daily generation hydro run-of-river and poundage&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_07-NBEATS-examples_8_1.png" src="../_images/examples_07-NBEATS-examples_8_1.png" />
+<img alt="../_images/examples_07-NBEATS-examples_9_1.png" src="../_images/examples_07-NBEATS-examples_9_1.png" />
 </div>
 </div>
 <p>We split the data into train and validation sets. Normally we would need to use an additional test set to validate the model on unseen data, but we will skip it for this example.</p>
@@ -756,7 +767,7 @@ NBEATSModel(generic_architecture=True, num_stacks=10, num_blocks=1, num_layers=4
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_07-NBEATS-examples_19_0.png" src="../_images/examples_07-NBEATS-examples_19_0.png" />
+<img alt="../_images/examples_07-NBEATS-examples_20_0.png" src="../_images/examples_07-NBEATS-examples_20_0.png" />
 </div>
 </div>
 </section>
@@ -860,7 +871,7 @@ NBEATSModel(generic_architecture=False, num_stacks=30, num_blocks=3, num_layers=
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_07-NBEATS-examples_27_0.png" src="../_images/examples_07-NBEATS-examples_27_0.png" />
+<img alt="../_images/examples_07-NBEATS-examples_28_0.png" src="../_images/examples_07-NBEATS-examples_28_0.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">

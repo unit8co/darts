@@ -61,7 +61,7 @@
     <link rel="prev" title="Temporal Convolutional Network" href="05-TCN-examples.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -541,6 +541,17 @@
 </div>
 </div>
 <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># use darts plotting style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
@@ -679,7 +690,7 @@ Training loss: 0.0046, validation loss: 0.0273, best val loss: 0.0126
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_06-Transformer-examples_13_0.png" src="../_images/examples_06-Transformer-examples_13_0.png" />
+<img alt="../_images/examples_06-Transformer-examples_14_0.png" src="../_images/examples_06-Transformer-examples_14_0.png" />
 </div>
 </div>
 <p>Then, by using the best model obtained over training, according to validation loss:</p>
@@ -698,7 +709,7 @@ Training loss: 0.0046, validation loss: 0.0273, best val loss: 0.0126
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_06-Transformer-examples_15_0.png" src="../_images/examples_06-Transformer-examples_15_0.png" />
+<img alt="../_images/examples_06-Transformer-examples_16_0.png" src="../_images/examples_06-Transformer-examples_16_0.png" />
 </div>
 </div>
 <p>Let’s backtest our <code class="docutils literal notranslate"><span class="pre">Transformer</span></code> model to evaluates its performance at a forecast horizon of 6 months:</p>
@@ -754,7 +765,7 @@ MAPE: 11.13%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_06-Transformer-examples_18_1.png" src="../_images/examples_06-Transformer-examples_18_1.png" />
+<img alt="../_images/examples_06-Transformer-examples_19_1.png" src="../_images/examples_06-Transformer-examples_19_1.png" />
 </div>
 </div>
 <section id="Monthly-Sun-spots-Example">
@@ -782,7 +793,7 @@ MAPE: 11.13%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_06-Transformer-examples_21_0.png" src="../_images/examples_06-Transformer-examples_21_0.png" />
+<img alt="../_images/examples_06-Transformer-examples_22_0.png" src="../_images/examples_06-Transformer-examples_22_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">

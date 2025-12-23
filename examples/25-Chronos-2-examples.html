@@ -61,7 +61,7 @@
     <link rel="prev" title="Time Series Mixer (TSMixer)" href="21-TSMixer-examples.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -545,6 +545,17 @@
 </div>
 </div>
 <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># use darts plotting style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
@@ -566,8 +577,8 @@
 </div>
 <section id="Data-Preparation">
 <h2>Data Preparation<a class="headerlink" href="#Data-Preparation" title="Link to this heading">#</a></h2>
-<p>Here, we will use the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.datasets.html#darts.datasets.ElectricityConsumptionZurichDataset">Electricity Consumption Zurich Dataset</a>, which records the electricity consumption of households &amp; SMEs (<code class="docutils literal notranslate"><span class="pre">&quot;Value_NE5&quot;</span></code> column) and business &amp; services (<code class="docutils literal notranslate"><span class="pre">&quot;Value_NE7&quot;</span></code>) in Zurich, Switzerland, along with weather covariates such as temperature (<code class="docutils literal notranslate"><span class="pre">&quot;T</span> <span class="pre">[°C]&quot;</span></code>) and humidity (<code class="docutils literal notranslate"><span class="pre">&quot;Hr</span> <span class="pre">[%Hr]&quot;</span></code>). Values are recorded every 15 minutes between January 2015 and
-August 2022.</p>
+<p>Here, we will use the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.datasets.datasets.html#darts.datasets.datasets.ElectricityConsumptionZurichDataset">Electricity Consumption Zurich Dataset</a>, which records the electricity consumption of households &amp; SMEs (<code class="docutils literal notranslate"><span class="pre">&quot;Value_NE5&quot;</span></code> column) and business &amp; services (<code class="docutils literal notranslate"><span class="pre">&quot;Value_NE7&quot;</span></code>) in Zurich, Switzerland, along with weather covariates such as temperature (<code class="docutils literal notranslate"><span class="pre">&quot;T</span> <span class="pre">[°C]&quot;</span></code>) and humidity (<code class="docutils literal notranslate"><span class="pre">&quot;Hr</span> <span class="pre">[%Hr]&quot;</span></code>). Values are recorded every 15 minutes between
+January 2015 and August 2022.</p>
 <details><summary><p>Train-Test Split</p>
 </summary><p>Even though Chronos-2 is pre-trained already, we still need to split the data into training and test sets. That is because <code class="docutils literal notranslate"><span class="pre">Chronos2Model</span></code> follows the Darts unified interface and will require calling the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> method before forecasting. However, no training or fine-tuning will be performed during the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> call.</p>
 </details><details><summary><p>Data Scaling</p>
@@ -600,7 +611,7 @@ August 2022.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_25-Chronos-2-examples_9_0.png" src="../_images/examples_25-Chronos-2-examples_9_0.png" />
+<img alt="../_images/examples_25-Chronos-2-examples_10_0.png" src="../_images/examples_25-Chronos-2-examples_10_0.png" />
 </div>
 </div>
 </section>
@@ -629,12 +640,17 @@ August 2022.</p>
 <span class="p">)</span>
 </pre></div>
 </div>
-</details><details><summary><p>Using Other Checkpoints</p>
-</summary><p>Other Chronos-2 checkpoints might be available in the future. You can specify a different checkpoint on Hugging Face Hub by setting the <code class="docutils literal notranslate"><span class="pre">hub_model_name</span></code> and <code class="docutils literal notranslate"><span class="pre">hub_model_revision</span></code> (optional) arguments when creating the model. For example:</p>
+</details><details><summary><p>Using Smaller or Synthetic Variants</p>
+</summary><p>Two variants of Chronos-2 are available on HuggingFace Hub:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">`autogluon/chronos-2-small</span></code> &lt;<a class="reference external" href="https://huggingface.co/autogluon/chronos-2-small">https://huggingface.co/autogluon/chronos-2-small</a>&gt;`__ : a smaller 28M parameter Chronos-2 model.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">`autogluon/chronos-2-synth</span></code> &lt;<a class="reference external" href="https://huggingface.co/autogluon/chronos-2-synth">https://huggingface.co/autogluon/chronos-2-synth</a>&gt;`__ : a 120M parameter Chronos-2 model trained on synthetic data only.</p></li>
+</ul>
+<p>To use either of those variants, specify the <code class="docutils literal notranslate"><span class="pre">hub_model_name</span></code> parameter to the desired model ID. For example, to use the synthetic data variant:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">Chronos2Model</span><span class="p">(</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">168</span><span class="p">,</span>
     <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
-    <span class="n">hub_model_name</span><span class="o">=</span><span class="s2">&quot;amazon/chronos-2-some-other-checkpoint&quot;</span><span class="p">,</span>
+    <span class="n">hub_model_name</span><span class="o">=</span><span class="s2">&quot;autogluon/chronos-2-small&quot;</span><span class="p">,</span>
     <span class="n">hub_model_revision</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="c1"># e.g., branch, tag, or commit ID</span>
 <span class="p">)</span>
 </pre></div>
@@ -702,7 +718,7 @@ Chronos2Model(output_chunk_shift=0, likelihood=None, hub_model_name=amazon/chron
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_25-Chronos-2-examples_16_1.png" src="../_images/examples_25-Chronos-2-examples_16_1.png" />
+<img alt="../_images/examples_25-Chronos-2-examples_17_1.png" src="../_images/examples_25-Chronos-2-examples_17_1.png" />
 </div>
 </div>
 <p>You can see that Chronos-2 is able to produce qualitatively accurate forecasts without any training or fine-tuning! Let’s evaluate the forecast accuracy using the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mae">Mean Absolute Error (MAE)</a> metric.</p>
@@ -763,7 +779,7 @@ MAE on validation set: 653.57
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_25-Chronos-2-examples_20_1.png" src="../_images/examples_25-Chronos-2-examples_20_1.png" />
+<img alt="../_images/examples_25-Chronos-2-examples_21_1.png" src="../_images/examples_25-Chronos-2-examples_21_1.png" />
 </div>
 </div>
 <p>With future covariates such as weather, we see that the forecast accuracy has improved on the 7-day horizon! Covariate support from Chronos-2 can be very useful when exogenous variables have a strong influence on the target series.</p>
@@ -787,7 +803,7 @@ MAE on validation set with covariates: 466.05
 </section>
 <section id="Probabilistic-Forecasting">
 <h2>Probabilistic Forecasting<a class="headerlink" href="#Probabilistic-Forecasting" title="Link to this heading">#</a></h2>
-<p>Here, we show how to perform probabilistic forecasting with Chronos-2 by using <code class="docutils literal notranslate"><span class="pre">`QuantileRegression</span></code> &lt;<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.QuantileRegression">https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.QuantileRegression</a>&gt;`__ likelihood. The quantiles passed to <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> must be a subset of pre-trained quantiles supported by Chronos-2 (see “Model Creation” section above).</p>
+<p>Here, we show how to perform probabilistic forecasting with Chronos-2 by using <code class="docutils literal notranslate"><span class="pre">`QuantileRegression</span></code> &lt;<a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression">https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression</a>&gt;`__ likelihood. The quantiles passed to <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> must be a subset of pre-trained quantiles supported by Chronos-2 (see “Model Creation” section above).</p>
 <p>Because sampling with large models like Chronos-2 can be computationally expensive, we here call <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with <code class="docutils literal notranslate"><span class="pre">predict_likelihood_parameters=True</span></code> to obtain quantile estimates directly without sampling. However, if the forecast horizon is longer than <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (i.e., auto-regressive forecasting is required), you must call <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with a large enough <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> value (e.g., 1000) to generate probabilistic forecasts via Monte Carlo sampling.</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
@@ -824,7 +840,7 @@ MAE on validation set with covariates: 466.05
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_25-Chronos-2-examples_24_1.png" src="../_images/examples_25-Chronos-2-examples_24_1.png" />
+<img alt="../_images/examples_25-Chronos-2-examples_25_1.png" src="../_images/examples_25-Chronos-2-examples_25_1.png" />
 </div>
 </div>
 <p>For probabilistic forecasts, we can evaluate the forecast quality by computing the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mic">Mean Interval Coverage (MIC)</a> (the share of actuals inside the prediction intervals) and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.metrics.metrics.html#darts.metrics.metrics.miw">Mean Interval Width (MIW)</a> (the width of the prediction intervals) metrics to evaluate the quality of the prediction

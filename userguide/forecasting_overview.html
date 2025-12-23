@@ -58,7 +58,7 @@
     <link rel="prev" title="TimeSeries" href="timeseries.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -508,7 +508,11 @@ More info: <a class="reference external" href="https://docs.python.org/3/library
 <p>Some models support multivariate time series. This means that the target (and potential covariates) series provided to the model
 during fit and predict stage can have multiple dimensions. The model will then in turn produce multivariate forecasts.</p>
 <p>Here is an example, using a <code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> to forecast a single multivariate series made of 2 components:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tg</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># use darts plotting style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">darts.utils.timeseries_generation</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">tg</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">KalmanForecaster</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 

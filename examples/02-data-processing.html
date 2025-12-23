@@ -61,7 +61,7 @@
     <link rel="prev" title="Multiple Time Series, Pre-trained Models and Covariates" href="01-multi-time-series-and-covariates.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -547,6 +547,17 @@
 </div>
 </div>
 <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># use darts plotting style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
@@ -644,7 +655,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_6_1.png" src="../_images/examples_02-data-processing_6_1.png" />
+<img alt="../_images/examples_02-data-processing_7_1.png" src="../_images/examples_02-data-processing_7_1.png" />
 </div>
 </div>
 </section>
@@ -796,7 +807,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_13_0.png" src="../_images/examples_02-data-processing_13_0.png" />
+<img alt="../_images/examples_02-data-processing_14_0.png" src="../_images/examples_02-data-processing_14_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -814,7 +825,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_14_0.png" src="../_images/examples_02-data-processing_14_0.png" />
+<img alt="../_images/examples_02-data-processing_15_0.png" src="../_images/examples_02-data-processing_15_0.png" />
 </div>
 </div>
 <p>Since <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code> wraps around <code class="docutils literal notranslate"><span class="pre">pd.interpolate</span></code> by default, we can also provide arguments to the <code class="docutils literal notranslate"><span class="pre">pd.interpolate()</span></code> function when calling <code class="docutils literal notranslate"><span class="pre">transform()</span></code></p>
@@ -831,7 +842,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_16_0.png" src="../_images/examples_02-data-processing_16_0.png" />
+<img alt="../_images/examples_02-data-processing_17_0.png" src="../_images/examples_02-data-processing_17_0.png" />
 </div>
 </div>
 </section>
@@ -867,7 +878,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_18_1.png" src="../_images/examples_02-data-processing_18_1.png" />
+<img alt="../_images/examples_02-data-processing_19_1.png" src="../_images/examples_02-data-processing_19_1.png" />
 </div>
 </div>
 <section id="More-complex-(and-useful)-transformations">
@@ -903,7 +914,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_20_1.png" src="../_images/examples_02-data-processing_20_1.png" />
+<img alt="../_images/examples_02-data-processing_21_1.png" src="../_images/examples_02-data-processing_21_1.png" />
 </div>
 </div>
 <p>To take this fact into account and achieve better performance, we could instead:</p>
@@ -937,7 +948,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_23_0.png" src="../_images/examples_02-data-processing_23_0.png" />
+<img alt="../_images/examples_02-data-processing_24_0.png" src="../_images/examples_02-data-processing_24_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -971,7 +982,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_24_1.png" src="../_images/examples_02-data-processing_24_1.png" />
+<img alt="../_images/examples_02-data-processing_25_1.png" src="../_images/examples_02-data-processing_25_1.png" />
 </div>
 </div>
 <div class="nbinput nblast docutils container">
@@ -1008,7 +1019,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_26_1.png" src="../_images/examples_02-data-processing_26_1.png" />
+<img alt="../_images/examples_02-data-processing_27_1.png" src="../_images/examples_02-data-processing_27_1.png" />
 </div>
 </div>
 </section>
@@ -1030,7 +1041,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_28_0.png" src="../_images/examples_02-data-processing_28_0.png" />
+<img alt="../_images/examples_02-data-processing_29_0.png" src="../_images/examples_02-data-processing_29_0.png" />
 </div>
 </div>
 <p>If all transformations in the pipeline are invertible, the <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code> object is too.</p>
@@ -1047,7 +1058,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_30_0.png" src="../_images/examples_02-data-processing_30_0.png" />
+<img alt="../_images/examples_02-data-processing_31_0.png" src="../_images/examples_02-data-processing_31_0.png" />
 </div>
 </div>
 <p>Recall now the incomplete series from <code class="docutils literal notranslate"><span class="pre">monthly-milk-incomplete.csv</span></code>. Suppose that we want to encapsule all our preprocessing steps into a Pipeline, consisting of: a <code class="docutils literal notranslate"><span class="pre">MissingValuesFiller</span></code> for filling the missing values, and a <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> for scaling the dataset between 0 and 1.</p>
@@ -1103,7 +1114,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_36_0.png" src="../_images/examples_02-data-processing_36_0.png" />
+<img alt="../_images/examples_02-data-processing_37_0.png" src="../_images/examples_02-data-processing_37_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -1120,7 +1131,7 @@ Dimensions without coordinates: sample
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_02-data-processing_37_0.png" src="../_images/examples_02-data-processing_37_0.png" />
+<img alt="../_images/examples_02-data-processing_38_0.png" src="../_images/examples_02-data-processing_38_0.png" />
 </div>
 </div>
 </section>

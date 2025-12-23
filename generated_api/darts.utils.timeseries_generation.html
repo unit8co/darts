@@ -58,7 +58,7 @@
     <link rel="prev" title="TimeSeries Statistics" href="darts.utils.statistics.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -808,6 +808,12 @@
 
 </ul>
 </details></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.config.html">Configuration</a></li>
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
 
 
@@ -966,12 +972,12 @@ a <cite>TimeSeries</cite> whose time axis will serve this purpose.</p></li>
 <li><p><strong>cyclic</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Boolean value indicating whether to add the specified attribute as a cyclic encoding.
 Alternative to one_hot encoding, enable only one of the two.
 (adds 2 columns, corresponding to sin and cos transformation)</p></li>
-<li><p><strong>until</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Extend the time_index up until timestamp for datetime indexed series
+<li><p><strong>until</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Extend the time_index up until timestamp for datetime indexed series
 and int for range indexed series, should match or exceed forecasting window.</p></li>
 <li><p><strong>add_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Extend the time_index by add_length, should match or exceed forecasting window.
 Set only one of until and add_length.</p></li>
 <li><p><strong>dtype</strong> – The desired NumPy dtype (np.float32 or np.float64) for the resulting series</p></li>
-<li><p><strong>with_columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – <p>Optionally, specify the output component names.</p>
+<li><p><strong>with_columns</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – <p>Optionally, specify the output component names.</p>
 <ul>
 <li><p>If <cite>one_hot</cite> and <cite>cyclic</cite> are <code class="docutils literal notranslate"><span class="pre">False</span></code>, must be a string</p></li>
 <li><p>If <cite>cyclic</cite> is <code class="docutils literal notranslate"><span class="pre">True</span></code>, must be a list of two strings. The first string for the sine, the second for the
@@ -1046,7 +1052,7 @@ The freq is optional for generating an integer index (if not specified, 1 is use
 <li><p><strong>country_code</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The country ISO code.</p></li>
 <li><p><strong>prov</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The province.</p></li>
 <li><p><strong>state</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The state.</p></li>
-<li><p><strong>until</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Extend the time_index up until timestamp for datetime indexed series
+<li><p><strong>until</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Extend the time_index up until timestamp for datetime indexed series
 and int for range indexed series, should match or exceed forecasting window.</p></li>
 <li><p><strong>add_length</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Extend the time_index by add_length, should match or exceed forecasting window.
 Set only one of until and add_length.</p></li>

@@ -58,7 +58,7 @@
     <link rel="prev" title="CatBoost Models" href="darts.models.forecasting.catboost_model.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -808,6 +808,12 @@
 
 </ul>
 </details></li>
+<li class="toctree-l1"><a class="reference internal" href="darts.config.html">Configuration</a></li>
+
+
+
+
+
 <li class="toctree-l1"><a class="reference internal" href="darts.timeseries.html">Timeseries</a></li>
 
 
@@ -905,6 +911,14 @@ and future covariates (known for <cite>output_chunk_length</cite> points after p
 <p>By default, using this model will automatically download and cache the pre-trained model from HuggingFace Hub
 (amazon/chronos-2). Alternatively, you can specify a local directory containing the model config and weights
 using the <code class="docutils literal notranslate"><span class="pre">local_dir</span></code> parameter.</p>
+<p>Two other variants of Chronos-2 are available on HuggingFace Hub:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://huggingface.co/autogluon/chronos-2-small">autogluon/chronos-2-small</a>: a smaller 28M parameter
+Chronos-2 model.</p></li>
+<li><p><a class="reference external" href="https://huggingface.co/autogluon/chronos-2-synth">autogluon/chronos-2-synth</a>: a 120M parameter
+Chronos-2 model trained on synthetic data only.</p></li>
+</ul>
+<p>To use either of those variants, specify the <code class="docutils literal notranslate"><span class="pre">hub_model_name</span></code> parameter to the desired model ID.</p>
 <p>By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
 forecasts, pass a <a class="reference internal" href="darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression" title="darts.utils.likelihood_models.torch.QuantileRegression"><code class="xref py py-class docutils literal notranslate"><span class="pre">QuantileRegression</span></code></a> instance to the
 <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter. The quantiles used must be a subset of those used during Chronos-2 pre-training, see
@@ -934,8 +948,9 @@ cannot generate autoregressive predictions (<cite>n &gt; output_chunk_length</ci
 the quantiles must be a subset of those used during Chronos-2 pre-training:
 [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
 0.95, 0.99].
-Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>, which will make Chronos-2 deterministic (median quantile only).</p></li>
-<li><p><strong>hub_model_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The model ID on HuggingFace Hub. Default is <code class="docutils literal notranslate"><span class="pre">&quot;amazon/chronos-2&quot;</span></code>.</p></li>
+Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>, which will make Chronos-2 deterministic (median quantile only).</p></li>
+<li><p><strong>hub_model_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The model ID on HuggingFace Hub. Default: <code class="docutils literal notranslate"><span class="pre">&quot;amazon/chronos-2&quot;</span></code>. Other available variants include
+<code class="docutils literal notranslate"><span class="pre">&quot;autogluon/chronos-2-small&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;autogluon/chronos-2-synth&quot;</span></code>.</p></li>
 <li><p><strong>hub_model_revision</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The model version to use. This can be a branch name, tag name, or commit hash. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>, which
 will use the default branch from <code class="docutils literal notranslate"><span class="pre">hub_model_name</span></code>.</p></li>
 <li><p><strong>local_dir</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">PathLike</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the

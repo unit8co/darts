@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -1006,6 +1006,15 @@
 <span class="sd">        (amazon/chronos-2). Alternatively, you can specify a local directory containing the model config and weights</span>
 <span class="sd">        using the ``local_dir`` parameter.</span>
 
+<span class="sd">        Two other variants of Chronos-2 are available on HuggingFace Hub:</span>
+
+<span class="sd">        - `autogluon/chronos-2-small &lt;https://huggingface.co/autogluon/chronos-2-small&gt;`_: a smaller 28M parameter</span>
+<span class="sd">          Chronos-2 model.</span>
+<span class="sd">        - `autogluon/chronos-2-synth &lt;https://huggingface.co/autogluon/chronos-2-synth&gt;`_: a 120M parameter</span>
+<span class="sd">          Chronos-2 model trained on synthetic data only.</span>
+
+<span class="sd">        To use either of those variants, specify the ``hub_model_name`` parameter to the desired model ID.</span>
+
 <span class="sd">        By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic</span>
 <span class="sd">        forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the</span>
 <span class="sd">        ``likelihood`` parameter. The quantiles used must be a subset of those used during Chronos-2 pre-training, see</span>
@@ -1039,9 +1048,10 @@
 <span class="sd">            the quantiles must be a subset of those used during Chronos-2 pre-training:</span>
 <span class="sd">            [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,</span>
 <span class="sd">            0.95, 0.99].</span>
-<span class="sd">            Default is ``None``, which will make Chronos-2 deterministic (median quantile only).</span>
+<span class="sd">            Default: ``None``, which will make Chronos-2 deterministic (median quantile only).</span>
 <span class="sd">        hub_model_name</span>
-<span class="sd">            The model ID on HuggingFace Hub. Default is ``&quot;amazon/chronos-2&quot;``.</span>
+<span class="sd">            The model ID on HuggingFace Hub. Default: ``&quot;amazon/chronos-2&quot;``. Other available variants include</span>
+<span class="sd">            ``&quot;autogluon/chronos-2-small&quot;`` and ``&quot;autogluon/chronos-2-synth&quot;``.</span>
 <span class="sd">        hub_model_revision</span>
 <span class="sd">            The model version to use. This can be a branch name, tag name, or commit hash. Default is ``None``, which</span>
 <span class="sd">            will use the default branch from ``hub_model_name``.</span>

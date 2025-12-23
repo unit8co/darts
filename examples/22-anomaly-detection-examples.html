@@ -61,7 +61,7 @@
     <link rel="prev" title="Filtering and predicting using the Gaussian Process filter" href="11-GP-filter-examples.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -526,7 +526,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">Anomaly</span> <span class="pre">Models</span></code>: offer a convenient way to produce anomaly scores from any of Darts’ global forecasting models or filtering models by comparing the models’ predictions with actual observations. Each Anomaly Model takes one forecasting/filtering model and one or multiple scorers. The model produces some predictions, which are fed together with the actual series to the scorer(s). It will return anomaly scores for each scorer.</p></li>
 </ul>
 <p>The figure below illustrates the different input/output for each tool:</p>
-<p><img alt="87d4f549fae2419c8dab0ceebc7f79fa" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
+<p><img alt="602690a385cc4b0e881bb1701e44d8f6" class="no-scaled-link" src="../_images/ad_4_sub_modules.png" style="width: 800px;" /></p>
 <p>The notebook is devided into two sections:</p>
 <ul class="simple">
 <li><p>How to use <code class="docutils literal notranslate"><span class="pre">ForecastingAnomalyModel</span></code> to find anomalies in the number of taxi passengers in New York.</p></li>
@@ -552,6 +552,17 @@
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="o">%</span><span class="k">load_ext</span> autoreload
 <span class="o">%</span><span class="k">autoreload</span> 2
 <span class="o">%</span><span class="k">matplotlib</span> inline
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># use darts plotting style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -647,7 +658,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_10_0.png" src="../_images/examples_22-anomaly-detection-examples_10_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_11_0.png" src="../_images/examples_22-anomaly-detection-examples_11_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -681,7 +692,7 @@
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_11_0.png" src="../_images/examples_22-anomaly-detection-examples_11_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_12_0.png" src="../_images/examples_22-anomaly-detection-examples_12_0.png" />
 </div>
 </div>
 <p>The goal would be to detect these five irregular periods and identify other possible abnormal days.</p>
@@ -741,7 +752,7 @@ SKLearnModel(lags=336, lags_past_covariates=None, lags_future_covariates=[0], ou
 <p>The <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter is an integer value indicating the window size used by the scorer to transform the series into an anomaly score. A scorer will slice the given series into subsequences of size W and returns a value indicating how anomalous these subset of W values are.</p>
 <p>The <code class="docutils literal notranslate"><span class="pre">window_agg</span></code> can be used to transform the window-wise scores into point-wise scores by aggregating all anomaly scores from each window that the point was included in.</p>
 <p>The following figure illustrates the mechanism of a Forecasting Anomaly model:</p>
-<p><img alt="b38f1a33eec24fc19ede5e7970fafb43" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
+<p><img alt="2961f463b32b4b36bae047187f871fcb" class="no-scaled-link" src="../_images/ad_inside_anomaly_model.png" style="width: 800px;" /></p>
 <section id="Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()">
 <h3>Using the main functions: fit(), score(), eval_metric() and show_anomalies()<a class="headerlink" href="#Using-the-main-functions:-fit(),-score(),-eval_metric()-and-show_anomalies()" title="Link to this heading">#</a></h3>
 <div class="nbinput nblast docutils container">
@@ -847,7 +858,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_24_1.png" src="../_images/examples_22-anomaly-detection-examples_24_1.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_25_1.png" src="../_images/examples_22-anomaly-detection-examples_25_1.png" />
 </div>
 </div>
 <p>To evaluate the anomaly model, we call the function <code class="docutils literal notranslate"><span class="pre">eval_metric()</span></code>. It outputs the score of an agnostic threshold metric (“AUC-ROC” or “AUC-PR”), between the predicted anomaly score time series and some known binary ground-truth time series indicating the presence of actual anomalies.</p>
@@ -937,7 +948,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_29_0.png" src="../_images/examples_22-anomaly-detection-examples_29_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_30_0.png" src="../_images/examples_22-anomaly-detection-examples_30_0.png" />
 </div>
 </div>
 </section>
@@ -986,7 +997,7 @@ On testing set -&gt; MAE: 595.190366262045, RMSE: 896.6287614972252
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_33_0.png" src="../_images/examples_22-anomaly-detection-examples_33_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_34_0.png" src="../_images/examples_22-anomaly-detection-examples_34_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
@@ -1113,7 +1124,7 @@ f1: 0.45/1
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_40_0.png" src="../_images/examples_22-anomaly-detection-examples_40_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_41_0.png" src="../_images/examples_22-anomaly-detection-examples_41_0.png" />
 </div>
 </div>
 </section>
@@ -1162,7 +1173,7 @@ f1: 0.45/1
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_42_0.png" src="../_images/examples_22-anomaly-detection-examples_42_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_43_0.png" src="../_images/examples_22-anomaly-detection-examples_43_0.png" />
 </div>
 </div>
 </section>
@@ -1170,7 +1181,7 @@ f1: 0.45/1
 <h1>Simple case: <code class="docutils literal notranslate"><span class="pre">KMeansScorer</span></code><a class="headerlink" href="#Simple-case:-KMeansScorer" title="Link to this heading">#</a></h1>
 <p>Let’s have a closer look at the scorer’s <code class="docutils literal notranslate"><span class="pre">window</span></code> parameter on the example of the <code class="docutils literal notranslate"><span class="pre">KmeansScorer</span></code>. We’ll use two toy datasets to demonstrate how the scorers perform with different window sizes. In first example we set <code class="docutils literal notranslate"><span class="pre">window=1</span></code> on a multivariate time series, and in the second we set <code class="docutils literal notranslate"><span class="pre">window=2</span></code> on a univariate time series.</p>
 <p>The figure below illustrates the Scorer’s windowing process:</p>
-<p><img alt="fff71658e1de4059b58b4172a05d6e26" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
+<p><img alt="f0f1b1be3b604f90ae4068e589e97f7e" class="no-scaled-link" src="../_images/ad_windowing.png" style="width: 1000px;" /></p>
 <section id="Multivariate-case-with-window=1">
 <h2>Multivariate case with window=1<a class="headerlink" href="#Multivariate-case-with-window=1" title="Link to this heading">#</a></h2>
 <section id="Synthetic-data-creation">
@@ -1262,7 +1273,7 @@ f1: 0.45/1
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_52_0.png" src="../_images/examples_22-anomaly-detection-examples_52_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_53_0.png" src="../_images/examples_22-anomaly-detection-examples_53_0.png" />
 </div>
 </div>
 </section>
@@ -1319,7 +1330,7 @@ f1: 0.45/1
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_57_0.png" src="../_images/examples_22-anomaly-detection-examples_57_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_58_0.png" src="../_images/examples_22-anomaly-detection-examples_58_0.png" />
 </div>
 </div>
 </section>
@@ -1371,7 +1382,7 @@ f1: 0.45/1
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_61_0.png" src="../_images/examples_22-anomaly-detection-examples_61_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_62_0.png" src="../_images/examples_22-anomaly-detection-examples_62_0.png" />
 </div>
 </div>
 <p>Nice! We can see that the anomaly scores accurately indicate the position of the 6 anomalies.</p>
@@ -1408,7 +1419,7 @@ AUC_PR: 1.0
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_65_0.png" src="../_images/examples_22-anomaly-detection-examples_65_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_66_0.png" src="../_images/examples_22-anomaly-detection-examples_66_0.png" />
 </div>
 </div>
 </section>
@@ -1479,7 +1490,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_72_1.png" src="../_images/examples_22-anomaly-detection-examples_72_1.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_73_1.png" src="../_images/examples_22-anomaly-detection-examples_73_1.png" />
 </div>
 </div>
 </section>
@@ -1536,7 +1547,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_76_0.png" src="../_images/examples_22-anomaly-detection-examples_76_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_77_0.png" src="../_images/examples_22-anomaly-detection-examples_77_0.png" />
 </div>
 </div>
 <p>From left to right, anomalies at positions 3, 4, and 6 are of type 1, and anomalies at positions 1, 2, and 5 are of type 2.</p>
@@ -1640,7 +1651,7 @@ Text(0.5, 1.0, &#39;Training set&#39;)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_22-anomaly-detection-examples_83_0.png" src="../_images/examples_22-anomaly-detection-examples_83_0.png" />
+<img alt="../_images/examples_22-anomaly-detection-examples_84_0.png" src="../_images/examples_22-anomaly-detection-examples_84_0.png" />
 </div>
 </div>
 <p>We can see the accurate prediction of the scorer with a window of 2 compared to that of the scorer with a window of 1.</p>

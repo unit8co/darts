@@ -87,6 +87,18 @@
    ]
   },
   {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# use darts plotting style\n",
+    "from darts import set_option\n",
+    "\n",
+    "set_option(\"plotting.use_darts_style\", True)"
+   ]
+  },
+  {
    "attachments": {},
    "cell_type": "markdown",
    "metadata": {},

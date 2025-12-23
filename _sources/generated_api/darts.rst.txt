@@ -15,6 +15,7 @@ darts
    darts.models
    darts.utils
 
+   darts.config
    darts.timeseries
 
 
@@ -26,4 +27,5 @@ darts
 - :doc:`darts.models <darts.models>`
 - :doc:`darts.utils <darts.utils>`
 
+- :doc:`darts.config <darts.config>`
 - :doc:`darts.timeseries <darts.timeseries>`

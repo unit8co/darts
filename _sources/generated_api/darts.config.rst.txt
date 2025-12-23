@@ -1,0 +1,3 @@
+.. automodule:: darts.config
+   :members:
+   :undoc-members:

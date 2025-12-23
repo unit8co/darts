@@ -61,7 +61,7 @@
     <link rel="prev" title="Time Series Made Easy in Python" href="../index.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -483,6 +483,17 @@
 </pre></div>
 </div>
 </div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># use darts plotting style</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">darts</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_option</span>
+
+<span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;plotting.use_darts_style&quot;</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
 </section>
 <section id="Building-and-manipulating-TimeSeries">
 <h1>Building and manipulating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Building-and-manipulating-TimeSeries" title="Link to this heading">#</a></h1>
@@ -531,7 +542,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_6_0.png" src="../_images/quickstart_00-quickstart_6_0.png" />
+<img alt="../_images/quickstart_00-quickstart_7_0.png" src="../_images/quickstart_00-quickstart_7_0.png" />
 </div>
 </div>
 </section>
@@ -554,7 +565,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_8_0.png" src="../_images/quickstart_00-quickstart_8_0.png" />
+<img alt="../_images/quickstart_00-quickstart_9_0.png" src="../_images/quickstart_00-quickstart_9_0.png" />
 </div>
 </div>
 </section>
@@ -613,7 +624,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_12_0.png" src="../_images/quickstart_00-quickstart_12_0.png" />
+<img alt="../_images/quickstart_00-quickstart_13_0.png" src="../_images/quickstart_00-quickstart_13_0.png" />
 </div>
 </div>
 <p><strong>Slicing:</strong></p>
@@ -631,7 +642,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_14_0.png" src="../_images/quickstart_00-quickstart_14_0.png" />
+<img alt="../_images/quickstart_00-quickstart_15_0.png" src="../_images/quickstart_00-quickstart_15_0.png" />
 </div>
 </div>
 <p><strong>Arithmetic operations:</strong></p>
@@ -650,7 +661,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_16_0.png" src="../_images/quickstart_00-quickstart_16_0.png" />
+<img alt="../_images/quickstart_00-quickstart_17_0.png" src="../_images/quickstart_00-quickstart_17_0.png" />
 </div>
 </div>
 <p><strong>Stacking</strong></p>
@@ -667,7 +678,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_18_0.png" src="../_images/quickstart_00-quickstart_18_0.png" />
+<img alt="../_images/quickstart_00-quickstart_19_0.png" src="../_images/quickstart_00-quickstart_19_0.png" />
 </div>
 </div>
 <p><strong>Mapping:</strong></p>
@@ -683,7 +694,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_20_0.png" src="../_images/quickstart_00-quickstart_20_0.png" />
+<img alt="../_images/quickstart_00-quickstart_21_0.png" src="../_images/quickstart_00-quickstart_21_0.png" />
 </div>
 </div>
 <p><strong>Mapping on both timestamps and values:</strong></p>
@@ -699,7 +710,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_22_0.png" src="../_images/quickstart_00-quickstart_22_0.png" />
+<img alt="../_images/quickstart_00-quickstart_23_0.png" src="../_images/quickstart_00-quickstart_23_0.png" />
 </div>
 </div>
 <p><strong>Adding some datetime attribute as an extra dimension (yielding a multivariate series):</strong></p>
@@ -715,7 +726,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_24_0.png" src="../_images/quickstart_00-quickstart_24_0.png" />
+<img alt="../_images/quickstart_00-quickstart_25_0.png" src="../_images/quickstart_00-quickstart_25_0.png" />
 </div>
 </div>
 <p><strong>Adding some binary holidays component:</strong></p>
@@ -731,7 +742,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_26_0.png" src="../_images/quickstart_00-quickstart_26_0.png" />
+<img alt="../_images/quickstart_00-quickstart_27_0.png" src="../_images/quickstart_00-quickstart_27_0.png" />
 </div>
 </div>
 <p><strong>Differencing:</strong></p>
@@ -747,7 +758,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_28_0.png" src="../_images/quickstart_00-quickstart_28_0.png" />
+<img alt="../_images/quickstart_00-quickstart_29_0.png" src="../_images/quickstart_00-quickstart_29_0.png" />
 </div>
 </div>
 <p><strong>Filling missing values (using a ``utils`` function).</strong></p>
@@ -772,7 +783,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_30_0.png" src="../_images/quickstart_00-quickstart_30_0.png" />
+<img alt="../_images/quickstart_00-quickstart_31_0.png" src="../_images/quickstart_00-quickstart_31_0.png" />
 </div>
 </div>
 </section>
@@ -794,7 +805,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_32_0.png" src="../_images/quickstart_00-quickstart_32_0.png" />
+<img alt="../_images/quickstart_00-quickstart_33_0.png" src="../_images/quickstart_00-quickstart_33_0.png" />
 </div>
 </div>
 </section>
@@ -824,7 +835,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_34_0.png" src="../_images/quickstart_00-quickstart_34_0.png" />
+<img alt="../_images/quickstart_00-quickstart_35_0.png" src="../_images/quickstart_00-quickstart_35_0.png" />
 </div>
 </div>
 <p>It’s very easy to fit models and produce predictions on <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. All the models have a <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and a <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. This is similar to <a class="reference external" href="https://scikit-learn.org/">Scikit-learn</a>, except that it is specific to time series. The <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function takes as argument the training time series on which to fit the model, and the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function takes as argument the number of time steps (after the end of the training series) over which to forecast.</p>
@@ -845,7 +856,7 @@ consume <code class="docutils literal notranslate"><span class="pre">TimeSeries<
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_36_0.png" src="../_images/quickstart_00-quickstart_36_0.png" />
+<img alt="../_images/quickstart_00-quickstart_37_0.png" src="../_images/quickstart_00-quickstart_37_0.png" />
 </div>
 </div>
 <p>The ACF presents a spike at x = 12, which suggests a yearly seasonality trend (highlighted in red). The blue zone determines the significance of the statistics for a confidence level of <span class="math notranslate nohighlight">\(\alpha = 5\%\)</span>. We can also run a statistical check of seasonality for each candidate period <code class="docutils literal notranslate"><span class="pre">m</span></code>:</p>
@@ -889,7 +900,7 @@ There is seasonality of order 12.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_40_0.png" src="../_images/quickstart_00-quickstart_40_0.png" />
+<img alt="../_images/quickstart_00-quickstart_41_0.png" src="../_images/quickstart_00-quickstart_41_0.png" />
 </div>
 </div>
 <p>This is better, but we are still missing the trend. Fortunately, there is also another naive baseline model capturing the trend, which is called <code class="docutils literal notranslate"><span class="pre">NaiveDrift</span></code>. This model simply produces linear predictions, with a slope that is determined by the first and last values of the training set:</p>
@@ -915,7 +926,7 @@ There is seasonality of order 12.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_42_0.png" src="../_images/quickstart_00-quickstart_42_0.png" />
+<img alt="../_images/quickstart_00-quickstart_43_0.png" src="../_images/quickstart_00-quickstart_43_0.png" />
 </div>
 </div>
 <p>What happened there? We simply fit a naive drift model, and add its forecast to the seasonal forecast we had previously. We also subtract the last value of the training set from the result, so that the resulting combined forecast starts off with the right offset.</p>
@@ -1040,7 +1051,7 @@ Lowest MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_53_0.png" src="../_images/quickstart_00-quickstart_53_0.png" />
+<img alt="../_images/quickstart_00-quickstart_54_0.png" src="../_images/quickstart_00-quickstart_54_0.png" />
 </div>
 </div>
 <p>We can observe that the model with <code class="docutils literal notranslate"><span class="pre">best_theta</span></code> is so far the best we have, in terms of MAPE.</p>
@@ -1092,7 +1103,7 @@ MAPE = 7.99%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_56_2.png" src="../_images/quickstart_00-quickstart_56_2.png" />
+<img alt="../_images/quickstart_00-quickstart_57_2.png" src="../_images/quickstart_00-quickstart_57_2.png" />
 </div>
 </div>
 <p>We can also retrieve all predicted values from each historical forecast, by setting <code class="docutils literal notranslate"><span class="pre">last_points_only=False</span></code>. With the <code class="docutils literal notranslate"><span class="pre">stride</span></code> parameter we define how many steps to move between two consecutative forecasts. We set it to 3 months, so that we can then concatenate the forecasts into a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
@@ -1133,7 +1144,7 @@ MAPE = 5.61%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_58_2.png" src="../_images/quickstart_00-quickstart_58_2.png" />
+<img alt="../_images/quickstart_00-quickstart_59_2.png" src="../_images/quickstart_00-quickstart_59_2.png" />
 </div>
 </div>
 <p>So it seems that our best model on validation set is not doing so great anymore when we backtest it (did I hear overfitting :D)</p>
@@ -1168,7 +1179,7 @@ MAPE = 5.61%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_60_1.png" src="../_images/quickstart_00-quickstart_60_1.png" />
+<img alt="../_images/quickstart_00-quickstart_61_1.png" src="../_images/quickstart_00-quickstart_61_1.png" />
 </div>
 </div>
 <p>Finally, using <code class="docutils literal notranslate"><span class="pre">backtest()</span></code> we can also get a simpler view of the average error over the historical forecasts:</p>
@@ -1248,7 +1259,7 @@ Average error (MAPE) over all historical forecasts: 6.30
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_66_0.png" src="../_images/quickstart_00-quickstart_66_0.png" />
+<img alt="../_images/quickstart_00-quickstart_67_0.png" src="../_images/quickstart_00-quickstart_67_0.png" />
 </div>
 </div>
 <p>We can see that the distribution is not centered at 0, which means that our <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model is biased. We can also make out a large ACF value at lag equal to 12, which indicates that the residuals contain information that was not used by the model.</p>
@@ -1281,7 +1292,7 @@ Average error (MAPE) over all historical forecasts: 6.30
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_68_0.png" src="../_images/quickstart_00-quickstart_68_0.png" />
+<img alt="../_images/quickstart_00-quickstart_69_0.png" src="../_images/quickstart_00-quickstart_69_0.png" />
 </div>
 </div>
 <p>We can clearly see that the errors increase the further ahead into the future we predict.</p>
@@ -1320,7 +1331,7 @@ MAPE = 4.42%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_71_2.png" src="../_images/quickstart_00-quickstart_71_2.png" />
+<img alt="../_images/quickstart_00-quickstart_72_2.png" src="../_images/quickstart_00-quickstart_72_2.png" />
 </div>
 </div>
 <p>This is much better! We get a mean absolute percentage error of about 4-5% when backtesting with a 3-months forecast horizon in this case.</p>
@@ -1342,7 +1353,7 @@ MAPE = 4.42%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_73_1.png" src="../_images/quickstart_00-quickstart_73_1.png" />
+<img alt="../_images/quickstart_00-quickstart_74_1.png" src="../_images/quickstart_00-quickstart_74_1.png" />
 </div>
 </div>
 <p>The residual analysis also reflects an improved performance in that we now have a distribution of the residuals centred at value 0, and the ACF values, although not insignificant, have lower magnitudes.</p>
@@ -1389,7 +1400,7 @@ MAPE = 4.42%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_76_0.png" src="../_images/quickstart_00-quickstart_76_0.png" />
+<img alt="../_images/quickstart_00-quickstart_77_0.png" src="../_images/quickstart_00-quickstart_77_0.png" />
 </div>
 </div>
 <p>First, let’s scale these two series between 0 and 1, as that will benefit most ML models. We will use a <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.scaler.html">Scaler</a> for this:</p>
@@ -1411,7 +1422,7 @@ MAPE = 4.42%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_78_0.png" src="../_images/quickstart_00-quickstart_78_0.png" />
+<img alt="../_images/quickstart_00-quickstart_79_0.png" src="../_images/quickstart_00-quickstart_79_0.png" />
 </div>
 </div>
 <p>Note how we can scale several series in one go. We can also parallelize this sort of operations over multiple processors by specifying <code class="docutils literal notranslate"><span class="pre">n_jobs</span></code>.</p>
@@ -1519,7 +1530,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_83_2.png" src="../_images/quickstart_00-quickstart_83_2.png" />
+<img alt="../_images/quickstart_00-quickstart_84_2.png" src="../_images/quickstart_00-quickstart_84_2.png" />
 </div>
 </div>
 <p>Our forecasts are actually not so terrible, considering that we use <strong>one model</strong> with default hyper-parameters to capture both air passengers and milk production!</p>
@@ -1577,7 +1588,7 @@ the month and year values to have them between 0 and 1:</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_86_0.png" src="../_images/quickstart_00-quickstart_86_0.png" />
+<img alt="../_images/quickstart_00-quickstart_87_0.png" src="../_images/quickstart_00-quickstart_87_0.png" />
 </div>
 </div>
 <p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> supports only <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>. Therefore, even though our covariates represent calendar information and are known in advance, we will use them as <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> with N-BEATS. To train, all we have to do is give them as <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> to the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function, in the same order as the targets:</p>
@@ -1679,7 +1690,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_90_2.png" src="../_images/quickstart_00-quickstart_90_2.png" />
+<img alt="../_images/quickstart_00-quickstart_91_2.png" src="../_images/quickstart_00-quickstart_91_2.png" />
 </div>
 </div>
 <p>It seems that now the model captures the trend of the air series better (which also perturbs a bit the forecasts of the milk series).</p>
@@ -1824,7 +1835,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_99_2.png" src="../_images/quickstart_00-quickstart_99_2.png" />
+<img alt="../_images/quickstart_00-quickstart_100_2.png" src="../_images/quickstart_00-quickstart_100_2.png" />
 </div>
 </div>
 </section>
@@ -1894,7 +1905,7 @@ covariates 6 months before the forecasted time step (which also requires to know
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_103_0.png" src="../_images/quickstart_00-quickstart_103_0.png" />
+<img alt="../_images/quickstart_00-quickstart_104_0.png" src="../_images/quickstart_00-quickstart_104_0.png" />
 </div>
 </div>
 <p>Note how we obtained the forecasts for the two time series at once above. Similarly, we can also get some metrics over sequences of series:</p>
@@ -1980,7 +1991,7 @@ MAPE = 3.76%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_109_3.png" src="../_images/quickstart_00-quickstart_109_3.png" />
+<img alt="../_images/quickstart_00-quickstart_110_3.png" src="../_images/quickstart_00-quickstart_110_3.png" />
 </div>
 </div>
 <p>Our best model so far!</p>
@@ -2031,7 +2042,7 @@ MAPE = 3.92%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_111_3.png" src="../_images/quickstart_00-quickstart_111_3.png" />
+<img alt="../_images/quickstart_00-quickstart_112_3.png" src="../_images/quickstart_00-quickstart_112_3.png" />
 </div>
 </div>
 <p>The MAPE score is slightly worse, which is expected since information cannot leak from the future anymore but the backtesting conditions are more reliable.</p>
@@ -2092,7 +2103,7 @@ MAPE = 26.40%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_114_2.png" src="../_images/quickstart_00-quickstart_114_2.png" />
+<img alt="../_images/quickstart_00-quickstart_115_2.png" src="../_images/quickstart_00-quickstart_115_2.png" />
 </div>
 </div>
 <p>This doesn’t look very good. It would be great if we could ignore the outliers somehow. And this is where sample weights come in!</p>
@@ -2117,7 +2128,7 @@ MAPE = 26.40%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_116_0.png" src="../_images/quickstart_00-quickstart_116_0.png" />
+<img alt="../_images/quickstart_00-quickstart_117_0.png" src="../_images/quickstart_00-quickstart_117_0.png" />
 </div>
 </div>
 <p>Now we can train the models with the sample weights using methods <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, <code class="docutils literal notranslate"><span class="pre">historical_forecasts</span></code>, <code class="docutils literal notranslate"><span class="pre">backtest()</span></code>, …</p>
@@ -2154,7 +2165,7 @@ MAPE = 5.19%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_118_2.png" src="../_images/quickstart_00-quickstart_118_2.png" />
+<img alt="../_images/quickstart_00-quickstart_119_2.png" src="../_images/quickstart_00-quickstart_119_2.png" />
 </div>
 </div>
 <p>Wow, this looks great! We managed to completely remove the negative impact of the outliers on our model!</p>
@@ -2193,7 +2204,7 @@ MAPE = 5.19%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_121_0.png" src="../_images/quickstart_00-quickstart_121_0.png" />
+<img alt="../_images/quickstart_00-quickstart_122_0.png" src="../_images/quickstart_00-quickstart_122_0.png" />
 </div>
 </div>
 <p>We see that the prediction starts 12 months after the end of the training series.</p>
@@ -2224,7 +2235,7 @@ arbitrary quantiles.</p>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_124_0.png" src="../_images/quickstart_00-quickstart_124_0.png" />
+<img alt="../_images/quickstart_00-quickstart_125_0.png" src="../_images/quickstart_00-quickstart_125_0.png" />
 </div>
 </div>
 </section>
@@ -2339,7 +2350,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_128_2.png" src="../_images/quickstart_00-quickstart_128_2.png" />
+<img alt="../_images/quickstart_00-quickstart_129_2.png" src="../_images/quickstart_00-quickstart_129_2.png" />
 </div>
 </div>
 </section>
@@ -2379,7 +2390,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_130_2.png" src="../_images/quickstart_00-quickstart_130_2.png" />
+<img alt="../_images/quickstart_00-quickstart_131_2.png" src="../_images/quickstart_00-quickstart_131_2.png" />
 </div>
 </div>
 <p>Furthermore, we could also for instance specify that we have some prior belief that the scale of the distribution is about <span class="math notranslate nohighlight">\(0.1\)</span> (in the transformed domain), while still capturing some time dependency of the distribution, by specifying <code class="docutils literal notranslate"><span class="pre">prior_b=.1</span></code>.</p>
@@ -2475,7 +2486,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_133_2.png" src="../_images/quickstart_00-quickstart_133_2.png" />
+<img alt="../_images/quickstart_00-quickstart_134_2.png" src="../_images/quickstart_00-quickstart_134_2.png" />
 </div>
 </div>
 <p>By default <code class="docutils literal notranslate"><span class="pre">TimeSeries.plot()</span></code> shows the median as well as the 5th and 95th percentiles (of the marginal distributions, if the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is multivariate). It is possible to control this:</p>
@@ -2492,7 +2503,7 @@ HPU available: False, using: 0 HPUs
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_135_0.png" src="../_images/quickstart_00-quickstart_135_0.png" />
+<img alt="../_images/quickstart_00-quickstart_136_0.png" src="../_images/quickstart_00-quickstart_136_0.png" />
 </div>
 </div>
 </section>
@@ -2646,7 +2657,7 @@ quantile loss at quantile 0.95: 7.39
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_140_3.png" src="../_images/quickstart_00-quickstart_140_3.png" />
+<img alt="../_images/quickstart_00-quickstart_141_3.png" src="../_images/quickstart_00-quickstart_141_3.png" />
 </div>
 </div>
 </section>
@@ -2694,7 +2705,7 @@ quantile loss at quantile 0.95: 6.19
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_142_1.png" src="../_images/quickstart_00-quickstart_142_1.png" />
+<img alt="../_images/quickstart_00-quickstart_143_1.png" src="../_images/quickstart_00-quickstart_143_1.png" />
 </div>
 </div>
 </section>
@@ -2743,7 +2754,7 @@ MAPE = 11.93%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_145_2.png" src="../_images/quickstart_00-quickstart_145_2.png" />
+<img alt="../_images/quickstart_00-quickstart_146_2.png" src="../_images/quickstart_00-quickstart_146_2.png" />
 </div>
 </div>
 </section>
@@ -2794,7 +2805,7 @@ MAPE = 4.77
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_147_2.png" src="../_images/quickstart_00-quickstart_147_2.png" />
+<img alt="../_images/quickstart_00-quickstart_148_2.png" src="../_images/quickstart_00-quickstart_148_2.png" />
 </div>
 </div>
 <p>We can also inspect the coefficients used to weigh the two inner models in the linear combination:</p>
@@ -2846,7 +2857,7 @@ array([0.01368814, 1.0980107 ], dtype=float32)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_153_0.png" src="../_images/quickstart_00-quickstart_153_0.png" />
+<img alt="../_images/quickstart_00-quickstart_154_0.png" src="../_images/quickstart_00-quickstart_154_0.png" />
 </div>
 </div>
 </section>
@@ -2883,7 +2894,7 @@ array([0.01368814, 1.0980107 ], dtype=float32)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_155_0.png" src="../_images/quickstart_00-quickstart_155_0.png" />
+<img alt="../_images/quickstart_00-quickstart_156_0.png" src="../_images/quickstart_00-quickstart_156_0.png" />
 </div>
 </div>
 </section>

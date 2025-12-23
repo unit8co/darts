@@ -51,6 +51,19 @@
   },
   {
    "cell_type": "code",
+   "execution_count": null,
+   "id": "8368a3a294566cff",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# use darts plotting style\n",
+    "from darts import set_option\n",
+    "\n",
+    "set_option(\"plotting.use_darts_style\", True)"
+   ]
+  },
+  {
+   "cell_type": "code",
    "execution_count": 3,
    "id": "d510b54b",
    "metadata": {},
@@ -84,7 +97,7 @@
    "id": "70d7e392",
    "metadata": {},
    "source": [
-    "Here, we will use the [Electricity Consumption Zurich Dataset](https://unit8co.github.io/darts/generated_api/darts.datasets.html#darts.datasets.ElectricityConsumptionZurichDataset), which records the electricity consumption of households & SMEs (`\"Value_NE5\"` column) and business & services (`\"Value_NE7\"`) in Zurich, Switzerland, along with weather covariates such as temperature (`\"T [°C]\"`) and humidity (`\"Hr [%Hr]\"`).\n",
+    "Here, we will use the [Electricity Consumption Zurich Dataset](https://unit8co.github.io/darts/generated_api/darts.datasets.datasets.html#darts.datasets.datasets.ElectricityConsumptionZurichDataset), which records the electricity consumption of households & SMEs (`\"Value_NE5\"` column) and business & services (`\"Value_NE7\"`) in Zurich, Switzerland, along with weather covariates such as temperature (`\"T [°C]\"`) and humidity (`\"Hr [%Hr]\"`).\n",
     "Values are recorded every 15 minutes between January 2015 and August 2022.\n",
     "\n",
     "<details>\n",
@@ -202,15 +215,19 @@
     "\n",
     "<details>\n",
     "\n",
-    "<summary><strong>Using Other Checkpoints</strong></summary>\n",
+    "<summary><strong>Using Smaller or Synthetic Variants</strong></summary>\n",
     "\n",
-    "Other Chronos-2 checkpoints might be available in the future. You can specify a different checkpoint on Hugging Face Hub by setting the `hub_model_name` and `hub_model_revision` (optional) arguments when creating the model. For example:\n",
+    "Two variants of Chronos-2 are available on HuggingFace Hub:\n",
+    "- [`autogluon/chronos-2-small`](https://huggingface.co/autogluon/chronos-2-small) : a smaller 28M parameter Chronos-2 model.\n",
+    "- [`autogluon/chronos-2-synth`](https://huggingface.co/autogluon/chronos-2-synth) : a 120M parameter Chronos-2 model trained on synthetic data only.\n",
+    "\n",
+    "To use either of those variants, specify the `hub_model_name` parameter to the desired model ID. For example, to use the synthetic data variant:\n",
     "\n",
     "```python\n",
     "model = Chronos2Model(\n",
     "    input_chunk_length=168,\n",
     "    output_chunk_length=24,\n",
-    "    hub_model_name=\"amazon/chronos-2-some-other-checkpoint\",\n",
+    "    hub_model_name=\"autogluon/chronos-2-small\",\n",
     "    hub_model_revision=None, # e.g., branch, tag, or commit ID\n",
     ")\n",
     "```\n",
@@ -440,7 +457,7 @@
    "metadata": {},
    "source": [
     "## Probabilistic Forecasting\n",
-    "Here, we show how to perform probabilistic forecasting with Chronos-2 by using [`QuantileRegression`](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.sklearn.html#darts.utils.likelihood_models.sklearn.QuantileRegression) likelihood. The quantiles passed to `QuantileRegression` must be a subset of pre-trained quantiles supported by Chronos-2 (see \"Model Creation\" section above).\n",
+    "Here, we show how to perform probabilistic forecasting with Chronos-2 by using [`QuantileRegression`](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.torch.html#darts.utils.likelihood_models.torch.QuantileRegression) likelihood. The quantiles passed to `QuantileRegression` must be a subset of pre-trained quantiles supported by Chronos-2 (see \"Model Creation\" section above).\n",
     "\n",
     "Because sampling with large models like Chronos-2 can be computationally expensive, we here call `predict()` with `predict_likelihood_parameters=True` to obtain quantile estimates directly without sampling. However, if the forecast horizon is longer than `output_chunk_length` (i.e., auto-regressive forecasting is required), you must call `predict()` with a large enough `num_samples` value (e.g., 1000) to generate probabilistic forecasts via Monte Carlo sampling."
    ]

@@ -55,7 +55,7 @@
     <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.38.0" />
+  <meta name="docsearch:version" content="0.39.0" />
   </head>
   
   
@@ -495,8 +495,7 @@
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.historical_forecasts</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">_check_optimizable_historical_forecasts_global_models</span><span class="p">,</span>
-    <span class="n">_optimized_historical_forecasts_all_points</span><span class="p">,</span>
-    <span class="n">_optimized_historical_forecasts_last_points_only</span><span class="p">,</span>
+    <span class="n">_optimized_historical_forecasts_regression</span><span class="p">,</span>
     <span class="n">_process_historical_forecast_input</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">darts.utils.likelihood_models.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">LikelihoodType</span>
@@ -1684,6 +1683,33 @@
             <span class="n">shift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">-</span> <span class="mi">1</span>
             <span class="n">step</span> <span class="o">=</span> <span class="mi">1</span>
 
+        <span class="c1"># check all target series are long enough</span>
+        <span class="n">target_lags</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;target&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">target_lags</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">min_target_length</span> <span class="o">=</span> <span class="nb">abs</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">target_lags</span><span class="p">))</span> <span class="o">+</span> <span class="n">shift</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">series_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">series_</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">min_target_length</span><span class="p">:</span>
+                    <span class="n">index_text</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="s2">&quot; &quot;</span>
+                        <span class="k">if</span> <span class="n">called_with_single_series</span>
+                        <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot; at list/sequence index </span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2"> &quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">end_ts</span> <span class="o">=</span> <span class="n">series_</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span>
+                    <span class="n">start_ts</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="n">series_</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">-</span> <span class="p">(</span><span class="n">min_target_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">series_</span><span class="o">.</span><span class="n">freq</span>
+                    <span class="p">)</span>
+                    <span class="n">raise_log</span><span class="p">(</span>
+                        <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="sa">f</span><span class="s2">&quot;The `series`</span><span class="si">{</span><span class="n">index_text</span><span class="si">}</span><span class="s2">is not long enough. &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;Given horizon `n=</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">`, `min(lags)=</span><span class="si">{</span><span class="n">target_lags</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">`, &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;`max(lags)=</span><span class="si">{</span><span class="n">target_lags</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">` and &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;`output_chunk_length=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="si">}</span><span class="s2">`, the `series` has to &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;range from </span><span class="si">{</span><span class="n">start_ts</span><span class="si">}</span><span class="s2"> until </span><span class="si">{</span><span class="n">end_ts</span><span class="si">}</span><span class="s2"> (inclusive), but it only ranges from &quot;</span>
+                            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">series_</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span><span class="si">}</span><span class="s2"> until </span><span class="si">{</span><span class="n">end_ts</span><span class="si">}</span><span class="s2">.&quot;</span>
+                        <span class="p">),</span>
+                        <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+                    <span class="p">)</span>
+
         <span class="c1"># dictionary containing covariate data over time span required for prediction</span>
         <span class="n">covariate_matrices</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="c1"># dictionary containing covariate lags relative to minimum covariate lag</span>
@@ -1930,21 +1956,10 @@
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_check_optimizable_historical_forecasts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">retrain</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">bool</span><span class="p">]],</span>
-        <span class="n">show_warnings</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon &lt;= model.output_chunk_length`</span>
-<span class="sd">        (no auto-regression required).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">_check_optimizable_historical_forecasts_global_models</span><span class="p">(</span>
-            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
-            <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
-            <span class="n">retrain</span><span class="o">=</span><span class="n">retrain</span><span class="p">,</span>
-            <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
-            <span class="n">allow_autoregression</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-        <span class="p">)</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Historical forecast can be optimized if no re-training is involved&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">_check_optimizable_historical_forecasts_global_models</span><span class="p">(</span><span class="n">retrain</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_optimized_historical_forecasts</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -1968,9 +1983,6 @@
 <span class="sd">        For SKLearnModels we create the lagged prediction data once per series using a moving window.</span>
 <span class="sd">        With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each</span>
 <span class="sd">        forecastable index and series.</span>
-<span class="sd">        Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.</span>
-
-<span class="sd">        TODO: support forecast_horizon &gt; output_chunk_length (auto-regression)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">_process_historical_forecast_input</span><span class="p">(</span>
             <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
@@ -1978,46 +1990,26 @@
             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
             <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
             <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
-            <span class="n">allow_autoregression</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="p">)</span>
 
-        <span class="c1"># TODO: move the loop here instead of duplicated code in each sub-routine?</span>
-        <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
-            <span class="n">hfc</span> <span class="o">=</span> <span class="n">_optimized_historical_forecasts_last_points_only</span><span class="p">(</span>
-                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
-                <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-                <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
-                <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
-                <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
-                <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
-                <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
-                <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
-                <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
-                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
-                <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
-                <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
-                <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
-            <span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">hfc</span> <span class="o">=</span> <span class="n">_optimized_historical_forecasts_all_points</span><span class="p">(</span>
-                <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
-                <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
-                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
-                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
-                <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
-                <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
-                <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
-                <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
-                <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
-                <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
-                <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
-                <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
-                <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
-                <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
-                <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">hfc</span> <span class="o">=</span> <span class="n">_optimized_historical_forecasts_regression</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+            <span class="n">start_format</span><span class="o">=</span><span class="n">start_format</span><span class="p">,</span>
+            <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+            <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
+            <span class="n">show_warnings</span><span class="o">=</span><span class="n">show_warnings</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="n">predict_likelihood_parameters</span><span class="o">=</span><span class="n">predict_likelihood_parameters</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">predict_kwargs</span><span class="o">=</span><span class="n">predict_kwargs</span><span class="p">,</span>
+            <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="n">hfc</span>
 
     <span class="nd">@property</span>
