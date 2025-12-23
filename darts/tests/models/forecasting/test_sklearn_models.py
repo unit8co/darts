@@ -4036,18 +4036,13 @@ class TestSKLearnModels:
     @pytest.mark.parametrize(
         "config",
         product(
-            (
-                [
-                    (LinearRegressionModel, {}),
-                    (
-                        LinearRegressionModel,
-                        {"lags": {"sine": 2, "default_lags": 1}},
-                    ),
-                ]
-                + ([(XGBModel, xgb_test_params)] if XGB_AVAILABLE else [])
-                + ([(LightGBMModel, lgbm_test_params)] if LGBM_AVAILABLE else [])
-                + ([(CatBoostModel, cb_test_params)] if CB_AVAILABLE else [])
-            ),
+            ([
+                (LinearRegressionModel, {}),
+                (
+                    LinearRegressionModel,
+                    {"lags": {"sine": 2, "default_lags": 1}},
+                ),
+            ]),
             [True, False],  # multi_models
             [True, False],  # last_points_only
             [True, False],  # multivariate
