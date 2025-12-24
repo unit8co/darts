@@ -24,729 +24,625 @@ Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integr
 - TODO
 """
 
-from typing import Literal
+import math
+from dataclasses import dataclass
+from typing import Callable, Literal
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
-
-class _Patch(nn.Module):
-    def __init__(self, patch_size: int, patch_stride: int) -> None:
-        super().__init__()
-        self.patch_size = patch_size
-        self.patch_stride = patch_stride
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        length = x.shape[-1]
-
-        if length % self.patch_size != 0:
-            padding_size = (
-                *x.shape[:-1],
-                self.patch_size - (length % self.patch_size),
-            )
-            padding = torch.full(
-                size=padding_size, fill_value=torch.nan, dtype=x.dtype, device=x.device
-            )
-            x = torch.concat((padding, x), dim=-1)
-
-        x = x.unfold(dimension=-1, size=self.patch_size, step=self.patch_stride)
-        return x
+_TOLERANCE = 1e-6
 
 
-class _InstanceNorm(nn.Module):
+@dataclass(frozen=True)
+class ForecastConfig:
+    """Options for forecasting.
+
+    Attributes:
+      max_context: The maximum context length. This is used by the complied decode
+        function at inference time during batched inference. Any input time series
+        with length less than max_context will be padded with zeros, and with
+        length greater than max_context will be truncated.
+      max_horizon: The maximum horizon length. This is used by the complied decode
+        function at inference time during batched inference. The compiled cached
+        decoding function will by default forecast till max_horizon.
+      normalize_inputs: Whether to normalize the inputs. This is useful when the
+        raw inputs are of extremely large or small magnitudes which may result in
+        numerical issues.
+      window_size: The window size for decomposed forecasting.
+        TODO(siriuz42):implement it.
+      per_core_batch_size: The batch size per core. Used at inference time during
+        batched inference when multiple GPU / TPU devices are used.
+      use_continuous_quantile_head: Whether to use a separate continuous quantile
+        head to avoid quantile collapsing.
+      force_flip_invariance: Whether to force flip invariance. TimesFM guarantees
+        that TimesFM(aX + b) = a * TimesFM(x) + b for a >= 0 by default. This flag
+        extends it to a < 0 as well.
+      infer_is_positive: Whether to guarantee nonnegativity of the output if the
+        input is nonnegative.
+      fix_quantile_crossing: Whether to fix quantile crossing.
+      return_backcast: Whether to return backcast.
     """
-    Apply standardization along the last dimension and optionally apply arcsinh after standardization.
-    """
 
-    def __init__(self, eps: float = 1e-5, use_arcsinh: bool = False) -> None:
-        super().__init__()
-        self.eps = eps
-        self.use_arcsinh = use_arcsinh
+    max_context: int = 0
+    max_horizon: int = 0
+    normalize_inputs: bool = False
+    window_size: int = 0
+    per_core_batch_size: int = 1
+    use_continuous_quantile_head: bool = False
+    force_flip_invariance: bool = True
+    infer_is_positive: bool = True
+    fix_quantile_crossing: bool = False
+    return_backcast: bool = False
 
-    def forward(
+
+@dataclass(frozen=True)
+class ResidualBlockConfig:
+    """Framework-agnostic config for a residual block."""
+
+    input_dims: int
+    hidden_dims: int
+    output_dims: int
+    use_bias: bool
+    activation: Literal["relu", "swish", "none"]
+
+
+@dataclass(frozen=True)
+class RandomFourierFeaturesConfig:
+    """Framework-agnostic config for random fourier features."""
+
+    input_dims: int
+    output_dims: int
+    projection_stddev: float
+    use_bias: bool
+
+
+@dataclass(frozen=True)
+class TransformerConfig:
+    """Framework-agnostic config for a transformer."""
+
+    model_dims: int
+    hidden_dims: int
+    num_heads: int
+    attention_norm: Literal["rms"]
+    feedforward_norm: Literal["rms"]
+    qk_norm: Literal["rms", "none"]
+    use_bias: bool
+    use_rotary_position_embeddings: bool
+    ff_activation: Literal["relu", "swish", "none"]
+    fuse_qkv: bool
+
+
+@dataclass(frozen=True)
+class StackedTransformersConfig:
+    """Framework-agnostic config for a stacked transformers."""
+
+    num_layers: int
+    transformer: TransformerConfig
+
+
+class RMSNorm(nn.Module):
+    """RMS normalization."""
+
+    def __init__(
         self,
-        x: torch.Tensor,
-        loc_scale: tuple[torch.Tensor, torch.Tensor] | None = None,
-    ) -> tuple[torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
-        orig_dtype = x.dtype
-        x = x.to(torch.float32)
-        if loc_scale is None:
-            loc = torch.nan_to_num(torch.nanmean(x, dim=-1, keepdim=True), nan=0.0)
-            scale = torch.nan_to_num(
-                (x - loc).square().nanmean(dim=-1, keepdim=True).sqrt(), nan=1.0
-            )
-            scale = torch.where(scale == 0, self.eps, scale)
+        num_features: int,
+        *,
+        epsilon: float = 1e-6,
+    ):
+        super().__init__()
+        self.scale = nn.Parameter(torch.zeros(num_features))
+        self.num_features = num_features
+        self.epsilon = epsilon
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        var = torch.mean(torch.square(inputs), dim=-1, keepdim=True)
+        normed_inputs = inputs * torch.rsqrt(var + self.epsilon)
+        normed_inputs = normed_inputs * self.scale
+        return normed_inputs
+
+
+@dataclass(frozen=False)
+class DecodeCache:
+    """Cache for decoding."""
+
+    next_index: torch.Tensor
+    num_masked: torch.Tensor
+    key: torch.Tensor
+    value: torch.Tensor
+
+
+class ResidualBlock(nn.Module):
+    """Residual block with two linear layers and a linear residual connection."""
+
+    def __init__(self, config: ResidualBlockConfig):
+        super().__init__()
+        self.config = config
+        self.hidden_layer = nn.Linear(
+            in_features=config.input_dims,
+            out_features=config.hidden_dims,
+            bias=config.use_bias,
+        )
+        self.output_layer = nn.Linear(
+            in_features=config.hidden_dims,
+            out_features=config.output_dims,
+            bias=config.use_bias,
+        )
+        self.residual_layer = nn.Linear(
+            in_features=config.input_dims,
+            out_features=config.output_dims,
+            bias=config.use_bias,
+        )
+        if config.activation == "relu":
+            self.activation = nn.ReLU()
+        elif config.activation == "swish":
+            self.activation = nn.SiLU()
+        elif config.activation == "none":
+            self.activation = nn.Identity()
         else:
-            loc, scale = loc_scale
-
-        scaled_x = (x - loc) / scale
-
-        if self.use_arcsinh:
-            scaled_x = torch.arcsinh(scaled_x)
-
-        return scaled_x.to(orig_dtype), (loc, scale)
-
-    def inverse(
-        self, x: torch.Tensor, loc_scale: tuple[torch.Tensor, torch.Tensor]
-    ) -> torch.Tensor:
-        orig_dtype = x.dtype
-        x = x.to(torch.float32)
-        loc, scale = loc_scale
-
-        if self.use_arcsinh:
-            x = torch.sinh(x)
-
-        x = x * scale + loc
-
-        return x.to(orig_dtype)
-
-
-class _ResidualBlock(nn.Module):
-    """A generic residual block which can be used for input and output embedding layers"""
-
-    def __init__(
-        self,
-        in_dim: int,
-        h_dim: int,
-        out_dim: int,
-        act_fn_name: str,
-        dropout_p: float = 0.0,
-        use_layer_norm: bool = False,
-    ) -> None:
-        super().__init__()
-
-        self.dropout = nn.Dropout(dropout_p)
-        self.hidden_layer = nn.Linear(in_dim, h_dim)
-        self.act = nn.ReLU()
-        self.output_layer = nn.Linear(h_dim, out_dim)
-        self.residual_layer = nn.Linear(in_dim, out_dim)
-
-        self.use_layer_norm = use_layer_norm
-
-        if self.use_layer_norm:
-            raise_log(
-                ValueError("Layer norm should not be used in ResidualBlock."),
-                logger,
-            )
-
-        if not act_fn_name == "relu":
-            raise_log(
-                ValueError("ReLU should be used in ResidualBlock"),
-                logger,
-            )
+            raise ValueError(f"Activation: {config.activation} not supported.")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        hid = self.act(self.hidden_layer(x))
-        out = self.dropout(self.output_layer(hid))
-        res = self.residual_layer(x)
-
-        out = out + res
-
-        return out
+        return self.output_layer(
+            self.activation(self.hidden_layer(x))
+        ) + self.residual_layer(x)
 
 
-class _RoPE(nn.Module):
-    """Applies rotary position embeddings (RoPE) to input tensors.
+class RandomFourierFeatures(nn.Module):
+    """Random Fourier features layer."""
 
-    Implementation adapted from:
-    https://github.com/huggingface/transformers/blob/965cf677695dd363285831afca8cf479cf0c600c/src/transformers/models/llama/modeling_llama.py#L95
+    def __init__(self, config: RandomFourierFeaturesConfig):
+        super().__init__()
+        self.config = config
+
+        if config.output_dims % 4 != 0:
+            raise ValueError(
+                f"Output dims must be a multiple of 4: {config.output_dims} % 4 != 0."
+            )
+        num_projected_features = config.output_dims // 4
+
+        self.phase_shifts = nn.Parameter(torch.zeros(2, num_projected_features))
+        self.projection_layer = nn.Linear(
+            in_features=config.input_dims,
+            out_features=num_projected_features,
+            bias=config.use_bias,
+        )
+        self.residual_layer = nn.Linear(
+            in_features=config.input_dims,
+            out_features=config.output_dims,
+            bias=config.use_bias,
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        projected = self.projection_layer(x)
+        cos_features = torch.cos(projected)
+        sin_features = torch.sin(projected)
+        sq_wave_1 = torch.sign(torch.sin(projected + self.phase_shifts[0, :]))
+        sq_wave_2 = torch.sign(torch.sin(projected + self.phase_shifts[1, :]))
+        fourier_features = torch.cat(
+            [cos_features, sin_features, sq_wave_1, sq_wave_2], dim=-1
+        )
+        residual = self.residual_layer(x)
+        return fourier_features + residual
+
+
+def make_attn_mask(
+    query_length: int,
+    num_all_masked_kv: torch.Tensor,
+    query_index_offset: torch.Tensor | None = None,
+    kv_length: int = 0,
+) -> torch.Tensor:
+    """Makes attention mask."""
+    if kv_length == 0:
+        kv_length = query_length
+
+    q_index = torch.arange(query_length, device=num_all_masked_kv.device)[
+        None, None, :, None
+    ]
+    if query_index_offset is not None:
+        q_index = q_index + query_index_offset[:, None, None, None]
+    kv_index = torch.arange(kv_length, device=num_all_masked_kv.device)[
+        None, None, None, :
+    ]
+    return torch.logical_and(
+        q_index >= kv_index,
+        kv_index >= num_all_masked_kv[:, None, None, None],
+    )
+
+
+class RotaryPositionalEmbedding(nn.Module):
+    """Rotary positional embedding."""
+
+    def __init__(
+        self,
+        embedding_dims: int,
+        min_timescale: float = 1.0,
+        max_timescale: float = 10000.0,
+    ):
+        super().__init__()
+        self.embedding_dims = embedding_dims
+        self.min_timescale = min_timescale
+        self.max_timescale = max_timescale
+
+    def forward(
+        self,
+        inputs: torch.Tensor,
+        position: torch.Tensor | None = None,
+    ):
+        """Generates a JTensor of sinusoids with different frequencies."""
+        if self.embedding_dims != inputs.shape[-1]:
+            raise ValueError(
+                "The embedding dims of the rotary position embedding"
+                "must match the hidden dimension of the inputs."
+            )
+        half_embedding_dim = self.embedding_dims // 2
+        fraction = (
+            2
+            * torch.arange(0, half_embedding_dim, device=inputs.device)
+            / self.embedding_dims
+        )
+        timescale = (
+            self.min_timescale * (self.max_timescale / self.min_timescale) ** fraction
+        ).to(inputs.device)
+        if position is None:
+            seq_length = inputs.shape[1]
+            position = torch.arange(
+                seq_length, dtype=torch.float32, device=inputs.device
+            )[None, :]
+
+        if len(inputs.shape) == 4:
+            position = position[..., None, None]
+            timescale = timescale[None, None, None, :]
+        elif len(inputs.shape) == 3:
+            position = position[..., None]
+            timescale = timescale[None, None, :]
+        else:
+            raise ValueError("Inputs must be of rank 3 or 4.")
+
+        sinusoid_inp = position / timescale
+        sin = torch.sin(sinusoid_inp)
+        cos = torch.cos(sinusoid_inp)
+        first_half, second_half = torch.chunk(inputs, 2, dim=-1)
+        first_part = first_half * cos - second_half * sin
+        second_part = second_half * cos + first_half * sin
+        return torch.cat([first_part, second_part], dim=-1)
+
+
+def _dot_product_attention(
+    query,
+    key,
+    value,
+    mask=None,
+):
+    """Computes dot-product attention given query, key, and value."""
+    attn_weights = torch.einsum("...qhd,...khd->...hqk", query, key)
+    if mask is not None:
+        attn_weights = torch.where(
+            mask, attn_weights, -torch.finfo(attn_weights.dtype).max / 2
+        )
+
+    attn_weights = F.softmax(attn_weights, dim=-1)
+
+    return torch.einsum("...hqk,...khd->...qhd", attn_weights, value)
+
+
+def _torch_dot_product_attention(query, key, value, mask=None):
+    """
+    Performs the exact same (unscaled) attention as the above function,
+    but using the fast and fused F.scaled_dot_product_attention kernel.
     """
 
-    def __init__(self, dim: int, base: float = 10000):
+    # 1. Permute inputs from (B, L, H, D) to the expected (B, H, L, D)
+    query = query.permute(0, 2, 1, 3)
+    key = key.permute(0, 2, 1, 3)
+    value = value.permute(0, 2, 1, 3)
+
+    # 2. Call the fused attention kernel
+    #    - Pass the mask to `attn_mask`.
+    #    - Set `scale=1.0` to disable the default 1/sqrt(d_k) scaling.
+    output = F.scaled_dot_product_attention(
+        query, key, value, attn_mask=mask, scale=1.0
+    )
+
+    # 3. Permute the output back to the original (B, L, H, D) layout
+    output = output.permute(0, 2, 1, 3)
+
+    return output
+
+
+class PerDimScale(nn.Module):
+    """Per-dimension scaling."""
+
+    def __init__(self, num_dims: int):
         super().__init__()
+        self.num_dims = num_dims
+        self.per_dim_scale = nn.Parameter(torch.zeros(num_dims))
 
-        self.dim = dim
-        self.base = base
-        inv_freq = 1.0 / (
-            self.base
-            ** (torch.arange(0, self.dim, 2, dtype=torch.int64).float() / self.dim)
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        scale_factor = (
+            1.442695041 / math.sqrt(self.num_dims) * F.softplus(self.per_dim_scale)
         )
-        self.inv_freq: torch.Tensor  # type hint for type checker
-        self.register_buffer("inv_freq", tensor=inv_freq, persistent=False)
-
-    @torch.no_grad()
-    def forward(
-        self, x: torch.Tensor, position_ids: torch.Tensor
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        # x: [bs, num_attention_heads, seq_len, head_size]
-        self.inv_freq.to(x.device)
-        inv_freq_expanded = (
-            self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1)
-        )
-        position_ids_expanded = position_ids[:, None, :].float()
-        # Force float32 since bfloat16 loses precision on long contexts
-        # See https://github.com/huggingface/transformers/pull/29285
-        device_type = x.device.type
-        device_type = (
-            device_type
-            if isinstance(device_type, str) and device_type != "mps"
-            else "cpu"
-        )
-        with torch.autocast(device_type=device_type, enabled=False):
-            freqs = (
-                inv_freq_expanded.float() @ position_ids_expanded.float()
-            ).transpose(1, 2)
-            emb = torch.cat((freqs, freqs), dim=-1)
-            cos = emb.cos()
-            sin = emb.sin()
-        return cos.to(dtype=x.dtype), sin.to(dtype=x.dtype)
-
-    @staticmethod
-    def rotate_half(x):
-        """Rotates half the hidden dims of the input."""
-        x1 = x[..., : x.shape[-1] // 2]
-        x2 = x[..., x.shape[-1] // 2 :]
-        return torch.cat((-x2, x1), dim=-1)
-
-    @staticmethod
-    def apply_rotary_pos_emb(
-        q: torch.Tensor,
-        k: torch.Tensor,
-        cos: torch.Tensor,
-        sin: torch.Tensor,
-        unsqueeze_dim: int = 1,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Applies Rotary Position Embedding to the query and key tensors.
-
-        Args:
-            q (`torch.Tensor`): The query tensor.
-            k (`torch.Tensor`): The key tensor.
-            cos (`torch.Tensor`): The cosine part of the rotary embedding.
-            sin (`torch.Tensor`): The sine part of the rotary embedding.
-            unsqueeze_dim (`int`, *optional*, defaults to 1):
-                The 'unsqueeze_dim' argument specifies the dimension along which to unsqueeze cos[position_ids] and
-                sin[position_ids] so that they can be properly broadcasted to the dimensions of q and k. For example,
-                note that cos[position_ids] and sin[position_ids] have the shape [batch_size, seq_len, head_dim]. Then,
-                if q and k have the shape [batch_size, heads, seq_len, head_dim], then setting unsqueeze_dim=1 makes
-                cos[position_ids] and sin[position_ids] broadcastable to the shapes of q and k. Similarly, if q and k
-                have the shape [batch_size, seq_len, heads, head_dim], then set unsqueeze_dim=2.
-        Returns:
-            `tuple(torch.Tensor)` comprising of the query and key tensors rotated using the Rotary Position Embedding.
-        """
-        cos = cos.unsqueeze(unsqueeze_dim)
-        sin = sin.unsqueeze(unsqueeze_dim)
-        q_embed = (q * cos) + (_RoPE.rotate_half(q) * sin)
-        k_embed = (k * cos) + (_RoPE.rotate_half(k) * sin)
-        return q_embed, k_embed
+        return x * scale_factor
 
 
-class _MHA(nn.Module):
-    """Multi-head Attention Layer"""
+class MultiHeadAttention(nn.Module):
+    """Multi-head attention."""
 
     def __init__(
         self,
-        d_model: int,
-        d_kv: int,
         num_heads: int,
-        dropout_rate: float,
-        rope_theta: float,
-        attn_implementation: Literal["eager", "sdpa"],
-        use_rope: bool = True,
-    ):
-        super().__init__()
-        self.d_model: int = d_model
-        self.kv_proj_dim: int = d_kv
-        self.n_heads: int = num_heads
-        self.dropout: float = dropout_rate
-        self.inner_dim: int = self.n_heads * self.kv_proj_dim
-        self.attn_implementation = attn_implementation
-
-        self.q = nn.Linear(self.d_model, self.inner_dim, bias=False)
-        self.k = nn.Linear(self.d_model, self.inner_dim, bias=False)
-        self.v = nn.Linear(self.d_model, self.inner_dim, bias=False)
-        self.o = nn.Linear(self.inner_dim, self.d_model, bias=False)
-
-        self.use_rope = use_rope
-        if use_rope:
-            self.rope_embed = _RoPE(dim=self.kv_proj_dim, base=rope_theta)
-
-    def _eager_attention(
-        self,
-        query_states: torch.Tensor,
-        key_states: torch.Tensor,
-        value_states: torch.Tensor,
-        mask: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Eager attention implementation using manual matmul.
-
-        Args:
-            query_states: [batch, n_heads, seq_len, kv_proj_dim]
-            key_states: [batch, n_heads, seq_len, kv_proj_dim]
-            value_states: [batch, n_heads, seq_len, kv_proj_dim]
-            mask: [batch, n_heads, q_len, kv_len]
-
-        Returns:
-            attn_output: [batch, n_heads, seq_len, kv_proj_dim]
-            attn_weights: [batch, n_heads, q_len, kv_len]
-        """
-        # Compute attention weights (no scaling - this is the original Chronos-2 implementation)
-        scores = torch.matmul(
-            query_states, key_states.transpose(3, 2)
-        )  # "bnqd,bnkd->bnqk"
-        scores += mask
-        attn_weights = nn.functional.softmax(scores.float(), dim=-1).type_as(scores)
-        attn_weights = nn.functional.dropout(
-            attn_weights, p=self.dropout, training=self.training
-        )
-        attn_output = torch.matmul(attn_weights, value_states)
-
-        return attn_output, attn_weights
-
-    def _sdpa_attention(
-        self,
-        query_states: torch.Tensor,
-        key_states: torch.Tensor,
-        value_states: torch.Tensor,
-        mask: torch.Tensor,
-    ) -> tuple[torch.Tensor, None]:
-        """SDPA attention implementation using torch.nn.functional.scaled_dot_product_attention.
-
-        Args:
-            query_states: [batch, n_heads, seq_len, kv_proj_dim]
-            key_states: [batch, n_heads, seq_len, kv_proj_dim]
-            value_states: [batch, n_heads, seq_len, kv_proj_dim]
-            mask: [batch, n_heads, q_len, kv_len] - additive mask (0 for valid, -inf for invalid)
-
-        Returns:
-            attn_output: [batch, n_heads, seq_len, kv_proj_dim]
-            attn_weights: None (SDPA doesn't return weights)
-        """
-        attn_output = nn.functional.scaled_dot_product_attention(
-            query_states,
-            key_states,
-            value_states,
-            attn_mask=mask,
-            dropout_p=self.dropout if self.training else 0.0,
-            scale=1.0,  # Match eager implementation (no scaling)
-        )
-
-        return attn_output, None
-
-    def forward(
-        self,
-        hidden_states: torch.Tensor,
-        mask: torch.Tensor,
-        position_ids: torch.Tensor | None = None,
-    ) -> torch.Tensor:
-        """Multi-head attention forward pass.
-
-        Args:
-            hidden_states : Input tensor of shape [batch_size, seq_len, d_model]
-            mask : Attention mask tensor of shape [batch_size, num_heads, q_len, kv_len]
-            position_ids : Position IDs for RoPE. Defaults to None.
-
-        Returns:
-            AttentionOutput: Contains:
-                - hidden_states : Output tensor of shape [batch_size, seq_len, d_model]
-        """
-        if self.use_rope:
-            assert position_ids is not None, (
-                "position_ids must be provided when self.use_rope=True"
-            )
-
-        seq_length = hidden_states.shape[1]
-
-        def shape(states: torch.Tensor) -> torch.Tensor:
-            """(batch, seq_len, inner_dim) -> (batch, n_heads, seq_len, kv_proj_dim)"""
-            return states.view(
-                -1,
-                seq_length,
-                self.n_heads,
-                self.kv_proj_dim,
-            ).permute(0, 2, 1, 3)
-
-        def unshape(states: torch.Tensor) -> torch.Tensor:
-            """(batch, n_heads, seq_len, kv_proj_dim) -> (batch, seq_len, inner_dim)"""
-            return states.permute(0, 2, 1, 3).reshape(
-                -1,
-                seq_length,
-                self.inner_dim,
-            )
-
-        # Construct query states
-        query_states = shape(self.q(hidden_states))
-
-        # Construct key/value states
-        key_states = shape(self.k(hidden_states))
-        value_states = shape(self.v(hidden_states))
-        if self.use_rope:
-            cos, sin = self.rope_embed(value_states, position_ids)
-            query_states, key_states = _RoPE.apply_rotary_pos_emb(
-                query_states, key_states, cos, sin
-            )
-
-        if self.attn_implementation == "sdpa":
-            attn_output, _ = self._sdpa_attention(
-                query_states, key_states, value_states, mask
-            )
-        else:  # eager
-            attn_output, _ = self._eager_attention(
-                query_states, key_states, value_states, mask
-            )
-
-        # Project attention output
-        attn_output = unshape(attn_output)
-        attn_output = self.o(attn_output)
-
-        return attn_output
-
-
-class _Chronos2LayerNorm(nn.Module):
-    def __init__(self, hidden_size: int, eps: float = 1e-6):
-        """
-        Construct a layernorm module in the T5 style. No bias and no subtraction of mean.
-        """
-        super().__init__()
-        self.weight = nn.Parameter(torch.ones(hidden_size))
-        self.variance_epsilon = eps
-
-    def forward(self, hidden_states):
-        variance = hidden_states.to(torch.float32).pow(2).mean(-1, keepdim=True)
-        hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
-
-        # convert into half-precision if necessary
-        if self.weight.dtype in [torch.float16, torch.bfloat16]:
-            hidden_states = hidden_states.to(self.weight.dtype)
-
-        return self.weight * hidden_states
-
-
-class _TimeSelfAttention(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        d_kv: int,
-        num_heads: int,
-        dropout_rate: float,
-        rope_theta: float,
-        attn_implementation: Literal["eager", "sdpa"],
-        layer_norm_epsilon: float,
-    ):
-        super().__init__()
-        self.self_attention = _MHA(
-            d_model=d_model,
-            d_kv=d_kv,
-            num_heads=num_heads,
-            dropout_rate=dropout_rate,
-            rope_theta=rope_theta,
-            attn_implementation=attn_implementation,
-            use_rope=True,
-        )
-        self.layer_norm = _Chronos2LayerNorm(d_model, layer_norm_epsilon)
-        self.dropout = nn.Dropout(dropout_rate)
-
-    def forward(
-        self,
-        hidden_states: torch.Tensor,
-        attention_mask: torch.Tensor,
-        position_ids: torch.Tensor,
-    ) -> torch.Tensor:
-        normed_hidden_states = self.layer_norm(hidden_states)
-        attention_output = self.self_attention(
-            normed_hidden_states,
-            position_ids=position_ids,
-            mask=attention_mask,
-        )
-        hidden_states = hidden_states + self.dropout(attention_output)
-
-        return hidden_states
-
-
-class _GroupSelfAttention(nn.Module):
-    """Self-attention applied along the batch axis masked by the group attention mask"""
-
-    def __init__(
-        self,
-        d_model: int,
-        d_kv: int,
-        num_heads: int,
-        dropout_rate: float,
-        rope_theta: float,
-        attn_implementation: Literal["eager", "sdpa"],
-        layer_norm_epsilon: float,
-    ):
-        super().__init__()
-        # we don't use RoPE here because there's no natural ordering along the batch axis
-        self.self_attention = _MHA(
-            d_model=d_model,
-            d_kv=d_kv,
-            num_heads=num_heads,
-            dropout_rate=dropout_rate,
-            rope_theta=rope_theta,
-            attn_implementation=attn_implementation,
-            use_rope=False,
-        )
-        self.layer_norm = _Chronos2LayerNorm(d_model, eps=layer_norm_epsilon)
-        self.dropout = nn.Dropout(dropout_rate)
-
-    def forward(
-        self,
-        hidden_states: torch.Tensor,
-        attention_mask: torch.Tensor,
-    ) -> torch.Tensor:
-        # flip time and batch axes because attention operates along dim=-2
-        hidden_states = hidden_states.permute(1, 0, 2)
-        normed_hidden_states = self.layer_norm(hidden_states)
-        attention_output = self.self_attention(
-            normed_hidden_states,
-            mask=attention_mask,
-        )
-        hidden_states = hidden_states + self.dropout(attention_output)
-        # flip time and batch axes back to their original position
-        hidden_states = hidden_states.permute(1, 0, 2)
-
-        return hidden_states
-
-
-class _MLP(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        d_ff: int,
-        dropout_rate: float,
-        dense_act_fn: str,
-    ):
-        super().__init__()
-        self.wi = nn.Linear(d_model, d_ff, bias=False)
-        self.wo = nn.Linear(d_ff, d_model, bias=False)
-        self.dropout = nn.Dropout(dropout_rate)
-        self.act = nn.ReLU()
-
-        if dense_act_fn != "relu":
-            raise_log(
-                ValueError("ReLU should be used in ResidualBlock"),
-                logger,
-            )
-
-    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        hidden_states = self.wi(hidden_states)
-        hidden_states = self.act(hidden_states)
-        hidden_states = self.dropout(hidden_states)
-        hidden_states = self.wo(hidden_states)
-        return hidden_states
-
-
-class _FeedForward(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        d_ff: int,
-        dropout_rate: float,
-        dense_act_fn: str,
-        is_gated_act: bool,
-        layer_norm_epsilon: float,
-    ):
-        super().__init__()
-
-        self.mlp: nn.Module = _MLP(
-            d_model=d_model,
-            d_ff=d_ff,
-            dropout_rate=dropout_rate,
-            dense_act_fn=dense_act_fn,
-        )
-        self.layer_norm = _Chronos2LayerNorm(d_model, eps=layer_norm_epsilon)
-        self.dropout = nn.Dropout(dropout_rate)
-
-        if is_gated_act:
-            raise_log(
-                ValueError("Gated activations are unsupported in FeedForward"),
-                logger,
-            )
-
-    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        forwarded_states = self.layer_norm(hidden_states)
-        forwarded_states = self.mlp(forwarded_states)
-        hidden_states = hidden_states + self.dropout(forwarded_states)
-        return hidden_states
-
-
-class _Chronos2EncoderBlock(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        d_kv: int,
-        d_ff: int,
-        num_heads: int,
-        dropout_rate: float,
-        rope_theta: float,
-        attn_implementation: Literal["eager", "sdpa"],
-        dense_act_fn: str,
-        layer_norm_epsilon: float,
-        is_gated_act: bool,
-    ):
-        super().__init__()
-
-        self.layer = nn.ModuleList([
-            _TimeSelfAttention(
-                d_model=d_model,
-                d_kv=d_kv,
-                num_heads=num_heads,
-                dropout_rate=dropout_rate,
-                rope_theta=rope_theta,
-                attn_implementation=attn_implementation,
-                layer_norm_epsilon=layer_norm_epsilon,
-            ),
-            _GroupSelfAttention(
-                d_model=d_model,
-                d_kv=d_kv,
-                num_heads=num_heads,
-                dropout_rate=dropout_rate,
-                rope_theta=rope_theta,
-                attn_implementation=attn_implementation,
-                layer_norm_epsilon=layer_norm_epsilon,
-            ),
-            _FeedForward(
-                d_model=d_model,
-                d_ff=d_ff,
-                dropout_rate=dropout_rate,
-                dense_act_fn=dense_act_fn,
-                is_gated_act=is_gated_act,
-                layer_norm_epsilon=layer_norm_epsilon,
-            ),
-        ])
-
-    def forward(
-        self,
-        hidden_states: torch.Tensor,
+        in_features: int,
         *,
-        position_ids: torch.Tensor,
-        attention_mask: torch.Tensor,
-        group_time_mask: torch.Tensor,
-    ) -> torch.Tensor:
-        # apply time attention
-        time_hidden_states: torch.Tensor = self.layer[0](
-            hidden_states,
-            position_ids=position_ids,
-            attention_mask=attention_mask,
-        )
-
-        # apply group attention
-        group_hidden_states = self.layer[1](
-            time_hidden_states,
-            attention_mask=group_time_mask,
-        )
-
-        # apply feed forward layer
-        hidden_states = self.layer[2](group_hidden_states)
-
-        return hidden_states
-
-
-class _Chronos2Encoder(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        d_kv: int,
-        d_ff: int,
-        num_heads: int,
-        dropout_rate: float,
-        rope_theta: float,
-        attn_implementation: Literal["eager", "sdpa"],
-        dense_act_fn: str,
-        layer_norm_epsilon: float,
-        is_gated_act: bool,
-        num_layers: int,
+        use_per_dim_scale: bool = True,
+        use_rotary_position_embeddings: bool = True,
+        use_bias: bool = False,
+        attention_fn: Callable[..., torch.Tensor] = _torch_dot_product_attention,
+        qk_norm: str = "rms",
+        fuse_qkv: bool = False,
     ):
         super().__init__()
+        self.num_heads = num_heads
+        self.in_features = in_features
+        self.head_dim = in_features // num_heads
+        self.use_bias = use_bias
+        self.attention_fn = attention_fn
+        self.qk_norm = qk_norm
+        self.fuse_qkv = fuse_qkv
 
-        self.block = nn.ModuleList([
-            _Chronos2EncoderBlock(
-                d_model=d_model,
-                d_kv=d_kv,
-                d_ff=d_ff,
-                num_heads=num_heads,
-                dropout_rate=dropout_rate,
-                rope_theta=rope_theta,
-                attn_implementation=attn_implementation,
-                dense_act_fn=dense_act_fn,
-                layer_norm_epsilon=layer_norm_epsilon,
-                is_gated_act=is_gated_act,
+        if self.in_features % self.num_heads != 0:
+            raise ValueError(
+                f"Memory dimension ({self.in_features}) must be divisible by "
+                f"'num_heads' heads ({self.num_heads})."
             )
-            for i in range(num_layers)
-        ])
-        self.final_layer_norm = _Chronos2LayerNorm(d_model, eps=layer_norm_epsilon)
-        self.dropout = nn.Dropout(dropout_rate)
 
-    @staticmethod
-    def _expand_and_invert_time_attention_mask(
-        attention_mask: torch.Tensor, floating_type: torch.dtype
-    ) -> torch.Tensor:
-        assert attention_mask.ndim == 2, (
-            "attention_mask must have shape (batch, seq_len)"
-        )
+        if self.fuse_qkv:
+            self.qkv_proj = nn.Linear(
+                self.in_features, 3 * self.in_features, bias=use_bias
+            )
+        else:
+            self.query = nn.Linear(self.in_features, self.in_features, bias=use_bias)
+            self.key = nn.Linear(self.in_features, self.in_features, bias=use_bias)
+            self.value = nn.Linear(self.in_features, self.in_features, bias=use_bias)
+        self.out = nn.Linear(self.in_features, self.in_features, bias=use_bias)
 
-        # Add new dims for attention heads and q_len
-        attention_mask = attention_mask[:, None, None, :]
+        if self.qk_norm == "rms":
+            self.query_ln = RMSNorm(self.head_dim)
+            self.key_ln = RMSNorm(self.head_dim)
+        else:
+            self.query_ln = nn.Identity()
+            self.key_ln = nn.Identity()
 
-        # Invert binary mask to float mask which can be added to attention scores
-        attention_mask = attention_mask.to(dtype=floating_type)
-        attention_mask = (1.0 - attention_mask) * torch.finfo(floating_type).min
-        return attention_mask
+        self.use_rotary_position_embeddings = use_rotary_position_embeddings
+        if self.use_rotary_position_embeddings:
+            self.rotary_position_embedding = RotaryPositionalEmbedding(
+                embedding_dims=self.head_dim,
+            )
 
-    @staticmethod
-    def _construct_and_invert_group_time_mask(
-        group_ids: torch.Tensor,
-        attention_mask: torch.Tensor,
-        floating_type: torch.dtype,
-    ) -> torch.Tensor:
-        # construct group_mask (batch, batch) from group ids
-        # a cell is True if both row and col had the same group id
-        group_mask = group_ids[:, None] == group_ids[None, :]
-        # outer product of group_mask and attention_mask (time_mask)
-        # group_time_mask combines group and time masks to ensure that attention only uses
-        # tokens from the same group which are also not masked in time
-        group_time_mask = torch.einsum("qb, bt -> qbt", group_mask, attention_mask)
-
-        if torch.is_floating_point(group_time_mask):
-            # this ensures that mixed precision training does not overflow
-            floating_type = group_time_mask.dtype
-
-        # reshape mask to shape of attention scores
-        group_time_mask = group_time_mask.permute(2, 0, 1).unsqueeze(1)
-        group_time_mask = (1.0 - group_time_mask) * torch.finfo(floating_type).min
-
-        return group_time_mask
+        self.use_per_dim_scale = use_per_dim_scale
+        if use_per_dim_scale:
+            self.per_dim_scale = PerDimScale(num_dims=self.head_dim)
 
     def forward(
         self,
-        inputs_embeds: torch.Tensor,
+        inputs_q: torch.Tensor,
         *,
-        group_ids: torch.Tensor,
-        attention_mask: torch.Tensor,
-        position_ids: torch.Tensor | None = None,
-    ) -> torch.Tensor:
-        seq_length = inputs_embeds.size(1)
-
-        if position_ids is None:
-            position_ids = torch.arange(
-                0, seq_length, dtype=torch.long, device=inputs_embeds.device
-            ).unsqueeze(0)
-
-        # make the time attention mask broadcastable to attention scores (batch, n_heads, q_len, kv_len) and invert
-        extended_attention_mask = self._expand_and_invert_time_attention_mask(
-            attention_mask, inputs_embeds.dtype
-        )
-
-        # construct group time mask
-        group_time_mask = self._construct_and_invert_group_time_mask(
-            group_ids, attention_mask, inputs_embeds.dtype
-        )
-
-        hidden_states = self.dropout(inputs_embeds)
-
-        for i, (layer_module) in enumerate(self.block):
-            hidden_states = layer_module(
-                hidden_states,
-                position_ids=position_ids,
-                attention_mask=extended_attention_mask,
-                group_time_mask=group_time_mask,
+        decode_cache: DecodeCache | None = None,
+        patch_mask: torch.Tensor | None = None,
+    ) -> tuple[torch.Tensor, DecodeCache | None]:
+        b, n_patches, _ = inputs_q.shape
+        if patch_mask is None:
+            patch_mask = torch.zeros(
+                b, n_patches, dtype=torch.bool, device=inputs_q.device
             )
 
-        hidden_states = self.final_layer_norm(hidden_states)
-        hidden_states = self.dropout(hidden_states)
+        if self.fuse_qkv:
+            qkv = self.qkv_proj(inputs_q)
+            query, key, value = torch.chunk(qkv, 3, dim=-1)
+            query = query.view(b, n_patches, self.num_heads, self.head_dim)
+            key = key.view(b, n_patches, self.num_heads, self.head_dim)
+            value = value.view(b, n_patches, self.num_heads, self.head_dim)
+        else:
+            query = self.query(inputs_q).view(
+                b, n_patches, self.num_heads, self.head_dim
+            )
+            key = self.key(inputs_q).view(b, n_patches, self.num_heads, self.head_dim)
+            value = self.value(inputs_q).view(
+                b, n_patches, self.num_heads, self.head_dim
+            )
 
-        return hidden_states
+        if decode_cache is None:
+            num_masked = torch.sum(patch_mask.to(torch.int32), dim=-1)
+            next_index = torch.zeros_like(num_masked, dtype=torch.int32)
+        else:
+            num_masked = (
+                torch.sum(patch_mask.to(torch.int32), dim=-1) + decode_cache.num_masked
+            )
+            next_index = decode_cache.next_index.clone()
+
+        if self.use_rotary_position_embeddings:
+            position = (
+                torch.arange(n_patches, device=inputs_q.device)[None, :]
+                + next_index[:, None]
+                - num_masked[:, None]
+            )
+            query = self.rotary_position_embedding(query, position)
+            key = self.rotary_position_embedding(key, position)
+
+        query = self.query_ln(query)
+        key = self.key_ln(key)
+
+        if self.use_per_dim_scale:
+            query = self.per_dim_scale(query)
+
+        if decode_cache is not None:
+            _, decode_cache_size, _, _ = decode_cache.value.shape
+
+            start = decode_cache.next_index[0]
+            end = start + n_patches
+
+            # Perform a single, vectorized slice assignment for the entire batch.
+            # This is vastly more efficient than a Python for-loop.
+
+            decode_cache.key[:, start:end] = key
+            decode_cache.value[:, start:end] = value
+
+            key = decode_cache.key
+            value = decode_cache.value
+            decode_cache.next_index += n_patches
+            decode_cache.num_masked = num_masked
+            attn_mask = make_attn_mask(
+                query_length=n_patches,
+                num_all_masked_kv=num_masked,
+                query_index_offset=next_index,
+                kv_length=decode_cache_size,
+            )
+        else:
+            attn_mask = make_attn_mask(
+                query_length=n_patches, num_all_masked_kv=num_masked
+            )
+
+        x = self.attention_fn(
+            query,
+            key,
+            value,
+            mask=attn_mask,
+        )
+
+        x = x.reshape(b, n_patches, self.in_features)
+        out = self.out(x)
+        return out, decode_cache
+
+
+class Transformer(nn.Module):
+    """Classic Transformer used in TimesFM."""
+
+    def __init__(self, config: TransformerConfig):
+        super().__init__()
+        self.config = config
+
+        if config.attention_norm == "rms":
+            self.pre_attn_ln = RMSNorm(num_features=config.model_dims)
+            self.post_attn_ln = RMSNorm(num_features=config.model_dims)
+        else:
+            raise ValueError(f"Layer norm: {config.attention_norm} not supported.")
+
+        self.attn = MultiHeadAttention(
+            num_heads=config.num_heads,
+            in_features=config.model_dims,
+            use_per_dim_scale=True,
+            use_rotary_position_embeddings=config.use_rotary_position_embeddings,
+            qk_norm=config.qk_norm,
+            fuse_qkv=config.fuse_qkv,
+        )
+
+        if config.feedforward_norm == "rms":
+            self.pre_ff_ln = RMSNorm(num_features=config.model_dims)
+            self.post_ff_ln = RMSNorm(num_features=config.model_dims)
+        else:
+            raise ValueError(f"Layer norm: {config.feedforward_norm} not supported.")
+
+        self.ff0 = nn.Linear(
+            in_features=config.model_dims,
+            out_features=config.hidden_dims,
+            bias=config.use_bias,
+        )
+        self.ff1 = nn.Linear(
+            in_features=config.hidden_dims,
+            out_features=config.model_dims,
+            bias=config.use_bias,
+        )
+        if config.ff_activation == "relu":
+            self.activation = nn.ReLU()
+        elif config.ff_activation == "swish":
+            self.activation = nn.SiLU()
+        elif config.ff_activation == "none":
+            self.activation = nn.Identity()
+        else:
+            raise ValueError(f"Activation: {config.ff_activation} not supported.")
+
+    def forward(
+        self,
+        input_embeddings: torch.Tensor,
+        patch_mask: torch.Tensor,
+        decode_cache: DecodeCache | None = None,
+    ) -> tuple[torch.Tensor, DecodeCache | None]:
+        attn_output, decode_cache = self.attn(
+            inputs_q=self.pre_attn_ln(input_embeddings),
+            decode_cache=decode_cache,
+            patch_mask=patch_mask,
+        )
+        attn_output = self.post_attn_ln(attn_output) + input_embeddings
+        output_embeddings = (
+            self.post_ff_ln(
+                self.ff1(self.activation(self.ff0(self.pre_ff_ln(attn_output))))
+            )
+            + attn_output
+        )
+        return output_embeddings, decode_cache
+
+
+def update_running_stats(
+    n: torch.Tensor,
+    mu: torch.Tensor,
+    sigma: torch.Tensor,
+    x: torch.Tensor,
+    mask: torch.Tensor,
+) -> tuple[
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+    tuple[torch.Tensor, torch.Tensor, torch.Tensor],
+]:
+    """Updates the running stats."""
+    is_legit = torch.logical_not(mask)
+    inc_n = torch.sum(is_legit.to(x.dtype), dim=-1)
+
+    inc_mu_numerator = torch.sum(x * is_legit, dim=-1)
+    inc_n_safe = torch.where(inc_n == 0, 1.0, inc_n)
+    inc_mu = inc_mu_numerator / inc_n_safe
+    inc_mu = torch.where(inc_n == 0, 0.0, inc_mu)
+
+    inc_var_numerator = torch.sum(((x - inc_mu.unsqueeze(-1)) ** 2) * is_legit, dim=-1)
+    inc_var = inc_var_numerator / inc_n_safe
+    inc_var = torch.where(inc_n == 0, 0.0, inc_var)
+    inc_sigma = torch.sqrt(inc_var)
+
+    new_n = n + inc_n
+    new_n_safe = torch.where(new_n == 0, 1.0, new_n)
+
+    new_mu = (n * mu + inc_mu * inc_n) / new_n_safe
+    new_mu = torch.where(new_n == 0, 0.0, new_mu)
+
+    term1 = n * sigma.pow(2)
+    term2 = inc_n * inc_sigma.pow(2)
+    term3 = n * (mu - new_mu).pow(2)
+    term4 = inc_n * (inc_mu - new_mu).pow(2)
+
+    new_var = (term1 + term2 + term3 + term4) / new_n_safe
+    new_var = torch.where(new_n == 0, 0.0, new_var)
+    new_sigma = torch.sqrt(torch.clamp(new_var, min=0.0))
+
+    return (w := (new_n, new_mu, new_sigma), w)
+
+
+def revin(
+    x: torch.Tensor,
+    mu: torch.Tensor,
+    sigma: torch.Tensor,
+    reverse: bool = False,
+):
+    """Reversible instance normalization."""
+    if len(mu.shape) == len(x.shape) - 1:
+        mu = mu[..., None]
+        sigma = sigma[..., None]
+    elif len(mu.shape) == len(x.shape) - 2:
+        mu = mu[..., None, None]
+        sigma = sigma[..., None, None]
+
+    if reverse:
+        return x * sigma + mu
+    else:
+        return (x - mu) / torch.where(sigma < _TOLERANCE, 1.0, sigma)
