@@ -485,34 +485,30 @@ class TimesFM2p5Model(FoundationModel):
         Examples
         --------
         >>> from darts.datasets import WeatherDataset
-        >>> from darts.models import Chronos2Model
+        >>> from darts.models import TimesFM2p5Model
         >>> # load data in float32 format (macOS issues with float64 and PyTorch)
         >>> series = WeatherDataset().load().astype("float32")
         >>> # predicting atmospheric pressure
         >>> target = series['p (mbar)'][:100]
-        >>> # optionally, use past observed rainfall (pretending to be unknown beyond index 100)
-        >>> past_cov = series['rain (mm)'][:100]
-        >>> # optionally, use future temperatures (pretending this component is a forecast)
-        >>> future_cov = series['T (degC)'][:106]
-        >>> # by default, Chronos2Model is deterministic; to enable probabilistic forecasts,
+        >>> # by default, TimesFM2p5Model is deterministic; to enable probabilistic forecasts,
         >>> # set likelihood to QuantileRegression and use a subset of the pre-trained quantiles
-        >>> model = Chronos2Model(
+        >>> model = TimesFM2p5Model(
         >>>     input_chunk_length=6,
         >>>     output_chunk_length=6,
         >>> )
         >>> # calling fit is still mandatory to ensure consistent number of components; however,
-        >>> # Chronos2Model is training-free and the model weights are not updated
-        >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
-        >>> # when Chronos2Model is probabilistic, set ``predict_likelihood_parameters=True``
+        >>> # TimesFM2p5Model is training-free and the model weights are not updated
+        >>> model.fit(target)
+        >>> # when TimesFM2p5Model is probabilistic, set ``predict_likelihood_parameters=True``
         >>> # or ``num_samples>>1`` to get meaningful results
         >>> pred = model.predict(6)
         >>> print(pred.all_values())
-        [[[1005.7576 ]]
-        [[1005.7418 ]]
-        [[1005.7186 ]]
-        [[1005.7074 ]]
-        [[1005.6928 ]]
-        [[1005.69617]]]
+        [[[1005.7797 ]]
+        [[1005.78766]]
+        [[1005.7985 ]]
+        [[1005.7852 ]]
+        [[1005.7882 ]]
+        [[1005.79565]]]
 
         .. note::
             Fine-tuning of TimesFM 2.5 is not supported at the moment.
