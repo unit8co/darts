@@ -314,7 +314,8 @@ class TimesFM2p5Model(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
-            Maximum is 16,384 for TimesFM 2.5.
+            For TimesFM 2.5, `input_chunk_length + output_chunk_length + output_chunk_shift` must be less than or equal
+            to 16,384.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
@@ -534,11 +535,15 @@ class TimesFM2p5Model(FoundationModel):
 
         # validate `input_chunk_length` against model's maximum context_length
         context_length = config.context_limit
-        if input_chunk_length > context_length:
+        if (
+            input_chunk_length + output_chunk_length + output_chunk_shift
+            > context_length
+        ):
             raise_log(
                 ValueError(
-                    f"`input_chunk_length` {input_chunk_length} cannot be greater than "
-                    f"model's maximum context_length {context_length}"
+                    f"`input_chunk_length` {input_chunk_length} plus `output_chunk_length` {output_chunk_length} "
+                    f"plus `output_chunk_shift` {output_chunk_shift} cannot be greater than model's maximum "
+                    f"context_length {context_length}"
                 ),
                 logger,
             )
