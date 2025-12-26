@@ -1,6 +1,6 @@
 """
-TimesFM 2.5 Model
------------------
+TimesFM 2.5
+-----------
 
 For detailed examples and tutorials, see:
 
