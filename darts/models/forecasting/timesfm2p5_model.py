@@ -16,7 +16,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 from darts.models.components.huggingface_connector import (
     HuggingFaceConnector,
 )
@@ -42,17 +42,15 @@ logger = get_logger(__name__)
 
 
 @dataclass(frozen=True)
-class TimesFM_2p5_200M_Definition:
+class _TimesFM2p5_200M_Definition:
     """Framework-agnostic config of TimesFM 2.5."""
 
     context_limit = 16384
     input_patch_len: int = 32
     output_patch_len: int = 128
-    output_quantile_len: int = 1024
     quantiles: list[float] = field(
         default_factory=lambda: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     )
-    decode_index: int = 5
     tokenizer: ResidualBlockConfig = ResidualBlockConfig(
         input_dims=64,
         hidden_dims=1280,
@@ -92,7 +90,7 @@ class TimesFM_2p5_200M_Definition:
 
 
 class _TimesFM2p5Module(PLForecastingModule):
-    config = TimesFM_2p5_200M_Definition()
+    config = _TimesFM2p5_200M_Definition()
 
     def __init__(
         self,
@@ -133,27 +131,21 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         super().__init__(**kwargs)
 
-        # Names constants.
-        self.p = self.config.input_patch_len  # 32
-        self.o = self.config.output_patch_len  # 128
-        self.os = self.config.output_quantile_len  # 1024
-        self.m = self.o // self.p  # 4
-        self.x = self.config.stacked_transformers.num_layers  # 20
-        self.h = self.config.stacked_transformers.transformer.num_heads  # 16
-        self.md = self.config.stacked_transformers.transformer.model_dims  # 1280
-        self.hd = self.md // self.h  # 80
-        self.q = len(self.config.quantiles) + 1  # 10
-        self.aridx = self.config.decode_index  # 5
+        # default model parameters (config.json is ignored)
+        self.input_patch_len = self.config.input_patch_len  # 32
+        self.output_patch_len = self.config.output_patch_len  # 128
+        self.num_layers = self.config.stacked_transformers.num_layers  # 20
+        self.num_quantiles_plus_one = len(self.config.quantiles) + 1  # 10
 
         # padding length for input target series to make its length a multiple of
         # input_patch_len (32).
-        self.pad_len = -self.input_chunk_length % self.p
+        self.pad_len = -self.input_chunk_length % self.input_patch_len
 
-        # Layers.
+        # define model submodules
         self.tokenizer = ResidualBlock(self.config.tokenizer)
         self.stacked_xf = nn.ModuleList([
             Transformer(self.config.stacked_transformers.transformer)
-            for _ in range(self.x)
+            for _ in range(self.num_layers)
         ])
         self.output_projection_point = ResidualBlock(
             self.config.output_projection_point
@@ -170,6 +162,9 @@ class _TimesFM2p5Module(PLForecastingModule):
             if isinstance(self.likelihood, QuantileRegression)
             else [0.5]
         )
+        # The original quantile outputs contain mean + quantiles (0.1 to 0.9),
+        # but the mean is not being used even in deterministic setting.
+        # Instead, the median (0.5 quantile) is used as the deterministic output.
         self.user_quantile_indices = [
             self.config.quantiles.index(q) + 1 for q in user_quantiles
         ]
@@ -245,12 +240,6 @@ class _TimesFM2p5Module(PLForecastingModule):
         return output_ts
 
     # TODO: fine-tuning support w/ normalized loss
-    # Currently, Darts own `RINorm` is not used as Chronos-2 has its own implementation. Major differences
-    # 1. Chronos-2 `RINorm` normalizes both target and covariates, while Darts normalizes target only.
-    # 2. Chronos-2 `RINorm` additionally applies `arcsinh` transformation after standardization
-    # 3. Chronos-2 uses normalized values for loss computation, while Darts uses denormalized values.
-    # We need to think about how best to implement Chronos-2 `RINorm` in `io_processor()` without
-    # breaking existing behavior, while also allowing fine-tuning with normalized loss.
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
         """Chronos-2 model forward pass.
 
@@ -287,8 +276,8 @@ class _TimesFM2p5Module(PLForecastingModule):
         mask = torch.isnan(x_past)
 
         # divide x_past and mask into patches of size input_patch_len (32)
-        patched_x_past = x_past.unfold(1, self.p, self.p)
-        patched_mask = mask.unfold(1, self.p, self.p)
+        patched_x_past = x_past.unfold(1, self.input_patch_len, self.input_patch_len)
+        patched_mask = mask.unfold(1, self.input_patch_len, self.input_patch_len)
 
         # determine batch size and number of input patches after patching
         batch_size, num_input_patches, _ = patched_x_past.shape
@@ -326,7 +315,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # reshape renormed_outputs to (n_samples, n_targets, output_patch_len, quantiles+1)
         renormed_outputs = torch.reshape(
             renormed_outputs,
-            (-1, self.n_targets, self.o, self.q),
+            (-1, self.n_targets, self.output_patch_len, self.num_quantiles_plus_one),
         )
         # permute to (n_samples, output_patch_len, n_targets, quantiles+1)
         renormed_outputs = renormed_outputs.permute(0, 2, 1, 3)
@@ -616,56 +605,54 @@ class TimesFM2p5Model(FoundationModel):
             local_dir=local_dir,
         )
 
-        # # load model config for validation
-        # config = hf_connector.load_config()
-        # chronos_config = config["chronos_config"]
+        # As per the original implementation, the model config is ignored and default
+        # parameters are used instead.
+        config = _TimesFM2p5_200M_Definition()
 
-        # # validate `input_chunk_length` against model's context_length
-        # context_length = chronos_config["context_length"]
-        # if input_chunk_length > context_length:
-        #     raise_log(
-        #         ValueError(
-        #             f"`input_chunk_length` {input_chunk_length} cannot be greater than "
-        #             f"model's context_length {context_length}"
-        #         ),
-        #         logger,
-        #     )
+        # validate `input_chunk_length` against model's maximum context_length
+        context_length = config.context_limit
+        if input_chunk_length > context_length:
+            raise_log(
+                ValueError(
+                    f"`input_chunk_length` {input_chunk_length} cannot be greater than "
+                    f"model's maximum context_length {context_length}"
+                ),
+                logger,
+            )
 
-        # # validate `output_chunk_length` and `output_chunk_shift` against model's prediction length
-        # prediction_length = (
-        #     chronos_config["output_patch_size"] * chronos_config["max_output_patches"]
-        # )
-        # if output_chunk_length + output_chunk_shift > prediction_length:
-        #     raise_log(
-        #         ValueError(
-        #             f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
-        #             f"cannot be greater than model's maximum prediction length {prediction_length}"
-        #         ),
-        #         logger,
-        #     )
+        # validate `output_chunk_length` and `output_chunk_shift` against model's output limits
+        prediction_length = config.output_patch_len
+        if output_chunk_length + output_chunk_shift > prediction_length:
+            raise_log(
+                ValueError(
+                    f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
+                    f"cannot be greater than model's maximum prediction length {prediction_length}"
+                ),
+                logger,
+            )
 
-        # quantiles = chronos_config["quantiles"]
-        # # by default (`likelihood=None`), model is deterministic
-        # # otherwise, only QuantileRegression likelihood is supported and quantiles must be
-        # # a subset of Chronos-2 quantiles
-        # if likelihood is not None:
-        #     if not isinstance(likelihood, QuantileRegression):
-        #         raise_log(
-        #             ValueError(
-        #                 f"Only QuantileRegression likelihood is supported for Chronos2Model in Darts. "
-        #                 f"Got {type(likelihood)}."
-        #             ),
-        #             logger,
-        #         )
-        #     user_quantiles: list[float] = likelihood.quantiles
-        #     if not set(user_quantiles).issubset(quantiles):
-        #         raise_log(
-        #             ValueError(
-        #                 f"The quantiles for QuantileRegression likelihood {user_quantiles} "
-        #                 f"must be a subset of Chronos-2 quantiles {quantiles}."
-        #             ),
-        #             logger,
-        #         )
+        quantiles = config.quantiles
+        # by default (`likelihood=None`), model is deterministic
+        # otherwise, only QuantileRegression likelihood is supported and quantiles must be
+        # a subset of the pre-trained quantiles
+        if likelihood is not None:
+            if not isinstance(likelihood, QuantileRegression):
+                raise_log(
+                    ValueError(
+                        f"Only QuantileRegression likelihood is supported for TimesFM 2.5 in Darts. "
+                        f"Got {type(likelihood)}."
+                    ),
+                    logger,
+                )
+            user_quantiles: list[float] = likelihood.quantiles
+            if not set(user_quantiles).issubset(quantiles):
+                raise_log(
+                    ValueError(
+                        f"The quantiles for QuantileRegression likelihood {user_quantiles} "
+                        f"must be a subset of TimesFM 2.5 quantiles {quantiles}."
+                    ),
+                    logger,
+                )
 
         self.hf_connector = hf_connector
         super().__init__(enable_finetuning=False, **kwargs)

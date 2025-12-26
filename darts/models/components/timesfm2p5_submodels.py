@@ -32,7 +32,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_log
 
 logger = get_logger(__name__)
 
@@ -185,7 +185,10 @@ class ResidualBlock(nn.Module):
         elif config.activation == "none":
             self.activation = nn.Identity()
         else:
-            raise ValueError(f"Activation: {config.activation} not supported.")
+            raise_log(
+                ValueError(f"Activation: {config.activation} not supported."),
+                logger,
+            )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.output_layer(
@@ -201,8 +204,11 @@ class RandomFourierFeatures(nn.Module):
         self.config = config
 
         if config.output_dims % 4 != 0:
-            raise ValueError(
-                f"Output dims must be a multiple of 4: {config.output_dims} % 4 != 0."
+            raise_log(
+                ValueError(
+                    f"Output dims must be a multiple of 4: {config.output_dims} % 4 != 0."
+                ),
+                logger,
             )
         num_projected_features = config.output_dims // 4
 
@@ -276,9 +282,12 @@ class RotaryPositionalEmbedding(nn.Module):
     ):
         """Generates a JTensor of sinusoids with different frequencies."""
         if self.embedding_dims != inputs.shape[-1]:
-            raise ValueError(
-                "The embedding dims of the rotary position embedding"
-                "must match the hidden dimension of the inputs."
+            raise_log(
+                ValueError(
+                    "The embedding dims of the rotary position embedding"
+                    "must match the hidden dimension of the inputs."
+                ),
+                logger,
             )
         half_embedding_dim = self.embedding_dims // 2
         fraction = (
@@ -302,7 +311,10 @@ class RotaryPositionalEmbedding(nn.Module):
             position = position[..., None]
             timescale = timescale[None, None, :]
         else:
-            raise ValueError("Inputs must be of rank 3 or 4.")
+            raise_log(
+                ValueError("Inputs must be of rank 3 or 4."),
+                logger,
+            )
 
         sinusoid_inp = position / timescale
         sin = torch.sin(sinusoid_inp)
@@ -395,9 +407,12 @@ class MultiHeadAttention(nn.Module):
         self.fuse_qkv = fuse_qkv
 
         if self.in_features % self.num_heads != 0:
-            raise ValueError(
-                f"Memory dimension ({self.in_features}) must be divisible by "
-                f"'num_heads' heads ({self.num_heads})."
+            raise_log(
+                ValueError(
+                    f"Memory dimension ({self.in_features}) must be divisible by "
+                    f"'num_heads' heads ({self.num_heads})."
+                ),
+                logger,
             )
 
         if self.fuse_qkv:
@@ -529,7 +544,10 @@ class Transformer(nn.Module):
             self.pre_attn_ln = RMSNorm(num_features=config.model_dims)
             self.post_attn_ln = RMSNorm(num_features=config.model_dims)
         else:
-            raise ValueError(f"Layer norm: {config.attention_norm} not supported.")
+            raise_log(
+                ValueError(f"Layer norm: {config.attention_norm} not supported."),
+                logger,
+            )
 
         self.attn = MultiHeadAttention(
             num_heads=config.num_heads,
@@ -544,7 +562,10 @@ class Transformer(nn.Module):
             self.pre_ff_ln = RMSNorm(num_features=config.model_dims)
             self.post_ff_ln = RMSNorm(num_features=config.model_dims)
         else:
-            raise ValueError(f"Layer norm: {config.feedforward_norm} not supported.")
+            raise_log(
+                ValueError(f"Layer norm: {config.feedforward_norm} not supported."),
+                logger,
+            )
 
         self.ff0 = nn.Linear(
             in_features=config.model_dims,
@@ -563,7 +584,10 @@ class Transformer(nn.Module):
         elif config.ff_activation == "none":
             self.activation = nn.Identity()
         else:
-            raise ValueError(f"Activation: {config.ff_activation} not supported.")
+            raise_log(
+                ValueError(f"Activation: {config.ff_activation} not supported."),
+                logger,
+            )
 
     def forward(
         self,
