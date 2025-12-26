@@ -96,34 +96,12 @@ class _TimesFM2p5Module(PLForecastingModule):
         self,
         **kwargs,
     ):
-        """PyTorch module implementing the Chronos-2 model, ported from
-        `amazon-science/chronos-forecasting <https://github.com/amazon-science/chronos-forecasting>`_ and
+        """PyTorch module implementing the TimesFM 2.5 model, ported from
+        `google-research/timesfm <https://github.com/google-research/timesfm/>`_ and
         adapted for Darts :class:`PLForecastingModule` interface.
 
         Parameters
         ----------
-        d_model
-            Dimension of the model embeddings, also called "model size" in Transformer.
-        d_kv
-            Dimension of the key and value projections in multi-head attention.
-        d_ff
-            Dimension of the feed-forward network hidden layer.
-        num_layers
-            Number of Chronos-2 encoder layers.
-        num_heads
-            Number of attention heads in each encoder block.
-        dropout_rate
-            Dropout rate of the model.
-        layer_norm_epsilon
-            Epsilon value for layer normalization layers.
-        feed_forward_proj
-            Activation of feed-forward network.
-        rope_theta
-            Base period for Rotary Position Embeddings (RoPE).
-        attn_implementation
-            Attention implementation to use. If None, defaults to "sdpa".
-        chronos_config
-            Configuration parameters for Chronos-2 model. See :class:`_Chronos2ForecastingConfig` for details.
         **kwargs
             all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
             base class.
@@ -174,53 +152,21 @@ class _TimesFM2p5Module(PLForecastingModule):
         inputs: torch.Tensor,
         masks: torch.Tensor,
     ) -> torch.Tensor:
-        """Original forward pass of the Chronos-2 model.
+        """Original forward pass of the TimesFM 2.5 model.
 
         Parameters
         ----------
-        context
-            Input tensor of shape (batch_size, context_length) containing the historical values
-        group_ids : torch.Tensor | None, optional
-            Group IDs of shape (batch_size,) indicating which times series in the batch form a group.
-            A group indicates a task, for example, for a batch of size 6:
-            - if groups_ids = [0, 1, 2, 3, 4, 5], each time series is treated independently.
-            - if groups_ids = [0, 0, 1, 1, 1, 2], information is mixed across the first two time series (id=0),
-                the next three time series (id=1) and the last time series is treated separately. Information is
-                NOT shared among time series from different groups.
-            The ordering and specific values of group_ids are not important, all time series with the same group
-            ID form a group.
-        future_covariates
-            Tensor of shape (batch_size, future_length) containing future covariates. Note that the size of
-            tensor along the first axis is equal to the batch_size. This means that future values (which may be NaNs)
-            must be provided for each time series in the batch. For any time series that need to be forecasted, the
-            future_covariates can be set to NaNs, if ``future_covariates_mask`` is omitted or to an arbitrary dummy
-            value when ``future_covariates_mask`` is provided. ``future_covariates`` can be used with ``group_ids``
-            to construct heterogenous forecasting tasks in a single batch. For example:
-            - future_covariates = [[nan, ...], [nan, ...], [v1, ...], [v2, ...], [nan, ...], [nan, ...]]
-            - groups_ids = [0, 0, 1, 1, 1, 2]
-            - future_covariates_mask = None
-            contains 3 types of forecasting tasks:
-            - [0, 0]: The first task, both future_covariates are missing, which implies that the two time series need to
-                be forecasted jointly, i.e., multivariate forecasting.
-            - [1, 1, 1]: In the next task, the first two future_covariates are available and the last one is missing
-                ([v1, ...], [v2, ...], [nan, ...]), where [v1, ...] and [v1, ...] denote an arbitrary sequence of
-                values. This indicates that the first two time series are known covariates and the third one needs to be
-                forecasted by the model.
-            - [2]: The last task has a single time series in the group which needs to be forecasted independently.
-            There is no theoretical limit on the number of time series in a group, i.e., the number of targets and known
-            covariates in a task. The above setup subsumes tasks with past-only covariates as the model's prediction for
-            those time series can simply be ignored downstream.
-        num_output_patches
-            Number of output patches to generate predictions for, by default 1
-            When ``future_covariates`` and/or ``future_target`` are provided, num_output_patches should be large enough
-            to accommodate their lengths, i.e., num_output_patches * output_patch_size >= future_length
+        inputs
+            Input tensor of shape (batch_size, num_input_patches, input_patch_len).
+        masks
+            Mask tensor of shape (batch_size, num_input_patches, input_patch_len),
+            where True indicates a missing value.
 
         Returns
         -------
         torch.Tensor
-            Quantile predictions of shape `(batch_size, n_variables * n_output_patches * n_quantiles * patch_size)`.
-            quantile_preds will contain an entry for every time series in the context batch regardless of whether it
-            was a known future covariate.
+            Quantile predictions of shape `(batch_size, num_input_patches, output_patch_len * num_quantiles_plus_one)`.
+            The last dimension contains the (unused) mean followed by nine quantile predictions (0.1 to 0.9).
         """
         tokenizer_inputs = torch.cat([inputs, masks.to(inputs.dtype)], dim=-1)
         input_embeddings = self.tokenizer(tokenizer_inputs)
@@ -239,9 +185,9 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         return output_ts
 
-    # TODO: fine-tuning support w/ normalized loss
+    # TODO: fine-tuning support
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
-        """Chronos-2 model forward pass.
+        """TimesFM 2.5 model forward pass.
 
         Parameters
         ----------
@@ -257,9 +203,6 @@ class _TimesFM2p5Module(PLForecastingModule):
             deterministic forecasts (median only).
         """
         x_past, _, _ = x_in
-
-        # x_past is a stack of [past_target, past_covariates, historic_future_covariates],
-        # x_future is just future_covariates.
 
         # TimesFM 2.5 is a univariate model and its inputs does not have a variable dimension,
         # so here we reshape x_past to (n_samples * n_variables, n_time_steps)
@@ -349,37 +292,20 @@ class TimesFM2p5Model(FoundationModel):
     ):
         """TimesFM 2.5 Model for zero-shot forecasting.
 
-        This is an implementation of Amazon's Chronos-2 model [1]_, [2]_, ported from
-        `amazon-science/chronos-forecasting <https://github.com/amazon-science/chronos-forecasting>`_
-        with adaptations to use the Darts API. From the original authors:
+        This is an implementation of Google's TimesFM 2.5 model, ported from
+        `google-research/timesfm <https://github.com/google-research/timesfm>`_ with adaptations to use the Darts API.
+        It is an updated version of the original TimesFM model [1]_, [2]_, with a larger context length (16,384 vs 512)
+        and better predictive accuracy.
 
-        "Chronos-2 is a 120M-parameter, encoder-only time series foundation model for zero-shot forecasting. It supports
-        univariate, multivariate, and covariate-informed tasks within a single architecture. Inspired by the T5 encoder,
-        Chronos-2 produces multi-step-ahead quantile forecasts and uses a group attention mechanism for efficient
-        in-context learning across related series and covariates. Trained on a combination of real-world and large-scale
-        synthetic datasets, it achieves state-of-the-art zero-shot accuracy among public models on fev-bench, GIFT-Eval,
-        and Chronos Benchmark II. Chronos-2 is also highly efficient, delivering over 300 time series forecasts per
-        second on a single A10G GPU and supporting both GPU and CPU inference."
-
-        This model supports past covariates (known for `input_chunk_length` points before prediction time),
-        and future covariates (known for `output_chunk_length` points after prediction time).
+        This model supports either univariate or multivariate time series, but does not support covariates.
 
         By default, using this model will automatically download and cache the pre-trained model from HuggingFace Hub
-        (amazon/chronos-2). Alternatively, you can specify a local directory containing the model config and weights
-        using the ``local_dir`` parameter.
-
-        Two other variants of Chronos-2 are available on HuggingFace Hub:
-
-        - `autogluon/chronos-2-small <https://huggingface.co/autogluon/chronos-2-small>`_: a smaller 28M parameter
-          Chronos-2 model.
-        - `autogluon/chronos-2-synth <https://huggingface.co/autogluon/chronos-2-synth>`_: a 120M parameter
-          Chronos-2 model trained on synthetic data only.
-
-        To use either of those variants, specify the ``hub_model_name`` parameter to the desired model ID.
+        (google/timesfm-2.5-200m-pytorch). Alternatively, you can specify a local directory containing the model config
+        and weights using the ``local_dir`` parameter.
 
         By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
         forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
-        ``likelihood`` parameter. The quantiles used must be a subset of those used during Chronos-2 pre-training, see
+        ``likelihood`` parameter. The quantiles used must be a subset of those used during TimesFM 2.5 pre-training, see
         below for details. It is recommended to call :func:`predict()` with ``predict_likelihood_parameters=True``
         or ``num_samples >> 1`` to get meaningful results.
 
@@ -388,7 +314,7 @@ class TimesFM2p5Model(FoundationModel):
         input_chunk_length
             Number of time steps in the past to take as a model input (per chunk). Applies to the target
             series, and past and/or future covariates (if the model supports it).
-            Maximum is 8192 for Chronos-2.
+            Maximum is 16,384 for TimesFM 2.5.
         output_chunk_length
             Number of time steps predicted at once (per chunk) by the internal model. Also, the number of future values
             from future covariates to use as a model input (if the model supports future covariates). It is not the same
@@ -397,7 +323,7 @@ class TimesFM2p5Model(FoundationModel):
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
-            For Chronos-2, `output_chunk_length + output_chunk_shift` must be less than or equal to 1024.
+            For TimesFM 2.5, `output_chunk_length + output_chunk_shift` must be less than or equal to 128.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
             input chunk end). This will create a gap between the input and output. If the model supports
@@ -407,13 +333,11 @@ class TimesFM2p5Model(FoundationModel):
         likelihood
             The likelihood model to be used for probabilistic forecasts. Must be ``None`` or an instance of
             :class:`~darts.utils.likelihood_models.torch.QuantileRegression`. If using ``QuantileRegression``,
-            the quantiles must be a subset of those used during Chronos-2 pre-training:
-            [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9,
-            0.95, 0.99].
-            Default: ``None``, which will make Chronos-2 deterministic (median quantile only).
+            the quantiles must be a subset of those used during TimesFM 2.5 pre-training:
+            [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].
+            Default: ``None``, which will make TimesFM 2.5 deterministic (median quantile only).
         hub_model_name
-            The model ID on HuggingFace Hub. Default: ``"amazon/chronos-2"``. Other available variants include
-            ``"autogluon/chronos-2-small"`` and ``"autogluon/chronos-2-synth"``.
+            The model ID on HuggingFace Hub. Default: ``"google/timesfm-2.5-200m-pytorch"``.
         hub_model_revision
             The model version to use. This can be a branch name, tag name, or commit hash. Default is ``None``, which
             will use the default branch from ``hub_model_name``.
@@ -427,8 +351,8 @@ class TimesFM2p5Model(FoundationModel):
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
-            PyTorch loss function used for fine-tuning a deterministic Chronos-2 model. Ignored for probabilistic
-            Chronos-2 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
+            PyTorch loss function used for fine-tuning a deterministic TimesFM 2.5 model. Ignored for probabilistic
+            TimesFM 2.5 when ``likelihood`` is specified. Default: ``nn.MSELoss()``.
         torch_metrics
             A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
             at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
@@ -445,7 +369,7 @@ class TimesFM2p5Model(FoundationModel):
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
             Whether to use reversible instance normalization `RINorm` against distribution shift. Ignored by
-            Chronos-2 as it has its own `RINorm` implementation.
+            TimesFM 2.5 as it has its own `RINorm` implementation.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -552,10 +476,10 @@ class TimesFM2p5Model(FoundationModel):
 
         References
         ----------
-        .. [1] A. Ansari, O. Shchur, J. Küken et al. "Chronos-2: From Univariate to Universal Forecasting", 2025.
-                arXiv https://arxiv.org/abs/2510.15821.
-        .. [2] "Introducing Chronos-2: From univariate to universal forecasting", 2025. Amazon Science Blog.
-                https://www.amazon.science/blog/introducing-chronos-2-from-univariate-to-universal-forecasting
+        .. [1] A. Das, W. Kong, R. Sen, Y. Zhou. "A decoder-only foundation model for time-series forecasting", 2025.
+                arXiv https://arxiv.org/abs/2310.10688.
+        .. [2] "A decoder-only foundation model for time-series forecasting", 2024. Google Research.
+                https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting/
 
         Examples
         --------
@@ -590,14 +514,13 @@ class TimesFM2p5Model(FoundationModel):
         [[1005.69617]]]
 
         .. note::
-            Fine-tuning of Chronos-2 is not supported at the moment.
+            Fine-tuning of TimesFM 2.5 is not supported at the moment.
         .. note::
-            Chronos-2 is licensed under the `Apache-2.0 License <https://github.com/amazon-science/chronos-forecasting/blob/main/LICENSE>`_,
-            copyright Amazon.com, Inc. or its affiliates. By using this model, you agree to the terms and conditions of
-            the license.
+            TimesFM 2.5 is licensed under the `Apache-2.0 License <https://github.com/google-research/timesfm/blob/master/LICENSE>`_,
+            Copyright 2025 Google LLC. By using this model, you agree to the terms and conditions of the license.
         .. warning::
             Due to differences in probabilistic sampling methods, zero-shot forecasts obtained here would differ from
-            those obtained using the original implementation when prediction horizon `n` is larger than 1024.
+            those obtained using the original implementation when prediction horizon `n` is larger than 128.
         """
         hf_connector = HuggingFaceConnector(
             model_name=hub_model_name,
@@ -663,3 +586,11 @@ class TimesFM2p5Model(FoundationModel):
             module_class=_TimesFM2p5Module,
             pl_module_params=pl_module_params,
         )
+
+    @property
+    def supports_past_covariates(self) -> bool:
+        return False
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return False
