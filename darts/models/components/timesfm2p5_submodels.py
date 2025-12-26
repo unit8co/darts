@@ -597,15 +597,15 @@ def update_running_stats(
     tuple[torch.Tensor, torch.Tensor, torch.Tensor],
 ]:
     """Updates the running stats."""
-    is_legit = torch.logical_not(mask)
-    inc_n = torch.sum(is_legit.to(x.dtype), dim=-1)
+    is_legit = torch.logical_not(mask).to(x.dtype)
+    inc_n = torch.sum(is_legit, dim=-1)
 
-    inc_mu_numerator = torch.sum(x * is_legit, dim=-1)
+    inc_mu_numerator = torch.nansum(x * is_legit, dim=-1)
     inc_n_safe = torch.where(inc_n == 0, 1.0, inc_n)
     inc_mu = inc_mu_numerator / inc_n_safe
     inc_mu = torch.where(inc_n == 0, 0.0, inc_mu)
 
-    inc_var_numerator = torch.sum(((x - inc_mu.unsqueeze(-1)) ** 2) * is_legit, dim=-1)
+    inc_var_numerator = torch.nansum((x - inc_mu.unsqueeze(-1)) ** 2, dim=-1)
     inc_var = inc_var_numerator / inc_n_safe
     inc_var = torch.where(inc_n == 0, 0.0, inc_var)
     inc_sigma = torch.sqrt(inc_var)

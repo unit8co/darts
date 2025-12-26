@@ -8,23 +8,26 @@ For detailed examples and tutorials, see:
   <https://unit8co.github.io/darts/examples/xxx.html>`__
 """
 
-import math
 import os
-from dataclasses import dataclass
-from typing import Any, Literal, Optional, Union, cast
+from dataclasses import dataclass, field
+from typing import Any, Optional, Union
 
 import torch
+import torch.nn.functional as F
 from torch import nn
 
-from darts.logging import get_logger, raise_log
+from darts.logging import get_logger
 from darts.models.components.huggingface_connector import (
     HuggingFaceConnector,
 )
 from darts.models.components.timesfm2p5_submodels import (
-    _Chronos2Encoder,
-    _InstanceNorm,
-    _Patch,
-    _ResidualBlock,
+    ResidualBlock,
+    ResidualBlockConfig,
+    StackedTransformersConfig,
+    Transformer,
+    TransformerConfig,
+    revin,
+    update_running_stats,
 )
 from darts.models.forecasting.foundation_model import (
     FoundationModel,
@@ -38,33 +41,61 @@ from darts.utils.likelihood_models.torch import QuantileRegression
 logger = get_logger(__name__)
 
 
-@dataclass
-class _Chronos2ForecastingConfig:
-    context_length: int
-    output_patch_size: int
-    input_patch_size: int
-    input_patch_stride: int
-    quantiles: list[float]
-    use_reg_token: bool = False
-    use_arcsinh: bool = False
-    max_output_patches: int = 1
-    time_encoding_scale: int | None = None
+@dataclass(frozen=True)
+class TimesFM_2p5_200M_Definition:
+    """Framework-agnostic config of TimesFM 2.5."""
+
+    context_limit = 16384
+    input_patch_len: int = 32
+    output_patch_len: int = 128
+    output_quantile_len: int = 1024
+    quantiles: list[float] = field(
+        default_factory=lambda: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    )
+    decode_index: int = 5
+    tokenizer: ResidualBlockConfig = ResidualBlockConfig(
+        input_dims=64,
+        hidden_dims=1280,
+        output_dims=1280,
+        use_bias=True,
+        activation="swish",
+    )
+    stacked_transformers: StackedTransformersConfig = StackedTransformersConfig(
+        num_layers=20,
+        transformer=TransformerConfig(
+            model_dims=1280,
+            hidden_dims=1280,
+            num_heads=16,
+            attention_norm="rms",
+            feedforward_norm="rms",
+            qk_norm="rms",
+            use_bias=False,
+            use_rotary_position_embeddings=True,
+            ff_activation="swish",
+            fuse_qkv=True,
+        ),
+    )
+    output_projection_point: ResidualBlockConfig = ResidualBlockConfig(
+        input_dims=1280,
+        hidden_dims=1280,
+        output_dims=1280,
+        use_bias=False,
+        activation="swish",
+    )
+    output_projection_quantiles: ResidualBlockConfig = ResidualBlockConfig(
+        input_dims=1280,
+        hidden_dims=1280,
+        output_dims=10240,
+        use_bias=False,
+        activation="swish",
+    )
 
 
-class _Chronos2Module(PLForecastingModule):
+class _TimesFM2p5Module(PLForecastingModule):
+    config = TimesFM_2p5_200M_Definition()
+
     def __init__(
         self,
-        d_model: int = 512,
-        d_kv: int = 64,
-        d_ff: int = 2048,
-        num_layers: int = 6,
-        num_heads: int = 8,
-        dropout_rate: float = 0.1,
-        layer_norm_epsilon: float = 1e-6,
-        feed_forward_proj: str = "relu",
-        rope_theta: float = 10000.0,
-        attn_implementation: Literal["eager", "sdpa"] | None = None,
-        chronos_config: Optional[dict[str, Any]] = None,
         **kwargs,
     ):
         """PyTorch module implementing the Chronos-2 model, ported from
@@ -101,96 +132,37 @@ class _Chronos2Module(PLForecastingModule):
         """
 
         super().__init__(**kwargs)
-        self.d_model = d_model
-        self.d_kv = d_kv
-        self.d_ff = d_ff
-        self.num_layers = num_layers
-        self.num_heads = num_heads
-        self.dropout_rate = dropout_rate
-        self.layer_norm_epsilon = layer_norm_epsilon
-        self.feed_forward_proj = feed_forward_proj
-        self.rope_theta = rope_theta
 
-        act_info = self.feed_forward_proj.split("-")
-        self.dense_act_fn = act_info[-1]
-        self.is_gated_act = act_info[0] == "gated"
+        # Names constants.
+        self.p = self.config.input_patch_len  # 32
+        self.o = self.config.output_patch_len  # 128
+        self.os = self.config.output_quantile_len  # 1024
+        self.m = self.o // self.p  # 4
+        self.x = self.config.stacked_transformers.num_layers  # 20
+        self.h = self.config.stacked_transformers.transformer.num_heads  # 16
+        self.md = self.config.stacked_transformers.transformer.model_dims  # 1280
+        self.hd = self.md // self.h  # 80
+        self.q = len(self.config.quantiles) + 1  # 10
+        self.aridx = self.config.decode_index  # 5
 
-        if self.is_gated_act:
-            raise_log(
-                ValueError("gated activation is not supported"),
-                logger,
-            )
+        # padding length for input target series to make its length a multiple of
+        # input_patch_len (32).
+        self.pad_len = -self.input_chunk_length % self.p
 
-        # Attention implementation - default to "sdpa" if not specified
-        self.attn_implementation = attn_implementation or "sdpa"
-        if self.attn_implementation not in ["eager", "sdpa"]:
-            raise_log(
-                ValueError(
-                    f"attn_implementation {self.attn_implementation} is not supported"
-                ),
-                logger,
-            )
-
-        # Chronos-2 forecasting specific config
-        chronos_config = chronos_config or {}
-        self.chronos_config = _Chronos2ForecastingConfig(**chronos_config)
-
-        # Only decoder_start_id (and optionally REG token)
-        if self.chronos_config.use_reg_token:
-            self.reg_token_id = 1
-
-        if (
-            self.chronos_config.input_patch_size
-            != self.chronos_config.output_patch_size
-        ):
-            raise_log(
-                ValueError(
-                    f"input_patch_size and output_patch_size sizes must be equal, "
-                    f"but found {self.chronos_config.input_patch_size} and {self.chronos_config.output_patch_size}"
-                ),
-                logger,
-            )
-
-        self.vocab_size = 2 if self.chronos_config.use_reg_token else 1
-        self.shared = nn.Embedding(self.vocab_size, self.d_model)
-
-        # Input patch embedding layer
-        self.input_patch_embedding = _ResidualBlock(
-            # x3 for [time_embedding, patch, patch_mask]
-            in_dim=self.chronos_config.input_patch_size * 3,
-            h_dim=self.d_ff,
-            out_dim=self.d_model,
-            act_fn_name=self.dense_act_fn,
-            dropout_p=self.dropout_rate,
+        # Layers.
+        self.tokenizer = ResidualBlock(self.config.tokenizer)
+        self.stacked_xf = nn.ModuleList([
+            Transformer(self.config.stacked_transformers.transformer)
+            for _ in range(self.x)
+        ])
+        self.output_projection_point = ResidualBlock(
+            self.config.output_projection_point
+        )
+        self.output_projection_quantiles = ResidualBlock(
+            self.config.output_projection_quantiles
         )
 
-        # patching layer
-        self.patch = _Patch(
-            patch_size=self.chronos_config.input_patch_size,
-            patch_stride=self.chronos_config.input_patch_stride,
-        )
-
-        # instance normalization, also referred to as "scaling" in Chronos and GluonTS
-        self.instance_norm = _InstanceNorm(use_arcsinh=self.chronos_config.use_arcsinh)
-
-        self.encoder = _Chronos2Encoder(
-            d_model=self.d_model,
-            d_kv=self.d_kv,
-            d_ff=self.d_ff,
-            num_heads=self.num_heads,
-            dropout_rate=self.dropout_rate,
-            rope_theta=self.rope_theta,
-            attn_implementation=self.attn_implementation,
-            dense_act_fn=self.dense_act_fn,
-            layer_norm_epsilon=self.layer_norm_epsilon,
-            is_gated_act=self.is_gated_act,
-            num_layers=self.num_layers,
-        )
-
-        quantiles = self.chronos_config.quantiles
-        self.num_quantiles = len(quantiles)
-        quantiles_tensor = torch.tensor(quantiles)
-        self.register_buffer("quantiles", quantiles_tensor, persistent=False)
+        self.future_length = self.output_chunk_shift + (self.output_chunk_length or 0)
 
         # gather indices of user-specified quantiles
         user_quantiles: list[float] = (
@@ -198,148 +170,14 @@ class _Chronos2Module(PLForecastingModule):
             if isinstance(self.likelihood, QuantileRegression)
             else [0.5]
         )
-        self.user_quantile_indices = [quantiles.index(q) for q in user_quantiles]
-
-        self.output_patch_embedding = _ResidualBlock(
-            in_dim=self.d_model,
-            h_dim=self.d_ff,
-            out_dim=self.num_quantiles * self.chronos_config.output_patch_size,
-            act_fn_name=self.dense_act_fn,
-            dropout_p=self.dropout_rate,
-        )
-
-    def _prepare_patched_context(
-        self,
-        context: torch.Tensor,
-    ) -> tuple[torch.Tensor, torch.Tensor, tuple[torch.Tensor, torch.Tensor]]:
-        context_mask = torch.isnan(context).logical_not().to(context.dtype)
-
-        batch_size, _ = context.shape
-
-        # scaling
-        context, loc_scale = self.instance_norm(context)
-
-        # scaling is done in 32-bit precision, then the context is moved to model's dtype
-        context = context.to(self.dtype)
-        context_mask = context_mask.to(self.dtype)
-
-        # patching
-        patched_context = self.patch(context)
-        patched_mask = torch.nan_to_num(self.patch(context_mask), nan=0.0)
-        patched_context = torch.where(patched_mask > 0.0, patched_context, 0.0)
-
-        # attention_mask = 1 if at least one item in the patch is observed
-        attention_mask = patched_mask.sum(dim=-1) > 0  # (batch_size, num_patches)
-        num_context_patches = attention_mask.shape[-1]
-
-        # context time encoding: every observation is assigned a sequential time index,
-        # scaled by model's context length = [-C, -(C-1), ..., -1] / context_length
-        final_context_length = (
-            num_context_patches * self.chronos_config.input_patch_size
-        )
-        context_time_enc = torch.arange(
-            start=-final_context_length, end=0, device=self.device, dtype=torch.float32
-        )
-        context_time_enc = context_time_enc.div(
-            cast(int, self.chronos_config.time_encoding_scale)
-        ).to(self.dtype)
-        context_time_enc = context_time_enc.view(
-            1, num_context_patches, self.chronos_config.input_patch_size
-        ).expand(
-            batch_size,
-            num_context_patches,
-            self.chronos_config.input_patch_size,
-        )
-
-        # concat time encoding, context and mask along the last (feature) dim
-        patched_context = torch.cat(
-            [context_time_enc, patched_context, patched_mask], dim=-1
-        )
-
-        return patched_context, attention_mask, loc_scale
-
-    def _prepare_patched_future(
-        self,
-        future_covariates: torch.Tensor,
-        loc_scale: tuple[torch.Tensor, torch.Tensor],
-        num_output_patches: int,
-        batch_size: int,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
-        output_patch_size = self.chronos_config.output_patch_size
-        future_covariates, _ = self.instance_norm(future_covariates, loc_scale)
-        future_covariates = cast(torch.Tensor, future_covariates)
-        future_covariates = future_covariates.to(self.dtype)
-
-        future_covariates_mask = (
-            torch.isnan(future_covariates).logical_not().to(future_covariates.dtype)
-        )
-
-        future_covariates = torch.where(
-            future_covariates_mask > 0.0, future_covariates, 0.0
-        )
-
-        # add padding if the length of future_covariates is not an integer multiple of output_patch_size
-        if num_output_patches * output_patch_size > future_covariates.shape[-1]:
-            padding_shape = (
-                *future_covariates.shape[:-1],
-                num_output_patches * output_patch_size - future_covariates.shape[-1],
-            )
-            future_covariates = torch.cat(
-                [
-                    future_covariates,
-                    torch.zeros(padding_shape).to(future_covariates),
-                ],
-                dim=-1,
-            )
-            future_covariates_mask = torch.cat(
-                [
-                    future_covariates_mask,
-                    torch.zeros(padding_shape).to(future_covariates_mask),
-                ],
-                dim=-1,
-            )
-
-        patched_future_covariates = future_covariates.view(
-            batch_size, num_output_patches, output_patch_size
-        )
-        patched_future_covariates_mask = future_covariates_mask.view(
-            batch_size, num_output_patches, output_patch_size
-        )
-
-        # future time encoding: every future timestep is assigned a sequential time index,
-        # scaled by model's context length = [0, 1, ..., h-1] / context_length
-        final_future_length = num_output_patches * output_patch_size
-        future_time_enc = torch.arange(
-            start=0, end=final_future_length, device=self.device, dtype=torch.float32
-        )
-        future_time_enc = future_time_enc.div(
-            cast(int, self.chronos_config.time_encoding_scale)
-        ).to(self.dtype)
-        future_time_enc = future_time_enc.view(
-            1, num_output_patches, output_patch_size
-        ).expand(
-            batch_size,
-            num_output_patches,
-            output_patch_size,
-        )
-
-        patched_future = torch.cat(
-            [
-                future_time_enc,
-                patched_future_covariates,
-                patched_future_covariates_mask,
-            ],
-            dim=-1,
-        )
-
-        return patched_future, patched_future_covariates_mask
+        self.user_quantile_indices = [
+            self.config.quantiles.index(q) + 1 for q in user_quantiles
+        ]
 
     def _forward(
         self,
-        context: torch.Tensor,
-        group_ids: torch.Tensor,
-        future_covariates: torch.Tensor,
-        num_output_patches: int = 1,
+        inputs: torch.Tensor,
+        masks: torch.Tensor,
     ) -> torch.Tensor:
         """Original forward pass of the Chronos-2 model.
 
@@ -389,70 +227,22 @@ class _Chronos2Module(PLForecastingModule):
             quantile_preds will contain an entry for every time series in the context batch regardless of whether it
             was a known future covariate.
         """
+        tokenizer_inputs = torch.cat([inputs, masks.to(inputs.dtype)], dim=-1)
+        input_embeddings = self.tokenizer(tokenizer_inputs)
 
-        batch_size = context.shape[0]
-        patched_context, attention_mask, loc_scale = self._prepare_patched_context(
-            context=context
-        )
-        num_context_patches = attention_mask.shape[-1]
-
-        # get input embeddings of shape (batch, num_context_patches, d_model)
-        input_embeds: torch.Tensor = self.input_patch_embedding(patched_context)
-        # append [REG] special token embedding, if needed
-        if self.chronos_config.use_reg_token:
-            reg_input_ids = torch.full(
-                (batch_size, 1), self.reg_token_id, device=input_embeds.device
+        output_embeddings = input_embeddings
+        new_decode_caches = []
+        for _, layer in enumerate(self.stacked_xf):
+            output_embeddings, new_cache = layer(
+                output_embeddings,
+                masks[..., -1],
+                None,
             )
-            reg_embeds = self.shared(reg_input_ids)
-            input_embeds = torch.cat([input_embeds, reg_embeds], dim=-2)
-            attention_mask = torch.cat(
-                [
-                    attention_mask.to(self.dtype),
-                    torch.ones_like(reg_input_ids).to(self.dtype),
-                ],
-                dim=-1,
-            )
+            new_decode_caches.append(new_cache)
+        output_ts = self.output_projection_point(output_embeddings)
+        # output_quantile_spread = self.output_projection_quantiles(output_embeddings)
 
-        patched_future, _ = self._prepare_patched_future(
-            future_covariates=future_covariates,
-            loc_scale=loc_scale,
-            num_output_patches=num_output_patches,
-            batch_size=batch_size,
-        )
-        future_attention_mask = torch.ones(
-            batch_size,
-            num_output_patches,
-            dtype=attention_mask.dtype,
-            device=self.device,
-        )
-
-        # get future embeddings of shape (batch, num_output_patches, d_model)
-        future_embeds: torch.Tensor = self.input_patch_embedding(patched_future)
-
-        # concatenate context and future embeddings and masks
-        input_embeds = torch.cat([input_embeds, future_embeds], dim=-2)
-        attention_mask = torch.cat([attention_mask, future_attention_mask], dim=-1)
-
-        hidden_states: torch.Tensor = self.encoder(
-            attention_mask=attention_mask,
-            inputs_embeds=input_embeds,
-            group_ids=group_ids,
-        )
-
-        assert hidden_states.shape == (
-            batch_size,
-            num_context_patches + 1 + num_output_patches,
-            self.d_model,
-        )
-
-        # slice the last num_output_patches hidden states to be input into the output_patch_embedding
-        forecast_embeds = hidden_states[:, -num_output_patches:]
-        quantile_preds: torch.Tensor = self.output_patch_embedding(forecast_embeds)
-
-        quantile_preds = quantile_preds.view(batch_size, -1)
-        quantile_preds = self.instance_norm.inverse(quantile_preds, loc_scale)
-
-        return quantile_preds
+        return output_ts
 
     # TODO: fine-tuning support w/ normalized loss
     # Currently, Darts own `RINorm` is not used as Chronos-2 has its own implementation. Major differences
@@ -477,85 +267,82 @@ class _Chronos2Module(PLForecastingModule):
             probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
             deterministic forecasts (median only).
         """
-        x_past, x_future, _ = x_in
+        x_past, _, _ = x_in
+
         # x_past is a stack of [past_target, past_covariates, historic_future_covariates],
         # x_future is just future_covariates.
-        # So here we need to create `future_covariates` in Chronos2's format that is
-        # a stack of [past_target (NaNs), past_covariates (NaNs), future_covariates].
-        batch_size, past_length, n_variables = x_past.shape
-        output_chunk_length = self.output_chunk_length or 0
-        output_chunk_shift = self.output_chunk_shift
-        future_length = output_chunk_shift + output_chunk_length
-        future_covariates = torch.full(
-            (batch_size, future_length, n_variables),
-            torch.nan,
-            device=x_past.device,
-        )
-        if x_future is not None:
-            n_future_covs = x_future.shape[-1]
-            future_covariates[:, -output_chunk_length:, -n_future_covs:] = x_future
 
-        # reshape x_past and future_covariates to (batch * vars, time)
-        context = x_past.permute(0, 2, 1).reshape(-1, past_length)
-        future_covariates = future_covariates.permute(0, 2, 1).reshape(
-            -1, future_length
+        # TimesFM 2.5 is a univariate model and its inputs does not have a variable dimension,
+        # so here we reshape x_past to (n_samples * n_variables, n_time_steps)
+        x_past = x_past.permute(0, 2, 1).reshape(-1, self.input_chunk_length)
+
+        # We assume there are no missing values in x_past, so strip_leading_nans() and
+        # linear_interpolation() are not needed here.
+
+        # left-pad x_past with NaNs to make its length a multiple of input_patch_len (32)
+        if self.pad_len > 0:
+            x_past = F.pad(x_past, (self.pad_len, 0), value=float("nan"))
+
+        # create mask for x_past
+        mask = torch.isnan(x_past)
+
+        # divide x_past and mask into patches of size input_patch_len (32)
+        patched_x_past = x_past.unfold(1, self.p, self.p)
+        patched_mask = mask.unfold(1, self.p, self.p)
+
+        # determine batch size and number of input patches after patching
+        batch_size, num_input_patches, _ = patched_x_past.shape
+
+        # running stats
+        n = torch.zeros(batch_size, device=patched_x_past.device)
+        mu = torch.zeros(batch_size, device=patched_x_past.device)
+        sigma = torch.zeros(batch_size, device=patched_x_past.device)
+        patch_mu = []
+        patch_sigma = []
+        for i in range(num_input_patches):
+            (n, mu, sigma), _ = update_running_stats(
+                n, mu, sigma, patched_x_past[:, i], patched_mask[:, i]
+            )
+            patch_mu.append(mu)
+            patch_sigma.append(sigma)
+        context_mu = torch.stack(patch_mu, dim=1)
+        context_sigma = torch.stack(patch_sigma, dim=1)
+
+        # normalize inputs and apply mask
+        normed_inputs = revin(patched_x_past, context_mu, context_sigma, reverse=False)
+        normed_inputs = torch.where(patched_mask, 0.0, normed_inputs)
+
+        # forward pass
+        normed_outputs = self._forward(normed_inputs, patched_mask)
+
+        # inverse normalization
+        renormed_outputs = revin(
+            normed_outputs, context_mu, context_sigma, reverse=True
         )
 
-        # create group_ids according to sample index within the batch
-        group_ids = torch.arange(batch_size, device=context.device).repeat_interleave(
-            n_variables
-        )
+        # use only the last patch
+        renormed_outputs = renormed_outputs[:, -1]
 
-        # determine minimum number of patches to cover future_length
-        num_output_patches = math.ceil(
-            future_length / self.chronos_config.output_patch_size
+        # reshape renormed_outputs to (n_samples, n_targets, output_patch_len, quantiles+1)
+        renormed_outputs = torch.reshape(
+            renormed_outputs,
+            (-1, self.n_targets, self.o, self.q),
         )
-
-        # call original Chronos-2 forward pass
-        # Unlike the original, we remove `context_mask`, `future_covariates_mask`, `future_target`,
-        # `future_target_mask`, and `output_attentions` parameters. They are not needed for Darts'
-        # implementation.
-        # We also remove `einops` rearrange operation at the end so the raw output tensor is returned,
-        # in shape of `(batch, vars * patches * quantiles * patch_size)`
-        quantile_preds = self._forward(
-            context=context,
-            group_ids=group_ids,
-            future_covariates=future_covariates,
-            num_output_patches=num_output_patches,
-        )
-
-        # The permutation and reshaping operations below replace the `einops` rearrange
-        # operations in the original Chronos-2 code to return the output tensor in Darts'
-        # expected shape.
-        # reshape quantile_preds to (batch, vars, patches, quantiles, patch_size)
-        quantile_preds = quantile_preds.view(
-            batch_size,
-            n_variables,
-            num_output_patches,
-            self.num_quantiles,
-            self.chronos_config.output_patch_size,
-        )
-        # permute and reshape to (batch, time, vars, quantiles)
-        quantile_preds = quantile_preds.permute(0, 2, 4, 1, 3).reshape(
-            batch_size,
-            num_output_patches * self.chronos_config.output_patch_size,
-            n_variables,
-            self.num_quantiles,
-        )
+        # permute to (n_samples, output_patch_len, n_targets, quantiles+1)
+        renormed_outputs = renormed_outputs.permute(0, 2, 1, 3)
 
         # truncate to output_chunk_length
-        quantile_preds = quantile_preds[:, output_chunk_shift:future_length, :, :]
-
-        # select only target variables
-        quantile_preds = quantile_preds[:, :, : self.n_targets, :]
+        renormed_outputs = renormed_outputs[
+            :, self.output_chunk_shift : self.future_length, :, :
+        ]
 
         # select only user-specified quantiles or median if deterministic
-        quantile_preds = quantile_preds[:, :, :, self.user_quantile_indices]
+        renormed_outputs = renormed_outputs[:, :, :, self.user_quantile_indices]
 
-        return quantile_preds
+        return renormed_outputs
 
 
-class Chronos2Model(FoundationModel):
+class TimesFM2p5Model(FoundationModel):
     # Fine-tuning is turned off for now pending proper fine-tuning support
     # and configuration.
     _allows_finetuning = False
@@ -829,56 +616,56 @@ class Chronos2Model(FoundationModel):
             local_dir=local_dir,
         )
 
-        # load model config for validation
-        config = hf_connector.load_config()
-        chronos_config = config["chronos_config"]
+        # # load model config for validation
+        # config = hf_connector.load_config()
+        # chronos_config = config["chronos_config"]
 
-        # validate `input_chunk_length` against model's context_length
-        context_length = chronos_config["context_length"]
-        if input_chunk_length > context_length:
-            raise_log(
-                ValueError(
-                    f"`input_chunk_length` {input_chunk_length} cannot be greater than "
-                    f"model's context_length {context_length}"
-                ),
-                logger,
-            )
+        # # validate `input_chunk_length` against model's context_length
+        # context_length = chronos_config["context_length"]
+        # if input_chunk_length > context_length:
+        #     raise_log(
+        #         ValueError(
+        #             f"`input_chunk_length` {input_chunk_length} cannot be greater than "
+        #             f"model's context_length {context_length}"
+        #         ),
+        #         logger,
+        #     )
 
-        # validate `output_chunk_length` and `output_chunk_shift` against model's prediction length
-        prediction_length = (
-            chronos_config["output_patch_size"] * chronos_config["max_output_patches"]
-        )
-        if output_chunk_length + output_chunk_shift > prediction_length:
-            raise_log(
-                ValueError(
-                    f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
-                    f"cannot be greater than model's maximum prediction length {prediction_length}"
-                ),
-                logger,
-            )
+        # # validate `output_chunk_length` and `output_chunk_shift` against model's prediction length
+        # prediction_length = (
+        #     chronos_config["output_patch_size"] * chronos_config["max_output_patches"]
+        # )
+        # if output_chunk_length + output_chunk_shift > prediction_length:
+        #     raise_log(
+        #         ValueError(
+        #             f"`output_chunk_length` {output_chunk_length} plus `output_chunk_shift` {output_chunk_shift} "
+        #             f"cannot be greater than model's maximum prediction length {prediction_length}"
+        #         ),
+        #         logger,
+        #     )
 
-        quantiles = chronos_config["quantiles"]
-        # by default (`likelihood=None`), model is deterministic
-        # otherwise, only QuantileRegression likelihood is supported and quantiles must be
-        # a subset of Chronos-2 quantiles
-        if likelihood is not None:
-            if not isinstance(likelihood, QuantileRegression):
-                raise_log(
-                    ValueError(
-                        f"Only QuantileRegression likelihood is supported for Chronos2Model in Darts. "
-                        f"Got {type(likelihood)}."
-                    ),
-                    logger,
-                )
-            user_quantiles: list[float] = likelihood.quantiles
-            if not set(user_quantiles).issubset(quantiles):
-                raise_log(
-                    ValueError(
-                        f"The quantiles for QuantileRegression likelihood {user_quantiles} "
-                        f"must be a subset of Chronos-2 quantiles {quantiles}."
-                    ),
-                    logger,
-                )
+        # quantiles = chronos_config["quantiles"]
+        # # by default (`likelihood=None`), model is deterministic
+        # # otherwise, only QuantileRegression likelihood is supported and quantiles must be
+        # # a subset of Chronos-2 quantiles
+        # if likelihood is not None:
+        #     if not isinstance(likelihood, QuantileRegression):
+        #         raise_log(
+        #             ValueError(
+        #                 f"Only QuantileRegression likelihood is supported for Chronos2Model in Darts. "
+        #                 f"Got {type(likelihood)}."
+        #             ),
+        #             logger,
+        #         )
+        #     user_quantiles: list[float] = likelihood.quantiles
+        #     if not set(user_quantiles).issubset(quantiles):
+        #         raise_log(
+        #             ValueError(
+        #                 f"The quantiles for QuantileRegression likelihood {user_quantiles} "
+        #                 f"must be a subset of Chronos-2 quantiles {quantiles}."
+        #             ),
+        #             logger,
+        #         )
 
         self.hf_connector = hf_connector
         super().__init__(enable_finetuning=False, **kwargs)
@@ -886,6 +673,6 @@ class Chronos2Model(FoundationModel):
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         pl_module_params = self.pl_module_params or {}
         return self.hf_connector.load_model(
-            module_class=_Chronos2Module,
+            module_class=_TimesFM2p5Module,
             pl_module_params=pl_module_params,
         )
