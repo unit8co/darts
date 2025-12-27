@@ -76,21 +76,21 @@ class TestTimeSeries:
         ts = TimeSeries.from_xarray(ar)
         assert ts.components.tolist() == ["a", "b"]
 
-    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="xarray required")
+    @pytest.mark.skipif(XARRAY_AVAILABLE, reason="xarray required disabled")
     def test_xarray_import_error_from_xarray(self):
         """Test that from_xarray raises ImportError when xarray is not available."""
         with pytest.raises(ImportError) as exc:
             TimeSeries.from_xarray(None)
         assert "xarray required" in str(exc.value)
 
-    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="xarray required")
+    @pytest.mark.skipif(XARRAY_AVAILABLE, reason="xarray required disabled")
     def test_xarray_import_error_data_array(self):
         """Test that data_array raises ImportError when xarray is not available."""
         with pytest.raises(ImportError) as exc:
             self.series1.data_array()
         assert "xarray required" in str(exc.value)
 
-    @pytest.mark.skipif(not XARRAY_AVAILABLE, reason="xarray required")
+    @pytest.mark.skipif(XARRAY_AVAILABLE, reason="xarray required disabled")
     def test_xarray_import_error_resample(self):
         """Test that resample raises ImportError when xarray is not available."""
         with pytest.raises(ImportError) as exc:
