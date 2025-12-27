@@ -1297,6 +1297,71 @@ class TestSKLearnModels:
         model = model_cls(lags=None, lags_past_covariates=5, multi_models=mode)
         assert model.min_train_series_length == 0 + 1 + 0 + add_min_samples
 
+    @pytest.mark.parametrize("multi_models", [True, False])
+    def test_predict_target_too_short(self, multi_models):
+        """Test too short target series for prediction."""
+        lags = [-3, -1]
+        ocl = 5
+        model = LinearRegressionModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+        )
+
+        series = tg.linear_timeseries(length=model.min_train_series_length)
+        model.fit(series)
+
+        min_prediction_steps = abs(min(lags))
+        if not multi_models:
+            min_prediction_steps += ocl - 1
+
+        series = series[:min_prediction_steps]
+
+        # series too short
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=ocl, series=series[:-1])
+        assert str(exc.value).startswith("The `series` is not long enough.")
+
+        # series long enough
+        _ = model.predict(n=ocl, series=series)
+
+    @pytest.mark.parametrize("config", product([True, False], ["past", "future"]))
+    def test_predict_covs_too_short(self, config):
+        """Test too short covariates for prediction."""
+        multi_models, use_covs = config
+        lags = [-3, -1]
+        ocl = 5
+        kwargs = {f"lags_{use_covs}_covariates": lags}
+        model = LinearRegressionModel(
+            lags=None,
+            output_chunk_length=ocl,
+            multi_models=multi_models,
+            **kwargs,
+        )
+
+        min_train_steps = abs(min(lags)) + ocl + 1
+        series = tg.linear_timeseries(length=min_train_steps)
+        fit_kwargs = {f"{use_covs}_covariates": series}
+        model.fit(series, **fit_kwargs)
+
+        min_prediction_steps = abs(min(lags))
+        if not multi_models:
+            min_prediction_steps += ocl - 1
+
+        series = series[:min_prediction_steps]
+        pred_kwargs = {f"{use_covs}_covariates": series[:-1]}
+
+        # covs too short
+        with pytest.raises(ValueError) as exc:
+            _ = model.predict(n=ocl, series=series, **pred_kwargs)
+        assert str(exc.value).startswith(
+            f"The `{use_covs}_covariates` are not long enough."
+        )
+
+        # series long enough
+        pred_kwargs = {f"{use_covs}_covariates": series}
+        _ = model.predict(n=ocl, series=series, **pred_kwargs)
+
     @pytest.mark.parametrize("mode", [True, False])
     def test_historical_forecast(self, mode):
         model = self.models[1](lags=5, multi_models=mode)
@@ -3049,7 +3114,8 @@ class TestSKLearnModels:
         ocl = 7
         series = tg.linear_timeseries(
             length=28, start=pd.Timestamp("2000-01-01"), freq="d"
-        ).with_static_covariates(pd.Series([1.0]))
+        ).with_static_covariates(pd.Series([1.0, 2.0, 3.0]))
+        static_covs = series.static_covariates.copy(deep=True)
 
         model = LinearRegressionModel(
             lags=None,
@@ -3079,6 +3145,8 @@ class TestSKLearnModels:
 
         for p1, p2 in zip(preds1, preds2):
             np.testing.assert_array_almost_equal(p1.values(), p2.values())
+            assert p1.static_covariates.equals(static_covs)
+            assert p2.static_covariates.equals(static_covs)
 
     @pytest.mark.parametrize(
         "config",
@@ -3964,6 +4032,153 @@ class TestSKLearnModels:
             past_cov = [past_cov, past_cov] if past_cov else None
             future_cov = [future_cov, future_cov] if future_cov else None
         return series, past_cov, future_cov
+
+    @pytest.mark.parametrize(
+        "config",
+        product(
+            ([
+                (LinearRegressionModel, {}),
+                (
+                    LinearRegressionModel,
+                    {"lags": {"sine": 2, "default_lags": 1}},
+                ),
+            ]),
+            [True, False],  # multi_models
+            [True, False],  # last_points_only
+            [True, False],  # multivariate
+            [
+                1,
+                2,
+                4,
+                5,
+            ],  # forecast_horizon
+            [
+                1,
+                2,
+                3,
+            ],  # output_chunk_length
+            [1, 2],  # stride
+            [0, 1, 2],  # start
+        ),
+    )
+    def test_optimized_historical_forecasts(self, config):
+        """This test ensures that the optimized historical_forecasts method produces the same output as
+        the non-optimized version. It runs the historical_forecasts method twice, once with optimization
+        disabled and once with it enabled, and compares the results."""
+        (
+            (model_cls, model_kwargs),
+            multi_models,
+            last_points_only,
+            is_multivariate,
+            forecast_horizon,
+            output_chunk_length,
+            stride,
+            start,
+        ) = config
+
+        random_state = 42
+        model_kwargs = dict(model_kwargs)  # make a copy
+        if "lags" not in model_kwargs:
+            model_kwargs["lags"] = 2
+        model_kwargs["multi_models"] = multi_models
+        model_kwargs["output_chunk_length"] = output_chunk_length
+
+        model = model_cls(
+            lags_past_covariates=2,
+            lags_future_covariates=[-2, -1, 0],
+            **model_kwargs,
+        )
+
+        series = tg.sine_timeseries(length=10).with_static_covariates(
+            pd.DataFrame({"static_cov": [1]})
+        )
+        past_cov = series + 2
+        future_cov = series + 3
+        if is_multivariate:
+            series = series.stack(series + 1.0)
+
+        model.fit(
+            series[:8], past_covariates=past_cov[:8], future_covariates=future_cov[:8]
+        )
+
+        hfc_non_optimized = model.historical_forecasts(
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+            retrain=False,
+            forecast_horizon=forecast_horizon,
+            start=start,
+            last_points_only=last_points_only,
+            enable_optimization=False,
+            num_samples=1,
+            stride=stride,
+            random_state=random_state,
+        )
+
+        hfc_optimized = model.historical_forecasts(
+            series=series,
+            past_covariates=past_cov,
+            future_covariates=future_cov,
+            forecast_horizon=forecast_horizon,
+            retrain=False,
+            start=start,
+            enable_optimization=True,
+            last_points_only=last_points_only,
+            num_samples=1,
+            random_state=random_state,
+            stride=stride,
+        )
+
+        assert len(hfc_non_optimized) == len(hfc_optimized)
+        if not last_points_only:
+            [
+                hfc_non_optimized[i].time_index.equals(hfc_optimized[i].time_index)
+                for i in range(len(hfc_non_optimized))
+            ]
+            [
+                np.testing.assert_array_almost_equal(
+                    hfc_non_optimized[i].values(), hfc_optimized[i].values()
+                )
+                for i in range(len(hfc_non_optimized))
+            ]
+        else:
+            hfc_non_optimized.time_index.equals(hfc_optimized.time_index)
+            np.testing.assert_array_almost_equal(
+                hfc_non_optimized.values(), hfc_optimized.values()
+            )
+
+    @pytest.mark.parametrize("retrain", [True, False])
+    def test_historical_forecasts_single_model(self, retrain):
+        """Tests that hfc for single models can start at the correct minimum time index as with `predict()` directly."""
+        lags = [-3, -1]
+        ocl = 5
+        model = LinearRegressionModel(
+            lags=lags,
+            output_chunk_length=ocl,
+            multi_models=False,
+        )
+
+        series = tg.linear_timeseries(length=model.min_train_series_length)
+        model.fit(series)
+
+        # we want to generate only a single forecast, without retraining, we have to shorten the series
+        if not retrain:
+            series = series[: abs(min(lags)) + ocl - 1]
+            with pytest.raises(ValueError) as exc:
+                _ = model.predict(n=ocl, series=series[:-1])
+            assert str(exc.value).startswith("The `series` is not long enough.")
+
+        start_time_pred = model.predict(n=ocl, series=series).start_time()
+        for horizon_shift in [-1, 0, 1]:
+            hfc = model.historical_forecasts(
+                forecast_horizon=ocl + horizon_shift,
+                series=series,
+                overlap_end=True,
+                last_points_only=False,
+                retrain=retrain,
+            )
+            assert len(hfc) == 1
+            assert hfc[0].start_time() == start_time_pred
 
 
 class TestProbabilisticSKLearnModels:

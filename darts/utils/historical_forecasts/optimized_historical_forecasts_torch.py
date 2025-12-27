@@ -79,8 +79,12 @@ def _optimized_historical_forecasts(
             freq=series_.freq,
             show_warnings=show_warnings,
         )
-        left_bound = series_.get_index_at_point(hist_fct_start)
         # latest possible prediction start is one time step after end of target series
+        if hist_fct_start > series_.end_time():
+            left_bound = len(series_)
+        else:
+            left_bound = series_.get_index_at_point(hist_fct_start)
+
         if hist_fct_end > series_.end_time():
             right_bound = len(series_)
         else:

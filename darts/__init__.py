@@ -14,7 +14,7 @@ from darts.config import (
 )
 from darts.timeseries import TimeSeries, concatenate, slice_intersect
 
-__version__ = "0.39.0"
+__version__ = "0.40.0"
 
 __all__ = [
     "TimeSeries",

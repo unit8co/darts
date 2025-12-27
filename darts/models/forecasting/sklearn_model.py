@@ -83,8 +83,7 @@ from darts.utils.data.tabularization import (
 )
 from darts.utils.historical_forecasts import (
     _check_optimizable_historical_forecasts_global_models,
-    _optimized_historical_forecasts_all_points,
-    _optimized_historical_forecasts_last_points_only,
+    _optimized_historical_forecasts_regression,
     _process_historical_forecast_input,
 )
 from darts.utils.likelihood_models.base import LikelihoodType
@@ -1262,6 +1261,33 @@ class SKLearnModel(GlobalForecastingModel):
             shift = self.output_chunk_length - 1
             step = 1
 
+        # check all target series are long enough
+        target_lags = self.lags.get("target")
+        if target_lags is not None:
+            min_target_length = abs(min(target_lags)) + shift
+            for idx, series_ in enumerate(series):
+                if len(series_) < min_target_length:
+                    index_text = (
+                        " "
+                        if called_with_single_series
+                        else f" at list/sequence index {idx} "
+                    )
+                    end_ts = series_.end_time()
+                    start_ts = (
+                        series_.end_time() - (min_target_length - 1) * series_.freq
+                    )
+                    raise_log(
+                        ValueError(
+                            f"The `series`{index_text}is not long enough. "
+                            f"Given horizon `n={n}`, `min(lags)={target_lags[0]}`, "
+                            f"`max(lags)={target_lags[-1]}` and "
+                            f"`output_chunk_length={self.output_chunk_length}`, the `series` has to "
+                            f"range from {start_ts} until {end_ts} (inclusive), but it only ranges from "
+                            f"{series_.start_time()} until {end_ts}."
+                        ),
+                        logger=logger,
+                    )
+
         # dictionary containing covariate data over time span required for prediction
         covariate_matrices = {}
         # dictionary containing covariate lags relative to minimum covariate lag
@@ -1507,21 +1533,10 @@ class SKLearnModel(GlobalForecastingModel):
 
     def _check_optimizable_historical_forecasts(
         self,
-        forecast_horizon: int,
         retrain: Union[bool, int, Callable[..., bool]],
-        show_warnings: bool,
     ) -> bool:
-        """
-        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
-        (no auto-regression required).
-        """
-        return _check_optimizable_historical_forecasts_global_models(
-            model=self,
-            forecast_horizon=forecast_horizon,
-            retrain=retrain,
-            show_warnings=show_warnings,
-            allow_autoregression=False,
-        )
+        """Historical forecast can be optimized if no re-training is involved"""
+        return _check_optimizable_historical_forecasts_global_models(retrain)
 
     def _optimized_historical_forecasts(
         self,
@@ -1545,9 +1560,6 @@ class SKLearnModel(GlobalForecastingModel):
         For SKLearnModels we create the lagged prediction data once per series using a moving window.
         With this, we can avoid having to recreate the tabular input data and call `model.predict()` for each
         forecastable index and series.
-        Additionally, there is a dedicated subroutines for `last_points_only=True` and `last_points_only=False`.
-
-        TODO: support forecast_horizon > output_chunk_length (auto-regression)
         """
         series, past_covariates, future_covariates = _process_historical_forecast_input(
             model=self,
@@ -1555,46 +1567,26 @@ class SKLearnModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
-            allow_autoregression=False,
         )
 
-        # TODO: move the loop here instead of duplicated code in each sub-routine?
-        if last_points_only:
-            hfc = _optimized_historical_forecasts_last_points_only(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                start=start,
-                start_format=start_format,
-                forecast_horizon=forecast_horizon,
-                stride=stride,
-                overlap_end=overlap_end,
-                show_warnings=show_warnings,
-                verbose=verbose,
-                predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
-                predict_kwargs=predict_kwargs,
-            )
-        else:
-            hfc = _optimized_historical_forecasts_all_points(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                start=start,
-                start_format=start_format,
-                forecast_horizon=forecast_horizon,
-                stride=stride,
-                overlap_end=overlap_end,
-                show_warnings=show_warnings,
-                verbose=verbose,
-                predict_likelihood_parameters=predict_likelihood_parameters,
-                random_state=random_state,
-                predict_kwargs=predict_kwargs,
-            )
+        hfc = _optimized_historical_forecasts_regression(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            start=start,
+            start_format=start_format,
+            forecast_horizon=forecast_horizon,
+            stride=stride,
+            overlap_end=overlap_end,
+            show_warnings=show_warnings,
+            verbose=verbose,
+            predict_likelihood_parameters=predict_likelihood_parameters,
+            random_state=random_state,
+            predict_kwargs=predict_kwargs,
+            last_points_only=last_points_only,
+        )
         return hfc
 
     @property
