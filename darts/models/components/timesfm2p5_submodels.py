@@ -93,16 +93,6 @@ class ResidualBlockConfig:
 
 
 @dataclass(frozen=True)
-class RandomFourierFeaturesConfig:
-    """Framework-agnostic config for random fourier features."""
-
-    input_dims: int
-    output_dims: int
-    projection_stddev: float
-    use_bias: bool
-
-
-@dataclass(frozen=True)
 class TransformerConfig:
     """Framework-agnostic config for a transformer."""
 
@@ -147,16 +137,6 @@ class RMSNorm(nn.Module):
         return normed_inputs
 
 
-@dataclass(frozen=False)
-class DecodeCache:
-    """Cache for decoding."""
-
-    next_index: torch.Tensor
-    num_masked: torch.Tensor
-    key: torch.Tensor
-    value: torch.Tensor
-
-
 class ResidualBlock(nn.Module):
     """Residual block with two linear layers and a linear residual connection."""
 
@@ -196,51 +176,9 @@ class ResidualBlock(nn.Module):
         ) + self.residual_layer(x)
 
 
-class RandomFourierFeatures(nn.Module):
-    """Random Fourier features layer."""
-
-    def __init__(self, config: RandomFourierFeaturesConfig):
-        super().__init__()
-        self.config = config
-
-        if config.output_dims % 4 != 0:
-            raise_log(
-                ValueError(
-                    f"Output dims must be a multiple of 4: {config.output_dims} % 4 != 0."
-                ),
-                logger,
-            )
-        num_projected_features = config.output_dims // 4
-
-        self.phase_shifts = nn.Parameter(torch.zeros(2, num_projected_features))
-        self.projection_layer = nn.Linear(
-            in_features=config.input_dims,
-            out_features=num_projected_features,
-            bias=config.use_bias,
-        )
-        self.residual_layer = nn.Linear(
-            in_features=config.input_dims,
-            out_features=config.output_dims,
-            bias=config.use_bias,
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        projected = self.projection_layer(x)
-        cos_features = torch.cos(projected)
-        sin_features = torch.sin(projected)
-        sq_wave_1 = torch.sign(torch.sin(projected + self.phase_shifts[0, :]))
-        sq_wave_2 = torch.sign(torch.sin(projected + self.phase_shifts[1, :]))
-        fourier_features = torch.cat(
-            [cos_features, sin_features, sq_wave_1, sq_wave_2], dim=-1
-        )
-        residual = self.residual_layer(x)
-        return fourier_features + residual
-
-
 def make_attn_mask(
     query_length: int,
     num_all_masked_kv: torch.Tensor,
-    query_index_offset: torch.Tensor | None = None,
     kv_length: int = 0,
 ) -> torch.Tensor:
     """Makes attention mask."""
@@ -250,14 +188,12 @@ def make_attn_mask(
     q_index = torch.arange(query_length, device=num_all_masked_kv.device)[
         None, None, :, None
     ]
-    if query_index_offset is not None:
-        q_index = q_index + query_index_offset[:, None, None, None]
     kv_index = torch.arange(kv_length, device=num_all_masked_kv.device)[
         None, None, None, :
     ]
     return torch.logical_and(
         q_index >= kv_index,
-        kv_index >= num_all_masked_kv[:, None, None, None],
+        kv_index >= num_all_masked_kv[:, None, None],
     )
 
 
@@ -278,17 +214,9 @@ class RotaryPositionalEmbedding(nn.Module):
     def forward(
         self,
         inputs: torch.Tensor,
-        position: torch.Tensor | None = None,
+        position: torch.Tensor,
     ):
         """Generates a JTensor of sinusoids with different frequencies."""
-        if self.embedding_dims != inputs.shape[-1]:
-            raise_log(
-                ValueError(
-                    "The embedding dims of the rotary position embedding"
-                    "must match the hidden dimension of the inputs."
-                ),
-                logger,
-            )
         half_embedding_dim = self.embedding_dims // 2
         fraction = (
             2
@@ -298,21 +226,13 @@ class RotaryPositionalEmbedding(nn.Module):
         timescale = (
             self.min_timescale * (self.max_timescale / self.min_timescale) ** fraction
         ).to(inputs.device)
-        if position is None:
-            seq_length = inputs.shape[1]
-            position = torch.arange(
-                seq_length, dtype=torch.float32, device=inputs.device
-            )[None, :]
 
         if len(inputs.shape) == 4:
             position = position[..., None, None]
             timescale = timescale[None, None, None, :]
-        elif len(inputs.shape) == 3:
-            position = position[..., None]
-            timescale = timescale[None, None, :]
         else:
             raise_log(
-                ValueError("Inputs must be of rank 3 or 4."),
+                ValueError("Inputs must be of rank 4."),
                 logger,
             )
 
@@ -323,24 +243,6 @@ class RotaryPositionalEmbedding(nn.Module):
         first_part = first_half * cos - second_half * sin
         second_part = second_half * cos + first_half * sin
         return torch.cat([first_part, second_part], dim=-1)
-
-
-def _dot_product_attention(
-    query,
-    key,
-    value,
-    mask=None,
-):
-    """Computes dot-product attention given query, key, and value."""
-    attn_weights = torch.einsum("...qhd,...khd->...hqk", query, key)
-    if mask is not None:
-        attn_weights = torch.where(
-            mask, attn_weights, -torch.finfo(attn_weights.dtype).max / 2
-        )
-
-    attn_weights = F.softmax(attn_weights, dim=-1)
-
-    return torch.einsum("...hqk,...khd->...qhd", attn_weights, value)
 
 
 def _torch_dot_product_attention(query, key, value, mask=None):
@@ -446,14 +348,9 @@ class MultiHeadAttention(nn.Module):
         self,
         inputs_q: torch.Tensor,
         *,
-        decode_cache: DecodeCache | None = None,
-        patch_mask: torch.Tensor | None = None,
-    ) -> tuple[torch.Tensor, DecodeCache | None]:
+        patch_mask: torch.Tensor,
+    ) -> torch.Tensor:
         b, n_patches, _ = inputs_q.shape
-        if patch_mask is None:
-            patch_mask = torch.zeros(
-                b, n_patches, dtype=torch.bool, device=inputs_q.device
-            )
 
         if self.fuse_qkv:
             qkv = self.qkv_proj(inputs_q)
@@ -470,20 +367,11 @@ class MultiHeadAttention(nn.Module):
                 b, n_patches, self.num_heads, self.head_dim
             )
 
-        if decode_cache is None:
-            num_masked = torch.sum(patch_mask.to(torch.int32), dim=-1)
-            next_index = torch.zeros_like(num_masked, dtype=torch.int32)
-        else:
-            num_masked = (
-                torch.sum(patch_mask.to(torch.int32), dim=-1) + decode_cache.num_masked
-            )
-            next_index = decode_cache.next_index.clone()
+        num_masked = torch.sum(patch_mask.to(torch.int32), dim=-1, keepdim=True)
 
         if self.use_rotary_position_embeddings:
             position = (
-                torch.arange(n_patches, device=inputs_q.device)[None, :]
-                + next_index[:, None]
-                - num_masked[:, None]
+                torch.arange(n_patches, device=inputs_q.device)[None, :] - num_masked
             )
             query = self.rotary_position_embedding(query, position)
             key = self.rotary_position_embedding(key, position)
@@ -494,32 +382,7 @@ class MultiHeadAttention(nn.Module):
         if self.use_per_dim_scale:
             query = self.per_dim_scale(query)
 
-        if decode_cache is not None:
-            _, decode_cache_size, _, _ = decode_cache.value.shape
-
-            start = decode_cache.next_index[0]
-            end = start + n_patches
-
-            # Perform a single, vectorized slice assignment for the entire batch.
-            # This is vastly more efficient than a Python for-loop.
-
-            decode_cache.key[:, start:end] = key
-            decode_cache.value[:, start:end] = value
-
-            key = decode_cache.key
-            value = decode_cache.value
-            decode_cache.next_index += n_patches
-            decode_cache.num_masked = num_masked
-            attn_mask = make_attn_mask(
-                query_length=n_patches,
-                num_all_masked_kv=num_masked,
-                query_index_offset=next_index,
-                kv_length=decode_cache_size,
-            )
-        else:
-            attn_mask = make_attn_mask(
-                query_length=n_patches, num_all_masked_kv=num_masked
-            )
+        attn_mask = make_attn_mask(query_length=n_patches, num_all_masked_kv=num_masked)
 
         x = self.attention_fn(
             query,
@@ -530,7 +393,7 @@ class MultiHeadAttention(nn.Module):
 
         x = x.reshape(b, n_patches, self.in_features)
         out = self.out(x)
-        return out, decode_cache
+        return out
 
 
 class Transformer(nn.Module):
@@ -593,11 +456,9 @@ class Transformer(nn.Module):
         self,
         input_embeddings: torch.Tensor,
         patch_mask: torch.Tensor,
-        decode_cache: DecodeCache | None = None,
-    ) -> tuple[torch.Tensor, DecodeCache | None]:
-        attn_output, decode_cache = self.attn(
+    ) -> torch.Tensor:
+        attn_output = self.attn(
             inputs_q=self.pre_attn_ln(input_embeddings),
-            decode_cache=decode_cache,
             patch_mask=patch_mask,
         )
         attn_output = self.post_attn_ln(attn_output) + input_embeddings
@@ -607,7 +468,7 @@ class Transformer(nn.Module):
             )
             + attn_output
         )
-        return output_embeddings, decode_cache
+        return output_embeddings
 
 
 def update_running_stats(

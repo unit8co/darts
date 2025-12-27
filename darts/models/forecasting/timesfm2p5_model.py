@@ -172,14 +172,11 @@ class _TimesFM2p5Module(PLForecastingModule):
         input_embeddings = self.tokenizer(tokenizer_inputs)
 
         output_embeddings = input_embeddings
-        new_decode_caches = []
         for _, layer in enumerate(self.stacked_xf):
-            output_embeddings, new_cache = layer(
+            output_embeddings = layer(
                 output_embeddings,
                 masks[..., -1],
-                None,
             )
-            new_decode_caches.append(new_cache)
         output_ts = self.output_projection_point(output_embeddings)
         # output_quantile_spread = self.output_projection_quantiles(output_embeddings)
 
