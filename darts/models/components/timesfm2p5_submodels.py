@@ -485,7 +485,7 @@ def update_running_stats(
     is_legit = torch.logical_not(mask).to(x.dtype)
     inc_n = torch.sum(is_legit, dim=-1)
 
-    inc_mu_numerator = torch.nansum(x * is_legit, dim=-1)
+    inc_mu_numerator = torch.nansum(x, dim=-1)
     inc_n_safe = torch.where(inc_n == 0, 1.0, inc_n)
     inc_mu = inc_mu_numerator / inc_n_safe
     inc_mu = torch.where(inc_n == 0, 0.0, inc_mu)
@@ -493,7 +493,6 @@ def update_running_stats(
     inc_var_numerator = torch.nansum((x - inc_mu.unsqueeze(-1)) ** 2, dim=-1)
     inc_var = inc_var_numerator / inc_n_safe
     inc_var = torch.where(inc_n == 0, 0.0, inc_var)
-    inc_sigma = torch.sqrt(inc_var)
 
     new_n = n + inc_n
     new_n_safe = torch.where(new_n == 0, 1.0, new_n)
@@ -502,7 +501,7 @@ def update_running_stats(
     new_mu = torch.where(new_n == 0, 0.0, new_mu)
 
     term1 = n * sigma.pow(2)
-    term2 = inc_n * inc_sigma.pow(2)
+    term2 = inc_n * inc_var
     term3 = n * (mu - new_mu).pow(2)
     term4 = inc_n * (inc_mu - new_mu).pow(2)
 
