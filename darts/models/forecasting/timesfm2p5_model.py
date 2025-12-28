@@ -297,8 +297,9 @@ class TimesFM2p5Model(FoundationModel):
         This model supports either univariate or multivariate time series, but does not support covariates.
 
         By default, using this model will automatically download and cache the pre-trained model from HuggingFace Hub
-        (google/timesfm-2.5-200m-pytorch). Alternatively, you can specify a local directory containing the model config
-        and weights using the ``local_dir`` parameter.
+        (`google/timesfm-2.5-200m-pytorch <https://huggingface.co/google/timesfm-2.5-200m-pytorch/tree/main>`_).
+        Alternatively, you can specify a local directory containing the model config and weights using the ``local_dir``
+        parameter.
 
         By default, this model is deterministic and outputs only the median (0.5 quantile). To enable probabilistic
         forecasts, pass a :class:`~darts.utils.likelihood_models.torch.QuantileRegression` instance to the
