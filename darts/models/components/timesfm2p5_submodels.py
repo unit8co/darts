@@ -40,49 +40,7 @@ _TOLERANCE = 1e-6
 
 
 @dataclass(frozen=True)
-class ForecastConfig:
-    """Options for forecasting.
-
-    Attributes:
-      max_context: The maximum context length. This is used by the complied decode
-        function at inference time during batched inference. Any input time series
-        with length less than max_context will be padded with zeros, and with
-        length greater than max_context will be truncated.
-      max_horizon: The maximum horizon length. This is used by the complied decode
-        function at inference time during batched inference. The compiled cached
-        decoding function will by default forecast till max_horizon.
-      normalize_inputs: Whether to normalize the inputs. This is useful when the
-        raw inputs are of extremely large or small magnitudes which may result in
-        numerical issues.
-      window_size: The window size for decomposed forecasting.
-        TODO(siriuz42):implement it.
-      per_core_batch_size: The batch size per core. Used at inference time during
-        batched inference when multiple GPU / TPU devices are used.
-      use_continuous_quantile_head: Whether to use a separate continuous quantile
-        head to avoid quantile collapsing.
-      force_flip_invariance: Whether to force flip invariance. TimesFM guarantees
-        that TimesFM(aX + b) = a * TimesFM(x) + b for a >= 0 by default. This flag
-        extends it to a < 0 as well.
-      infer_is_positive: Whether to guarantee nonnegativity of the output if the
-        input is nonnegative.
-      fix_quantile_crossing: Whether to fix quantile crossing.
-      return_backcast: Whether to return backcast.
-    """
-
-    max_context: int = 0
-    max_horizon: int = 0
-    normalize_inputs: bool = False
-    window_size: int = 0
-    per_core_batch_size: int = 1
-    use_continuous_quantile_head: bool = False
-    force_flip_invariance: bool = True
-    infer_is_positive: bool = True
-    fix_quantile_crossing: bool = False
-    return_backcast: bool = False
-
-
-@dataclass(frozen=True)
-class ResidualBlockConfig:
+class _ResidualBlockConfig:
     """Framework-agnostic config for a residual block."""
 
     input_dims: int
@@ -93,7 +51,7 @@ class ResidualBlockConfig:
 
 
 @dataclass(frozen=True)
-class TransformerConfig:
+class _TransformerConfig:
     """Framework-agnostic config for a transformer."""
 
     model_dims: int
@@ -109,14 +67,14 @@ class TransformerConfig:
 
 
 @dataclass(frozen=True)
-class StackedTransformersConfig:
+class _StackedTransformersConfig:
     """Framework-agnostic config for a stacked transformers."""
 
     num_layers: int
-    transformer: TransformerConfig
+    transformer: _TransformerConfig
 
 
-class RMSNorm(nn.Module):
+class _RMSNorm(nn.Module):
     """RMS normalization."""
 
     def __init__(
@@ -137,10 +95,10 @@ class RMSNorm(nn.Module):
         return normed_inputs
 
 
-class ResidualBlock(nn.Module):
+class _ResidualBlock(nn.Module):
     """Residual block with two linear layers and a linear residual connection."""
 
-    def __init__(self, config: ResidualBlockConfig):
+    def __init__(self, config: _ResidualBlockConfig):
         super().__init__()
         self.config = config
         self.hidden_layer = nn.Linear(
@@ -176,7 +134,7 @@ class ResidualBlock(nn.Module):
         ) + self.residual_layer(x)
 
 
-def make_attn_mask(
+def _make_attn_mask(
     query_length: int,
     num_all_masked_kv: torch.Tensor,
     kv_length: int = 0,
@@ -197,7 +155,7 @@ def make_attn_mask(
     )
 
 
-class RotaryPositionalEmbedding(nn.Module):
+class _RotaryPositionalEmbedding(nn.Module):
     """Rotary positional embedding."""
 
     def __init__(
@@ -269,7 +227,7 @@ def _torch_dot_product_attention(query, key, value, mask=None):
     return output
 
 
-class PerDimScale(nn.Module):
+class _PerDimScale(nn.Module):
     """Per-dimension scaling."""
 
     def __init__(self, num_dims: int):
@@ -284,7 +242,7 @@ class PerDimScale(nn.Module):
         return x * scale_factor
 
 
-class MultiHeadAttention(nn.Module):
+class _MultiHeadAttention(nn.Module):
     """Multi-head attention."""
 
     def __init__(
@@ -328,21 +286,21 @@ class MultiHeadAttention(nn.Module):
         self.out = nn.Linear(self.in_features, self.in_features, bias=use_bias)
 
         if self.qk_norm == "rms":
-            self.query_ln = RMSNorm(self.head_dim)
-            self.key_ln = RMSNorm(self.head_dim)
+            self.query_ln = _RMSNorm(self.head_dim)
+            self.key_ln = _RMSNorm(self.head_dim)
         else:
             self.query_ln = nn.Identity()
             self.key_ln = nn.Identity()
 
         self.use_rotary_position_embeddings = use_rotary_position_embeddings
         if self.use_rotary_position_embeddings:
-            self.rotary_position_embedding = RotaryPositionalEmbedding(
+            self.rotary_position_embedding = _RotaryPositionalEmbedding(
                 embedding_dims=self.head_dim,
             )
 
         self.use_per_dim_scale = use_per_dim_scale
         if use_per_dim_scale:
-            self.per_dim_scale = PerDimScale(num_dims=self.head_dim)
+            self.per_dim_scale = _PerDimScale(num_dims=self.head_dim)
 
     def forward(
         self,
@@ -382,7 +340,9 @@ class MultiHeadAttention(nn.Module):
         if self.use_per_dim_scale:
             query = self.per_dim_scale(query)
 
-        attn_mask = make_attn_mask(query_length=n_patches, num_all_masked_kv=num_masked)
+        attn_mask = _make_attn_mask(
+            query_length=n_patches, num_all_masked_kv=num_masked
+        )
 
         x = self.attention_fn(
             query,
@@ -396,23 +356,23 @@ class MultiHeadAttention(nn.Module):
         return out
 
 
-class Transformer(nn.Module):
+class _Transformer(nn.Module):
     """Classic Transformer used in TimesFM."""
 
-    def __init__(self, config: TransformerConfig):
+    def __init__(self, config: _TransformerConfig):
         super().__init__()
         self.config = config
 
         if config.attention_norm == "rms":
-            self.pre_attn_ln = RMSNorm(num_features=config.model_dims)
-            self.post_attn_ln = RMSNorm(num_features=config.model_dims)
+            self.pre_attn_ln = _RMSNorm(num_features=config.model_dims)
+            self.post_attn_ln = _RMSNorm(num_features=config.model_dims)
         else:
             raise_log(
                 ValueError(f"Layer norm: {config.attention_norm} not supported."),
                 logger,
             )
 
-        self.attn = MultiHeadAttention(
+        self.attn = _MultiHeadAttention(
             num_heads=config.num_heads,
             in_features=config.model_dims,
             use_per_dim_scale=True,
@@ -422,8 +382,8 @@ class Transformer(nn.Module):
         )
 
         if config.feedforward_norm == "rms":
-            self.pre_ff_ln = RMSNorm(num_features=config.model_dims)
-            self.post_ff_ln = RMSNorm(num_features=config.model_dims)
+            self.pre_ff_ln = _RMSNorm(num_features=config.model_dims)
+            self.post_ff_ln = _RMSNorm(num_features=config.model_dims)
         else:
             raise_log(
                 ValueError(f"Layer norm: {config.feedforward_norm} not supported."),
@@ -471,7 +431,7 @@ class Transformer(nn.Module):
         return output_embeddings
 
 
-def update_running_stats(
+def _update_running_stats(
     n: torch.Tensor,
     mu: torch.Tensor,
     sigma: torch.Tensor,
@@ -512,7 +472,7 @@ def update_running_stats(
     return (w := (new_n, new_mu, new_sigma), w)
 
 
-def revin(
+def _revin(
     x: torch.Tensor,
     mu: torch.Tensor,
     sigma: torch.Tensor,

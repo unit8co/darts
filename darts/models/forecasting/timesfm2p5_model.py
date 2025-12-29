@@ -21,13 +21,13 @@ from darts.models.components.huggingface_connector import (
     HuggingFaceConnector,
 )
 from darts.models.components.timesfm2p5_submodels import (
-    ResidualBlock,
-    ResidualBlockConfig,
-    StackedTransformersConfig,
-    Transformer,
-    TransformerConfig,
-    revin,
-    update_running_stats,
+    _ResidualBlock,
+    _ResidualBlockConfig,
+    _revin,
+    _StackedTransformersConfig,
+    _Transformer,
+    _TransformerConfig,
+    _update_running_stats,
 )
 from darts.models.forecasting.foundation_model import (
     FoundationModel,
@@ -51,16 +51,16 @@ class _TimesFM2p5_200M_Definition:
     quantiles: list[float] = field(
         default_factory=lambda: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     )
-    tokenizer: ResidualBlockConfig = ResidualBlockConfig(
+    tokenizer: _ResidualBlockConfig = _ResidualBlockConfig(
         input_dims=64,
         hidden_dims=1280,
         output_dims=1280,
         use_bias=True,
         activation="swish",
     )
-    stacked_transformers: StackedTransformersConfig = StackedTransformersConfig(
+    stacked_transformers: _StackedTransformersConfig = _StackedTransformersConfig(
         num_layers=20,
-        transformer=TransformerConfig(
+        transformer=_TransformerConfig(
             model_dims=1280,
             hidden_dims=1280,
             num_heads=16,
@@ -73,14 +73,14 @@ class _TimesFM2p5_200M_Definition:
             fuse_qkv=True,
         ),
     )
-    output_projection_point: ResidualBlockConfig = ResidualBlockConfig(
+    output_projection_point: _ResidualBlockConfig = _ResidualBlockConfig(
         input_dims=1280,
         hidden_dims=1280,
         output_dims=1280,
         use_bias=False,
         activation="swish",
     )
-    output_projection_quantiles: ResidualBlockConfig = ResidualBlockConfig(
+    output_projection_quantiles: _ResidualBlockConfig = _ResidualBlockConfig(
         input_dims=1280,
         hidden_dims=1280,
         output_dims=10240,
@@ -120,15 +120,15 @@ class _TimesFM2p5Module(PLForecastingModule):
         self.pad_len = -self.input_chunk_length % self.input_patch_len
 
         # define model submodules
-        self.tokenizer = ResidualBlock(self.config.tokenizer)
+        self.tokenizer = _ResidualBlock(self.config.tokenizer)
         self.stacked_xf = nn.ModuleList([
-            Transformer(self.config.stacked_transformers.transformer)
+            _Transformer(self.config.stacked_transformers.transformer)
             for _ in range(self.num_layers)
         ])
-        self.output_projection_point = ResidualBlock(
+        self.output_projection_point = _ResidualBlock(
             self.config.output_projection_point
         )
-        self.output_projection_quantiles = ResidualBlock(
+        self.output_projection_quantiles = _ResidualBlock(
             self.config.output_projection_quantiles
         )
 
@@ -229,7 +229,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         patch_mu = []
         patch_sigma = []
         for i in range(num_input_patches):
-            (n, mu, sigma), _ = update_running_stats(
+            (n, mu, sigma), _ = _update_running_stats(
                 n, mu, sigma, patched_x_past[:, i], patched_mask[:, i]
             )
             patch_mu.append(mu)
@@ -238,14 +238,14 @@ class _TimesFM2p5Module(PLForecastingModule):
         context_sigma = torch.stack(patch_sigma, dim=1)
 
         # normalize inputs and apply mask
-        normed_inputs = revin(patched_x_past, context_mu, context_sigma, reverse=False)
+        normed_inputs = _revin(patched_x_past, context_mu, context_sigma, reverse=False)
         normed_inputs = torch.where(patched_mask, 0.0, normed_inputs)
 
         # forward pass
         normed_outputs = self._forward(normed_inputs, patched_mask)
 
         # inverse normalization
-        renormed_outputs = revin(
+        renormed_outputs = _revin(
             normed_outputs, context_mu, context_sigma, reverse=True
         )
 
