@@ -98,7 +98,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         country_holidays
             An optional country code, for which holidays can be taken into account by Prophet.
 
-            See: https://github.com/dr-prodigy/python-holidays
+            See: https://github.com/vacanza/holidays
 
             In addition to those countries, Prophet includes holidays for these
             countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),

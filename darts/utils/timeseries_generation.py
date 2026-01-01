@@ -520,7 +520,7 @@ def holidays_timeseries(
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
     (or equals) a selected country's holiday, and 0 otherwise.
 
-    Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`__.
+    Available countries can be found `here <https://github.com/vacanza/holidays#available-countries>`__.
 
     Parameters
     ----------
