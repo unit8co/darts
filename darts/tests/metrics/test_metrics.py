@@ -216,9 +216,6 @@ class TestMetrics:
         with pytest.raises(ValueError):
             metric(self.series1, self.series1)
 
-        with pytest.raises(ValueError):
-            metric(self.series1, self.series1)
-
     def test_ope_zero(self):
         with pytest.raises(ValueError):
             metrics.ope(
