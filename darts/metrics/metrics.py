@@ -1822,15 +1822,9 @@ def sape(
         remove_nan_union=True,
         q=q,
     )
-    if not np.logical_or(y_true != 0, y_pred != 0).all():
-        raise_log(
-            ValueError(
-                "`actual_series` must be strictly positive to compute the sMAPE."
-            ),
-            logger=logger,
-        )
-    return 200.0 * np.abs(y_true - y_pred) / (np.abs(y_true) + np.abs(y_pred))
-
+    numerator = 200*np.abs(y_true - y_pred)
+    denominator = np.abs(y_true) + np.abs(y_pred)
+    return np.divide(numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator!=0)
 
 @multi_ts_support
 @multivariate_support
