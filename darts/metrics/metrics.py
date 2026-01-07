@@ -1822,9 +1822,15 @@ def sape(
         remove_nan_union=True,
         q=q,
     )
-    numerator = 200*np.abs(y_true - y_pred)
+    numerator = 200 * np.abs(y_true - y_pred)
     denominator = np.abs(y_true) + np.abs(y_pred)
-    return np.divide(numerator, denominator, out=np.zeros_like(numerator, dtype=float), where=denominator!=0)
+    return np.divide(
+        numerator,
+        denominator,
+        out=np.zeros_like(numerator, dtype=float),
+        where=denominator != 0,
+    )
+
 
 @multi_ts_support
 @multivariate_support
