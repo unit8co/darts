@@ -25,6 +25,8 @@ class ExponentialSmoothing(LocalForecastingModel):
         damped: Optional[bool] = False,
         seasonal: Optional[SeasonalityMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
+        error: Optional[str] = "add",
+        random_errors: Optional[Any] = None,
         random_state: Optional[int] = None,
         kwargs: Optional[dict[str, Any]] = None,
         **fit_kwargs,
@@ -33,11 +35,11 @@ class ExponentialSmoothing(LocalForecastingModel):
 
         This is a wrapper around
         `statsmodels  Holt-Winters' Exponential Smoothing
-        <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_;
+        <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`__;
         we refer to this link for the original and more complete documentation of the parameters.
 
         `trend` must be a ``ModelMode`` Enum member. You can access the Enum with
-         ``from darts.utils.utils import ModelMode``.
+        ``from darts.utils.utils import ModelMode``.
         `seasonal` must be a ``SeasonalityMode`` Enum member. You can access the Enum with
         ``from darts.utils.utils import SeasonalityMode``.
 
@@ -63,18 +65,29 @@ class ExponentialSmoothing(LocalForecastingModel):
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
+        error
+            Specifies the type of error model for state space formulation to use when using predict()
+            with ``num_samples > 1``. Default is `"add"`.
+            Will be passed to statsmodels' :func:`simulate()` method. See the documentation `here
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`__
+            for more information.
+        random_errors
+            Specifies how the random errors should be obtained, when using predict() with ``num_samples > 1``.
+            Will be passed to statsmodels' :func:`simulate()` method. See the documentation `here
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.HoltWintersResults.simulate.html>`__
+            for more information.
         random_state
             Controls the randomness for reproducible forecasting.
         kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing()`.
             See `the documentation
-            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_.
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`__.
         fit_kwargs
             Some optional keyword arguments that will be used to call
             :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
             See `the documentation
-            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
+            <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`__.
 
         Examples
         --------
@@ -86,13 +99,13 @@ class ExponentialSmoothing(LocalForecastingModel):
         >>> model = ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.MULTIPLICATIVE)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[445.24283838],
-               [418.22618932],
-               [465.31305075],
-               [494.95129261],
-               [505.4770514 ],
-               [573.31519186]])
+        >>> print(pred.values())
+        [[445.24283838]
+         [418.22618932]
+         [465.31305075]
+         [494.95129261]
+         [505.4770514 ]
+         [573.31519186]]
         """
         super().__init__()
         self.trend = trend
@@ -100,12 +113,14 @@ class ExponentialSmoothing(LocalForecastingModel):
         self.seasonal = seasonal
         self.infer_seasonal_periods = seasonal_periods is None
         self.seasonal_periods = seasonal_periods
+        self.error = error
+        self.random_errors = random_errors
         self.constructor_kwargs = dict() if kwargs is None else kwargs
         self.fit_kwargs = fit_kwargs
         self.model = None
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, verbose: Optional[bool] = None):
+        super().fit(series, verbose=verbose)
         self._assert_univariate(series)
         series = self.training_series
 
@@ -144,11 +159,11 @@ class ExponentialSmoothing(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
     ):
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
 
         if num_samples == 1:
             forecast = self.model.forecast(n)
@@ -156,7 +171,13 @@ class ExponentialSmoothing(LocalForecastingModel):
             rng = check_random_state(random_state)
 
             forecast = np.expand_dims(
-                self.model.simulate(n, repetitions=num_samples, random_state=rng),
+                self.model.simulate(
+                    n,
+                    repetitions=num_samples,
+                    random_state=rng,
+                    random_errors=self.random_errors,
+                    error=self.error,
+                ),
                 axis=1,
             )
 
@@ -171,7 +192,7 @@ class ExponentialSmoothing(LocalForecastingModel):
         return True
 
     @property
-    def min_train_series_length(self) -> int:
+    def _target_window_lengths(self) -> tuple[int, int]:
         if self.seasonal_periods is not None and self.seasonal_periods > 1:
-            return 2 * self.seasonal_periods
-        return 3
+            return 2 * self.seasonal_periods, 0
+        return 3, 0

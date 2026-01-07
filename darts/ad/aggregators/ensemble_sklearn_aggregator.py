@@ -18,7 +18,7 @@ class EnsembleSklearnAggregator(FittableAggregator):
         """Ensemble scikit-learn aggregator
 
         Aggregator wrapped around the sklearn ensemble model `sklearn ensemble model
-        <https://scikit-learn.org/stable/modules/ensemble.html>`_.
+        <https://scikit-learn.org/stable/modules/ensemble.html>`__.
 
         Parameters
         ----------

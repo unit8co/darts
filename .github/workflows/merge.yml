@@ -12,10 +12,10 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v4
 
-      - name: "Set up Python 3.11"
+      - name: "Set up Python 3.12"
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: "Install Dev Dependencies"
         run: |
@@ -31,7 +31,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-14, ubuntu-latest]
-        python-version: ['3.9', '3.11']
+        python-version: ['3.10', '3.12']
         flavour: ['core', 'torch', 'all']
 
     steps:
@@ -52,9 +52,9 @@ jobs:
           if [ "${{ matrix.flavour }}" == "core" ]; then
             pip install -r requirements/core.txt -r requirements/dev.txt
           elif [ "${{ matrix.flavour }}" == "torch" ]; then
-            pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/dev.txt
+            pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/core.txt -r requirements/torch.txt -r requirements/dev.txt
           elif [ "${{ matrix.flavour }}" == "all" ]; then
-            pip install -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/optional.txt -r requirements/dev.txt
+            pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/core.txt -r requirements/torch.txt -r requirements/notorch.txt -r requirements/optional.txt -r requirements/dev.txt
           fi
 
       - name: "Install libomp (for LightGBM)"
@@ -64,7 +64,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Run tests"
         run: |
@@ -85,15 +85,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        example-name: [00-quickstart.ipynb, 01-multi-time-series-and-covariates.ipynb, 02-data-processing.ipynb, 03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 05-TCN-examples.ipynb, 06-Transformer-examples.ipynb, 07-NBEATS-examples.ipynb, 08-DeepAR-examples.ipynb, 09-DeepTCN-examples.ipynb, 10-Kalman-filter-examples.ipynb, 11-GP-filter-examples.ipynb, 12-Dynamic-Time-Warping-example.ipynb, 13-TFT-examples.ipynb, 15-static-covariates.ipynb, 16-hierarchical-reconciliation.ipynb, 18-TiDE-examples.ipynb, 19-EnsembleModel-examples.ipynb, 20-SKLearnModel-examples.ipynb, 21-TSMixer-examples.ipynb, 22-anomaly-detection-examples.ipynb, 23-Conformal-Prediction-examples.ipynb]
+        example-name: [00-quickstart.ipynb, 01-multi-time-series-and-covariates.ipynb, 02-data-processing.ipynb, 03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 05-TCN-examples.ipynb, 06-Transformer-examples.ipynb, 07-NBEATS-examples.ipynb, 08-DeepAR-examples.ipynb, 09-DeepTCN-examples.ipynb, 10-Kalman-filter-examples.ipynb, 11-GP-filter-examples.ipynb, 12-Dynamic-Time-Warping-example.ipynb, 13-TFT-examples.ipynb, 15-static-covariates.ipynb, 16-hierarchical-reconciliation.ipynb, 18-TiDE-examples.ipynb, 19-EnsembleModel-examples.ipynb, 20-SKLearnModel-examples.ipynb, 21-TSMixer-examples.ipynb, 22-anomaly-detection-examples.ipynb, 23-Conformal-Prediction-examples.ipynb, 24-SKLearnClassifierModel-examples.ipynb, 25-Chronos-2-examples.ipynb]
     steps:
       - name: "Clone repository"
         uses: actions/checkout@v4
 
-      - name: "Set up Python 3.10"
+      - name: "Set up Python 3.11"
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       # use `uv` to retrieve the latest dependency versions
       - name: "Compile Dependency Versions"
@@ -116,7 +116,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -125,7 +125,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Run example ${{matrix.example-name}}"
         working-directory: ./examples
@@ -138,10 +138,10 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v4
 
-      - name: "Set up Python 3.10"
+      - name: "Set up Python 3.11"
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       # use `uv` to retrieve the latest dependency versions
       - name: "Compile Dependency Versions"
@@ -168,7 +168,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -177,7 +177,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Build docs"
         run: |

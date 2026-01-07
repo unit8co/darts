@@ -1,5 +1,5 @@
 # Use a specific Python version for better reproducibility
-FROM python:3.10
+FROM python:3.12
 
 # Set work directory
 WORKDIR /app
@@ -14,9 +14,8 @@ RUN pip install --no-cache-dir -r /app/requirements/dev-all.txt
 COPY setup.py pyproject.toml MANIFEST.in README.md /app/
 COPY darts/ /app/darts/
 
-# Install darts in development mode
+# Install darts in development mode and clean up pip cache
 RUN pip install --no-cache-dir -e . && \
-    # Clean up pip cache
     rm -rf ~/.cache/pip
 
 # Copy examples

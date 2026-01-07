@@ -1,13 +1,16 @@
 """
-Ensemble Model Base Class
+Base Ensemble Model
+-------------------
 """
 
+import copy
 import os
 import sys
 from abc import abstractmethod
 from collections.abc import Sequence
 from typing import BinaryIO, Optional, Union
 
+from darts.models.forecasting.sklearn_model import SKLearnModel
 from darts.utils.likelihood_models.base import LikelihoodType
 
 if sys.version_info >= (3, 11):
@@ -26,9 +29,12 @@ from darts.utils.ts_utils import series2seq
 from darts.utils.utils import TORCH_AVAILABLE
 
 if TORCH_AVAILABLE:
-    from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
+    from darts.models.forecasting.torch_forecasting_model import (
+        TFM_ATTRS_NO_PICKLE,
+        TorchForecastingModel,
+    )
 else:
-    TorchForecastingModel = None
+    TorchForecastingModel, TFM_ATTRS_NO_PICKLE = None, None
 
 logger = get_logger(__name__)
 
@@ -60,6 +66,10 @@ class EnsembleModel(GlobalForecastingModel):
     train_forecasting_models
         If set to `False`, the `forecasting_models` are not retrained when calling `fit()` (only supported
         if all the `forecasting_models` are pretrained `GlobalForecastingModels`). Default: ``True``.
+    train_n_points
+        The number of points per series to use to train the ensemble model. Can be set to `-1` to use the
+        entire series to train the regressor if `forecasting_models` are already fitted and
+        `train_forecasting_models=False`.
     show_warnings
         Whether to show warnings related to models covariates support.
     """
@@ -67,11 +77,15 @@ class EnsembleModel(GlobalForecastingModel):
     def __init__(
         self,
         forecasting_models: list[ForecastingModel],
+        ensemble_model: Optional[SKLearnModel],
         train_num_samples: int,
         train_samples_reduction: Optional[Union[str, float]],
         train_forecasting_models: bool = True,
+        train_n_points: int = 0,
         show_warnings: bool = True,
     ):
+        super().__init__()
+
         raise_if_not(
             isinstance(forecasting_models, list) and forecasting_models,
             "Cannot instantiate EnsembleModel with an empty list of `forecasting_models`",
@@ -102,14 +116,24 @@ class EnsembleModel(GlobalForecastingModel):
         self.all_trained = all(model_fit_status)
         some_trained = any(model_fit_status)
 
-        raise_if(
-            (not self.is_global_ensemble and some_trained)
-            or (self.is_global_ensemble and not (self.all_trained or not some_trained)),
-            "Cannot instantiate EnsembleModel with a mixture of unfitted and fitted `forecasting_models`. "
-            "Consider resetting all models with `my_model.untrained_model()` or using only trained "
-            "GlobalForecastingModels together with `train_forecasting_models=False`.",
-            logger,
-        )
+        if not self.is_global_ensemble and some_trained:
+            raise_log(
+                ValueError(
+                    "Some models in `forecasting_models` are already fitted. Using pre-trained models is "
+                    "only supported if all models are of type `GlobalForecastingModel`. "
+                    "Consider resetting all models with `my_model.untrained_model()`."
+                ),
+                logger,
+            )
+        elif self.is_global_ensemble and not (self.all_trained or not some_trained):
+            raise_log(
+                ValueError(
+                    "All `forecasting_models` are global but there is a mixture of fitted and unfitted models. "
+                    "Consider resetting all models with `my_model.untrained_model()` or using only trained "
+                    "`GlobalForecastingModel` together with `train_forecasting_models=False`."
+                ),
+                logger,
+            )
 
         if train_forecasting_models:
             # prevent issues with pytorch-lightning trainer during retraining
@@ -166,12 +190,23 @@ class EnsembleModel(GlobalForecastingModel):
                 logger,
             )
 
-        super().__init__()
+        raise_if(
+            train_n_points == -1
+            and not (self.all_trained and (not train_forecasting_models)),
+            "`regression_train_n_points` can only be `-1` if `retrain_forecasting_model=False` and "
+            "all `forecasting_models` are already fitted.",
+            logger,
+        )
+
+        # ensemble model checks
         self.forecasting_models = forecasting_models
+        self.ensemble_model = ensemble_model
         self.train_num_samples = train_num_samples
         self.train_samples_reduction = train_samples_reduction
         self.train_forecasting_models = train_forecasting_models
         self.show_warnings = show_warnings
+        # converted to List[int] if regression_train_n_points=-1 and ensemble is trained with multiple series
+        self.train_n_points: Union[int, list[int]] = train_n_points
 
         if show_warnings:
             if (
@@ -194,12 +229,26 @@ class EnsembleModel(GlobalForecastingModel):
                     "To hide these warnings, set `show_warnings=False`."
                 )
 
+    def untrained_model(self):
+        model = self.__class__(**copy.deepcopy(self.model_params))
+        if not self.train_forecasting_models:
+            # torch models drop the underlying network when calling `untrained_model()`;
+            # add them back in case the models are not retrained
+            for sub_model, sub_model_orig in zip(
+                model.forecasting_models, self.forecasting_models
+            ):
+                if TORCH_AVAILABLE and isinstance(sub_model, TorchForecastingModel):
+                    for attr in TFM_ATTRS_NO_PICKLE:
+                        setattr(sub_model, attr, getattr(sub_model_orig, attr))
+        return model
+
     @abstractmethod
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        verbose: Optional[bool] = None,
     ):
         """
         Fits the model on the provided series.
@@ -236,7 +285,25 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
         self._verify_past_future_covariates(past_covariates, future_covariates)
-        super().fit(series, past_covariates, future_covariates)
+
+        # the minimum train series length includes the training requirements from `forecasting_models` as
+        # well as the ones from the ensemble model
+        min_train_series_length = self.min_train_series_length
+        if is_single_series:
+            series_too_short = len(series) < min_train_series_length
+        else:
+            series_too_short = any([len(s) < min_train_series_length for s in series])
+
+        if series_too_short:
+            raise_log(
+                ValueError(
+                    f"{'All time series in ' if not is_single_series else ''}`series` must have "
+                    f"a minimum length of `{min_train_series_length}` to fit the model."
+                ),
+                logger,
+            )
+
+        super().fit(series, past_covariates, future_covariates, verbose=verbose)
         return self
 
     def _stack_ts_seq(self, predictions):
@@ -262,6 +329,7 @@ class EnsembleModel(GlobalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
+        verbose: Optional[bool] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         is_single_series = isinstance(series, TimeSeries) or series is None
         # maximize covariate usage
@@ -280,6 +348,7 @@ class EnsembleModel(GlobalForecastingModel):
                 ),
                 predict_likelihood_parameters=predict_likelihood_parameters,
                 random_state=random_state,
+                verbose=verbose,
             )
             for model in self.forecasting_models
         ]
@@ -303,7 +372,7 @@ class EnsembleModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         predict_likelihood_parameters: bool = False,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
@@ -348,6 +417,7 @@ class EnsembleModel(GlobalForecastingModel):
             num_samples=pred_num_samples,
             predict_likelihood_parameters=forecast_models_pred_likelihood_params,
             random_state=random_state,
+            verbose=verbose,
         )
 
         return self.ensemble(
@@ -356,6 +426,7 @@ class EnsembleModel(GlobalForecastingModel):
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
+            verbose=verbose,
         )
 
     @abstractmethod
@@ -366,6 +437,7 @@ class EnsembleModel(GlobalForecastingModel):
         num_samples: int = 1,
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
+        verbose: Optional[bool] = None,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Defines how to ensemble the individual models' predictions to produce a single prediction.
@@ -377,8 +449,16 @@ class EnsembleModel(GlobalForecastingModel):
         series
             Sequence of timeseries to predict on. Optional, since it only makes sense for sequences of timeseries -
             local models retain timeseries for prediction.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Must be `1` for deterministic models.
+        predict_likelihood_parameters
+            If set to `True`, the model predicts the parameters of its `likelihood` instead of the target. Only
+            supported for probabilistic models with a likelihood, `num_samples = 1` and `n<=output_chunk_length`.
+            Default: ``False``
         random_state
             Controls the randomness of probabilistic predictions.
+        verbose
+            Optionally, set the prediction verbosity. Not effective for all models.
 
         Returns
         -------
@@ -488,13 +568,13 @@ class EnsembleModel(GlobalForecastingModel):
             Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
             tasks (e.g. prediction).
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
-            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
             for more information about the supported kwargs.
         **kwargs
             Only effective if the underlying forecasting models contain a `TorchForecastingModel`.
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
-            common/lightning_module.html#load-from-checkpoint>`_.
+            common/lightning_module.html#load-from-checkpoint>`__.
         """
         model: EnsembleModel = GlobalForecastingModel.load(path)
 
@@ -507,12 +587,32 @@ class EnsembleModel(GlobalForecastingModel):
         return model
 
     @property
-    def min_train_series_length(self) -> int:
-        return max(model.min_train_series_length for model in self.forecasting_models)
+    def min_train_samples(self) -> int:
+        train_n_points = abs(self.train_n_points)
+        if self.train_forecasting_models:
+            # if base models are re-trained, it is the max of the sub-models' min samples + train_n_points
+            min_train_samples = (
+                max(model.min_train_samples for model in self.forecasting_models)
+                + train_n_points
+            )
+        else:
+            # if base models not re-trained, we might already have some training points within the base model's
+            # first output chunk; if we need more, we add them as additional required samples
+            base_ocl = max(self.extreme_lags[1] + 1, 0)
+            min_train_samples = max(train_n_points - base_ocl, 0) + 1
+        return min_train_samples
 
     @property
-    def min_train_samples(self) -> int:
-        return max(model.min_train_samples for model in self.forecasting_models)
+    def _target_window_lengths(self) -> tuple[int, int]:
+        # for ensemble, it is the max of each of the sub-models' target sample lengths
+        lengths_max = (0, 0)
+        for model in self.forecasting_models:
+            input_length, output_length = model._target_window_lengths
+            if input_length > lengths_max[0]:
+                lengths_max = (input_length, lengths_max[1])
+            if output_length > lengths_max[1]:
+                lengths_max = (lengths_max[0], output_length)
+        return lengths_max
 
     @property
     def extreme_lags(
@@ -525,7 +625,6 @@ class EnsembleModel(GlobalForecastingModel):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         def find_max_lag_or_none(lag_id, aggregator) -> Optional[int]:
             max_lag = None
@@ -537,7 +636,8 @@ class EnsembleModel(GlobalForecastingModel):
                     max_lag = aggregator(max_lag, curr_lag)
             return max_lag
 
-        lag_aggregators = (min, max, min, max, min, max, max, max)
+        # extreme lags is given by the min or max of the extreme lags of the sub-models
+        lag_aggregators = (min, max, min, max, min, max, max)
         return tuple(
             find_max_lag_or_none(i, agg) for i, agg in enumerate(lag_aggregators)
         )

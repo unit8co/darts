@@ -1,10 +1,18 @@
 """
-LightGBM Model
---------------
+LightGBM Models
+---------------
 
-This is a LightGBM implementation of Gradient Boosted Trees algorithm.
+This module offers wrappers around LightGBM's Gradient Boosted Trees algorithms.
 
-This implementation comes with the ability to produce probabilistic forecasts.
+* :class:`~darts.models.forecasting.lgbm.LightGBMModel` - Wrapper around LightGBM's `LGBMRegressor`
+* :class:`~darts.models.forecasting.lgbm.LightGBMClassifierModel` - Wrapper around LightGBM's `LGBMClassifier`
+
+The wrappers come with all capabilities of Darts' `SKLearn*Model`.
+
+For detailed examples and tutorials, see:
+
+* `SKLearn-Like Regression Model Examples <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
+* `SKLearn-Like Classification Model Examples <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 
 To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the INSTALL:
 https://github.com/unit8co/darts/blob/master/INSTALL.md
@@ -124,6 +132,10 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
             prediction time. This will overwrite any `objective` parameter.
@@ -144,7 +156,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as
             categorical must be integer-encoded. For more information on how LightGBM handles categorical
             features, visit: `Categorical feature support documentation
-            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that
@@ -178,13 +190,13 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.85376674],
-               [1006.83998586],
-               [1006.63884831],
-               [1006.57201255],
-               [1006.52290556],
-               [1006.39550065]])
+        >>> print(pred.values())
+        [[1006.85376674]
+         [1006.83998586]
+         [1006.63884831]
+         [1006.57201255]
+         [1006.52290556]
+         [1006.39550065]]
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
@@ -251,6 +263,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
+        verbose: Optional[bool] = None,
         **kwargs,
     ):
         """
@@ -268,7 +281,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             TimeSeries or Sequence[TimeSeries] object containing the target values for evaluation dataset
         val_past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
-        val_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        val_future_covariates
             Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
         max_samples_per_ts
             This is an integer upper bound on the number of tuples that can be produced
@@ -292,9 +305,12 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
-         **kwargs
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
+        **kwargs
             Additional kwargs passed to `lightgbm.LGBRegressor.fit()`
         """
+        verbose = None
         likelihood = self.likelihood
         if isinstance(likelihood, QuantileRegression):
             # empty model container in case of multiple calls to fit, e.g. when backtesting
@@ -313,6 +329,7 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    verbose=verbose,
                     **kwargs,
                 )
                 # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
@@ -330,30 +347,18 @@ class LightGBMModel(SKLearnModelWithCategoricalFeatures):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            verbose=verbose,
             **kwargs,
         )
         return self
 
     @property
-    def supports_val_set(self) -> bool:
+    def _supports_val_series(self) -> bool:
         return True
 
     @property
     def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
         return "eval_set", "eval_sample_weight"
-
-    @property
-    def min_train_series_length(self) -> int:
-        # LightGBM requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than
-        # for other regression models
-        return max(
-            3,
-            (
-                -self.lags["target"][0] + self.output_chunk_length + 1
-                if "target" in self.lags
-                else self.output_chunk_length
-            ),
-        )
 
     @property
     def _categorical_fit_param(self) -> Optional[str]:
@@ -457,6 +462,10 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
@@ -476,7 +485,7 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
             as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that are specified as
             categorical must be integer-encoded. For more information on how LightGBM handles categorical
             features, visit: `Categorical feature support documentation
-            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`_.
+            <https://lightgbm.readthedocs.io/en/latest/Features.html#optimal-split-for-categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `lightgbm.LightGBMRegressor`. The components that
@@ -511,13 +520,13 @@ class LightGBMClassifierModel(_ClassifierMixin, LightGBMModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [0.],
-               [1.],
-               [1.],
-               [0.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [0.]
+         [1.]
+         [1.]
+         [0.]]
         """
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,

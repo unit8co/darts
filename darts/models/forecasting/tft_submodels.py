@@ -1,4 +1,7 @@
 """
+TFTModel Sub-Modules
+--------------------
+
 Implementation of ``nn.Modules`` for Temporal Fusion Transformer from PyTorch-Forecasting:
 https://github.com/jdb78/pytorch-forecasting
 
@@ -54,7 +57,7 @@ class _TimeDistributedEmbeddingBag(nn.EmbeddingBag):
         super().__init__(*args, **kwargs)
         self.batch_first = batch_first
 
-    def forward(self, x):
+    def forward(self, x):  # pyright: ignore[reportIncompatibleMethodOverride]
         if len(x.size()) <= 2:
             return super().forward(x)
 
@@ -107,7 +110,7 @@ class _MultiEmbedding(nn.Module):
         return len(self.variable_names)
 
     @property
-    def output_size(self) -> Union[dict[str, int], int]:
+    def output_size(self) -> dict[str, int]:
         return {name: sizes[1] for name, sizes in self.embedding_sizes.items()}
 
     def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
@@ -174,7 +177,12 @@ class _TimeDistributedInterpolation(nn.Module):
 class _GatedLinearUnit(nn.Module):
     """Gated Linear Unit"""
 
-    def __init__(self, input_size: int, hidden_size: int = None, dropout: float = None):
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: Optional[int] = None,
+        dropout: Optional[float] = None,
+    ):
         super().__init__()
 
         if dropout is not None:
@@ -205,9 +213,10 @@ class _ResampleNorm(nn.Module):
     def __init__(
         self,
         input_size: int,
-        output_size: int = None,
+        output_size: Optional[int] = None,
         trainable_add: bool = True,
-        norm=nn.LayerNorm,
+        norm: type[nn.Module] = nn.LayerNorm,
+        skip_interpolation: bool = False,
     ):
         super().__init__()
 
@@ -216,9 +225,12 @@ class _ResampleNorm(nn.Module):
         self.output_size = output_size or input_size
 
         if self.input_size != self.output_size:
-            self.resample = _TimeDistributedInterpolation(
-                self.output_size, batch_first=True, trainable=False
-            )
+            if skip_interpolation:
+                self.resample = nn.Linear(self.input_size, self.output_size)
+            else:
+                self.resample = _TimeDistributedInterpolation(
+                    self.output_size, batch_first=True, trainable=False
+                )
 
         if self.trainable_add:
             self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float))
@@ -240,9 +252,10 @@ class _AddNorm(nn.Module):
     def __init__(
         self,
         input_size: int,
-        skip_size: int = None,
+        skip_size: Optional[int] = None,
         trainable_add: bool = True,
-        norm=nn.LayerNorm,
+        norm: type[nn.Module] = nn.LayerNorm,
+        skip_interpolation: bool = False,
     ):
         super().__init__()
 
@@ -251,9 +264,12 @@ class _AddNorm(nn.Module):
         self.skip_size = skip_size or input_size
 
         if self.input_size != self.skip_size:
-            self.resample = _TimeDistributedInterpolation(
-                self.input_size, batch_first=True, trainable=False
-            )
+            if skip_interpolation:
+                self.resample = nn.Linear(self.skip_size, self.input_size)
+            else:
+                self.resample = _TimeDistributedInterpolation(
+                    self.input_size, batch_first=True, trainable=False
+                )
 
         if self.trainable_add:
             self.mask = nn.Parameter(torch.zeros(self.input_size, dtype=torch.float))
@@ -275,11 +291,12 @@ class _GateAddNorm(nn.Module):
     def __init__(
         self,
         input_size: int,
-        hidden_size: int = None,
-        skip_size: int = None,
+        hidden_size: Optional[int] = None,
+        skip_size: Optional[int] = None,
         trainable_add: bool = False,
-        dropout: float = None,
-        layer_norm: nn.Module = nn.LayerNorm,
+        dropout: Optional[float] = None,
+        layer_norm: type[nn.Module] = nn.LayerNorm,
+        skip_interpolation: bool = False,
     ):
         super().__init__()
 
@@ -296,6 +313,7 @@ class _GateAddNorm(nn.Module):
             skip_size=self.skip_size,
             trainable_add=trainable_add,
             norm=layer_norm,
+            skip_interpolation=skip_interpolation,
         )
 
     def forward(self, x, skip):
@@ -311,9 +329,10 @@ class _GatedResidualNetwork(nn.Module):
         hidden_size: int,
         output_size: int,
         dropout: float = 0.1,
-        context_size: int = None,
+        context_size: Optional[int] = None,
         residual: bool = False,
-        layer_norm: nn.Module = nn.LayerNorm,
+        layer_norm: type[nn.Module] = nn.LayerNorm,
+        skip_interpolation: bool = False,
     ):
         super().__init__()
         self.input_size = input_size
@@ -323,15 +342,16 @@ class _GatedResidualNetwork(nn.Module):
         self.dropout = dropout
         self.residual = residual
 
-        if self.input_size != self.output_size and not self.residual:
-            residual_size = self.input_size
-        else:
-            residual_size = self.output_size
-
-        if self.output_size != residual_size:
+        if (self.input_size != self.output_size) and (not self.residual):
+            self.do_resampling = True
             self.resample_norm = _ResampleNorm(
-                residual_size, self.output_size, norm=layer_norm
+                input_size=self.input_size,
+                output_size=self.output_size,
+                norm=layer_norm,
+                skip_interpolation=skip_interpolation,
             )
+        else:
+            self.do_resampling = False
 
         self.fc1 = nn.Linear(self.input_size, self.hidden_size)
         self.elu = nn.ELU()
@@ -348,6 +368,7 @@ class _GatedResidualNetwork(nn.Module):
             hidden_size=self.output_size,
             dropout=self.dropout,
             trainable_add=False,
+            skip_interpolation=skip_interpolation,
         )
 
     def init_weights(self):
@@ -365,7 +386,7 @@ class _GatedResidualNetwork(nn.Module):
         if residual is None:
             residual = x
 
-        if self.input_size != self.output_size and not self.residual:
+        if self.do_resampling:
             residual = self.resample_norm(residual)
 
         x = self.fc1(x)
@@ -385,10 +406,11 @@ class _VariableSelectionNetwork(nn.Module):
         hidden_size: int,
         input_embedding_flags: Optional[dict[str, bool]] = None,
         dropout: float = 0.1,
-        context_size: int = None,
+        context_size: Optional[int] = None,
         single_variable_grns: Optional[dict[str, _GatedResidualNetwork]] = None,
         prescalers: Optional[dict[str, nn.Linear]] = None,
-        layer_norm: nn.Module = nn.LayerNorm,
+        layer_norm: type[nn.Module] = nn.LayerNorm,
+        skip_interpolation: bool = False,
     ):
         """
         Calculate weights for ``num_inputs`` variables  which are each of size ``input_size``
@@ -418,6 +440,7 @@ class _VariableSelectionNetwork(nn.Module):
                     self.dropout,
                     self.context_size,
                     residual=False,
+                    skip_interpolation=skip_interpolation,
                 )
             else:
                 self.flattened_grn = _GatedResidualNetwork(
@@ -426,6 +449,7 @@ class _VariableSelectionNetwork(nn.Module):
                     self.num_inputs,
                     self.dropout,
                     residual=False,
+                    skip_interpolation=skip_interpolation,
                 )
 
         self.single_variable_grns = nn.ModuleDict()
@@ -435,9 +459,10 @@ class _VariableSelectionNetwork(nn.Module):
                 self.single_variable_grns[name] = single_variable_grns[name]
             elif self.input_embedding_flags.get(name, False):
                 self.single_variable_grns[name] = _ResampleNorm(
-                    input_size,
-                    self.hidden_size,
+                    input_size=input_size,
+                    output_size=self.hidden_size,
                     norm=layer_norm,
+                    skip_interpolation=skip_interpolation,
                 )
             else:
                 self.single_variable_grns[name] = _GatedResidualNetwork(
@@ -445,6 +470,7 @@ class _VariableSelectionNetwork(nn.Module):
                     min(input_size, self.hidden_size),
                     output_size=self.hidden_size,
                     dropout=self.dropout,
+                    skip_interpolation=skip_interpolation,
                 )
             if name in prescalers:  # reals need to be first scaled up
                 self.prescalers[name] = prescalers[name]
@@ -464,7 +490,9 @@ class _VariableSelectionNetwork(nn.Module):
     def num_inputs(self):
         return len(self.input_sizes)
 
-    def forward(self, x: dict[str, torch.Tensor], context: torch.Tensor = None):
+    def forward(
+        self, x: dict[str, torch.Tensor], context: Optional[torch.Tensor] = None
+    ):
         if self.num_inputs > 1:
             # transform single variables
             var_outputs = []
@@ -505,7 +533,7 @@ class _VariableSelectionNetwork(nn.Module):
 
 
 class _ScaledDotProductAttention(nn.Module):
-    def __init__(self, dropout: float = None, scale: bool = True):
+    def __init__(self, dropout: Optional[float] = None, scale: bool = True):
         super().__init__()
         if dropout is not None:
             self.dropout = MonteCarloDropout(p=dropout)

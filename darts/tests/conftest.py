@@ -2,6 +2,7 @@ import logging
 import os
 import shutil
 import tempfile
+from typing import Any
 
 import pytest
 
@@ -16,6 +17,58 @@ try:
 except ImportError:
     logger.warning("Torch not installed - Some tests will be skipped.")
     TORCH_AVAILABLE = False
+
+try:
+    import catboost
+    import lightgbm
+    import xgboost  # noqa: F401
+
+    GBM_AVAILABLE = True
+except ImportError:
+    logger.warning(
+        "Gradient Boosting Models not installed - Some tests will be skipped."
+    )
+    GBM_AVAILABLE = False
+
+try:
+    import xgboost  # noqa: F401
+
+    XGB_AVAILABLE = True
+except ImportError:
+    logger.warning("XGBoost not installed - Some tests will be skipped.")
+    XGB_AVAILABLE = False
+
+try:
+    import lightgbm  # noqa: F401
+
+    LGBM_AVAILABLE = True
+except ImportError:
+    logger.warning("LightGBM not installed - Some tests will be skipped.")
+    LGBM_AVAILABLE = False
+
+try:
+    import catboost  # noqa: F401
+
+    CB_AVAILABLE = True
+except ImportError:
+    logger.warning("CatBoost not installed - Some tests will be skipped.")
+    CB_AVAILABLE = False
+
+try:
+    import prophet  # noqa: F401
+
+    PROPHET_AVAILABLE = True
+except ImportError:
+    logger.warning("Prophet not installed - Some tests will be skipped.")
+    PROPHET_AVAILABLE = False
+
+try:
+    import statsforecast  # noqa: F401
+
+    SF_AVAILABLE = True
+except ImportError:
+    logger.warning("StatsForecast not installed - Some tests will be skipped.")
+    SF_AVAILABLE = False
 
 try:
     import onnx  # noqa: F401
@@ -50,7 +103,7 @@ except ImportError:
     logger.warning("Polars not installed - Some tests will be skipped.")
     POLARS_AVAILABLE = False
 
-tfm_kwargs = {
+tfm_kwargs: dict[str, Any] = {
     "pl_trainer_kwargs": {
         "accelerator": "cpu",
         "enable_progress_bar": False,

@@ -14,7 +14,7 @@ import os
 import sys
 from datetime import datetime
 
-sys.path.insert(0, os.path.abspath("../../.."))
+sys.path.insert(0, os.path.abspath("../.."))
 
 
 # -- Project information -----------------------------------------------------
@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.36.0"
+version = "0.40.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -35,28 +35,43 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
-    "sphinx_automodapi.automodapi",
     "sphinx.ext.graphviz",
     "sphinx.ext.napoleon",
     "sphinx.ext.githubpages",
     "sphinx_autodoc_typehints",
+    "sphinx_copybutton",
     "nbsphinx",
     "m2r2",
     "numpydoc",
+    "sphinx_design",
+]
+
+exclude_parent_classes = [
+    "Module",  # torch.nn.modules.module.Module
+    "LightningModule",  # pytorch_lightning.core.module.LightningModule
+    "PLForecastingModule",  # darts.models.forecasting.pl_forecasting_module.PLForecastingModule
+    "TQDMProgressBar",  #
+    "_MultiOutputEstimator",  # sklearn.multioutput._MultiOutputEstimator
+    "MultiOutputClassifier",  # sklearn.multioutput.MultiOutputClassifier
+    "MultiOutputRegressor",  # sklearn.multioutput.MultiOutputRegressor
+    "ndarray",  # numpy.ndarray
+]
+
+exclude_members = [
+    "min_train_series_length",
+    "first_prediction_index",
+    "future_covariate_series",
+    "past_covariate_series",
+    "initialize_encoders",
+    "SplitTimeSeriesSequence",
+    "randint",
 ]
 
 autodoc_default_options = {
-    "inherited-members": None,
+    "inherited-members": ",".join(exclude_parent_classes),
     "show-inheritance": None,
     "ignore-module-all": True,
-    "exclude-members": "LocalForecastingModel,FutureCovariatesLocalForecastingModel,"
-    + "TransferableFutureCovariatesLocalForecastingModel,GlobalForecastingModel,TorchForecastingModel,"
-    + "PastCovariatesTorchModel,FutureCovariatesTorchModel,DualCovariatesTorchModel,MixedCovariatesTorchModel,"
-    + "SplitCovariatesTorchModel,"
-    + "min_train_series_length,"
-    + "first_prediction_index,future_covariate_series,past_covariate_series,"
-    + "initialize_encoders,register_datapipe_as_function,register_function,functions,"
-    + "SplitTimeSeriesSequence,randint,AnomalyModel",
+    "exclude-members": ",".join(exclude_members),
 }
 
 # In order to also have the docstrings of __init__() methods included
@@ -75,13 +90,17 @@ language = "en"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
+# Note: some source files are excluded from rst generation in the
+# darts/docs/Makefile `generate-api` command
 exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
     "**/modules.rst",
-    "**/darts.tests.*",
-    "**/*logging.rst",
+]
+
+suppress_warnings = [
+    "toc.excluded",  # Suppress warnings about excluded documents from above
 ]
 
 autosummary_generate = True
@@ -95,7 +114,7 @@ numpydoc_attributes_as_param_list = False
 numpydoc_show_class_members = True
 
 # This might be needed, see https://github.com/numpy/numpydoc/issues/69
-numpydoc_class_members_toctree = True
+numpydoc_class_members_toctree = False
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -104,13 +123,15 @@ numpydoc_class_members_toctree = True
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-html_logo = "static/darts-logo-trim.png"
 html_favicon = "static/docs-favicon.ico"
 
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
     "twitter_url": "https://twitter.com/unit8co",
-    "search_bar_position": "navbar",
+    "logo": {
+        "image_light": "static/darts-logo-light.png",
+        "image_dark": "static/darts-logo-dark.png",
+    },
 }
 
 
@@ -119,8 +140,15 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["static"]
 
+# Add custom CSS files
+html_css_files = ["custom.css"]
+
 
 # -- Extension configuration -------------------------------------------------
+
+# ignore outputs code blocks when copying (see https://sphinx-copybutton.readthedocs.io/en/latest/use.html#strip-and-configure-input-prompts-for-code-cells)
+copybutton_prompt_text = r">>>\s?|\.\.\.\s?"
+copybutton_prompt_is_regexp = True
 
 # -- Options for todo extension ----------------------------------------------
 
@@ -139,5 +167,24 @@ def skip(app, what, name, obj, skip, options):
     return skip
 
 
+# -- Package title and docstring extraction for API documentation ---------------
+#
+# This function uses the generated *.rst files and processes the generated API documentation to:
+# 1. Replace package path titles (e.g., "darts.models.forecasting") with
+#    descriptive titles from package docstrings (e.g., "Forecasting Models")
+# 2. Insert the full docstring content from package __init__.py files
+# 3. Fix inline :doc: link titles to use descriptive names
+#
+# Note: the *.rst files were generated using the templates in `docs/templates`.
+#
+# This runs automatically during the Sphinx build via the 'source-read' event.
+# Logic is in fix_package_titles.py for easier maintenance.
+# ---------------------------------------------------------------------------------
+
+sys.path.insert(0, os.path.abspath(".."))
+from fix_package_titles import process_package_docstrings
+
+
 def setup(app):
     app.connect("autodoc-skip-member", skip)
+    app.connect("source-read", process_package_docstrings)

@@ -85,11 +85,3 @@ To ensure you don't need to worry about formatting and linting when contributing
     3. The formatters will automatically fix all files and in case of some non-trivial case `ruff` will highlight any remaining problems before committing
 - Integration in your editor:
     - For other integrations please look at the documentation for your editor
-
-### Development environment on Mac with Apple Silicon M1 processor (arm64 architecture)
-
-Please follow the procedure described in [INSTALL.md](https://github.com/unit8co/darts/blob/master/INSTALL.md#test-environment-appple-m1-processor)
-to set up a x_64 emulated environment. For the development environment, instead of installing Darts with
-`pip install darts`, instead go to the darts cloned repo location and install the packages with: `pip install -r requirements/dev-all.txt`.
-If necessary, follow the same steps to setup libomp for lightgbm.
-Finally, verify your overall environment setup by successfully running all unitTests with `pytest`.

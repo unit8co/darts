@@ -47,6 +47,7 @@ class TestHistoricalForecastsUtils:
                 fit_kwargs=fit_kwargs,
                 predict_kwargs=pred_kwargs,
                 retrain=retrain,
+                val_length=0,
                 show_warnings=show_warnings,
             )
         )
@@ -60,12 +61,14 @@ class TestHistoricalForecastsUtils:
                 "fit_kwargs": {"series": 0},
                 "predict_kwargs": None,
                 "retrain": True,
+                "val_length": 0,
                 "show_warnings": False,
             },
             {
                 "fit_kwargs": None,
                 "predict_kwargs": {"series": 0},
                 "retrain": True,
+                "val_length": 0,
                 "show_warnings": False,
             },
         ],

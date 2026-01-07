@@ -1,3 +1,8 @@
+"""
+Dataset Loader
+--------------
+"""
+
 import hashlib
 import os
 import tempfile
@@ -66,7 +71,7 @@ class DatasetLoader(ABC):
         Downloads the dataset if it is not present already
 
         Raises
-        -------
+        ------
         DatasetLoadingException
             If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)
 

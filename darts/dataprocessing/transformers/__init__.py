@@ -1,6 +1,9 @@
 """
 Data Transformers
 -----------------
+
+Data transformers for preprocessing time series data, including scalers, missing value fillers,
+differencing, BoxCox transformations, and hierarchical reconciliation methods.
 """
 
 from darts.dataprocessing.transformers.base_data_transformer import BaseDataTransformer

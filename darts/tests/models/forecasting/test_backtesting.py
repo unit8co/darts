@@ -685,8 +685,6 @@ class TestBacktesting:
         with pytest.raises(ValueError):
             NaiveDrift().backtest(linear_series, train_length=0, start=0.5)
         with pytest.raises(TypeError):
-            NaiveDrift().backtest(linear_series, train_length=1.2, start=0.5)
-        with pytest.raises(TypeError):
             NaiveDrift().backtest(linear_series, train_length="wrong type", start=0.5)
 
         with pytest.raises(ValueError):
@@ -1423,7 +1421,7 @@ class TestBacktesting:
                     "time_reduction": np.mean,
                 },
             )
-        assert str(err.value).endswith("unexpected keyword argument 'time_reduction'")
+        assert "unexpected keyword argument 'time_reduction'" in str(err.value)
 
         bts = model.backtest(
             series=y,

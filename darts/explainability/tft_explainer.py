@@ -1,6 +1,6 @@
 """
-TFT Explainer for Temporal Fusion Transformer (TFTModel)
-------------------------------------
+TFTModel Explainer
+------------------
 
 The `TFTExplainer` uses a trained :class:`TFTModel <darts.models.forecasting.tft_model.TFTModel>` and extracts the
 explainability information from the model.
@@ -19,7 +19,7 @@ The attention and feature importance values can be extracted using the :class:`T
 :func:`explain() <TFTExplainer.explain>`. An example of this is shown in the method description.
 
 We also show how to use the `TFTExplainer` in the example notebook of the `TFTModel` `here
-<https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability>`_.
+<https://unit8co.github.io/darts/examples/13-TFT-examples.html#Explainability>`__.
 """
 
 from collections.abc import Sequence
@@ -36,6 +36,7 @@ from darts.explainability import TFTExplainabilityResult
 from darts.explainability.explainability import _ForecastingModelExplainer
 from darts.logging import get_logger, raise_log
 from darts.models import TFTModel
+from darts.utils.ts_utils import SeriesType, get_series_seq_type
 from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
@@ -90,7 +91,7 @@ class TFTExplainer(_ForecastingModelExplainer):
         >>> model = TFTModel(
         >>>     input_chunk_length=12,
         >>>     output_chunk_length=6,
-        >>>     add_encoders={"cyclic": {"future": ["hour"]}}
+        >>>     add_encoders={"cyclic": {"future": ["month"]}}
         >>> )
         >>> model.fit(series)
         >>> # create the explainer and generate explanations
@@ -192,6 +193,18 @@ class TFTExplainer(_ForecastingModelExplainer):
             foreground_past_covariates,
             foreground_future_covariates,
         )
+        if (
+            get_series_seq_type(foreground_series) is SeriesType.SEQ
+            and len(foreground_series) > self.model.batch_size
+        ):
+            raise_log(
+                ValueError(
+                    f"The number of back- or foreground series to explain ({len(foreground_series)}) "
+                    f"must be smaller than or equal to the model's batch size ({self.model.batch_size})."
+                ),
+                logger=logger,
+            )
+
         horizons, _ = self._process_horizons_and_targets(None, None)
         preds = self.model.predict(
             n=self.n,

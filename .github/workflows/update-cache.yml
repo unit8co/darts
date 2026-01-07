@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-14, ubuntu-latest]
-        python-version: ['3.10']
+        python-version: ['3.11']
         flavour: ['all']
 
     steps:
@@ -44,4 +44,4 @@ jobs:
       - name: "Install Latest Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt

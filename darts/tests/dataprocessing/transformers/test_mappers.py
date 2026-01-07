@@ -18,11 +18,11 @@ class TestMappers:
 
     @staticmethod
     def ts_func(ts, x):
-        return x - ts.month
+        return x - ts.month.values.reshape(-1, 1, 1)
 
     @staticmethod
     def inverse_ts_func(ts, x):
-        return x + ts.month
+        return x + ts.month.values.reshape(-1, 1, 1)
 
     plus_ten = Mapper(func.__func__)
     plus_ten_invertible = InvertibleMapper(func.__func__, inverse_func.__func__)

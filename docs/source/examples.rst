@@ -4,7 +4,7 @@ Examples
 
 Here you will find some example notebooks to get more familiar with the Darts' API.
 All the notebooks are also available in ``ipynb`` format
-`directly on github <https://github.com/unit8co/darts/tree/master/examples>`_.
+`directly on github <https://github.com/unit8co/darts/tree/master/examples>`__.
 
 
 Multiple Time Series, Pre-trained Models and Covariates
@@ -86,8 +86,18 @@ Regression models example notebook:
 
    examples/20-SKLearnModel-examples.ipynb
 
+Classification Models
+=====================
+
+Classification models example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/24-SKLearnClassifierModel-examples.ipynb
+
 Conformal Prediction
-=================
+====================
 
 Conformal prediction example notebook:
 
@@ -195,6 +205,16 @@ TSMixer model example notebook:
    :maxdepth: 1
 
    examples/21-TSMixer-examples.ipynb
+
+Chronos-2 Model
+=======================================
+
+Chronos-2 Foundation model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/25-Chronos-2-examples.ipynb
 
 Ensemble Models
 =============================

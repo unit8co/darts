@@ -1,6 +1,6 @@
 """
-Time Series Statistics
-----------------------
+TimeSeries Statistics
+---------------------
 """
 
 import math
@@ -334,7 +334,7 @@ def remove_seasonality(
         A new TimeSeries instance that corresponds to the seasonality-adjusted 'ts'.
 
     References
-    -------
+    ----------
     .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
     .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     """
@@ -384,6 +384,11 @@ def remove_trend(
     -------
     TimeSeries
         A new TimeSeries instance that corresponds to the trend-adjusted 'ts'.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html
+    .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html
     """
 
     ts._assert_univariate()
@@ -730,18 +735,15 @@ def plot_pacf(
         The maximal lag order to consider.
     method
         The method to be used for the PACF calculation.
-        - | "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
-          | denominator for acovf. Default.
+
+        - "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in denominator for acovf. Default.
         - "ywm" or "ywmle" : Yule-Walker without adjustment.
         - "ols" : regression of time series on lags of it and on constant.
-        - "ols-inefficient" : regression of time series on lags using a single
-          common sample to estimate all pacf coefficients.
-        - "ols-adjusted" : regression of time series on lags with a bias
-          adjustment.
-        - "ld" or "ldadjusted" : Levinson-Durbin recursion with bias
-          correction.
-        - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias
-          correction.
+        - "ols-inefficient" : regression of time series on lags using a single common sample to estimate all pacf
+          coefficients.
+        - "ols-adjusted" : regression of time series on lags with a bias adjustment.
+        - "ld" or "ldadjusted" : Levinson-Durbin recursion with bias correction.
+        - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias correction.
     alpha
         The confidence interval to display.
     fig_size

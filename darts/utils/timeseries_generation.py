@@ -1,6 +1,6 @@
 """
-Utils for time series generation
---------------------------------
+Utils for TimeSeries generation
+-------------------------------
 """
 
 from collections.abc import Sequence
@@ -64,7 +64,7 @@ def constant_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -125,7 +125,7 @@ def linear_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -190,7 +190,7 @@ def sine_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -259,7 +259,7 @@ def gaussian_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -333,7 +333,7 @@ def random_walk_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -394,7 +394,7 @@ def autoregressive_timeseries(
     freq
         The time difference between two adjacent entries in the returned index. In case `start` is a timestamp,
         a DateOffset alias is expected; see
-        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`__.
         By default, "D" (daily) is used.
         If `start` is an integer, `freq` will be interpreted as the step size in the underlying RangeIndex.
         The freq is optional for generating an integer index (if not specified, 1 is used).
@@ -520,7 +520,7 @@ def holidays_timeseries(
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
     (or equals) a selected country's holiday, and 0 otherwise.
 
-    Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`_.
+    Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`__.
 
     Parameters
     ----------
@@ -595,8 +595,8 @@ def datetime_attribute_timeseries(
         a `TimeSeries` whose time axis will serve this purpose.
     attribute
         An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day",
-        "hour", "minute", "second". See all available attributes in
-        https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
+        "hour", "minute", "second". See all available attributes `here
+        <https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex>`__.
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
@@ -614,11 +614,12 @@ def datetime_attribute_timeseries(
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series
     with_columns
         Optionally, specify the output component names.
-        * If `one_hot` and `cyclic` are ``False``, must be a string
-        * If `cyclic` is ``True``, must be a list of two strings. The first string for the sine, the second for the
-            cosine component name.
-        * If `one_hot` is ``True``, must be a list of strings of the same length as the generated one hot encoded
-            features.
+
+        - If `one_hot` and `cyclic` are ``False``, must be a string
+        - If `cyclic` is ``True``, must be a list of two strings. The first string for the sine, the second for the
+          cosine component name.
+        - If `one_hot` is ``True``, must be a list of strings of the same length as the generated one hot encoded
+          features.
     tz
         Optionally, a time zone to convert the time index to before computing the attributes.
 

@@ -1,10 +1,24 @@
 """
-CatBoost model
---------------
+CatBoost Models
+---------------
 
-CatBoost based regression model.
+This module offers wrappers around CatBoost's Gradient Boosted Trees algorithms.
 
-This implementation comes with the ability to produce probabilistic forecasts.
+* :class:`~darts.models.forecasting.catboost_model.CatBoostModel` - Wrapper around CatBoost's `CatBoostRegressor`
+* :class:`~darts.models.forecasting.catboost_model.CatBoostClassifierModel` - Wrapper around CatBoost's
+  `CatBoostClassifier`
+
+The wrappers come with all capabilities of Darts' `SKLearn*Model`.
+
+For detailed examples and tutorials, see:
+
+* `SKLearn-Like Regression Model Examples
+  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
+* `SKLearn-Like Classification Model Examples
+  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
+
+To enable CatBoost support in Darts, follow the detailed install instructions for CatBoost in the INSTALL:
+https://github.com/unit8co/darts/blob/master/INSTALL.md
 """
 
 from collections.abc import Sequence
@@ -17,6 +31,8 @@ from catboost import CatBoostClassifier, CatBoostRegressor, Pool
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.sklearn_model import (
+    FUTURE_LAGS_TYPE,
+    LAGS_TYPE,
     SKLearnModelWithCategoricalFeatures,
     _ClassifierMixin,
     _QuantileModelContainer,
@@ -30,9 +46,9 @@ logger = get_logger(__name__)
 class CatBoostModel(SKLearnModelWithCategoricalFeatures):
     def __init__(
         self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, list[int]] = None,
-        lags_future_covariates: Union[tuple[int, int], list[int]] = None,
+        lags: Optional[LAGS_TYPE] = None,
+        lags_past_covariates: Optional[LAGS_TYPE] = None,
+        lags_future_covariates: Optional[FUTURE_LAGS_TYPE] = None,
         output_chunk_length: int = 1,
         output_chunk_shift: int = 0,
         add_encoders: Optional[dict] = None,
@@ -121,6 +137,10 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to 'quantile', 'poisson' or 'gaussian'. If set, the model will be probabilistic,
             allowing sampling at prediction time. When set to 'gaussian', the model will use CatBoost's
@@ -144,7 +164,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
             must be integer-encoded. For more information on how CatBoost handles categorical features,
             visit: `Categorical feature support documentatio
-            <https://catboost.ai/docs/en/features/categorical-features>`_.
+            <https://catboost.ai/docs/en/features/categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `CatBoostRegressor`. The components that
@@ -180,13 +200,13 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1006.4153701 ],
-               [1006.41907237],
-               [1006.30872957],
-               [1006.28614154],
-               [1006.22355514],
-               [1006.21607546]])
+        >>> print(pred.values())
+        [[1006.4153701 ]
+         [1006.41907237]
+         [1006.30872957]
+         [1006.28614154]
+         [1006.22355514]
+         [1006.21607546]]
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
@@ -274,7 +294,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
-        verbose: Optional[Union[int, bool]] = 0,
+        verbose: Optional[Union[int, bool]] = None,
         **kwargs,
     ):
         """
@@ -292,7 +312,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             TimeSeries or Sequence[TimeSeries] object containing the target values for evaluation dataset
         val_past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
-        val_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        val_future_covariates
             Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
         max_samples_per_ts
             This is an integer upper bound on the number of tuples that can be produced
@@ -321,6 +341,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         **kwargs
             Additional kwargs passed to `catboost.CatboostRegressor.fit()`
         """
+        verbose = verbose if verbose is not None else 0
         likelihood = self.likelihood
         if isinstance(likelihood, QuantileRegression):
             # empty model container in case of multiple calls to fit, e.g. when backtesting
@@ -402,25 +423,12 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         return kwargs
 
     @property
-    def supports_val_set(self) -> bool:
+    def _supports_val_series(self) -> bool:
         return True
 
     @property
     def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
         return "eval_set", "eval_sample_weight"
-
-    @property
-    def min_train_series_length(self) -> int:
-        # Catboost requires a minimum of 2 train samples, therefore the min_train_series_length should be one more than
-        # for other regression models
-        return max(
-            3,
-            (
-                -self.lags["target"][0] + self.output_chunk_length + 1
-                if "target" in self.lags
-                else self.output_chunk_length
-            ),
-        )
 
     @property
     def _supports_native_multioutput(self) -> bool:
@@ -547,6 +555,10 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
@@ -566,7 +578,7 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
             as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
             must be integer-encoded. For more information on how CatBoost handles categorical features,
             visit: `Categorical feature support documentatio
-            <https://catboost.ai/docs/en/features/categorical-features>`_.
+            <https://catboost.ai/docs/en/features/categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
             treated as categorical by the underlying `CatBoostRegressor`. The components that
@@ -600,13 +612,13 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [0.],
-               [1.],
-               [1.],
-               [1.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [0.]
+         [1.]
+         [1.]
+         [1.]]
         """
         # likelihood always set to ClassProbability as it's the only supported classification likelihood
         # this allow users to predict class probabilities,

@@ -1,6 +1,11 @@
+"""
+Optimized Historical Forecasts for TorchForecastingModel
+--------------------------------------------------------
+"""
+
 import inspect
 from collections.abc import Sequence
-from typing import Literal, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -32,7 +37,7 @@ def _optimized_historical_forecasts(
     verbose: bool = False,
     predict_likelihood_parameters: bool = False,
     random_state: Optional[int] = None,
-    **kwargs,
+    predict_kwargs: Optional[dict[str, Any]] = None,
 ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
     """
     Optimized historical forecasts for TorchForecastingModels
@@ -41,6 +46,9 @@ def _optimized_historical_forecasts(
 
     The data_transformers are applied in historical_forecasts (input and predictions)
     """
+    predict_kwargs = predict_kwargs or {}
+    if "verbose" not in predict_kwargs:
+        predict_kwargs["verbose"] = verbose
     bounds = []
     for idx, series_ in enumerate(series):
         past_covariates_ = past_covariates[idx] if past_covariates is not None else None
@@ -71,8 +79,12 @@ def _optimized_historical_forecasts(
             freq=series_.freq,
             show_warnings=show_warnings,
         )
-        left_bound = series_.get_index_at_point(hist_fct_start)
         # latest possible prediction start is one time step after end of target series
+        if hist_fct_start > series_.end_time():
+            left_bound = len(series_)
+        else:
+            left_bound = series_.get_index_at_point(hist_fct_start)
+
         if hist_fct_end > series_.end_time():
             right_bound = len(series_)
         else:
@@ -101,7 +113,7 @@ def _optimized_historical_forecasts(
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
         show_warnings=show_warnings,
-        **{k: v for k, v in kwargs.items() if k in super_predict_params},
+        **{k: v for k, v in predict_kwargs.items() if k in super_predict_params},
     )
 
     dataset = model._build_inference_dataset(
@@ -118,12 +130,11 @@ def _optimized_historical_forecasts(
     model_out = model.predict_from_dataset(
         n=forecast_horizon,
         dataset=dataset,
-        verbose=verbose,
         num_samples=num_samples,
         predict_likelihood_parameters=predict_likelihood_parameters,
         values_only=last_points_only,
         random_state=random_state,
-        **kwargs,
+        **predict_kwargs,
     )
 
     # torch model returns output in the order of the historical forecasts: we reorder per time series

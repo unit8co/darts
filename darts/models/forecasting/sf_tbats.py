@@ -19,14 +19,14 @@ class TBATS(StatsForecastModel):
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """TBATS based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`_.
+        """TBATS based on the `Statsforecasts package <https://github.com/Nixtla/statsforecast>`__.
 
         Trigonometric Box-Cox transform, ARMA errors, Trend and Seasonal components (TBATS) model. It is an innovations
         state space model framework used for forecasting time series with multiple seasonalities. It uses a Box-Cox
         tranformation, ARMA errors, and a trigonometric representation of the seasonal patterns based on Fourier series.
 
         We refer to the `StatsForecast documentation
-        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tbats>`_ for the exhaustive documentation of
+        <https://nixtlaverse.nixtla.io/statsforecast/src/core/models.html#tbats>`__ for the exhaustive documentation of
         the arguments.
 
         In addition to univariate deterministic forecasting, it comes with additional support:
@@ -35,7 +35,7 @@ class TBATS(StatsForecastModel):
           Darts adds support by first regressing the series against the future covariates using a
           :class:`~darts.models.forecasting.linear_regression_model.LinearRegressionModel` model and then running the
           StatsForecast model on the in-sample residuals from this original regression. This approach was inspired by
-          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`_.
+          `this post of Stephan Kolassa <https://stats.stackexchange.com/q/220885>`__.
 
         - **Probabilstic forecasting:** To generate probabilistic forecasts, you can set the following
           parameters when calling :meth:`~darts.models.forecasting.sf_model.StatsForecastModel.predict`:
@@ -100,13 +100,13 @@ class TBATS(StatsForecastModel):
         >>> model = TBATS(season_length=12)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[450.79653684],
-               [472.09265790],
-               [497.76948306],
-               [510.74927369],
-               [520.92224557],
-               [570.33881522]])
+        >>> print(pred.values())
+        [[450.79653684]
+         [472.09265790]
+         [497.76948306]
+         [510.74927369]
+         [520.92224557]
+         [570.33881522]]
         """
         super().__init__(
             model=SF_TBATS(*args, **kwargs),

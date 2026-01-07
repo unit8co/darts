@@ -335,9 +335,10 @@ class RNNModel(DualCovariatesTorchModel):
             Fraction of neurons affected by Dropout.
         training_length
             The length of both input (target and covariates) and output (target) time series used during
-            training. Must have a larger value than `input_chunk_length`, because otherwise during training
-            the RNN is never run for as many iterations as it will during inference. For more information on
-            this parameter, please see `darts.utils.data.ShiftedDataset`.
+            training. Must be `>input_chunk_length`, because otherwise during training the RNN is never run for as
+            many iterations as it will during inference. For training, a
+            :class:`~darts.utils.data.torch_datasets.training_dataset.ShiftedTorchTrainingDataset` is used with
+            parameters `input_chunk_length=output_chunk_length=training_length` and `shift=1`.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -423,7 +424,7 @@ class RNNModel(DualCovariatesTorchModel):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -442,7 +443,7 @@ class RNNModel(DualCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -485,16 +486,16 @@ class RNNModel(DualCovariatesTorchModel):
         >>> )
         >>> model.fit(target, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[ 3.18922903],
-               [ 1.17791019],
-               [ 0.39992814],
-               [ 0.13277921],
-               [ 0.02523252],
-               [-0.01829086]])
+        >>> print(pred.values())
+        [[ 3.18922903]
+         [ 1.17791019]
+         [ 0.39992814]
+         [ 0.13277921]
+         [ 0.02523252]
+         [-0.01829086]]
 
         .. note::
-            `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`_ presents techniques
+            `RNN example notebook <https://unit8co.github.io/darts/examples/04-RNN-examples.html>`__ presents techniques
             that can be used to improve the forecasts quality compared to this simple usage example.
         """
         if training_length < input_chunk_length:
@@ -602,29 +603,7 @@ class RNNModel(DualCovariatesTorchModel):
         )
 
     @property
-    def min_train_series_length(self) -> int:
-        return self.training_length + 1
-
-    @property
-    def extreme_lags(
-        self,
-    ) -> tuple[
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        Optional[int],
-        int,
-        Optional[int],
-    ]:
+    def min_train_samples(self) -> int:
         return (
-            -self.input_chunk_length,
-            self.output_chunk_length - 1,
-            None,
-            None,
-            -self.input_chunk_length,
-            self.output_chunk_length - 1,
-            self.output_chunk_shift,
-            self.training_length - self.input_chunk_length,
+            super().min_train_samples + self.training_length - self.input_chunk_length
         )

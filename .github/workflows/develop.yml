@@ -12,10 +12,10 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v4
 
-      - name: "Set up Python 3.10"
+      - name: "Set up Python 3.11"
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       - name: "Install Dev Dependencies"
         run: |
@@ -32,7 +32,7 @@ jobs:
     strategy:
       matrix:
         os: [macos-14, ubuntu-latest]
-        python-version: ['3.10']
+        python-version: ['3.11']
         flavour: ['all']
 
     steps:
@@ -64,7 +64,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -73,7 +73,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Run tests"
         run: |
@@ -92,10 +92,10 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v4
 
-      - name: "Set up Python 3.10"
+      - name: "Set up Python 3.11"
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       # use `uv` to retrieve the latest dependency versions
       - name: "Compile Dependency Versions"
@@ -122,7 +122,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -131,7 +131,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Build docs"
         run: |
@@ -146,10 +146,10 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v4
 
-      - name: "Set up Python 3.10"
+      - name: "Set up Python 3.11"
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
       # use `uv` to retrieve the latest dependency versions
       - name: "Compile Dependency Versions"
@@ -172,7 +172,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -181,7 +181,7 @@ jobs:
 
       - name: "Install Darts Locally"
         run: |
-          pip install .
+          pip install . --no-deps
 
       - name: "Run example ${{matrix.example-name}}"
         working-directory: ./examples

@@ -6,7 +6,6 @@ import pytest
 
 from darts import TimeSeries
 from darts.datasets import (
-    _DEFAULT_PATH,
     AirPassengersDataset,
     AusBeerDataset,
     AustralianTourismDataset,
@@ -41,6 +40,7 @@ from darts.datasets.dataset_loaders import (
     DatasetLoaderMetadata,
     DatasetLoadingException,
 )
+from darts.datasets.datasets import _DEFAULT_PATH
 
 _DEFAULT_PATH_TEST = _DEFAULT_PATH + "/tests"
 

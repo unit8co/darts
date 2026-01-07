@@ -1,10 +1,21 @@
 """
-XGBoost Model
--------------
+XGBoost Models
+--------------
 
-Regression model based on XGBoost.
+This module offers wrappers around XGBoost's Gradient Boosted Trees algorithms.
 
-This implementation comes with the ability to produce probabilistic forecasts.
+* :class:`~darts.models.forecasting.xgboost.XGBModel` - Wrapper around XGBoost's `XGBRegressor`
+* :class:`~darts.models.forecasting.xgboost.XGBClassifierModel` - Wrapper around XGBoost's
+  `XGBClassifier`
+
+The wrappers come with all capabilities of Darts' `SKLearn*Model`.
+
+For detailed examples and tutorials, see:
+
+* `SKLearn-Like Regression Model Examples
+  <https://unit8co.github.io/darts/examples/20-SKLearnModel-examples.html>`__
+* `SKLearn-Like Classification Model Examples
+  <https://unit8co.github.io/darts/examples/24-SKLearnClassifierModel-examples.html>`__
 """
 
 from collections.abc import Sequence
@@ -138,6 +149,10 @@ class XGBModel(SKLearnModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             Can be set to `poisson` or `quantile`. If set, the model will be probabilistic, allowing sampling at
             prediction time. This will overwrite any `objective` parameter.
@@ -179,13 +194,13 @@ class XGBModel(SKLearnModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1005.9185 ],
-               [1005.8315 ],
-               [1005.7878 ],
-               [1005.72626],
-               [1005.7475 ],
-               [1005.76074]])
+        >>> print(pred.values())
+        [[1005.9185 ]
+         [1005.8315 ]
+         [1005.7878 ]
+         [1005.72626]
+         [1005.7475 ]
+         [1005.76074]]
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
@@ -251,6 +266,7 @@ class XGBModel(SKLearnModel):
         val_sample_weight: Optional[
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
+        verbose: Optional[Union[int, bool]] = None,
         **kwargs,
     ):
         """
@@ -292,6 +308,8 @@ class XGBModel(SKLearnModel):
             are extracted from the end of the global weights. This gives a common time weighting across all series.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
+        verbose
+            Optionally, set the fit verbosity. Not effective for all models.
         **kwargs
             Additional kwargs passed to `xgb.XGBRegressor.fit()`
         """
@@ -315,6 +333,7 @@ class XGBModel(SKLearnModel):
                     n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
                     sample_weight=sample_weight,
                     val_sample_weight=val_sample_weight,
+                    verbose=verbose,
                     **kwargs,
                 )
                 # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
@@ -332,31 +351,18 @@ class XGBModel(SKLearnModel):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            verbose=verbose,
             **kwargs,
         )
         return self
 
     @property
-    def supports_val_set(self) -> bool:
+    def _supports_val_series(self) -> bool:
         return True
 
     @property
     def val_set_params(self) -> tuple[Optional[str], Optional[str]]:
         return "eval_set", "sample_weight_eval_set"
-
-    @property
-    def min_train_series_length(self) -> int:
-        # XGBModel  requires a minimum of 2 training samples,
-        # therefore the min_train_series_length should be one
-        # more than for other regression models
-        return max(
-            3,
-            (
-                -self.lags["target"][0] + self.output_chunk_length + 1
-                if "target" in self.lags
-                else self.output_chunk_length
-            ),
-        )
 
     @property
     def _supports_native_multioutput(self) -> bool:
@@ -456,6 +462,10 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
                     'tz': 'CET'
                 }
             ..
+
+            .. note::
+                To enable past and / or future encodings for any `SKLearnModel`, you must also define the
+                corresponding covariates lags with `lags_past_covariates` and / or `lags_future_covariates`.
         likelihood
             'classprobability' or ``None``. If set to 'classprobability', setting `predict_likelihood_parameters`
             in `predict()` will forecast class probabilities.
@@ -494,13 +504,13 @@ class XGBClassifierModel(_ClassifierMixin, XGBModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[0.],
-               [0.],
-               [0.],
-               [1.],
-               [1.],
-               [1.]])
+        >>> print(pred.values())
+        [[0.]
+         [0.]
+         [0.]
+         [1.]
+         [1.]
+         [1.]]
         """
         # likelihood always set to ClassProbability as it's the only supported classifiaction likelihood
         # this allow users to predict class probabilities,

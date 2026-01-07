@@ -1,5 +1,6 @@
 """
-TorchForecastingModel
+Base Torch Forecasting Model
+----------------------------
 
 This file contains several abstract classes:
 
@@ -20,7 +21,6 @@ import copy
 import datetime
 import inspect
 import os
-import re
 import shutil
 import sys
 from abc import ABC, abstractmethod
@@ -38,6 +38,8 @@ import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
+from pytorch_lightning.callbacks import ProgressBar
+from pytorch_lightning.tuner import Tuner
 from torch.utils.data import DataLoader
 
 from darts import TimeSeries
@@ -77,18 +79,6 @@ from darts.utils.timeseries_generation import _build_forecast_series_from_schema
 from darts.utils.torch import random_method
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 from darts.utils.utils import _build_tqdm_iterator, _parallel_apply
-
-# Check whether we are running pytorch-lightning >= 2.0.0 or not:
-tokens = pl.__version__.split(".")
-pl_200_or_above = int(tokens[0]) >= 2
-
-if pl_200_or_above:
-    from pytorch_lightning.callbacks import ProgressBar
-    from pytorch_lightning.tuner import Tuner
-else:
-    from pytorch_lightning.callbacks import ProgressBarBase as ProgressBar
-    from pytorch_lightning.tuner.tuning import Tuner
-
 
 DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
@@ -230,7 +220,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -242,16 +232,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
             For more info, see here:
             `trainer flags
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`_,
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`__,
             and `training on multiple gpus
-            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`_.
+            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`__.
 
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -373,14 +363,22 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @classmethod
     def _validate_model_params(cls, **kwargs):
-        """validate that parameters used at model creation are part of :class:`TorchForecastingModel`,
-        :class:`PLForecastingModule` or cls __init__ methods.
+        """validate that parameters used at model creation are part of the model cls __init__,
+        its parents __init__ methods, or :class:`PLForecastingModule`
         """
-        valid_kwargs = (
-            set(inspect.signature(TorchForecastingModel.__init__).parameters.keys())
-            | set(inspect.signature(PLForecastingModule.__init__).parameters.keys())
-            | set(inspect.signature(cls.__init__).parameters.keys())
+        # initiate with PLForecastingModule params that isn't part of the base class
+        valid_kwargs = set(
+            inspect.signature(PLForecastingModule.__init__).parameters.keys()
         )
+        # add params from the full list of base classes
+        for base in inspect.getmro(cls):
+            if base is object:
+                break
+            sig = inspect.signature(base.__init__)
+            valid_kwargs.update(sig.parameters.keys())
+        # Remove 'self','args,'kwargs' from consideration
+        for generic_arg in ["self", "args", "kwargs"]:
+            valid_kwargs.discard(generic_arg)
 
         invalid_kwargs = [kwarg for kwarg in kwargs if kwarg not in valid_kwargs]
 
@@ -446,53 +444,51 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = self._create_model(self.train_sample)
         self._module_name = model.__class__.__name__
 
+        # we should determine the precision based on time series data type
+        # however if user has defined a precision, we should follow that
         precision = None
-        dtype = self.train_sample[0].dtype
-        if np.issubdtype(dtype, np.float32):
-            logger.info("Time series values are 32-bits; casting model to float32.")
-            precision = "32" if not pl_200_or_above else "32-true"
-        elif np.issubdtype(dtype, np.float64):
-            logger.info("Time series values are 64-bits; casting model to float64.")
-            precision = "64" if not pl_200_or_above else "64-true"
-        else:
-            raise_log(
-                ValueError(
-                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
-                    f"or `np.float64`, e.g. with `TimeSeries.astype(np.float32)`."
-                ),
-                logger,
-            )
-        precision_int = int(re.findall(r"\d+", str(precision))[0])
-
         precision_user = (
             self.trainer_params.get("precision", None)
             if trainer is None
             else trainer.precision
         )
+        dtype = self.train_sample[0].dtype
         if precision_user is not None:
-            # currently, we only support float 64 and 32
-            valid_precisions = (
-                ["64", "32"] if not pl_200_or_above else ["64-true", "32-true"]
+            logger.info(
+                f"Using user-defined precision: {precision_user}. The model output will have the same dtype. If you "
+                f"encounter issues, it's usually due to a conflict between input series data type and precision, or an "
+                f"unsupported precision for the given device or model. For more information, see "
+                f"https://github.com/unit8co/darts/pull/2883 for a discussion on low precision options across hardware "
+                f"platforms."
             )
-            if str(precision_user) not in valid_precisions:
-                raise_log(
-                    ValueError(
-                        f"Invalid user-defined trainer_kwarg `precision={precision_user}`. "
-                        f"Use one of ({valid_precisions})"
-                    ),
-                    logger,
+            if "16" in str(precision_user):
+                logger.warning(
+                    "Detected user-defined float16-like precision. For mixed precision training, recommended "
+                    "options are 'bf16-mixed' and '16-mixed'."
                 )
-            precision_user_int = int(re.findall(r"\d+", str(precision_user))[0])
+            precision = precision_user
+        elif np.issubdtype(dtype, np.float32):
+            logger.info("Time series values are 32-bits; casting model to float32.")
+            precision = "32-true"
+        elif np.issubdtype(dtype, np.float64):
+            logger.info("Time series values are 64-bits; casting model to float64.")
+            precision = "64-true"
+        elif np.issubdtype(dtype, np.float16):
+            logger.warning(
+                "Time series values are 16-bits; casting model to bfloat16 and model output will have dtype float32. "
+                "Training with 16-bit time series may lead to numerical instability "
+                "in some models. If you encounter issues, consider casting your data "
+                "to 32-bit, e.g. with `TimeSeries.astype(np.float32)`."
+            )
+            precision = "bf16-true"
         else:
-            precision_user_int = None
-
-        raise_if(
-            precision_user is not None and precision_user_int != precision_int,
-            f"User-defined trainer_kwarg `precision='{precision_user}'` does not match dtype: `{dtype}` of the "
-            f"underlying TimeSeries. Set `precision` to `{precision}` or cast your data to `{precision_user}"
-            f"` with `TimeSeries.astype(np.float{precision_user_int})`.",
-            logger,
-        )
+            raise_log(
+                ValueError(
+                    f"Invalid time series data type `{dtype}`. Cast your data to `np.float32` "
+                    f"or `np.float64` or `np.float16`, e.g. with `TimeSeries.astype(np.float32)`."
+                ),
+                logger,
+            )
         self.trainer_params["precision"] = precision
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
@@ -752,7 +748,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def to_onnx(self, path: Optional[str] = None, **kwargs):
         """Export model to ONNX format for optimized inference, wrapping around PyTorch Lightning's
         :func:`torch.onnx.export` method (`official documentation <https://lightning.ai/docs/pytorch/
-        stable/common/lightning_module.html#to-onnx>`_).
+        stable/common/lightning_module.html#to-onnx>`__).
 
         Note: requires `onnx` library (optional dependency) to be installed.
 
@@ -778,7 +774,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         **kwargs
             Additional kwargs for PyTorch's :func:`torch.onnx.export` method (except parameters ``file_path``,
             ``input_sample``, ``input_name``). For more information, read the `official documentation
-            <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`_.
+            <https://pytorch.org/docs/master/onnx.html#torch.onnx.export>`__.
         """
         # TODO: LSTM model should be exported with a batch size of 1
         # TODO: predictions with TFT and TCN models is incorrect, might be caused by helper function to process inputs
@@ -812,10 +808,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if self.uses_static_covariates:
             input_names.append("x_static")
 
+        # TODO: `dynamo=True` should be the way to go since PyTorch 2.9; we have to wait until RNN module onnx exports
+        #  are  fixed
         self.model.to_onnx(
             file_path=path,
             input_sample=(input_sample,),
             input_names=input_names,
+            dynamo=False,
             **kwargs,
         )
 
@@ -838,6 +837,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Union[TimeSeries, Sequence[TimeSeries], str]
         ] = None,
         stride: int = 1,
+        load_best: bool = False,
     ) -> "TorchForecastingModel":
         """Fit/train the model on one or multiple series.
 
@@ -848,7 +848,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ .
+        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
         This function can be called several times to do some extra training. If ``epochs`` is specified, the model
         will be trained for some (extra) ``epochs`` epochs.
@@ -896,7 +896,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
             training and validation datasets. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         sample_weight
@@ -915,7 +915,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             The number of time steps between consecutive samples, applied starting from the end of the series. The same
             stride will be applied to both the training and evaluation set (if supplied). This should be used with
             caution as it might introduce bias in the forecasts.
-
+        load_best
+            Whether the model should automatically load the best checkpoint found during training according to the
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a
+            validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
         Returns
         -------
         self
@@ -943,12 +946,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             epochs=epochs,
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
+            load_best=load_best,
         )
         # call super fit only if user is actually fitting the model
         super().fit(
             series=seq2series(series),
             past_covariates=seq2series(past_covariates),
             future_covariates=seq2series(future_covariates),
+            verbose=verbose,
         )
         return self.fit_from_dataset(*params)
 
@@ -970,6 +975,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
+        load_best: bool = False,
     ) -> tuple[
         tuple[
             Sequence[TimeSeries],
@@ -983,6 +989,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optional[bool],
             int,
             Optional[dict[str, Any]],
+            bool,
         ],
     ]:
         """This method acts on `TimeSeries` inputs. It performs sanity checks, and sets up / returns the datasets and
@@ -1077,6 +1084,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose,
             epochs,
             dataloader_kwargs,
+            load_best,
         )
         return series_input, fit_from_ds_params
 
@@ -1089,6 +1097,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
+        load_best: bool = False,
     ) -> "TorchForecastingModel":
         """
         Train the model with a specific :class:`darts.utils.data.TorchTrainingDataset` instance.
@@ -1099,7 +1108,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_.
+        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
         This function can be called several times to do some extra training. If ``epochs`` is specified, the model
         will be trained for some (extra) ``epochs`` epochs.
@@ -1111,7 +1120,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             :class:`PastCovariatesTorchModel`).
         val_dataset
             A training dataset with a type matching this model (e.g. :class:`SequentialTorchTrainingDataset` for
-            :class:`PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
+            :class:`PastCovariatesTorchModel`), representing the validation set (to track the validation loss).
         trainer
             Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom `trainer` will
             override Darts' default trainer.
@@ -1124,9 +1133,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
             training and validation datasets. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
+        load_best
+            Whether the model should automatically load the best checkpoint found during training according to the
+            validation loss. Only effective when `save_checkpoints` was set to `True` in the model constructor and a
+            validation set is passed to the current fit method. Otherwise, it will be ignored. Default: ``False``.
 
         Returns
         -------
@@ -1141,6 +1154,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 verbose=verbose,
                 epochs=epochs,
                 dataloader_kwargs=dataloader_kwargs,
+                load_best=load_best,
             )
         )
         return self
@@ -1153,7 +1167,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: Optional[bool] = None,
         epochs: int = 0,
         dataloader_kwargs: Optional[dict[str, Any]] = None,
-    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader]]:
+        load_best: bool = False,
+    ) -> tuple[pl.Trainer, PLForecastingModule, DataLoader, Optional[DataLoader], bool]:
         """This method acts on `TorchTrainingDataset` inputs. It performs sanity checks, and sets up / returns the
         trainer, model, and dataset loaders required for training the model with `_train()`.
         """
@@ -1299,7 +1314,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 f"discouraged. Consider model `{self.__class__.__name__}.load_weights()` to load the weights for "
                 f"fine-tuning."
             )
-        return trainer, model, train_loader, val_loader
+        return trainer, model, train_loader, val_loader, load_best
 
     def _train(
         self,
@@ -1307,6 +1322,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model: PLForecastingModule,
         train_loader: DataLoader,
         val_loader: Optional[DataLoader],
+        load_best: bool = False,
     ) -> None:
         """
         Performs the actual training
@@ -1317,6 +1333,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             the training data loader feeding the training data and targets
         val_loader
             optionally, a validation set loader
+        load_best
+            Whether to load the best model checkpoint after training.
         """
         self._fit_called = True
 
@@ -1325,6 +1343,24 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
 
+        if load_best:
+            ckpt_callback: Optional[pl.callbacks.ModelCheckpoint] = (
+                trainer.checkpoint_callback
+            )
+            ckpt_activated = ckpt_callback is not None and hasattr(
+                ckpt_callback, "best_model_path"
+            )
+            if not ckpt_activated or val_loader is None:
+                logger.warning(
+                    "Loading the best model will be skipped (`load_best` is ignored), as it requires "
+                    "active checkpointing and a validation set to be provided to the current fit method."
+                    "If not using a custom `trainer`, make sure to set `save_checkpoints=True` at model creation. "
+                    "Otherwise, make sure the custom `trainer` uses a pytorch-lightning `ModelCheckpoint` callback."
+                )
+                load_best = False
+        else:
+            ckpt_callback = None
+
         if self._requires_training:
             trainer.fit(
                 model,
@@ -1332,6 +1368,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 val_dataloaders=val_loader,
                 ckpt_path=ckpt_path,
             )
+            if load_best:
+                best_model_path = ckpt_callback.best_model_path
+                logger.info(
+                    f"Loading best model from checkpoint: '{os.path.basename(best_model_path)}'"
+                )
+                model = self._load_from_checkpoint(best_model_path)
+        else:
+            trainer.strategy.connect(model)
         self.model = model
         self.trainer = trainer
 
@@ -1362,8 +1406,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         A wrapper around PyTorch Lightning's `Tuner.lr_find()`. Performs a range test of good initial learning rates,
         to reduce the amount of guesswork in picking a good starting learning rate. For more information on PyTorch
-        Lightning's Tuner check out
-        `this link <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`_.
+        Lightning's Tuner check out `this link
+        <https://pytorch-lightning.readthedocs.io/en/stable/api/pytorch_lightning.tuner.tuning.Tuner.html>`__.
         It is recommended to increase the number of `epochs` if the tuner did not give satisfactory results.
         Consider creating a new model object with the suggested learning rate for example using model creation
         parameters `optimizer_cls`, `optimizer_kwargs`, `lr_scheduler_cls`, and `lr_scheduler_kwargs`.
@@ -1439,7 +1483,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instances for the
             training and validation datasets. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         min_lr
@@ -1477,7 +1521,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             max_samples_per_ts=max_samples_per_ts,
             dataloader_kwargs=dataloader_kwargs,
         )
-        trainer, model, train_loader, val_loader = self._setup_for_train(*params)
+        trainer, model, train_loader, val_loader, _ = self._setup_for_train(*params)
         return Tuner(trainer).lr_find(
             model,
             train_dataloaders=train_loader,
@@ -1515,7 +1559,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ .
+        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
         Below, all possible parameters are documented, but not all models support all parameters. For instance,
         all the :class:`PastCovariatesTorchModel` support only ``past_covariates`` and not ``future_covariates``.
@@ -1569,7 +1613,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
             inference/prediction dataset. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mc_dropout
@@ -1638,6 +1682,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             future_covariates,
             num_samples=num_samples,
             predict_likelihood_parameters=predict_likelihood_parameters,
+            verbose=verbose,
             show_warnings=show_warnings,
         )
 
@@ -1693,7 +1738,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
         ``pl_trainer_kwargs`` used at model creation. You can also use a custom Trainer with optional parameter
         ``trainer``. For more information on PyTorch Lightning Trainers check out `this link
-        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ .
+        <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__.
 
         Parameters
         ----------
@@ -1723,7 +1768,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         dataloader_kwargs
             Optionally, a dictionary of keyword arguments used to create the PyTorch `DataLoader` instance for the
             inference/prediction dataset. For more information on `DataLoader`, check out `this link
-            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`_.
+            <https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader>`__.
             By default, Darts configures parameters ("batch_size", "shuffle", "drop_last", "collate_fn", "pin_memory")
             for seamless forecasting. Changing them should be done with care to avoid unexpected behavior.
         mc_dropout
@@ -1817,6 +1862,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # flatten output for parallelization
         for pred, ss, ps in out:
+            # model output is <BFloat16> when "bf16-mixed" is used, say, mixed precision on CPU,
+            # numpy does not support conversion from BFloat16, so we need to convert it to float32 first
+            if pred.dtype == torch.bfloat16:
+                pred = pred.float()
             predictions.append(pred.numpy())
             series_schemas += ss
             pred_starts += ps
@@ -1854,20 +1903,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return ts_forecasts
 
     @property
-    def first_prediction_index(self) -> int:
-        """
-        Returns the index of the first predicted within the output of self.model.
-        """
-        return 0
-
-    @property
-    def min_train_series_length(self) -> int:
-        """
-        Class property defining the minimum required length for the training series;
-        overriding the default value of 3 of ForecastingModel
-        """
+    def _target_window_lengths(self) -> tuple[int, int]:
         return (
-            self.input_chunk_length + self.output_chunk_length + self.output_chunk_shift
+            self.input_chunk_length,
+            self.output_chunk_length + self.output_chunk_shift,
         )
 
     @staticmethod
@@ -2013,13 +2052,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, a set of kwargs to create a new Lightning Trainer used to configure the model for downstream
             tasks (e.g. prediction).
             Some examples include specifying the batch size or moving the model to CPU/GPU(s). Check the
-            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_
+            `Lightning Trainer documentation <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__
             for more information about the supported kwargs.
         **kwargs
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one on which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
-            common/lightning_module.html#load-from-checkpoint>`_.
+            common/lightning_module.html#load-from-checkpoint>`__.
         """
         # load the base TorchForecastingModel (does not contain the actual PyTorch LightningModule)
         with open(path, "rb") as fin:
@@ -2101,7 +2140,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Additional kwargs for PyTorch Lightning's :func:`LightningModule.load_from_checkpoint()` method,
             such as ``map_location`` to load the model onto a different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch-lightning.readthedocs.io/en/stable/
-            common/lightning_module.html#load-from-checkpoint>`_.
+            common/lightning_module.html#load-from-checkpoint>`__.
 
 
         Returns
@@ -2206,7 +2245,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             If set, strictly enforce that the keys in state_dict match the keys returned by this module’s state_dict().
             Default: ``True``.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/torch.
-            nn.Module.html?highlight=load_state_dict#torch.nn.Module.load_state_dict>`_.
+            nn.Module.html?highlight=load_state_dict#torch.nn.Module.load_state_dict>`__.
         load_encoders
             If set, will load the encoders from the model to enable direct call of fit() or predict().
             Default: ``True``.
@@ -2217,7 +2256,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
-            torch.load.html>`_.
+            torch.load.html>`__.
         """
         raise_if(
             "weights_only" in kwargs.keys() and kwargs["weights_only"],
@@ -2342,7 +2381,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Additional kwargs for PyTorch's :func:`load` method, such as ``map_location`` to load the model onto a
             different device than the one from which it was saved.
             For more information, read the `official documentation <https://pytorch.org/docs/stable/generated/
-            torch.load.html>`_.
+            torch.load.html>`__.
 
         """
         path_ptl_ckpt = path + ".ckpt"
@@ -2360,7 +2399,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     def to_cpu(self):
-        """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :fun:`fit()` or
+        """Updates the PyTorch Lightning Trainer parameters to move the model to CPU the next time :func:`fit()` or
         :func:`predict()` is called.
         """
         self.trainer_params["accelerator"] = "cpu"
@@ -2423,33 +2462,31 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
     @property
+    def _supports_val_series(self) -> bool:
+        return True
+
+    @property
+    def min_train_samples(self) -> int:
+        # dataset requires at least one sample
+        return 1
+
+    @property
     def _requires_training(self) -> bool:
         """Whether the model should be trained when calling a `fit*` method."""
         return True
 
     def _check_optimizable_historical_forecasts(
         self,
-        forecast_horizon: int,
         retrain: Union[bool, int, Callable[..., bool]],
-        show_warnings: bool,
     ) -> bool:
-        """
-        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
-        (no auto-regression required).
-        """
-        return _check_optimizable_historical_forecasts_global_models(
-            model=self,
-            forecast_horizon=forecast_horizon,
-            retrain=retrain,
-            show_warnings=show_warnings,
-            allow_autoregression=True,
-        )
+        """Historical forecast can be optimized if no re-training is involved"""
+        return _check_optimizable_historical_forecasts_global_models(retrain)
 
     def _optimized_historical_forecasts(
         self,
-        series: Union[TimeSeries, Sequence[TimeSeries]],
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        series: Union[Sequence[TimeSeries]],
+        past_covariates: Optional[Sequence[TimeSeries]] = None,
+        future_covariates: Optional[Sequence[TimeSeries]] = None,
         num_samples: int = 1,
         start: Optional[Union[pd.Timestamp, float, int]] = None,
         start_format: Literal["position", "value"] = "value",
@@ -2461,21 +2498,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         show_warnings: bool = True,
         predict_likelihood_parameters: bool = False,
         random_state: Optional[int] = None,
-        **kwargs,
-    ) -> Union[TimeSeries, Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
+        predict_kwargs: Optional[dict[str, Any]] = None,
+    ) -> Union[Sequence[TimeSeries], Sequence[Sequence[TimeSeries]]]:
         """
         For TorchForecastingModels we use a strided inference dataset to avoid having to recreate trainers and
         datasets for each forecastable index and series.
         """
-        series, past_covariates, future_covariates, series_seq_type = (
-            _process_historical_forecast_input(
-                model=self,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                forecast_horizon=forecast_horizon,
-                allow_autoregression=True,
-            )
+        series, past_covariates, future_covariates = _process_historical_forecast_input(
+            model=self,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            forecast_horizon=forecast_horizon,
         )
         forecasts_list = _optimized_historical_forecasts(
             model=self,
@@ -2493,9 +2527,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose=verbose,
             predict_likelihood_parameters=predict_likelihood_parameters,
             random_state=random_state,
-            **kwargs,
+            predict_kwargs=predict_kwargs,
         )
-        return series2seq(forecasts_list, seq_type_out=series_seq_type)
+        return forecasts_list
 
     @property
     def _model_encoder_settings(
@@ -2711,7 +2745,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2721,7 +2754,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
             None,
             None,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2745,7 +2777,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2755,7 +2786,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2779,7 +2809,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2789,7 +2818,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2813,7 +2841,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2823,7 +2850,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
             -self.input_chunk_length,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )
 
 
@@ -2847,7 +2873,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         Optional[int],
         Optional[int],
         int,
-        Optional[int],
     ]:
         return (
             -self.input_chunk_length,
@@ -2857,5 +2882,4 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
             self.output_chunk_shift,
             self.output_chunk_length - 1 + self.output_chunk_shift,
             self.output_chunk_shift,
-            None,
         )

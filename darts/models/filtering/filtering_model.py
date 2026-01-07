@@ -1,5 +1,6 @@
 """
-Filtering Model Base Class
+Base Filter
+-----------
 
 Filtering models all have a `filter(series)` function, which
 returns a `TimeSeries` that is a filtered version of `series`.

@@ -3,6 +3,5 @@
 **/__pycache__
 
 # Test files
-darts/tests/
 darts/examples/static
 **/darts_logs

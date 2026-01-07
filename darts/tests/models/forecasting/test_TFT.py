@@ -166,7 +166,8 @@ class TestTFTModel:
             kwargs_tft=kwargs_TFT_full_coverage,
         )
 
-    def test_static_covariates_support(self):
+    @pytest.mark.parametrize("skip_interpolation", [True, False])
+    def test_static_covariates_support(self, skip_interpolation):
         target_multi = concatenate(
             [tg.sine_timeseries(length=10, freq="h")] * 2, axis=1
         )
@@ -186,6 +187,7 @@ class TestTFTModel:
             output_chunk_length=4,
             add_encoders={"cyclic": {"future": "hour"}},
             categorical_embedding_sizes={"cat1": 2, "cat2": (2, 2)},
+            skip_interpolation=skip_interpolation,
             pl_trainer_kwargs={
                 "fast_dev_run": True,
                 **tfm_kwargs["pl_trainer_kwargs"],
@@ -238,6 +240,7 @@ class TestTFTModel:
             output_chunk_length=4,
             use_static_covariates=False,
             add_relative_index=True,
+            skip_interpolation=skip_interpolation,
             n_epochs=1,
             **tfm_kwargs,
         )
@@ -250,6 +253,7 @@ class TestTFTModel:
             output_chunk_length=4,
             use_static_covariates=False,
             add_relative_index=True,
+            skip_interpolation=skip_interpolation,
             n_epochs=1,
             **tfm_kwargs,
         )
@@ -414,3 +418,20 @@ class TestTFTModel:
                 **tfm_kwargs,
             )
             model4.fit(series, epochs=1)
+
+    def test_skip_interpolation(self):
+        times = pd.date_range("20130101", "20130410")
+        pd_series = pd.Series(np.linspace(0, 1, 100), index=times)
+        series: TimeSeries = TimeSeries.from_series(pd_series).astype(np.float32)
+
+        model = TFTModel(
+            input_chunk_length=3,
+            output_chunk_length=3,
+            add_relative_index=True,
+            skip_interpolation=True,
+            **tfm_kwargs,
+        )
+        model.fit(series, epochs=1)
+        preds = model.predict(n=3, series=series)
+        assert len(preds) == 3
+        assert np.all(np.isfinite(preds.values()))

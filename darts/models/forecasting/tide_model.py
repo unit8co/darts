@@ -1,6 +1,6 @@
 """
 Time-series Dense Encoder (TiDE)
-------
+--------------------------------
 """
 
 from typing import Optional
@@ -449,6 +449,10 @@ class TiDEModel(MixedCovariatesTorchModel):
             The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout
             at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
             prediction time).
+        use_static_covariates
+            Whether the model should use static covariate information in case the input `series` passed to ``fit()``
+            contain static covariates. If ``True``, and static covariates are available at fitting time, will enforce
+            that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -537,7 +541,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             checkpointing, tensorboard logging, setting the torch device and more.
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
-            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
             supported kwargs. Default: ``None``.
             Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
             "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
@@ -556,7 +560,7 @@ class TiDEModel(MixedCovariatesTorchModel):
             The model will stop training early if the validation loss `val_loss` does not improve beyond
             specifications. For more information on callbacks, visit:
             `PyTorch Lightning Callbacks
-            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
 
             .. highlight:: python
             .. code-block:: python
@@ -606,16 +610,16 @@ class TiDEModel(MixedCovariatesTorchModel):
         >>> )
         >>> model.fit(target, past_covariates=past_cov, future_covariates=future_cov)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[1008.1667634 ],
-               [ 997.08337201],
-               [1017.72035839],
-               [1005.10790392],
-               [ 998.90537286],
-               [1005.91534452]])
+        >>> print(pred.values())
+        [[1008.1667634 ]
+         [ 997.08337201]
+         [1017.72035839]
+         [1005.10790392]
+         [ 998.90537286]
+         [1005.91534452]]
 
         .. note::
-            `TiDE example notebook <https://unit8co.github.io/darts/examples/18-TiDE-examples.html>`_ presents
+            `TiDE example notebook <https://unit8co.github.io/darts/examples/18-TiDE-examples.html>`__ presents
             techniques that can be used to improve the forecasts quality compared to this simple usage example.
         """
         if temporal_width_past < 0 or temporal_width_future < 0:

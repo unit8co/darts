@@ -1,3 +1,8 @@
+"""
+DTW Cost Matrix
+---------------
+"""
+
 import array
 from abc import ABC, abstractmethod
 from itertools import repeat

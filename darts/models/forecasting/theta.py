@@ -68,13 +68,13 @@ class Theta(LocalForecastingModel):
         >>> model = Theta(theta=2)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[442.7256909 ],
-               [433.74381763],
-               [494.54534585],
-               [480.36937856],
-               [481.06675142],
-               [545.80068173]])
+        >>> print(pred.values())
+        [[442.7256909 ]
+         [433.74381763]
+         [494.54534585]
+         [480.36937856]
+         [481.06675142]
+         [545.80068173]]
         """
 
         super().__init__()
@@ -99,8 +99,8 @@ class Theta(LocalForecastingModel):
         if self.theta == 0:
             raise_log(ValueError("The parameter theta cannot be equal to 0."), logger)
 
-    def fit(self, series: TimeSeries):
-        super().fit(series)
+    def fit(self, series: TimeSeries, verbose: Optional[bool] = False):
+        super().fit(series, verbose=verbose)
         self._assert_univariate(series)
         ts = self.training_series
 
@@ -156,11 +156,11 @@ class Theta(LocalForecastingModel):
         self,
         n: int,
         num_samples: int = 1,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         show_warnings: bool = True,
         random_state: Optional[int] = None,
     ) -> "TimeSeries":
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
@@ -191,15 +191,15 @@ class Theta(LocalForecastingModel):
         return False
 
     @property
-    def min_train_series_length(self) -> int:
+    def _target_window_lengths(self) -> tuple[int, int]:
         if (
             self.season_mode != SeasonalityMode.NONE
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
-            return 2 * self.seasonality_period
+            return 2 * self.seasonality_period, 0
         else:
-            return 3
+            return 3, 0
 
 
 class FourTheta(LocalForecastingModel):
@@ -215,7 +215,7 @@ class FourTheta(LocalForecastingModel):
         """
         An implementation of the 4Theta method with configurable `theta` parameter.
 
-        See M4 competition `solution <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`_.
+        See M4 competition `solution <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`__.
 
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
@@ -264,13 +264,13 @@ class FourTheta(LocalForecastingModel):
         >>> model = FourTheta(theta=2)
         >>> model.fit(series)
         >>> pred = model.predict(6)
-        >>> pred.values()
-        array([[443.3949283 ],
-               [434.39769555],
-               [495.28886231],
-               [481.08962991],
-               [481.78610361],
-               [546.61463773]])
+        >>> print(pred.values())
+        [[443.3949283 ]
+         [434.39769555]
+         [495.28886231]
+         [481.08962991]
+         [481.78610361]
+         [546.61463773]]
         """
 
         super().__init__()
@@ -308,8 +308,8 @@ class FourTheta(LocalForecastingModel):
             logger,
         )
 
-    def fit(self, series):
-        super().fit(series)
+    def fit(self, series, verbose: Optional[bool] = False):
+        super().fit(series, verbose=verbose)
 
         self.length = len(series)
         # normalization of data
@@ -408,7 +408,7 @@ class FourTheta(LocalForecastingModel):
         show_warnings: bool = True,
         random_state: Optional[int] = None,
     ) -> "TimeSeries":
-        super().predict(n, num_samples)
+        super().predict(n, num_samples, verbose=verbose)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
@@ -513,12 +513,12 @@ class FourTheta(LocalForecastingModel):
         return False
 
     @property
-    def min_train_series_length(self) -> int:
+    def _target_window_lengths(self) -> tuple[int, int]:
         if (
             self.season_mode != SeasonalityMode.NONE
             and self.seasonality_period
             and self.seasonality_period > 1
         ):
-            return 2 * self.seasonality_period
+            return 2 * self.seasonality_period, 0
         else:
-            return 3
+            return 3, 0

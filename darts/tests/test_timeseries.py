@@ -118,6 +118,19 @@ class TestTimeSeries:
         ts_pd_df = ts.to_dataframe(time_as_index=False)
         assert ts_pd_df.equals(pd_df.reset_index())
 
+    def test_df_time_col_not_present(self):
+        df = pd.DataFrame({"a": [i for i in range(10)]})
+        with pytest.raises(AttributeError) as exc:
+            _ = TimeSeries.from_dataframe(df, time_col="missing_col")
+        assert str(exc.value) == "time_col='missing_col' is not present."
+
+    def test_df_invalid_time_col_dtype(self):
+        # cannot be float
+        df = pd.DataFrame({"a": [i for i in range(10)], "times": [1.0] * 10})
+        with pytest.raises(AttributeError) as exc:
+            _ = TimeSeries.from_dataframe(df, time_col="times")
+        assert str(exc.value).startswith("Invalid type of `time_col`")
+
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
     def test_polars_creation(self, caplog):
         expected_idx = pl.Series("time", range(10))
@@ -302,6 +315,7 @@ class TestTimeSeries:
             isinstance(ts_from_int_idx.time_index, pd.RangeIndex)
             and ts_from_int_idx.freq == 1
         )
+        assert ts_from_int_idx.freq_str == "1"
         assert ts_from_int_idx.time_index.equals(ts_from_range_idx.time_index)
 
         for step in [2, 3]:
@@ -506,7 +520,10 @@ class TestTimeSeries:
         helper_test_split(self.series1)
 
     def test_drop(self):
-        helper_test_drop(self.series1)
+        helper_test_drop_after(self.series1, keep_point=False)
+        helper_test_drop_after(self.series1, keep_point=True)
+        helper_test_drop_before(self.series1, keep_point=False)
+        helper_test_drop_before(self.series1, keep_point=True)
 
     @pytest.mark.parametrize(
         "config", itertools.product(["D", "2D", 1, 2], [False, True])
@@ -1654,7 +1671,7 @@ class TestTimeSeries:
         zeroes = zeroes.with_columns_renamed("constant", "linear")
 
         def function(ts, x):
-            return x - ts.month
+            return x - ts.month.values.reshape(-1, 1, 1)
 
         new_series = series.map(function)
         assert new_series == zeroes
@@ -1678,6 +1695,20 @@ class TestTimeSeries:
 
         with pytest.raises(ValueError):
             series.map(ufunc_add)
+
+    def test_map_fn_not_callable(self):
+        series = linear_timeseries(length=3)
+        with pytest.raises(TypeError) as exc:
+            series.map(fn=1)
+        assert str(exc.value) == "fn must be a callable"
+
+    def test_map_fn_wrong_output_shape(self):
+        series = linear_timeseries(length=3)
+        with pytest.raises(ValueError) as exc:
+            series.map(fn=lambda x: np.concatenate([x] * 2, axis=1))
+        assert str(exc.value) == (
+            "fn must return an array of shape `(3, 1, 1)`. Received shape `(3, 2, 1)`"
+        )
 
     def test_gaps(self):
         times1 = pd.date_range("20130101", "20130110")
@@ -2101,17 +2132,54 @@ def helper_test_split(test_series: TimeSeries):
     assert seriesP.start_time() > split_date
 
 
-def helper_test_drop(test_series: TimeSeries):
-    seriesA = test_series.drop_after(pd.Timestamp("20130105"))
-    assert seriesA.end_time() == pd.Timestamp("20130105") - test_series.freq
-    assert np.all(seriesA.time_index < pd.Timestamp("20130105"))
+def helper_test_drop_after(test_series: TimeSeries, keep_point: bool):
+    # drop step is part of index
+    series = test_series.drop_after(pd.Timestamp("20130105"), keep_point=keep_point)
+    expected_end = (
+        pd.Timestamp("20130105") - (1 if not keep_point else 0) * test_series.freq
+    )
+    assert series.end_time() == expected_end
+    assert np.all(series.time_index <= expected_end)
+    assert series.freq == test_series.freq
 
-    seriesB = test_series.drop_before(pd.Timestamp("20130105"))
-    assert seriesB.start_time() == pd.Timestamp("20130105") + test_series.freq
-    assert np.all(seriesB.time_index > pd.Timestamp("20130105"))
+    # drop step is not part of index and before "20130105";
+    series = test_series.drop_after(
+        pd.Timestamp("20130104 12:00:00"), keep_point=keep_point
+    )
+    assert series.end_time() == pd.Timestamp("20130105") - test_series.freq
+    assert np.all(series.time_index < pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
 
-    assert test_series.freq_str == seriesA.freq_str
-    assert test_series.freq_str == seriesB.freq_str
+    # drop step is not part of index and after "20130105"
+    series = test_series.drop_after(
+        pd.Timestamp("20130105 12:00:00"), keep_point=keep_point
+    )
+    assert series.end_time() == pd.Timestamp("20130105")
+    assert np.all(series.time_index <= pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
+
+
+def helper_test_drop_before(test_series: TimeSeries, keep_point: bool):
+    # drop step is part of index
+    series = test_series.drop_before(pd.Timestamp("20130105"), keep_point=keep_point)
+    expected_end = (
+        pd.Timestamp("20130105") + (1 if not keep_point else 0) * test_series.freq
+    )
+    assert series.start_time() == expected_end
+    assert np.all(series.time_index >= expected_end)
+    assert series.freq == test_series.freq
+
+    # drop step is not part of index and after "20130105"
+    series = test_series.drop_before(pd.Timestamp("20130105 12:00:00"), keep_point=True)
+    assert series.start_time() == pd.Timestamp("20130105") + test_series.freq
+    assert np.all(series.time_index > pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
+
+    # drop step is not part of index and before "20130105"
+    series = test_series.drop_before(pd.Timestamp("20130104 12:00:00"), keep_point=True)
+    assert series.start_time() == pd.Timestamp("20130105")
+    assert np.all(series.time_index >= pd.Timestamp("20130105"))
+    assert series.freq == test_series.freq
 
 
 def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):
