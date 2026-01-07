@@ -207,9 +207,7 @@ class TestMetrics:
         "metric",
         [
             metrics.ape,
-            # metrics.sape,
             metrics.mape,
-            # metrics.smape,
         ],
     )
     def test_ape_zero(self, metric):
