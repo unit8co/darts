@@ -207,9 +207,9 @@ class TestMetrics:
         "metric",
         [
             metrics.ape,
-            metrics.sape,
+            # metrics.sape,
             metrics.mape,
-            metrics.smape,
+            # metrics.smape,
         ],
     )
     def test_ape_zero(self, metric):
@@ -225,6 +225,21 @@ class TestMetrics:
                 self.series1 - self.series1.to_series().mean(),
                 self.series1 - self.series1.to_series().mean(),
             )
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            metrics.sape,
+            metrics.smape,
+        ],
+    )
+    def test_sape_zero_denom(self, metric):
+        assert np.allclose(metric(
+            self.series0, self.series0
+        ), 0.0), "Expected SAPE to be 0.0 when both series are identical"
+        assert np.allclose(metric(
+            self.series1, self.series1
+        ), 0.0), "Expected SAPE to be 0.0 when both series are identical"
+
 
     @pytest.mark.parametrize(
         "config",
