@@ -1889,7 +1889,7 @@ def smape(
         passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
-        Optionally, whether to print operations progress.s
+        Optionally, whether to print operations progress.
 
     Returns
     -------
