@@ -339,6 +339,10 @@ class _TSMixerModule(PLForecastingModule):
         output_dim
             Number of output target features.
 
+        num_encoder_blocks
+            Number of encoder blocks (that operate on input_chunk_length).
+        num_decoder_blocks
+            Number of decoder blocks (that operate on output_chunk_length).
         past_cov_dim
             Number of past covariate features.
         future_cov_dim
@@ -360,11 +364,6 @@ class _TSMixerModule(PLForecastingModule):
             Type of normalization to use.
         normalize_before
             Whether to apply normalization before or after mixing.
-        project_first_layer
-            Whether to project to the output time dimension at the first layer (default),
-            or at the end of the module. False is recommended if there are
-            no future covariates, while True is recommended if there are
-            important future covariates.
         """
         super().__init__(**kwargs)
         self.input_dim = input_dim
@@ -506,14 +505,13 @@ class _TSMixerModule(PLForecastingModule):
         # B: batch size
         # L: input chunk length
         # T: output chunk length
-        # SL: Residual block time dimension (T if project_first_layer, L otherwise)
         # C: target components
         # P: past cov features
         # F: future cov features
         # S: static cov features
         # H = C + P + F: historic features
         # H_S: hidden Size
-        # N_P: number of samples to predict
+        # N_P: number of parameters to predict per target feature
 
         # `x`: (B, L, H), `x_future`: (B, T, F), `x_static`: (B, C or 1, S)
         x, x_future, x_static = x_in
