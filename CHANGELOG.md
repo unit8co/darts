@@ -11,6 +11,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [brunnedu](https://github.com/brunnedu).
+  - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
+  - Maintains API consistency with the existing `plot()` method for easy adoption
+  - Supports deterministic and stochastic, univariate and multivariate series
+  - Allows overlaying multiple series on the same figure via the `fig` parameter
+  - Customizable with layout parameters (`title`, `width`, `height`, `template`) and trace styling via `**kwargs`
+  - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
+  - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
+  - Plotly remains an optional dependency and can be installed with `pip install 'darts[plotly]'` or `pip install plotly`
+
 **Fixed**
 
 **Dependencies**
@@ -41,16 +51,6 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Users can now configure global options such as:
     - `display.[max_rows, max_cols]`: Maximum number of rows or columns to display in TimeSeries representation (default: 10)
     - 🟠 `plotting.use_darts_style`: Whether to apply Darts' custom matplotlib plotting style (default: False). Changes take effect immediately and apply to all subsequent plots. The Darts plotting style is now not applied anymore by default. To activate it call `set_option('plotting.use_darts_style', True)` before plotting.
-
-- Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [brunnedu](https://github.com/brunnedu).
-  - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
-  - Maintains API consistency with the existing `plot()` method for easy adoption
-  - Supports deterministic and stochastic, univariate and multivariate series
-  - Allows overlaying multiple series on the same figure via the `fig` parameter
-  - Customizable with layout parameters (`title`, `width`, `height`, `template`) and trace styling via `**kwargs`
-  - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
-  - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
-  - Plotly remains an optional dependency and can be installed with `pip install 'darts[plotly]'` or `pip install plotly`
 
 **Fixed**
 
