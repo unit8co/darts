@@ -11,7 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
-- Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [brunnedu](https://github.com/brunnedu).
+- Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
   - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
   - Maintains API consistency with the existing `plot()` method for easy adoption
   - Supports deterministic and stochastic, univariate and multivariate series

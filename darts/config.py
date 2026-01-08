@@ -53,7 +53,7 @@ logger = get_logger(__name__)
 # Darts color palette used for both matplotlib and plotly plotting
 _DARTS_COLORS = [
     "#000000",
-    "#003DFD",
+    "#003dfd",
     "#b512b8",
     "#11a9ba",
     "#0d780f",
@@ -70,28 +70,37 @@ try:
 
     pio.templates["darts"] = go.layout.Template(
         layout=go.Layout(
-            colorway=_DARTS_COLORS,
-            font=dict(family="Arial, sans-serif", color="#333333", size=12),
+            font=dict(family="Arial, sans-serif", size=14, color="black"),
             paper_bgcolor="white",
             plot_bgcolor="white",
+            colorway=_DARTS_COLORS,
+            showlegend=True,
+            legend=dict(
+                bgcolor="rgba(255, 255, 255, 0.8)",
+                x=1,
+                y=1,
+                yanchor="top",
+                xanchor="right",
+                font=dict(size=14),
+                borderwidth=0,
+            ),
             xaxis=dict(
-                showgrid=True,
-                gridcolor="#dedede",
-                showline=False,
-                zeroline=False,
-                tickfont=dict(size=10),
-                title_font=dict(size=14),
+                showline=True,
+                linecolor="#dedede",
+                showgrid=False,
+                title=dict(font=dict(size=16, color="black")),
             ),
             yaxis=dict(
+                showline=False,
                 showgrid=True,
                 gridcolor="#dedede",
-                showline=False,
-                zeroline=False,
-                tickfont=dict(size=10),
+                gridwidth=1,
+                zeroline=True,
+                zerolinecolor="#dedede",
             ),
-            legend=dict(borderwidth=0),
-            margin=dict(t=50, b=50, l=50, r=50),
-        )
+            margin=dict(l=50, r=50, t=50, b=50),
+        ),
+        data=dict(scatter=[go.Scatter(line=dict(width=3))]),
     )
 except ImportError:
     PLOTLY_AVAILABLE = False

@@ -4793,10 +4793,8 @@ class TimeSeries:
                     )
             central_values = central_values[::step]
 
-            # determine label
+            # determine label & color
             curr_label = resolved_labels[i]
-
-            # determine color
             curr_color = resolved_colors[
                 (color_cycle_start_idx + i) % len(resolved_colors)
             ]
@@ -4811,8 +4809,6 @@ class TimeSeries:
                 high_values = (
                     comp_ts.quantile(high_quantile).values(copy=False).flatten()[::step]
                 )
-
-                fill_color = None
                 fill_color = _modify_color_opacity(curr_color, alpha_ci)
 
                 if not is_single_point:
@@ -4895,7 +4891,6 @@ class TimeSeries:
             title=title,
             xaxis_title=self.time_dim,
             template=template or pio.templates.default,
-            showlegend=True,
             hovermode="x unified",
             width=width,
             height=height,
