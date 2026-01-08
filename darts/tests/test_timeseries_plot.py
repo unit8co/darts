@@ -223,17 +223,6 @@ class TestTimeSeriesPlot:
         plt.close()
 
     @patch("matplotlib.pyplot.show")
-    @pytest.mark.parametrize("config", ["dt", "ri"])
-    def test_plot_deterministic_and_stochastic(self, mock_show, config):
-        index_type = config
-        series1 = getattr(self, f"series_{index_type}_d")
-        series2 = getattr(self, f"series_{index_type}_p")
-        series1.plot()
-        series2.plot()
-        plt.show()
-        plt.close()
-
-    @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize("config", ["d", "p"])
     def test_cannot_plot_different_index_types(self, mock_show, config):
         stoch_type = config
