@@ -13,6 +13,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
+- Fixed a bug in `TorchTrainingDataset` where `max_samples_per_ts` was not acting as an upper bound on the number of samples per time series. Now `max_samples_per_ts` correctly acts as an upper bound, capping the dataset size at the actual number of samples that can be extracted from the longest series. [#2986](https://github.com/unit8co/darts/issues/2986) by [Dustin Brunner](https://github.com/brunnedu).
+
 **Dependencies**
 
 ### For developers of the library:
