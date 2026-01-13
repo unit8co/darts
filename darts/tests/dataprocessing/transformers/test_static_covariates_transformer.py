@@ -211,6 +211,51 @@ class TestStaticCovariatesTransformer:
         pd.testing.assert_frame_equal(ts1_inv.static_covariates, ts1.static_covariates)
         pd.testing.assert_frame_equal(ts2_inv.static_covariates, ts2.static_covariates)
 
+    def test_cols_cat_order_different_from_data(self):
+        series = [
+            self.series.with_static_covariates(
+                pd.DataFrame({"Country": ["US"], "City": ["New York"]})
+            ),
+            self.series.with_static_covariates(
+                pd.DataFrame({"Country": ["China"], "City": ["Beijing"]})
+            ),
+        ]
+
+        transformer = StaticCovariatesTransformer(
+            transformer_cat=OneHotEncoder(sparse_output=False),
+            cols_cat=["City", "Country"],
+        )
+
+        transformed = transformer.fit_transform(series)
+
+        expected_columns = {
+            "City_Beijing",
+            "City_New York",
+            "Country_China",
+            "Country_US",
+        }
+        actual_columns = set(transformed[0].static_covariates.columns.tolist())
+        assert actual_columns == expected_columns
+
+        first_static_covs = transformed[0].static_covariates
+        assert first_static_covs["Country_US"].iloc[0] == 1.0
+        assert first_static_covs["Country_China"].iloc[0] == 0.0
+        assert first_static_covs["City_New York"].iloc[0] == 1.0
+        assert first_static_covs["City_Beijing"].iloc[0] == 0.0
+
+        second_static_covs = transformed[1].static_covariates
+        assert second_static_covs["Country_China"].iloc[0] == 1.0
+        assert second_static_covs["Country_US"].iloc[0] == 0.0
+        assert second_static_covs["City_Beijing"].iloc[0] == 1.0
+        assert second_static_covs["City_New York"].iloc[0] == 0.0
+
+        recovered = transformer.inverse_transform(transformed)
+        for i in range(2):
+            pd.testing.assert_frame_equal(
+                recovered[i].static_covariates,
+                series[i].static_covariates,
+            )
+
     def helper_test_scaling(self, series, scaler, test_values):
         series_copy = series.copy()
         series_tr = scaler.fit_transform(series)
