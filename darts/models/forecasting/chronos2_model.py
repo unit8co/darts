@@ -964,6 +964,5 @@ class Chronos2Model(FoundationModel):
             module_class=_Chronos2PLModule,
             pl_module_params=pl_module_params,
         )
-        model.apply_peft(self.peft_config)
 
         return model
