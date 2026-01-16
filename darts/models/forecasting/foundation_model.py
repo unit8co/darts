@@ -10,6 +10,7 @@ This file contains several abstract classes:
 """
 
 from abc import ABC
+from copy import deepcopy
 from functools import partial
 from typing import Any, Callable
 
@@ -185,6 +186,19 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
     def _requires_training(self) -> bool:
         return self._enable_finetuning
 
+    @property
+    def internal_model(self) -> Any:
+        """
+        Returns the underlying PyTorch model (nn.Module).
+        This gives access to the actual internal mechanics of the model, which can be useful
+        for advanced usage like accessing PEFT adapters, inspecting weights or custom saving/loading.
+
+        If the model has not been initialized yet, returns None.
+        """
+        if hasattr(self, "model") and hasattr(self.model, "model"):
+            return self.model.model
+        return None
+
 
 class FoundationPLModule(PLForecastingModule):
     def __init__(self, **kwargs):
@@ -211,8 +225,8 @@ class ModelTransformCallback(Callback):
         """Set the inner model on the Lightning module."""
         setattr(pl_module, self.model_attribute, model)
 
-    def on_fit_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
-        """Apply transformation before training begins."""
+    def setup(self, trainer: pl.Trainer, pl_module: pl.LightningModule, stage: str):
+        """Apply transformation before training begins (before optimizer setup)."""
         if not self._transformed:
             inner_model = self._get_inner_model(pl_module)
             transformed_model = self.transform_fn(inner_model)
@@ -242,9 +256,6 @@ class ModelTransformCallback(Callback):
         """
         # Mark that this checkpoint was saved with a transformed model
         checkpoint["model_transform_applied"] = True
-
-        # TODO maybe replace in checkpoint["state_dict"] with pl_module.model.get_base_model().state_dict()
-        # and adapt the keys names accordingly
 
     def on_load_checkpoint(
         self,
@@ -318,10 +329,44 @@ class PeftCallback(ModelTransformCallback):
         self.peft_config = peft_config
 
     def on_save_checkpoint(self, trainer, pl_module, checkpoint):
-        checkpoint["peft_applied"] = True
-        # Optionally store config for reference
-        if self.peft_config is not None:
-            checkpoint["peft_config"] = self.peft_config.to_dict()
+        # We replace the state_dict in the checkpoint with the one from the base model
+        # (with adapters merged), so that the model can be loaded as a regular model.
+        peft_model = getattr(pl_module, self.model_attribute, None)
+        try:
+            from peft import PeftModel
+        except ImportError:
+            return
+
+        if isinstance(peft_model, PeftModel):
+            # Merge adapters into the base model weights
+            model_copy = deepcopy(peft_model)
+            setattr(pl_module, self.model_attribute, peft_model.merge_and_unload())
+            try:
+                # Get the state dict of the base model
+                # This returns the weights including the merged adapters
+                # base_state_dict = peft_model.get_base_model().state_dict()
+
+                # We need to prepend the model attribute name to the keys
+                # because the PL module expects keys to start with `model.` (or `model_attribute.`)
+                prefix = self.model_attribute + "."
+                new_state_dict = {
+                    prefix + k: v
+                    for k, v in getattr(pl_module, self.model_attribute)
+                    .state_dict()
+                    .items()
+                }
+
+                # # Update the checkpoint
+                checkpoint["state_dict"] = new_state_dict
+
+                # Remove "peft_applied" so that on_load_checkpoint() does not try to re-wrap the model
+                # This allows loading the model as a regular (non-PEFT) model
+                checkpoint.pop("peft_applied", None)
+                checkpoint.pop("peft_config", None)
+
+            finally:
+                # Unmerge adapters to keep the current model in PEFT mode
+                setattr(pl_module, self.model_attribute, model_copy)
 
     def on_load_checkpoint(
         self,
