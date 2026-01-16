@@ -10,7 +10,11 @@ This file contains several abstract classes:
 """
 
 from abc import ABC
+from functools import partial
+from typing import Any, Callable
 
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import Callback
 from torch import nn
 
 from darts.logging import get_logger, raise_log
@@ -186,3 +190,145 @@ class FoundationPLModule(PLForecastingModule):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.model: nn.Module
+
+
+class ModelTransformCallback(Callback):
+    def __init__(
+        self,
+        transform_fn: Callable[[nn.Module], nn.Module],
+        model_attribute: str = "model",
+    ):
+        super().__init__()
+        self.transform_fn = transform_fn
+        self.model_attribute = model_attribute
+        self._transformed = False
+
+    def _get_inner_model(self, pl_module: pl.LightningModule) -> nn.Module:
+        """Get the inner model from the Lightning module."""
+        return getattr(pl_module, self.model_attribute)
+
+    def _set_inner_model(self, pl_module: pl.LightningModule, model: nn.Module):
+        """Set the inner model on the Lightning module."""
+        setattr(pl_module, self.model_attribute, model)
+
+    def on_fit_start(self, trainer: pl.Trainer, pl_module: pl.LightningModule):
+        """Apply transformation before training begins."""
+        if not self._transformed:
+            inner_model = self._get_inner_model(pl_module)
+            transformed_model = self.transform_fn(inner_model)
+            self._set_inner_model(pl_module, transformed_model)
+            self._transformed = True
+
+            # Log trainable parameters
+            trainable = sum(
+                p.numel() for p in pl_module.parameters() if p.requires_grad
+            )
+            total = sum(p.numel() for p in pl_module.parameters())
+            print(
+                f"Model transformed. Trainable: {trainable:,}/{total:,} ({100 * trainable / total:.2f}%)"
+            )
+
+    def on_save_checkpoint(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        checkpoint: dict[str, Any],
+    ):
+        """
+        Handle checkpoint saving for transformed models.
+
+        For PEFT models, we could optionally save just the adapter weights
+        or mark the checkpoint as requiring transformation on load.
+        """
+        # Mark that this checkpoint was saved with a transformed model
+        checkpoint["model_transform_applied"] = True
+
+        # TODO maybe replace in checkpoint["state_dict"] with pl_module.model.get_base_model().state_dict()
+        # and adapt the keys names accordingly
+
+    def on_load_checkpoint(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        checkpoint: dict[str, Any],
+    ):
+        """
+        Apply transformation before loading checkpoint weights.
+
+        This ensures the model structure matches the saved weights.
+        """
+        if checkpoint.get("model_transform_applied", False) and not self._transformed:
+            inner_model = self._get_inner_model(pl_module)
+            transformed_model = self.transform_fn(inner_model)
+            self._set_inner_model(pl_module, transformed_model)
+            self._transformed = True
+
+
+class LayerFreezeCallback(ModelTransformCallback):
+    @classmethod
+    def _freeze_layers(
+        cls, model: nn.Module, freeze_patterns: list[str], unfreeze_patterns: list[str]
+    ) -> nn.Module:
+        for name, param in model.named_parameters():
+            if any(name.startswith(layer) for layer in freeze_patterns):
+                param.requires_grad = False
+            if any(name.startswith(layer) for layer in unfreeze_patterns):
+                param.requires_grad = True
+        return model
+
+    def __init__(
+        self,
+        freeze_patterns: list[str],
+        unfreeze_patterns: list[str] = None,
+        model_attribute: str = "model",
+    ):
+        unfreeze_patterns = unfreeze_patterns or []
+
+        super().__init__(
+            transform_fn=partial(
+                self._freeze_layers,
+                freeze_patterns=freeze_patterns,
+                unfreeze_patterns=unfreeze_patterns,
+            ),
+            model_attribute=model_attribute,
+        )
+
+
+class PeftCallback(ModelTransformCallback):
+    @classmethod
+    def _apply_peft(cls, model: nn.Module, peft_config) -> nn.Module:
+        try:
+            from peft import get_peft_model
+        except ImportError:
+            raise ImportError(
+                "Please install the `peft` package to use PeftCallback: `pip install peft`."
+            )
+        peft_model = get_peft_model(model, peft_config)
+        return peft_model
+
+    def __init__(
+        self,
+        peft_config=None,
+        model_attribute: str = "model",
+    ):
+        super().__init__(
+            transform_fn=partial(self._apply_peft, peft_config=peft_config),
+            model_attribute=model_attribute,
+        )
+        self.peft_config = peft_config
+
+    def on_save_checkpoint(self, trainer, pl_module, checkpoint):
+        checkpoint["peft_applied"] = True
+        # Optionally store config for reference
+        if self.peft_config is not None:
+            checkpoint["peft_config"] = self.peft_config.to_dict()
+
+    def on_load_checkpoint(
+        self,
+        trainer: pl.Trainer,
+        pl_module: pl.LightningModule,
+        checkpoint: dict[str, Any],
+    ):
+        """Apply PEFT structure before loading weights."""
+        if checkpoint.get("peft_applied", False):
+            self._apply_peft(pl_module, peft_config=self.peft_config)
