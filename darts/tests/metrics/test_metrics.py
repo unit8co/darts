@@ -155,6 +155,21 @@ def metric_f1(y_true, y_pred):
     return sklearn.metrics.f1_score(y_true.flatten(), y_pred.flatten(), average="macro")
 
 
+def metric_autc(y_true, y_pred, n_tolerances=101, **kwargs):
+    """Reference implementation for AUTC metric."""
+    y_true = y_true[:, 0]  # univariate
+    y_pred = y_pred[:, 0]
+    y_range = np.max(y_true) - np.min(y_true)
+    if y_range == 0:
+        raise ValueError("Zero range")
+    abs_errors = np.abs(y_true - y_pred)
+    half_range = y_range / 2
+    normalized_errors = abs_errors / half_range
+    tolerances = np.linspace(0, 1, n_tolerances)
+    coverages = np.array([np.mean(normalized_errors <= tol) for tol in tolerances])
+    return np.trapezoid(coverages, tolerances)
+
+
 class TestMetrics:
     np.random.seed(42)
     pd_train = pd.Series(
@@ -254,6 +269,7 @@ class TestMetrics:
             (metrics.smape, False, {}),
             (metrics.ope, False, {}),
             (metrics.marre, False, {}),
+            (metrics.autc, False, {}),
             (metrics.r2_score, False, {}),
             (metrics.coefficient_of_variation, False, {}),
             (metrics.qr, True, {}),
@@ -1503,6 +1519,7 @@ class TestMetrics:
             (metrics.smape, metric_smape, {}, {}),
             (metrics.ope, metric_ope, {}, {}),
             (metrics.marre, metric_marre, {}, {}),
+            (metrics.autc, metric_autc, {}, {}),
             (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
             (metrics.coefficient_of_variation, metric_cov, {}, {}),
             (metrics.accuracy, metric_macc, {}, {}),

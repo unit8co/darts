@@ -22,6 +22,7 @@ from darts.metrics.utils import (
     _confusion_matrix,
     _get_error_scale,
     _get_quantile_intervals,
+    _get_tolerances_and_coverages,
     _get_values_or_raise,
     _get_wrapped_metric,
     _LabelReduction,
@@ -2412,6 +2413,136 @@ def coefficient_of_variation(
         * np.sqrt(np.nanmean((y_true - y_pred) ** 2, axis=TIME_AX))
         / np.nanmean(y_true, axis=TIME_AX)
     )
+
+
+@multi_ts_support
+@multivariate_support
+def autc(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    min_tolerance: float = 0.0,
+    max_tolerance: float = 1.0,
+    step: float = 0.01,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Area Under Tolerance Curve (AUTC).
+
+    AUTC measures the overall alignment between actual and predicted series across a range of tolerance levels.
+    For each tolerance level, it computes the fraction of points where the prediction is within ±X% of the actual
+    value.
+    The AUTC is the normalized area under this curve, providing a single score in [0, 1] where higher is better.
+
+    For the true series :math:`y` and predicted series :math:`\\hat{y}` of length :math:`T`, tolerance levels
+    :math:`\\tau \\in [0, 1]`, and half-range :math:`H = (\\max(y) - \\min(y)) / 2`:
+
+    .. math::
+
+        \\text{Coverage}(\\tau) = \\frac{1}{T} \\sum_{t=1}^{T} \\mathbb{1}\\left[\\frac{|y_t - \\hat{y}_t|}{H}
+        \\leq \\tau\\right]
+
+        \\text{AUTC} = \\int_0^1 \\text{Coverage}(\\tau) \\, d\\tau
+
+    At tolerance :math:`\\tau`, a prediction is within tolerance if the error is within :math:`\\pm\\tau` of the
+    actual value (as a fraction of half the range). For example, at 10% tolerance, the prediction must be within
+    ±10% of the half-range, i.e., within ±5% of the full range.
+
+    If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
+    specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
+    (over all samples, or, if given, the quantile prediction itself).
+
+    Parameters
+    ----------
+    actual_series
+        The (sequence of) actual series.
+    pred_series
+        The (sequence of) predicted series.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    min_tolerance
+        The minimum tolerance level as a fraction of the series range. Default is 0.0 (0%).
+    max_tolerance
+        The maximum tolerance level as a fraction of the series range. Default is 1.0 (100%).
+    step
+        The step size between tolerance levels. Default is 0.01 (1%).
+        For example, with defaults, tolerances are [0.0, 0.01, 0.02, ..., 1.0].
+    q
+        Optionally, the quantile (float [0, 1]) or list of quantiles of interest to compute the metric on.
+    component_reduction
+        Optionally, a function to aggregate the metrics over the component/column axis. It must reduce a `np.ndarray`
+        of shape `(t, c)` to a `np.ndarray` of shape `(t,)`. The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `1` corresponding to the
+        component axis. If `None`, will return a metric per component.
+    series_reduction
+        Optionally, a function to aggregate the metrics over multiple series. It must reduce a `np.ndarray`
+        of shape `(s, t, c)` to a `np.ndarray` of shape `(t, c)` The function takes as input a ``np.ndarray`` and a
+        parameter named `axis`, and returns the reduced array. The `axis` receives value `0` corresponding to the
+        series axis. For example with `np.nanmean`, will return the average over all series metrics. If `None`, will
+        return a metric per component.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+        passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress.
+
+    Raises
+    ------
+    ValueError
+        If :math:`\\max_t{y_t} = \\min_t{y_t}` (constant series with zero range).
+
+    Returns
+    -------
+    float
+        A single metric score in [0, 1] (when `len(q) <= 1`) for:
+
+        - a single univariate series.
+        - a single multivariate series with `component_reduction`.
+        - a sequence (list) of uni/multivariate series with `series_reduction` and `component_reduction`.
+    np.ndarray
+        A numpy array of metric scores. The array has shape (n components * n quantiles,) without component reduction,
+        and shape (n quantiles,) with component reduction and `len(q) > 1`.
+        For:
+
+        - the same input arguments that result in the `float` return case from above but with `len(q) > 1`.
+        - a single multivariate series and at least `component_reduction=None`.
+        - a sequence of uni/multivariate series including `series_reduction` and `component_reduction=None`.
+    list[float]
+        Same as for type `float` but for a sequence of series.
+    list[np.ndarray]
+        Same as for type `np.ndarray` but for a sequence of series.
+
+    Examples
+    --------
+    >>> from darts import TimeSeries
+    >>> from darts.metrics import autc
+    >>> actual = TimeSeries.from_values([1.0, 2.0, 3.0, 4.0, 5.0])
+    >>> pred = TimeSeries.from_values([1.1, 2.2, 2.9, 4.1, 5.0])
+    >>> autc(actual, pred)  # Returns a score close to 1 (good fit)
+
+    See Also
+    --------
+    :func:`~darts.utils.statistics.plot_tolerance_curve` : Plot the tolerance curve for visual inspection.
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+
+    tolerances, coverages = _get_tolerances_and_coverages(
+        y_true, y_pred, min_tolerance, max_tolerance, step
+    )
+
+    return np.trapezoid(coverages, tolerances, axis=0)
 
 
 # Dynamic Time Warping

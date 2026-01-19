@@ -1090,3 +1090,157 @@ def plot_residuals_analysis(
     ax3.set_ylabel("ACF value")
     ax3.set_xlabel("lag")
     ax3.set_title("ACF")
+
+
+def plot_tolerance_curve(
+    actual_series: TimeSeries,
+    pred_series: TimeSeries,
+    intersect: bool = True,
+    min_tolerance: float = 0.0,
+    max_tolerance: float = 1.0,
+    step: float = 0.01,
+    q: Optional[float] = None,
+    fig_size: tuple[int, int] = (10, 6),
+    axis: Optional[plt.axis] = None,
+    default_formatting: bool = True,
+) -> None:
+    """
+    Plots the Tolerance Curve for evaluating forecast alignment.
+
+    The tolerance curve shows, for each tolerance level (as a percentage of the actual series range),
+    what fraction of prediction points fall within that tolerance.
+
+    For multivariate series, one curve is plotted per component.
+
+    The Area Under Tolerance Curve (AUTC) can be computed using :func:`~darts.metrics.metrics.autc`.
+
+    Parameters
+    ----------
+    actual_series
+        The actual (ground truth) TimeSeries (univariate or multivariate).
+    pred_series
+        The predicted TimeSeries (univariate or multivariate).
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `True`
+        will consider the values only over their common time interval (intersection in time).
+    min_tolerance
+        The minimum tolerance level as a fraction of the series range. Default is 0.0 (0%).
+    max_tolerance
+        The maximum tolerance level as a fraction of the series range. Default is 1.0 (100%).
+    step
+        The step size between tolerance levels. Default is 0.01 (1%).
+        For example, with defaults, tolerances are [0.0, 0.01, 0.02, ..., 1.0].
+    q
+        Optionally, for stochastic predictions (num_samples > 1), the quantile to use for evaluation.
+        If `None` and predictions are stochastic, uses the median (0.5 quantile).
+    fig_size
+        The size of the figure to be displayed.
+    axis
+        Optionally, an axis object to plot on.
+    default_formatting
+        Whether to use the darts default formatting scheme.
+
+    Raises
+    ------
+    ValueError
+        If the actual series has zero range (max == min).
+
+    Examples
+    --------
+    >>> from darts import TimeSeries
+    >>> from darts.utils.statistics import plot_tolerance_curve
+    >>> actual = TimeSeries.from_values([1.0, 2.0, 3.0, 4.0, 5.0])
+    >>> pred = TimeSeries.from_values([1.1, 2.2, 2.9, 4.1, 5.0])
+    >>> plot_tolerance_curve(actual, pred)
+
+    See Also
+    --------
+    :func:`~darts.metrics.metrics.autc` : Compute the Area Under Tolerance Curve as a single score.
+    """
+    from darts.metrics.utils import _get_tolerances_and_coverages
+
+    raise_if(
+        actual_series.n_components != pred_series.n_components,
+        "actual_series and pred_series must have the same number of components.",
+    )
+    raise_if(
+        not (0.0 <= min_tolerance < max_tolerance <= 1.0),
+        "min_tolerance must be >= 0, max_tolerance must be <= 1, and min_tolerance < max_tolerance.",
+    )
+    raise_if(
+        step <= 0 or step > (max_tolerance - min_tolerance),
+        "step must be positive and not larger than (max_tolerance - min_tolerance).",
+    )
+    raise_if(
+        q is not None and not (0 <= q <= 1),
+        "q must be between 0 and 1.",
+    )
+
+    # get intersecting values
+    if actual_series.has_same_time_as(pred_series) or not intersect:
+        y_true = actual_series.all_values(copy=False)
+        y_pred = pred_series.all_values(copy=False)
+    else:
+        y_true = actual_series.slice_intersect_values(pred_series, copy=False)
+        y_pred = pred_series.slice_intersect_values(actual_series, copy=False)
+
+    raise_if(
+        len(y_true) == 0,
+        "The actual and predicted series must have at least one overlapping time step.",
+    )
+
+    # handle stochastic predictions
+    if y_pred.shape[2] > 1:
+        q = 0.5 if q is None else q
+        y_pred = np.quantile(y_pred, q, axis=2, keepdims=True)
+
+    # squeeze to 2D (time, components)
+    y_true = y_true.squeeze(axis=2)
+    y_pred = y_pred.squeeze(axis=2)
+
+    # compute tolerance curve
+    tolerances, coverages = _get_tolerances_and_coverages(
+        y_true, y_pred, min_tolerance, max_tolerance, step
+    )
+
+    n_components = coverages.shape[1]
+    is_univariate = n_components == 1
+
+    if axis is None:
+        plt.figure(figsize=fig_size)
+        axis = plt
+
+    if is_univariate:
+        coverages = coverages.squeeze(axis=1)
+        auc = np.trapezoid(coverages, tolerances)
+
+        color = "#003DFD" if default_formatting else None
+        axis.plot(tolerances * 100, coverages * 100, color=color, linewidth=2)
+        axis.fill_between(
+            tolerances * 100,
+            coverages * 100,
+            alpha=0.25 if default_formatting else None,
+            color=color,
+        )
+        title = f"Tolerance Curve (AUTC = {auc:.3f})"
+    else:
+        component_names = actual_series.components
+        for i in range(n_components):
+            comp_coverages = coverages[:, i]
+            auc = np.trapezoid(comp_coverages, tolerances)
+            label = f"{component_names[i]} (AUTC = {auc:.3f})"
+            axis.plot(tolerances * 100, comp_coverages * 100, linewidth=2, label=label)
+
+        axis.legend()
+        title = "Tolerance Curves"
+
+    # add reference line for perfect predictions
+    axis.axhline(y=100, color="gray", linestyle="--", alpha=0.5, linewidth=1)
+
+    if default_formatting:
+        axis.set_xlabel("Tolerance (% of range)")
+        axis.set_ylabel("Coverage (%)")
+        axis.set_title(title)
+        axis.set_xlim(0, 100)
+        axis.set_ylim(0, 105)
+        axis.grid(True, alpha=0.3)

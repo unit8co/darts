@@ -1034,3 +1034,57 @@ def _compute_score(
         # micro f1 score: score_func(sum(x))
         scores = scores.reshape((-1, 1))
     return scores
+
+
+def _get_tolerances_and_coverages(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    min_tolerance: float,
+    max_tolerance: float,
+    step: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Computes tolerance levels and per-component coverages for AUTC computation.
+
+    Parameters
+    ----------
+    y_true
+        The actual values as a numpy array.
+    y_pred
+        The predicted values as a numpy array.
+    min_tolerance
+        The minimum tolerance level as a fraction of the series range.
+    max_tolerance
+        The maximum tolerance level as a fraction of the series range.
+    step
+        The step size between tolerance levels.
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        - tolerances: array of tolerance levels
+        - coverages: array of coverages with shape (n_tolerances, ...) preserving input dimensions except time
+    """
+    # range of actual values (max - min) for each component
+    y_range = np.nanmax(y_true, axis=TIME_AX) - np.nanmin(y_true, axis=TIME_AX)
+
+    # handle case where range is zero (constant series)
+    if np.any(y_range == 0):
+        raise ValueError(
+            "The range of actual values (max - min) must be strictly positive for all "
+            "components to compute the AUTC. Found zero range for at least one component."
+        )
+
+    # compute absolute errors normalized by half the range
+    abs_errors = np.abs(y_true - y_pred)
+    half_range = y_range / 2
+    normalized_errors = abs_errors / half_range
+
+    # get tolerance levels
+    tolerances = np.arange(min_tolerance, max_tolerance + step, step)
+
+    # get coverage for each tolerance level (fraction of points within tolerance)
+    coverages = np.array([
+        np.nanmean(normalized_errors <= tol, axis=TIME_AX) for tol in tolerances
+    ])
+
+    return tolerances, coverages
