@@ -199,6 +199,27 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
             return self.model.model
         return None
 
+    @internal_model.setter
+    def internal_model(self, model: nn.Module):
+        """
+        Sets the underlying PyTorch model (nn.Module).
+        This allows replacing the internal model, which can be useful for advanced usage like loading PEFT adapters.
+
+        Parameters
+        ----------
+        model
+            The new PyTorch nn.Module to set as the internal model.
+        """
+        if hasattr(self, "model"):
+            self.model.model = model
+        else:
+            raise_log(
+                AttributeError(
+                    "The internal model cannot be set because the outer model is not initialized yet."
+                ),
+                logger,
+            )
+
 
 class FoundationPLModule(PLForecastingModule):
     def __init__(self, **kwargs):
@@ -211,10 +232,30 @@ class ModelTransformCallback(Callback):
         self,
         transform_fn: Callable[[nn.Module], nn.Module],
         model_attribute: str = "model",
+        verbose: bool = False,
     ):
+        """
+        A PyTorch Lightning callback that applies a transformation function to an internal model
+        within a LightningModule.
+
+        This is useful for modifying model architectures (e.g., applying PEFT or freezing layers)
+        just before the training starts, while ensuring the transformation is correctly handled
+        during checkpoint saving and loading.
+
+        Parameters
+        ----------
+        transform_fn
+            A function that takes an ``nn.Module`` and returns a transformed ``nn.Module``.
+        model_attribute
+            The attribute name of the model within the LightningModule. Default: ``"model"``.
+        verbose
+            Whether to log information about the model transformation, such as the number of
+            trainable parameters. Default: ``False``.
+        """
         super().__init__()
         self.transform_fn = transform_fn
         self.model_attribute = model_attribute
+        self.verbose = verbose
         self._transformed = False
 
     def _get_inner_model(self, pl_module: pl.LightningModule) -> nn.Module:
@@ -232,15 +273,15 @@ class ModelTransformCallback(Callback):
             transformed_model = self.transform_fn(inner_model)
             self._set_inner_model(pl_module, transformed_model)
             self._transformed = True
-
-            # Log trainable parameters
-            trainable = sum(
-                p.numel() for p in pl_module.parameters() if p.requires_grad
-            )
-            total = sum(p.numel() for p in pl_module.parameters())
-            print(
-                f"Model transformed. Trainable: {trainable:,}/{total:,} ({100 * trainable / total:.2f}%)"
-            )
+            if self.verbose:
+                # Log trainable parameters
+                trainable = sum(
+                    p.numel() for p in pl_module.parameters() if p.requires_grad
+                )
+                total = sum(p.numel() for p in pl_module.parameters())
+                logger.info(
+                    f"Model transformed. Trainable: {trainable:,}/{total:,} ({100 * trainable / total:.2f}%)"
+                )
 
     def on_save_checkpoint(
         self,
@@ -292,7 +333,24 @@ class LayerFreezeCallback(ModelTransformCallback):
         freeze_patterns: list[str],
         unfreeze_patterns: list[str] = None,
         model_attribute: str = "model",
+        verbose: bool = False,
     ):
+        """
+        A callback to freeze or unfreeze specific layers of a model based on name patterns.
+
+        Parameters
+        ----------
+        freeze_patterns
+            A list of strings. Parameters whose names start with any of these patterns will be frozen
+            (``requires_grad=False``).
+        unfreeze_patterns
+            A list of strings. Parameters whose names start with any of these patterns will be unfrozen
+            (``requires_grad=True``). This is applied after ``freeze_patterns``. Default: ``None``.
+        model_attribute
+            The attribute name of the model within the LightningModule. Default: ``"model"``.
+        verbose
+            Whether to log the trainable parameter count after freezing. Default: ``False``.
+        """
         unfreeze_patterns = unfreeze_patterns or []
 
         super().__init__(
@@ -302,6 +360,7 @@ class LayerFreezeCallback(ModelTransformCallback):
                 unfreeze_patterns=unfreeze_patterns,
             ),
             model_attribute=model_attribute,
+            verbose=verbose,
         )
 
 
@@ -321,10 +380,27 @@ class PeftCallback(ModelTransformCallback):
         self,
         peft_config=None,
         model_attribute: str = "model",
+        verbose: bool = False,
     ):
+        """
+        A callback to apply Parameter-Efficient Fine-Tuning (PEFT) to a model using the ``peft`` library.
+
+        It wraps the internal model with a PEFT adapter (e.g., LoRA) and manages the merging of
+        weights during checkpointing so that the saved state can be loaded as a standard model.
+
+        Parameters
+        ----------
+        peft_config
+            A PEFT configuration object (e.g., ``LoraConfig``) from the ``peft`` library.
+        model_attribute
+            The attribute name of the model within the LightningModule. Default: ``"model"``.
+        verbose
+            Whether to log the trainable parameter count after applying PEFT. Default: ``False``.
+        """
         super().__init__(
             transform_fn=partial(self._apply_peft, peft_config=peft_config),
             model_attribute=model_attribute,
+            verbose=verbose,
         )
         self.peft_config = peft_config
 
@@ -339,6 +415,7 @@ class PeftCallback(ModelTransformCallback):
 
         if isinstance(peft_model, PeftModel):
             # Merge adapters into the base model weights
+            # TODO: This might be inefficient for large models, think about a better way
             model_copy = deepcopy(peft_model)
             setattr(pl_module, self.model_attribute, peft_model.merge_and_unload())
             try:
@@ -356,24 +433,9 @@ class PeftCallback(ModelTransformCallback):
                     .items()
                 }
 
-                # # Update the checkpoint
+                # Update the checkpoint
                 checkpoint["state_dict"] = new_state_dict
-
-                # Remove "peft_applied" so that on_load_checkpoint() does not try to re-wrap the model
-                # This allows loading the model as a regular (non-PEFT) model
-                checkpoint.pop("peft_applied", None)
-                checkpoint.pop("peft_config", None)
 
             finally:
                 # Unmerge adapters to keep the current model in PEFT mode
                 setattr(pl_module, self.model_attribute, model_copy)
-
-    def on_load_checkpoint(
-        self,
-        trainer: pl.Trainer,
-        pl_module: pl.LightningModule,
-        checkpoint: dict[str, Any],
-    ):
-        """Apply PEFT structure before loading weights."""
-        if checkpoint.get("peft_applied", False):
-            self._apply_peft(pl_module, peft_config=self.peft_config)
