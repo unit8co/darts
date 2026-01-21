@@ -5,6 +5,58 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "darts"
+version = "0.40.0"
+description = "A python library for easy manipulation and forecasting of time series."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache License 2.0"}
+keywords = ["time series", "forecasting"]
+maintainers = [
+    {name = "Unit8 SA", email = "darts@unit8.co"}
+]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "holidays>=0.11.1",
+    "joblib>=0.16.0",
+    "matplotlib>=3.3.0",
+    "narwhals>=1.25.1",
+    "nfoursid>=1.0.0",
+    "numba>=0.59.0",
+    "numpy>=1.19.0",
+    "pandas>=1.0.5",
+    "pyod>=2.0.0",
+    "requests>=2.22.0",
+    "scikit-learn>=1.6.0,<1.8.0",
+    "scipy>=1.3.2",
+    "shap>=0.44.0",
+    "statsmodels>=0.14.0",
+    "tqdm>=4.60.0",
+    "typing-extensions>=4.15.0",
+    "xarray>=0.17.0",
+]
+
+[project.urls]
+Homepage = "https://unit8co.github.io/darts/"
+Documentation = "https://unit8co.github.io/darts/"
+Repository = "https://github.com/unit8co/darts"
+"Bug Tracker" = "https://github.com/unit8co/darts/issues"
 
 [tool.pytest.ini_options]
 addopts = [
@@ -52,3 +104,63 @@ max-complexity = 10
 
 [tool.ruff.lint.pycodestyle]
 max-line-length = 120 # E501 reports lines that exceed the length of 100.
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "pytest-cov>=7.0.0",
+    "testfixtures>=8.3.0",
+]
+notorch = [
+    "catboost>=1.0.6",
+    "lightgbm>=3.2.0",
+    "prophet>=1.1.1",
+    "statsforecast>=1.4",
+    "xgboost>=2.1.4",
+]
+optional = [
+    "onnx>=1.20.1",
+    "onnxruntime>=1.23.2",
+    "optuna>=4.7.0",
+    "optuna-integration[pytorch-lightning]>=4.7.0",
+    "polars>=1.37.1",
+    "pydantic>=2.12.5",
+    "ray>=2.53.0",
+]
+release = [
+    "bump2version==1.0.1",
+    "docutils==0.21.2",
+    "ipykernel==7.1.0",
+    "ipython>=8.0.0,<9.0.0",
+    "ipython-genutils==0.2.0",
+    "ipywidgets==8.1.8",
+    "jinja2==3.1.6",
+    "jupyterlab==4.4.10",
+    "lxml-html-clean==0.4.3",
+    "m2r2==0.3.4",
+    "nbsphinx==0.9.7",
+    "numpydoc==1.9.0",
+    "papermill==2.6.0",
+    "pydata-sphinx-theme==0.16.1",
+    "recommonmark==0.7.1",
+    "sphinx==8.1.3",
+    "sphinx-autodoc-typehints==3.0.1",
+    "sphinx-copybutton==0.5.2",
+    "sphinx-design==0.6.1",
+    "tenacity==9.1.2",
+    "twine==6.2.0",
+]
+torch = [
+    "huggingface-hub>=0.35.3",
+    "pytorch-lightning>=2.0.0,<2.5.3",
+    "safetensors>=0.6.2",
+    "tensorboardx>=2.1",
+    "torch>=2.0.0",
+]
+dev-all = [
+    {include-group = "dev"},
+    {include-group = "notorch"},
+    {include-group = "optional"},
+    {include-group = "torch"},
+    {include-group = "release"},
+]
