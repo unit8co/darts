@@ -139,7 +139,8 @@ max-line-length = 88
 
 [dependency-groups]
 # Developer-only dependency groups (not accessible via pip)
-# For uv users: uv sync --group dev-all --extra torch
+# For uv users: uv sync --group dev-all (includes all extras)
+# For CI: uv sync --group dev-all --extra torch-cpu (uses CPU-only PyTorch)
 dev = [
     "pre-commit>=4.5.1",
     "pytest-cov>=7.0.0",
@@ -181,4 +182,5 @@ dev-all = [
     {include-group = "dev"},
     {include-group = "optional"},
     {include-group = "release"},
+    "darts[all]",
 ]
