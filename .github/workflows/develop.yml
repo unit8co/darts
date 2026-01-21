@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+      - github_action_test  # TEMPORARY: for testing uv migration, remove before merging
 
 jobs:
   lint:
@@ -17,14 +18,20 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.26"
+          enable-cache: true
+
       - name: "Install Dev Dependencies"
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements/dev.txt
+          # Testing against latest compatible versions (no --locked flag)
+          uv sync --group dev
 
       - name: "Lint"
         run: |
-          pre-commit run --all-files
+          uv run pre-commit run --all-files
 
 
   tests:
@@ -44,40 +51,27 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # use `uv` to retrieve the latest dependency versions
-      - name: "Compile Dependency Versions"
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
-
-      - name: "Cache python environment"
-        uses: actions/cache@v4
-        id: pythonenv-cache
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@v7
         with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
-
-      - name: "Setup Pip"
-        run: |
-          python -m pip install --upgrade pip
+          version: "0.9.26"
+          enable-cache: true
 
       - name: "Install Dependencies"
         run: |
-          # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          # Testing against latest compatible versions (no --locked flag)
+          # dev-all group includes everything: dev, optional, release, torch, notorch
+          # --extra torch-cpu uses CPU-only PyTorch from the configured index
+          uv sync --group dev-all --extra torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |
           chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Darts Locally"
-        run: |
-          pip install . --no-deps
-
       - name: "Run tests"
         run: |
-          pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
+          uv run pytest --durations=50 --cov=darts --cov-config=.coveragerc --cov-report=xml darts/tests
 
       - name: "Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
@@ -97,45 +91,29 @@ jobs:
         with:
           python-version: '3.11'
 
-      # use `uv` to retrieve the latest dependency versions
-      - name: "Compile Dependency Versions"
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
-
-      # only restore cache but do not upload
-      - name: "Restore cached python environment"
-        uses: actions/cache/restore@v4
-        id: pythonenv-cache
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@v7
         with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
+          version: "0.9.26"
+          enable-cache: true
 
       - name: "Install pandoc"
         run: |
           sudo apt-get install -y pandoc
 
-      - name: "Setup Pip"
-        run: |
-          python -m pip install --upgrade pip
-
       - name: "Install Dependencies"
         run: |
-          # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          # Testing against latest compatible versions (no --locked flag)
+          uv sync --group dev-all --extra torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |
           chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Darts Locally"
-        run: |
-          pip install . --no-deps
-
       - name: "Build docs"
         run: |
-          make --directory ./docs build-all-docs
+          uv run make --directory ./docs build-all-docs
 
   check-examples:
     runs-on: ubuntu-latest
@@ -151,39 +129,23 @@ jobs:
         with:
           python-version: '3.11'
 
-      # use `uv` to retrieve the latest dependency versions
-      - name: "Compile Dependency Versions"
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv pip compile requirements/dev-all.txt requirements/optional.txt > requirements-latest.txt
-
-      # only restore cache but do not upload
-      - name: "Restore cached python environment"
-        uses: actions/cache/restore@v4
-        id: pythonenv-cache
+      - name: "Install uv"
+        uses: astral-sh/setup-uv@v7
         with:
-          path: ${{ env.pythonLocation }}
-          key: ${{ runner.os }}-${{ env.pythonLocation }}-${{ hashFiles('requirements/*.txt', 'requirements-latest.txt') }}
-
-      - name: "Setup Pip"
-        run: |
-          python -m pip install --upgrade pip
+          version: "0.9.26"
+          enable-cache: true
 
       - name: "Install Dependencies"
         run: |
-          # install latest dependencies (potentially updating cached dependencies)
-          pip install -U -r requirements/torch-cpu.txt && pip install -U -r requirements/dev-all.txt -r requirements/optional.txt
+          # Testing against latest compatible versions (no --locked flag)
+          uv sync --group dev-all --extra torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |
           chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Install Darts Locally"
-        run: |
-          pip install . --no-deps
-
       - name: "Run example ${{matrix.example-name}}"
         working-directory: ./examples
         run: |
-          papermill ${{matrix.example-name}} ${{matrix.example-name}}
+          uv run papermill ${{matrix.example-name}} ${{matrix.example-name}}
