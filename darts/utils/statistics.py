@@ -1215,12 +1215,15 @@ def plot_tolerance_curve(
         auc = np.trapezoid(coverages, tolerances)
 
         color = "#003DFD" if default_formatting else None
-        axis.plot(tolerances * 100, coverages * 100, color=color, linewidth=2)
+        axis.step(
+            tolerances * 100, coverages * 100, where="post", color=color, linewidth=2
+        )
         axis.fill_between(
             tolerances * 100,
             coverages * 100,
             alpha=0.25 if default_formatting else None,
             color=color,
+            step="post",
         )
         title = f"Tolerance Curve (AUTC = {auc:.3f})"
     else:
@@ -1229,7 +1232,13 @@ def plot_tolerance_curve(
             comp_coverages = coverages[:, i]
             auc = np.trapezoid(comp_coverages, tolerances)
             label = f"{component_names[i]} (AUTC = {auc:.3f})"
-            axis.plot(tolerances * 100, comp_coverages * 100, linewidth=2, label=label)
+            axis.step(
+                tolerances * 100,
+                comp_coverages * 100,
+                where="post",
+                linewidth=2,
+                label=label,
+            )
 
         axis.legend()
         title = "Tolerance Curves"
