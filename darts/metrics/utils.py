@@ -1080,7 +1080,8 @@ def _get_tolerances_and_coverages(
     normalized_errors = abs_errors / half_range
 
     # get tolerance levels
-    tolerances = np.arange(min_tolerance, max_tolerance + step, step)
+    num_steps = int(round((max_tolerance - min_tolerance) / step)) + 1
+    tolerances = np.linspace(min_tolerance, max_tolerance, num_steps)
 
     # get coverage for each tolerance level (fraction of points within tolerance)
     coverages = np.array([
