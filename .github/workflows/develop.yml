@@ -4,8 +4,6 @@ on:
   pull_request:
     branches:
       - master
-      - github_action_test  # TEMPORARY: for testing uv migration, remove before merging
-
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -32,7 +30,6 @@ jobs:
       - name: "Lint"
         run: |
           uv run pre-commit run --all-files
-
 
   tests:
     runs-on: ${{ matrix.os }}

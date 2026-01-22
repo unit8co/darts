@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - github_action_test  # TEMPORARY: for testing uv migration, remove before merging
+      - uv  # TEMPORARY: for testing uv migration, remove before merging
 
 jobs:
   lint:
