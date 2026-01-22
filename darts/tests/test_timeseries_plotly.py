@@ -251,12 +251,13 @@ class TestTimeSeriesPlotly:
         assert len(fig.data) == expected_total_traces
 
         low_trace = fig.data[0]
-        high_trace = fig.data[1]
+        high_trace = fig.data[0]
+        low_trace = fig.data[1]
         central_trace = fig.data[2]
 
         # Check functional Plotly attributes
-        assert low_trace.showlegend is False
-        assert high_trace.fill == "tonexty"
+        assert high_trace.showlegend is False
+        assert low_trace.fill == "tonexty"
         assert central_trace.showlegend is not False
 
     @pytest.mark.parametrize("config", ["dt", "ri"])
