@@ -33,6 +33,12 @@ jobs:
         run: |
           uv run pre-commit run --all-files
 
+      - name: "Optimize cache for CI"
+        run: |
+          # Remove pre-built wheels but keep source-built wheels
+          # This reduces cache size while retaining expensive-to-rebuild packages
+          uv cache prune --ci
+
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
@@ -99,6 +105,12 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
+      - name: "Optimize cache for CI"
+        run: |
+          # Remove pre-built wheels but keep source-built wheels
+          # This reduces cache size while retaining expensive-to-rebuild packages
+          uv cache prune --ci
+
   check-examples:
     runs-on: ubuntu-latest
     strategy:
@@ -134,6 +146,12 @@ jobs:
         run: |
           uv run papermill ${{matrix.example-name}} ${{matrix.example-name}}
 
+      - name: "Optimize cache for CI"
+        run: |
+          # Remove pre-built wheels but keep source-built wheels
+          # This reduces cache size while retaining expensive-to-rebuild packages
+          uv cache prune --ci
+
   docs:
     runs-on: ubuntu-latest
     steps:
@@ -168,3 +186,9 @@ jobs:
       - name: "Build docs"
         run: |
           uv run make --directory ./docs build-all-docs
+
+      - name: "Optimize cache for CI"
+        run: |
+          # Remove pre-built wheels but keep source-built wheels
+          # This reduces cache size while retaining expensive-to-rebuild packages
+          uv cache prune --ci

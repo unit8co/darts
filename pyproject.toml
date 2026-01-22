@@ -11,7 +11,7 @@ version = "0.40.0"
 description = "A python library for easy manipulation and forecasting of time series."
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "Apache License 2.0"}
+license = "Apache-2.0"
 keywords = ["time series", "forecasting"]
 maintainers = [
     {name = "Unit8 SA", email = "darts@unit8.co"}
@@ -89,6 +89,15 @@ torch = { index = "pytorch-cpu", marker = "extra == 'torch-cpu'" }
 name = "pytorch-cpu"
 url = "https://download.pytorch.org/whl/cpu"
 explicit = true  # Only use this index for packages explicitly configured to use it
+
+[tool.setuptools]
+zip-safe = false
+
+[tool.setuptools.packages.find]
+exclude = ["examples*", "static*", "datasets*", "darts_logs*", "conda_recipe*", "from_df_times*"]
+
+[tool.setuptools.package-data]
+darts = ["py.typed"]
 
 [tool.pytest.ini_options]
 addopts = [
