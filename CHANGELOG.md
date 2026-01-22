@@ -13,7 +13,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Fixed**
 
-- Updated s(m)ape to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2983](https://github.com/unit8co/darts/issues/2983) by [eschibli](https://github.com/eschibli).
+- Updated s(m)ape to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2984](https://github.com/unit8co/darts/issues/2984) by [eschibli](https://github.com/eschibli).
 
 **Dependencies**
 

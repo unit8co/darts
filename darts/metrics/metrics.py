@@ -1822,7 +1822,7 @@ def sape(
     return np.divide(
         numerator,
         denominator,
-        out=np.zeros_like(numerator, dtype=float),
+        out=np.zeros_like(numerator, dtype=y_true.dtype),
         where=denominator != 0,
     )
 
