@@ -10,7 +10,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
-
+  - Implemented a new metric called `autc` (area under tolerance curve), which computes the fraction of points within tolerance bands across a range of tolerances (defined as % of target range), then computes the normalized AUC of that curve to get a [0, 1] score, along with helper function `plot_tolerance_curve` for visual inspection of the curves. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
 **Fixed**
 
 **Dependencies**
