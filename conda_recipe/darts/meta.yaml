@@ -1,4 +1,4 @@
-{% set pyproject = load_file_data('../../pyproject.toml') %}
+{% set pyproject = load_file_data('pyproject.toml', from_recipe_dir=False) %}
 {% set project = pyproject.get('project', {}) %}
 
 package:
@@ -6,8 +6,8 @@ package:
   version: {{ project.get('version', '0.40.0') }}
 
 source:
-  # root folder, not the package
-  path: "../../../darts"
+  # Project root directory (where pyproject.toml lives)
+  path: "../../"
 
 build:
   number: 0
