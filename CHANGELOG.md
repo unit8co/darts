@@ -19,7 +19,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Customizable with layout parameters (`title`, `width`, `height`, `template`) and trace styling via `**kwargs`
   - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
   - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
-  - Plotly remains an optional dependency and can be installed with `pip install 'darts[plotly]'` or `pip install plotly`
+  - Plotly remains an optional dependency and can be installed with `pip install plotly`
 
 **Fixed**
 

@@ -104,7 +104,6 @@ try:
     )
 except ImportError:
     PLOTLY_AVAILABLE = False
-    pass
 
 
 class _Option:
