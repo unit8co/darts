@@ -165,7 +165,7 @@ optional = [
     "ray>=2.53.0",
 ]
 release = [
-    "bump2version==1.0.1",
+    "bump-my-version>=1.2.5",
     "docutils==0.21.2",
     "ipykernel==7.1.0",
     "ipython>=8.0.0,<9.0.0",
@@ -193,3 +193,29 @@ dev-all = [
     {include-group = "release"},
     "darts[all]",
 ]
+
+[tool.bumpversion]
+current_version = "0.40.0"
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+serialize = ["{major}.{minor}.{patch}"]
+commit = true
+tag = true
+message = "Bump version: {current_version} → {new_version}"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "darts/__init__.py"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "conda_recipe/darts/meta.yaml"
+
+[[tool.bumpversion.files]]
+filename = "docs/source/conf.py"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'

@@ -38,41 +38,21 @@ jobs:
           # This reduces cache size while retaining expensive-to-rebuild packages
           uv cache prune --ci
 
-      - name: "Determine next version"
-        uses: hrzn/github-tag-action@master
-        id: bump_dry
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DRY_RUN: true
-          BUMP_TYPE: ${{ github.event.inputs.bump_type}}
-
-      - name: "Bump version"
-        run: |
-          uv run bump2version --new-version ${{ steps.bump_dry.outputs.new_tag }} patch
-
-      - name: "Commit new version"
-        uses: stefanzweifel/git-auto-commit-action@v4.1.6
+      - name: "Bump version, commit, and tag"
+        id: bump_version
+        uses: callowayproject/bump-my-version@v0.27.0
         with:
-          commit_message: Release ${{ steps.bump_dry.outputs.new_tag }}
-          branch: master
-          push_options: --force
-          commit_user_name: Unit8 Bot
-          commit_user_email: info@unit8.co
+          args: ${{ github.event.inputs.bump_type }}
+          github-token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
 
-      - name: "Publish new tag"
-        uses: hrzn/github-tag-action@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CUSTOM_TAG: ${{steps.bump_dry.outputs.new_tag}}
-
-      - name: "10. Create new release"
+      - name: "Create new release"
         id: create_release
         uses: actions/create-release@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.bump_dry.outputs.new_tag }}
-          release_name: Darts ${{steps.bump_dry.outputs.part}} ${{ steps.bump_dry.outputs.new_tag }}
+          tag_name: ${{ steps.bump_version.outputs.new_version }}
+          release_name: Darts ${{ github.event.inputs.bump_type }} ${{ steps.bump_version.outputs.new_version }}
           draft: false
           body_path: .github/RELEASE_TEMPLATE/release_body.md
 
@@ -80,16 +60,16 @@ jobs:
     needs: [release]
     runs-on: ubuntu-latest
     steps:
-      - name: "1. Clone repository"
+      - name: "Clone repository"
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history and tags
 
-      - name: "2. Determine current version"
-        uses: hrzn/github-tag-action@master
-        id: bump_dry
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DRY_RUN: true
-          BUMP_TYPE: ${{ github.event.inputs.bump_type}}
+      - name: "Get latest version tag"
+        id: get_version
+        run: |
+          VERSION=$(git describe --tags --abbrev=0)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
 
       - name: "Set up QEMU"
         uses: docker/setup-qemu-action@v3
@@ -107,7 +87,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: unit8/darts:${{ steps.bump_dry.outputs.tag }}, unit8/darts:latest
+          tags: unit8/darts:${{ steps.get_version.outputs.version }}, unit8/darts:latest
 
   deploy-docs:
     runs-on: ubuntu-latest
