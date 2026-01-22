@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - uv  # TEMPORARY: for testing uv migration, remove before merging
 
 jobs:
   lint:

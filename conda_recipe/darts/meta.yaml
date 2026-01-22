@@ -1,8 +1,9 @@
-{% set data = load_setup_py_data() %}
+{% set pyproject = load_file_data('../../pyproject.toml') %}
+{% set project = pyproject.get('project', {}) %}
 
 package:
-  name: "darts"
-  version: "0.40.0"
+  name: {{ project.get('name', 'darts') }}
+  version: {{ project.get('version', '0.40.0') }}
 
 source:
   # root folder, not the package
@@ -14,21 +15,25 @@ build:
 
 requirements:
   host:
-    - python
+    - python {{ project.get('requires-python', '>=3.10') }}
+    - pip
+    - setuptools >=57
+    - wheel
   run:
-  # note that pmdarima exists in the anaconda repo but is not supported so need to reinstall it through pip
-    - python
-  {% for req in data.get('install_requires', []) %}
+    - python {{ project.get('requires-python', '>=3.10') }}
+  {% for req in project.get('dependencies', []) %}
     - {{ req }}
   {% endfor %}
 
 about:
-  home: {{ data.get('url') }}
-  license: {{ data.get('license') }}
+  home: {{ project.get('urls', {}).get('Homepage', 'https://unit8co.github.io/darts/') }}
+  license: {{ project.get('license', 'Apache-2.0') }}
   license_family: APACHE
   license_file: LICENSE
-  summary: {{ data.get('description') }}
+  summary: {{ project.get('description', 'A python library for easy manipulation and forecasting of time series.') }}
 
 extra:
   recipe-maintainers:
-    - {{ data.get('author') }}
+    {% for maintainer in project.get('maintainers', []) %}
+    - {{ maintainer.get('name', 'Unit8 SA') }}
+    {% endfor %}
