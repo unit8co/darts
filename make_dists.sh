@@ -1,10 +1,13 @@
-python -m pip install --upgrade build
+#!/bin/bash
+# Build darts package using uv
+# Produces both source distribution (.tar.gz) and wheel (.whl) in dist/
 
-# build darts
-python -m build
+# Clean previous builds
+rm -rf dist/ darts.egg-info/
 
-# build darts, swapping the setup_darts.py files temporarily
-cp setup.py setup_darts.py
-cp setup_u8darts.py setup.py
-python -m build
-mv setup_darts.py setup.py
+# Build package (reads from pyproject.toml)
+uv build
+
+echo ""
+echo "Build complete! Packages created in dist/:"
+ls -lh dist/
