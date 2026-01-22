@@ -4,8 +4,13 @@ on:
   workflow_dispatch:
     inputs:
         bump_type:
-          description: "Bump type (#major, #minor, #patch)"
+          description: "Bump type"
           required: true
+          type: choice
+          options:
+            - patch
+            - minor
+            - major
 
 jobs:
   release:
