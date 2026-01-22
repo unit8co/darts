@@ -4641,7 +4641,7 @@ class TimeSeries:
             The maximum number of components to plot. If the series has more, only the first
             `max_nr_components` are plotted. Defaults to 10. Use -1 to plot all components.
         alpha
-            Opacity for the confidence interval fill. Defaults to 0.25. For deterministic series lines,
+            Opacity for the confidence interval fill. Defaults to None. For deterministic series lines,
             opacity can be passed via `kwargs`.
         color
             Set the line color(s). Can be a single color string (name or hex), or a sequence of
