@@ -2466,9 +2466,9 @@ def autc(
         For time series that are overlapping in time without having the same time index, setting `True`
         will consider the values only over their common time interval (intersection in time).
     min_tolerance
-        The minimum tolerance level as a fraction of the series range. Default is 0.0 (0%).
+        The minimum tolerance level as a fraction of the series half-range. Default is 0.0 (0%).
     max_tolerance
-        The maximum tolerance level as a fraction of the series range. Default is 1.0 (100%).
+        The maximum tolerance level as a fraction of the series half-range. Default is 1.0 (100%).
     step
         The step size between tolerance levels. Default is 0.01 (1%).
         For example, with defaults, tolerances are [0.0, 0.01, 0.02, ..., 1.0].

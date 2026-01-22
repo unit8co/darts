@@ -24,6 +24,7 @@ from statsmodels.tsa.stattools import (
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.metrics.utils import _get_tolerances_and_coverages
 from darts.utils.missing_values import fill_missing_values
 from darts.utils.utils import ModelMode, SeasonalityMode
 
@@ -1140,24 +1141,10 @@ def plot_tolerance_curve(
     default_formatting
         Whether to use the darts default formatting scheme.
 
-    Raises
-    ------
-    ValueError
-        If the actual series has zero range (max == min).
-
-    Examples
-    --------
-    >>> from darts import TimeSeries
-    >>> from darts.utils.statistics import plot_tolerance_curve
-    >>> actual = TimeSeries.from_values([1.0, 2.0, 3.0, 4.0, 5.0])
-    >>> pred = TimeSeries.from_values([1.1, 2.2, 2.9, 4.1, 5.0])
-    >>> plot_tolerance_curve(actual, pred)
-
     See Also
     --------
     :func:`~darts.metrics.metrics.autc` : Compute the Area Under Tolerance Curve as a single score.
     """
-    from darts.metrics.utils import _get_tolerances_and_coverages
 
     raise_if(
         actual_series.n_components != pred_series.n_components,
@@ -1207,8 +1194,7 @@ def plot_tolerance_curve(
     is_univariate = n_components == 1
 
     if axis is None:
-        plt.figure(figsize=fig_size)
-        axis = plt
+        _, axis = plt.subplots(figsize=fig_size)
 
     if is_univariate:
         coverages = coverages.squeeze(axis=1)
