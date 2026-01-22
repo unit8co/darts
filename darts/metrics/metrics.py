@@ -2518,18 +2518,19 @@ def autc(
     list[np.ndarray]
         Same as for type `np.ndarray` but for a sequence of series.
 
-    Examples
-    --------
-    >>> from darts import TimeSeries
-    >>> from darts.metrics import autc
-    >>> actual = TimeSeries.from_values([1.0, 2.0, 3.0, 4.0, 5.0])
-    >>> pred = TimeSeries.from_values([1.1, 2.2, 2.9, 4.1, 5.0])
-    >>> autc(actual, pred)  # Returns a score close to 1 (good fit)
-
     See Also
     --------
     :func:`~darts.utils.statistics.plot_tolerance_curve` : Plot the tolerance curve for visual inspection.
     """
+
+    if step <= 0 or step > (max_tolerance - min_tolerance):
+        raise_log(
+            ValueError(
+                "`step` must be positive and not larger than (max_tolerance - min_tolerance)."
+            ),
+            logger=logger,
+        )
+
     y_true, y_pred = _get_values_or_raise(
         actual_series,
         pred_series,
