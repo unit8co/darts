@@ -26,8 +26,8 @@ jobs:
 
       - name: "Install Dev Dependencies"
         run: |
-          # Use locked dependencies for reproducible builds
-          uv sync --group dev --locked
+          # Testing against latest compatible versions
+          uv sync --group dev
 
       - name: "Lint"
         run: |
@@ -58,19 +58,19 @@ jobs:
 
       - name: "Install Dependencies Flavour ${{ matrix.flavour }}"
         run: |
-          # Use locked dependencies for reproducible builds
+          # Testing against latest compatible versions
           if [ "${{ matrix.flavour }}" == "core" ]; then
             # Core: base dependencies + dev tools only
-            uv sync --group dev --locked
+            uv sync --group dev
           elif [ "${{ matrix.flavour }}" == "torch" ]; then
             # Torch: base deps + torch extra + CPU-only PyTorch + dev tools
-            uv sync --group dev --extra torch --extra torch-cpu --locked
+            uv sync --group dev --extra torch --extra torch-cpu
           elif [ "${{ matrix.flavour }}" == "notorch" ]; then
             # Notorch: base deps + notorch extra + dev tools
-            uv sync --group dev --extra notorch --locked
+            uv sync --group dev --extra notorch
           elif [ "${{ matrix.flavour }}" == "all" ]; then
             # All: dev-all group includes everything (dev, optional, release, torch, notorch)
-            uv sync --group dev-all --extra torch-cpu --locked
+            uv sync --group dev-all --extra torch-cpu
           fi
 
       - name: "Install libomp (for LightGBM)"
@@ -121,8 +121,8 @@ jobs:
 
       - name: "Install Dependencies"
         run: |
-          # Use locked dependencies for reproducible builds
-          uv sync --group dev-all --extra torch-cpu --locked
+          # Testing against latest compatible versions
+          uv sync --group dev-all --extra torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -157,8 +157,8 @@ jobs:
 
       - name: "Install Dependencies"
         run: |
-          # Use locked dependencies for reproducible builds
-          uv sync --group dev-all --extra torch-cpu --locked
+          # Testing against latest compatible versions
+          uv sync --group dev-all --extra torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |

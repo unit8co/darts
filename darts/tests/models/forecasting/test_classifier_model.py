@@ -668,7 +668,7 @@ class TestClassifierModel:
             assert str(err.value).endswith("Expected: [0 1 2], got [0. 2. 3.]")
 
         # Single label
-        if issubclass(clf, (SVC, GaussianProcessClassifier)) or isinstance(
+        if issubclass(clf, SVC | GaussianProcessClassifier) or isinstance(
             model.model, LogisticRegression
         ):
             # Model specific error message
@@ -1121,8 +1121,7 @@ class TestProbabilisticClassifierModels:
             SKLearnClassifierModel(model=NoPredictProbaModel(), lags=2)
             assert any([
                 message.startswith(
-                    "`model` has no method with name `predict_proba()`. "
-                    "Probabilistic forecasting support deactivated."
+                    "`model` has no method with name `predict_proba()`. Probabilistic forecasting support deactivated."
                 )
                 for message in caplog.messages
             ])
@@ -1308,7 +1307,9 @@ class TestProbabilisticClassifierModels:
             labels_c.append(labels_component2)
 
         for idx, (preds, probas, labels) in enumerate(zip(preds_c, probas_c, labels_c)):
-            pred_probas = pd.value_counts(preds.flatten(), normalize=True).to_dict()
+            pred_probas = (
+                pd.Series(preds.flatten()).value_counts(normalize=True).to_dict()
+            )
             pred_probas = [pred_probas[label] for label in labels]
             rmse = np.mean((pred_probas - probas) ** 2) ** 0.5
             assert rmse < model_rmse
