@@ -26,8 +26,8 @@ jobs:
 
       - name: "Install Dev Dependencies"
         run: |
-          # Testing against latest compatible versions (no --locked flag)
-          uv sync --group dev
+          # Use locked dependencies for reproducible builds
+          uv sync --group dev --locked
 
       - name: "Lint"
         run: |
@@ -59,10 +59,10 @@ jobs:
 
       - name: "Install Dependencies"
         run: |
-          # Testing against latest compatible versions (no --locked flag)
+          # Use locked dependencies for reproducible builds
           # dev-all group includes everything: dev, optional, release, torch, notorch
           # --extra torch-cpu uses CPU-only PyTorch from the configured index
-          uv sync --group dev-all --extra torch-cpu
+          uv sync --group dev-all --extra torch-cpu --locked
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -103,8 +103,8 @@ jobs:
 
       - name: "Install Dependencies"
         run: |
-          # Testing against latest compatible versions (no --locked flag)
-          uv sync --group dev-all --extra torch-cpu
+          # Use locked dependencies for reproducible builds
+          uv sync --group dev-all --extra torch-cpu --locked
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -137,8 +137,8 @@ jobs:
 
       - name: "Install Dependencies"
         run: |
-          # Testing against latest compatible versions (no --locked flag)
-          uv sync --group dev-all --extra torch-cpu
+          # Use locked dependencies for reproducible builds
+          uv sync --group dev-all --extra torch-cpu --locked
 
       - name: "Install libomp (for LightGBM)"
         run: |
