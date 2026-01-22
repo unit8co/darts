@@ -4676,7 +4676,7 @@ class TimeSeries:
             raise_log(
                 ImportError(
                     "Plotly is not installed. Please install it with: "
-                    "`pip install 'darts[plotly]'` or `pip install plotly`"
+                    "`pip install plotly`"
                 ),
                 logger,
             )
