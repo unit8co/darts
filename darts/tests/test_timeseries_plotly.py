@@ -76,19 +76,19 @@ class TestTimeSeriesPlotly:
 
             # Count Confidence Interval Components
             if series.is_stochastic:
-                # Low bounds (no fill, but hidden from legend)
-                low_bounds = [
+                # High bounds (no fill, hidden from legend)
+                high_bounds = [
                     t
                     for t in fig.data
                     if (t.fill is None or t.fill == "none") and t.showlegend is False
                 ]
-                # High bounds (fill='tonexty', hidden from legend)
-                high_bounds = [
+                # Low bounds (fill='tonexty', hidden from legend)
+                low_bounds = [
                     t for t in fig.data if t.fill == "tonexty" and t.showlegend is False
                 ]
 
-                assert len(low_bounds) == self.n_comps
                 assert len(high_bounds) == self.n_comps
+                assert len(low_bounds) == self.n_comps
 
     @pytest.mark.parametrize(
         "config",
@@ -249,7 +249,6 @@ class TestTimeSeriesPlotly:
         expected_total_traces = self.n_comps * 3
         assert len(fig.data) == expected_total_traces
 
-        low_trace = fig.data[0]
         high_trace = fig.data[0]
         low_trace = fig.data[1]
         central_trace = fig.data[2]
