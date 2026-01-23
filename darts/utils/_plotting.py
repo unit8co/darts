@@ -333,33 +333,36 @@ def plotly(
         Optionally, a Plotly `go.Figure` object to plot on. If provided, the series will be added to this
         figure. If None, a new figure will be created.
     central_quantile
-        The quantile (between 0 and 1) to plot as a "central" value if the series is probabilistic
-        (stochastic). Default is 0.5 (median). Can also be set to 'mean' to display the average instead.
+        The quantile (between 0 and 1) to plot as a "central" value, if the series is stochastic (i.e., if
+        it has multiple samples). This will be applied on each component separately (i.e., to display quantiles
+        of the components' marginal distributions). For instance, setting `central_quantile=0.5` will plot the
+        median of each component. `central_quantile` can also be set to 'mean'.
     low_quantile
-        The quantile to use for the lower bound of the plotted confidence interval.
-        Defaults to 0.05. If None, no confidence interval is displayed.
+        The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,
+        this is applied to each component separately (i.e., displaying marginal distributions). No confidence
+        interval is shown if `confidence_low_quantile` is None (default 0.05).
     high_quantile
-        The quantile to use for the upper bound of the plotted confidence interval.
-        Defaults to 0.95. If None, no confidence interval is displayed.
+        The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
+        this is applied to each component separately (i.e., displaying marginal distributions). No confidence
+        interval is shown if `high_quantile` is None (default 0.95).
     title
-        The title of the figure.
+        Optionally, a plot title.
     label
-        The label(s) for the traces. If a single string and the series is univariate, it is used as the
-        trace name. If a single string and the series is multivariate, it is used as a prefix for
-        component names. If a sequence, must match the number of components being plotted.
-        If empty string (default), component names are used.
+        Can either be a string or list of strings. If a string and the series only has a single component, it is
+        used as the label for that component. If a string and the series has multiple components, it is used as
+        a prefix for each component name. If a list of strings with length equal to the number of components in
+        the series, the labels will be mapped to the components in order.
     max_nr_components
-        The maximum number of components to plot. If the series has more, only the first
-        `max_nr_components` are plotted. Defaults to 10. Use -1 to plot all components.
+        The maximum number of components of a series to plot. -1 means all components will be plotted.
     alpha
-        Opacity for the confidence interval fill. Defaults to None. For deterministic series lines,
-        opacity can be passed via `kwargs`.
+        Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+        probabilistic series.
     color
         Set the line color(s). Can be a single color string (name or hex), or a sequence of
         strings (one per component). If a sequence, it must match the number of components.
         By default, colors are pulled from the active Plotly template.
     c
-        Alias for `color` parameter. Cannot be used simultaneously with `color`.
+        An alias for `color`.
     downsample_threshold
         The maximum number of total data points (time steps * components * traces) to plot.
         If exceeded, the series will be automatically downsampled using a constant step
