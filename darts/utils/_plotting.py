@@ -33,6 +33,7 @@ def prepare_plot_params(
     max_nr_components: int,
     color: Any,
     c: Any,
+    alpha: float | None,
 ) -> dict:
     """Shared input validation and parameter preparation for plot() and plotly()."""
 
@@ -103,6 +104,10 @@ def prepare_plot_params(
         )
     color = color if color is not None else c
 
+    # alpha preprocessing
+    alpha_ci = alpha if alpha is not None else 0.25
+    alpha_line = 1 if series.is_stochastic else alpha
+
     return {
         "n_components_to_plot": n_components_to_plot,
         "resolved_labels": resolved_labels,
@@ -110,6 +115,8 @@ def prepare_plot_params(
         "plot_ci": series.is_stochastic
         and low_quantile is not None
         and high_quantile is not None,
+        "alpha_ci": alpha_ci,
+        "alpha_line": alpha_line,
     }
 
 
@@ -186,8 +193,6 @@ def plot(
     matplotlib.axes.Axes
         Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.
     """
-    alpha_confidence_intvls = 0.25
-
     # parameter preparation
     prepared_params = prepare_plot_params(
         series,
@@ -198,11 +203,14 @@ def plot(
         max_nr_components,
         color,
         c,
+        alpha,
     )
     n_components_to_plot = prepared_params["n_components_to_plot"]
     resolved_labels = prepared_params["resolved_labels"]
     color = prepared_params["color"]
     plot_ci = prepared_params["plot_ci"]
+    alpha_ci = prepared_params["alpha_ci"]
+    alpha_line = prepared_params["alpha_line"]
 
     # separate color validation
     if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
@@ -219,7 +227,7 @@ def plot(
     else:
         custom_colors = False
 
-    kwargs["alpha"] = alpha
+    kwargs["alpha"] = alpha_line
     if not any(lw in kwargs for lw in ["lw", "linewidth"]):
         kwargs["lw"] = 2
 
@@ -246,8 +254,6 @@ def plot(
         kwargs["c"] = color[i] if custom_colors else color
 
         kwargs_central = deepcopy(kwargs)
-        if series.is_stochastic:
-            kwargs_central["alpha"] = 1
         # line plot
         if len(central_series) > 1:
             p = central_series.plot(
@@ -288,7 +294,7 @@ def plot(
                     low_series,
                     high_series,
                     color=color_used,
-                    alpha=(alpha if alpha is not None else alpha_confidence_intvls),
+                    alpha=alpha_ci,
                 )
             # filled line
             elif len(low_series) == 1:
@@ -427,11 +433,14 @@ def plotly(
         max_nr_components,
         color,
         c,
+        alpha,
     )
     n_components_to_plot = prepared_params["n_components_to_plot"]
     resolved_labels = prepared_params["resolved_labels"]
     color = prepared_params["color"]
     plot_ci = prepared_params["plot_ci"]
+    alpha_ci = prepared_params["alpha_ci"]
+    alpha_line = prepared_params["alpha_line"]
 
     # initialize figure
     fig = fig or go.Figure()
@@ -481,7 +490,6 @@ def plotly(
             f"To adjust this, increase `downsample_threshold` or set it to `-1` to disable downsampling."
         )
 
-    alpha_ci = alpha or 0.25
     time_idx = series.time_index[::step]
     is_single_point = len(time_idx) == 1
 
@@ -580,6 +588,7 @@ def plotly(
             "customdata": ci_data,
             "hovertemplate": hovertemplate,
             "error_y": error_y,
+            **({"opacity": alpha_line} if alpha_line is not None else {}),
         }
 
         fig.add_trace(
