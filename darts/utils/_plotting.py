@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 logger = get_logger(__name__)
 
 
-def prepare_plot_params(
+def _prepare_plot_params(
     series: TimeSeries,
     central_quantile: float | str,
     low_quantile: float | None,
@@ -136,6 +136,37 @@ def prepare_plot_params(
     }
 
 
+def _compute_central_series(
+    comp_ts: TimeSeries,
+    central_quantile: float | str,
+) -> TimeSeries:
+    """Compute the central TimeSeries for a component."""
+    if comp_ts.is_stochastic:
+        if central_quantile == "mean":
+            return comp_ts.mean()
+        else:
+            return comp_ts.quantile(q=central_quantile)
+    else:
+        return comp_ts
+
+
+def _compute_quantile_bounds(
+    comp_ts: TimeSeries,
+    low_quantile: float,
+    high_quantile: float,
+) -> tuple[TimeSeries, TimeSeries]:
+    """Compute the low and high quantile TimeSeries for confidence intervals.
+
+    Returns
+    -------
+    tuple[TimeSeries, TimeSeries]
+        A tuple of (low_ts, high_ts) representing the confidence interval bounds.
+    """
+    low_ts = comp_ts.quantile(q=low_quantile)
+    high_ts = comp_ts.quantile(q=high_quantile)
+    return low_ts, high_ts
+
+
 def plot(
     series: TimeSeries,
     new_plot: bool = False,
@@ -210,7 +241,7 @@ def plot(
         Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.
     """
     # parameter preparation
-    prepared_params = prepare_plot_params(
+    prepared_params = _prepare_plot_params(
         series,
         central_quantile,
         low_quantile,
@@ -244,14 +275,7 @@ def plot(
     for i, comp_name in enumerate(series.components[:n_components_to_plot]):
         comp_ts = series[comp_name]
 
-        if series.is_stochastic:
-            if central_quantile == "mean":
-                central_ts = comp_ts.mean()
-            else:
-                central_ts = comp_ts.quantile(q=central_quantile)
-        else:
-            central_ts = comp_ts
-
+        central_ts = _compute_central_series(comp_ts, central_quantile)
         central_series = central_ts.to_series()  # shape: (time,)
 
         kwargs["label"] = resolved_labels[i]
@@ -289,8 +313,11 @@ def plot(
 
         # Optionally show confidence intervals
         if plot_ci:
-            low_series = comp_ts.quantile(q=low_quantile).to_series()
-            high_series = comp_ts.quantile(q=high_quantile).to_series()
+            low_ts, high_ts = _compute_quantile_bounds(
+                comp_ts, low_quantile, high_quantile
+            )
+            low_series = low_ts.to_series()
+            high_series = high_ts.to_series()
             # filled area
             if len(low_series) > 1:
                 ax.fill_between(
@@ -428,7 +455,7 @@ def plotly(
         return f"rgba({int(r * 255)}, {int(g * 255)}, {int(b * 255)}, {alpha})"
 
     # parameter preparation
-    prepared_params = prepare_plot_params(
+    prepared_params = _prepare_plot_params(
         series,
         central_quantile,
         low_quantile,
@@ -459,7 +486,7 @@ def plotly(
         # single color string provided: wrap in list to allow infinite cycling
         resolved_colors = [color]
     elif isinstance(color, Sequence):
-        # sequence of strings provided (length already validated in prepare_plot_params)
+        # sequence of strings provided (length already validated in _prepare_plot_params)
         resolved_colors = list(color)
     else:
         raise_log(
@@ -490,16 +517,8 @@ def plotly(
         comp_ts = series[comp_name]
 
         # determine central series
-        if not series.is_stochastic:
-            central_values = comp_ts.values(copy=False).flatten()
-        else:
-            if central_quantile == "mean":
-                central_values = comp_ts.mean().values(copy=False).flatten()
-            else:
-                central_values = (
-                    comp_ts.quantile(central_quantile).values(copy=False).flatten()
-                )
-        central_values = central_values[::step]
+        central_ts = _compute_central_series(comp_ts, central_quantile)
+        central_values = central_ts.values(copy=False).flatten()[::step]
 
         # determine label & color
         curr_label = resolved_labels[i]
@@ -509,12 +528,11 @@ def plotly(
         ci_data = None
         error_y = None
         if plot_ci:
-            low_values = (
-                comp_ts.quantile(low_quantile).values(copy=False).flatten()[::step]
+            low_ts, high_ts = _compute_quantile_bounds(
+                comp_ts, low_quantile, high_quantile
             )
-            high_values = (
-                comp_ts.quantile(high_quantile).values(copy=False).flatten()[::step]
-            )
+            low_values = low_ts.values(copy=False).flatten()[::step]
+            high_values = high_ts.values(copy=False).flatten()[::step]
             fill_color = _modify_color_opacity(curr_color, alpha_ci)
 
             if not is_single_point:
