@@ -6120,6 +6120,378 @@ def slice_intersect(series: Sequence[TimeSeries]) -> list[TimeSeries]:
     return series_intersected
 
 
+def to_group_dataframe(
+    series: Sequence[TimeSeries],
+    group_cols: Optional[Union[list[str], str]] = None,
+    time_col: str = "time",
+    value_cols: Optional[Union[list[str], str]] = None,
+    static_cols: Optional[Union[list[str], str, bool]] = True,
+    metadata_cols: Optional[Union[list[str], str, bool]] = False,
+    backend: Literal["pandas", "polars"] = "pandas",
+) -> Union[pd.DataFrame, Any]:
+    """Create a long DataFrame from a list of ``TimeSeries``.
+
+    This function generates a "long" format DataFrame from a sequence of TimeSeries objects,
+    with optional static covariates and metadata added as columns. The output is compatible
+    with ``TimeSeries.from_group_dataframe()`` to recreate the original series.
+
+    Parameters
+    ----------
+    series : Sequence[TimeSeries]
+        Sequence of ``TimeSeries`` to convert to a long DataFrame.
+    group_cols : Optional[Union[list[str], str]]
+        Column name(s) to use for grouping. If None, a default "group_id" column will be created
+        with sequential integer values (0, 1, 2, ...). If provided as a string or list of strings,
+        the static covariates with these names will be used as grouping columns. The static covariates
+        must exist in all series and have the same values across all time steps within each series.
+    time_col : str
+        Column name for the time index. Default is "time".
+    value_cols : Optional[Union[list[str], str]]
+        Column name(s) for the values. If None, uses the component names from the first series.
+        If provided, must match the number of components in the series.
+    static_cols : Optional[Union[list[str], str, bool]]
+        Static covariate columns to include. If True (default), includes all static covariates
+        (except those used in `group_cols`). If False or None, excludes all static covariates.
+        If a string or list of strings, includes only the specified static covariates.
+    metadata_cols : Optional[Union[list[str], str, bool]]
+        Metadata columns to include. If True, includes all metadata. If False or None (default),
+        excludes all metadata. If a string or list of strings, includes only the specified metadata keys.
+    backend : Literal["pandas", "polars"]
+        The backend to use for the output DataFrame. Default is "pandas". If "polars", requires
+        the polars library to be installed.
+
+    Returns
+    -------
+    Union[pd.DataFrame, polars.DataFrame]
+        A long DataFrame with columns for time, group identifiers, values, and optionally
+        static covariates and metadata.
+
+    Raises
+    ------
+    ValueError
+        If the series have inconsistent structures, or if specified columns don't exist.
+    ImportError
+        If backend is "polars" but polars is not installed.
+
+    Examples
+    --------
+    >>> import pandas as pd
+    >>> from darts import TimeSeries
+    >>> from darts.utils.utils import generate_index
+    >>>
+    >>> # create two series with static covariates
+    >>> df_1 = pd.DataFrame({
+    >>>     "vals": range(3),
+    >>>     "time": generate_index("2020-01-01", length=3, freq="D")}
+    >>> )
+    >>> ts1 = TimeSeries.from_dataframe(
+    >>>     df_1,
+    >>>     time_col="time",
+    >>>     static_covariates=pd.Series([0], index=["ID"])
+    >>> )
+    >>>
+    >>> df_2 = pd.DataFrame({
+    >>>     "vals": range(3, 6),
+    >>>     "time": generate_index("2020-01-01", length=3, freq="D")}
+    >>> )
+    >>> ts2 = TimeSeries.from_dataframe(
+    >>>     df_2,
+    >>>     time_col="time",
+    >>>     static_covariates=pd.Series([1], index=["ID"])
+    >>> )
+    >>>
+    >>> # convert to long DataFrame
+    >>> df_long = to_group_dataframe(
+    >>>     [ts1, ts2],
+    >>>     group_cols="ID",
+    >>>     time_col="time"
+    >>> )
+    >>> # recreate the series
+    >>> series_recreated = TimeSeries.from_group_dataframe(
+    >>>     df_long,
+    >>>     group_cols="ID",
+    >>>     time_col="time"
+    >>> )
+    """
+    if not series:
+        raise_log(ValueError("The series sequence cannot be empty."), logger)
+
+    if backend == "polars":
+        try:
+            import polars as pl
+        except ImportError:
+            raise_log(
+                ImportError(
+                    "The 'polars' backend requires the polars library. "
+                    "Install it with: pip install polars"
+                ),
+                logger,
+            )
+    elif backend != "pandas":
+        raise_log(
+            ValueError(f"Invalid backend '{backend}'. Must be 'pandas' or 'polars'."),
+            logger,
+        )
+
+    # Validate that all series have the same structure
+    n_components = series[0].n_components
+    component_names = series[0].components
+    n_samples = series[0].n_samples
+
+    for idx, s in enumerate(series[1:], 1):
+        if s.n_components != n_components:
+            raise_log(
+                ValueError(
+                    f"All series must have the same number of components. "
+                    f"Series 0 has {n_components} components, but series {idx} has {s.n_components}."
+                ),
+                logger,
+            )
+        if not s.components.equals(component_names):
+            raise_log(
+                ValueError(
+                    f"All series must have the same component names. "
+                    f"Series 0 has components {component_names.tolist()}, "
+                    f"but series {idx} has {s.components.tolist()}."
+                ),
+                logger,
+            )
+        if s.n_samples != n_samples:
+            raise_log(
+                ValueError(
+                    f"All series must have the same number of samples. "
+                    f"Series 0 has {n_samples} samples, but series {idx} has {s.n_samples}."
+                ),
+                logger,
+            )
+
+    # Only support deterministic series (n_samples == 1)
+    if n_samples != 1:
+        raise_log(
+            ValueError(
+                f"Only deterministic series (with n_samples=1) are supported. "
+                f"The provided series have n_samples={n_samples}."
+            ),
+            logger,
+        )
+
+    # Determine value column names
+    if value_cols is None:
+        value_col_names = component_names.tolist()
+    elif isinstance(value_cols, str):
+        value_col_names = [value_cols]
+        if len(value_col_names) != n_components:
+            raise_log(
+                ValueError(
+                    f"The number of value_cols ({len(value_col_names)}) must match "
+                    f"the number of components ({n_components})."
+                ),
+                logger,
+            )
+    else:
+        value_col_names = list(value_cols)
+        if len(value_col_names) != n_components:
+            raise_log(
+                ValueError(
+                    f"The number of value_cols ({len(value_col_names)}) must match "
+                    f"the number of components ({n_components})."
+                ),
+                logger,
+            )
+
+    # Process static covariates columns
+    static_col_names = []
+    if static_cols is True:
+        # Include all static covariates
+        if series[0].static_covariates is not None:
+            static_col_names = series[0].static_covariates.columns.tolist()
+    elif static_cols:
+        # Include specified static covariates
+        if isinstance(static_cols, str):
+            static_col_names = [static_cols]
+        else:
+            static_col_names = list(static_cols)
+
+        # Validate that the specified static covariates exist
+        if series[0].static_covariates is None:
+            raise_log(
+                ValueError(
+                    f"Static covariates {static_col_names} were requested, "
+                    f"but the first series has no static covariates."
+                ),
+                logger,
+            )
+        available_static = series[0].static_covariates.columns.tolist()
+        missing = set(static_col_names) - set(available_static)
+        if missing:
+            raise_log(
+                ValueError(
+                    f"Static covariates {list(missing)} not found in series. "
+                    f"Available: {available_static}."
+                ),
+                logger,
+            )
+
+    # Process metadata columns
+    metadata_col_names = []
+    if metadata_cols is True:
+        # Include all metadata
+        if series[0].metadata is not None:
+            metadata_col_names = list(series[0].metadata.keys())
+    elif metadata_cols:
+        # Include specified metadata
+        if isinstance(metadata_cols, str):
+            metadata_col_names = [metadata_cols]
+        else:
+            metadata_col_names = list(metadata_cols)
+
+        # Validate that the specified metadata exist
+        if series[0].metadata is None:
+            raise_log(
+                ValueError(
+                    f"Metadata {metadata_col_names} were requested, "
+                    f"but the first series has no metadata."
+                ),
+                logger,
+            )
+        available_meta = list(series[0].metadata.keys())
+        missing = set(metadata_col_names) - set(available_meta)
+        if missing:
+            raise_log(
+                ValueError(
+                    f"Metadata {list(missing)} not found in series. "
+                    f"Available: {available_meta}."
+                ),
+                logger,
+            )
+
+    # Process group columns
+    if group_cols is None:
+        # Create a default group_id column
+        group_col_names = ["group_id"]
+        use_default_group = True
+    else:
+        if isinstance(group_cols, str):
+            group_col_names = [group_cols]
+        else:
+            group_col_names = list(group_cols)
+        use_default_group = False
+
+        # Validate that group columns exist in static covariates
+        if not static_col_names and not use_default_group:
+            # If no static covariates are included, we need to add the group columns
+            for g_col in group_col_names:
+                if series[0].static_covariates is None:
+                    raise_log(
+                        ValueError(
+                            f"Group column '{g_col}' was requested, "
+                            f"but the first series has no static covariates."
+                        ),
+                        logger,
+                    )
+                if g_col not in series[0].static_covariates.columns:
+                    raise_log(
+                        ValueError(
+                            f"Group column '{g_col}' not found in static covariates. "
+                            f"Available: {series[0].static_covariates.columns.tolist()}."
+                        ),
+                        logger,
+                    )
+
+    # Remove group columns from static_col_names to avoid duplication
+    if not use_default_group:
+        static_col_names = [
+            col for col in static_col_names if col not in group_col_names
+        ]
+
+    # Build the long DataFrame
+    dfs = []
+    for idx, s in enumerate(series):
+        # Get time index and values
+        time_index = s.time_index
+        values = s.values(copy=False)  # shape: (time, components)
+
+        # Create base DataFrame with time and values
+        df_data = {time_col: time_index}
+        for comp_idx, col_name in enumerate(value_col_names):
+            df_data[col_name] = values[:, comp_idx]
+
+        # Add group columns
+        if use_default_group:
+            df_data["group_id"] = idx
+        else:
+            # Extract group values from static covariates
+            if s.static_covariates is None:
+                raise_log(
+                    ValueError(
+                        f"Series {idx} has no static covariates, "
+                        f"but group columns {group_col_names} were requested."
+                    ),
+                    logger,
+                )
+            for g_col in group_col_names:
+                if g_col not in s.static_covariates.columns:
+                    raise_log(
+                        ValueError(
+                            f"Group column '{g_col}' not found in static covariates "
+                            f"of series {idx}."
+                        ),
+                        logger,
+                    )
+                # Get the value (should be the same for all rows in static_covariates)
+                df_data[g_col] = s.static_covariates[g_col].iloc[0]
+
+        # Add static covariates (excluding group columns)
+        if static_col_names:
+            if s.static_covariates is None:
+                raise_log(
+                    ValueError(
+                        f"Series {idx} has no static covariates, "
+                        f"but static columns {static_col_names} were requested."
+                    ),
+                    logger,
+                )
+            for st_col in static_col_names:
+                if st_col not in s.static_covariates.columns:
+                    raise_log(
+                        ValueError(
+                            f"Static covariate '{st_col}' not found in series {idx}."
+                        ),
+                        logger,
+                    )
+                df_data[st_col] = s.static_covariates[st_col].iloc[0]
+
+        # Add metadata
+        if metadata_col_names:
+            if s.metadata is None:
+                raise_log(
+                    ValueError(
+                        f"Series {idx} has no metadata, "
+                        f"but metadata columns {metadata_col_names} were requested."
+                    ),
+                    logger,
+                )
+            for meta_col in metadata_col_names:
+                if meta_col not in s.metadata:
+                    raise_log(
+                        ValueError(f"Metadata '{meta_col}' not found in series {idx}."),
+                        logger,
+                    )
+                df_data[meta_col] = s.metadata[meta_col]
+
+        df = pd.DataFrame(df_data)
+        dfs.append(df)
+
+    # Concatenate all DataFrames
+    result_df = pd.concat(dfs, axis=0, ignore_index=True)
+
+    # Convert to requested backend
+    if backend == "polars":
+        result_df = pl.from_pandas(result_df)
+
+    return result_df
+
+
 def _finite_rows_boundaries(
     values: np.ndarray, how: str = "all"
 ) -> tuple[Optional[int], Optional[int]]:

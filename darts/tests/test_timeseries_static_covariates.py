@@ -965,3 +965,284 @@ class TestTimeSeriesStaticCovariate:
             )
         else:  # metadata
             assert ts_new.metadata == ts.metadata
+
+
+class TestToGroupDataFrame:
+    """Test suite for to_group_dataframe() function"""
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_group_dataframe_basic(self, backend):
+        """Test basic conversion with default group_id"""
+        from darts import to_group_dataframe
+
+        # Create simple series
+        ts1 = TimeSeries.from_values(np.arange(5).reshape(-1, 1))
+        ts2 = TimeSeries.from_values(np.arange(5, 10).reshape(-1, 1))
+
+        df = to_group_dataframe([ts1, ts2], backend=backend)
+
+        # Check structure
+        if backend == "pandas":
+            assert isinstance(df, pd.DataFrame)
+        else:
+            assert isinstance(df, pl.DataFrame)
+
+        df_pd = df if backend == "pandas" else df.to_pandas()
+        assert len(df_pd) == 10
+        assert "group_id" in df_pd.columns
+        assert "time" in df_pd.columns
+        assert df_pd["group_id"].nunique() == 2
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_group_dataframe_with_static_covariates(self, backend):
+        """Test conversion with static covariates as group columns"""
+        from darts import to_group_dataframe
+
+        # Create series with static covariates
+        ts1 = TimeSeries.from_values(
+            np.arange(5).reshape(-1, 1),
+            static_covariates=pd.Series([0, "A"], index=["ID", "category"]),
+        )
+        ts2 = TimeSeries.from_values(
+            np.arange(5, 10).reshape(-1, 1),
+            static_covariates=pd.Series([1, "B"], index=["ID", "category"]),
+        )
+
+        df = to_group_dataframe(
+            [ts1, ts2], group_cols="ID", static_cols="category", backend=backend
+        )
+
+        df_pd = df if backend == "pandas" else df.to_pandas()
+        assert "ID" in df_pd.columns
+        assert "category" in df_pd.columns
+        assert len(df_pd) == 10
+        assert df_pd[df_pd["ID"] == 0]["category"].iloc[0] == "A"
+        assert df_pd[df_pd["ID"] == 1]["category"].iloc[0] == "B"
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_group_dataframe_with_metadata(self, backend):
+        """Test conversion with metadata"""
+        from darts import to_group_dataframe
+
+        # Create series with metadata
+        ts1 = TimeSeries.from_values(
+            np.arange(5).reshape(-1, 1),
+            static_covariates=pd.Series([0], index=["ID"]),
+            metadata={"source": "sensor1", "unit": "celsius"},
+        )
+        ts2 = TimeSeries.from_values(
+            np.arange(5, 10).reshape(-1, 1),
+            static_covariates=pd.Series([1], index=["ID"]),
+            metadata={"source": "sensor2", "unit": "celsius"},
+        )
+
+        df = to_group_dataframe(
+            [ts1, ts2],
+            group_cols="ID",
+            metadata_cols=["source", "unit"],
+            backend=backend,
+        )
+
+        df_pd = df if backend == "pandas" else df.to_pandas()
+        assert "source" in df_pd.columns
+        assert "unit" in df_pd.columns
+        assert df_pd[df_pd["ID"] == 0]["source"].iloc[0] == "sensor1"
+        assert df_pd[df_pd["ID"] == 1]["source"].iloc[0] == "sensor2"
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_group_dataframe_roundtrip(self, backend):
+        """Test that from_group_dataframe can recreate series from to_group_dataframe output"""
+        from darts import to_group_dataframe
+
+        # Create series with various attributes
+        n_series = 3
+        series_list = []
+        for i in range(n_series):
+            ts = TimeSeries.from_dataframe(
+                pd.DataFrame({
+                    "time": generate_index("2020-01-01", length=5, freq="D"),
+                    "value": np.arange(i * 5, (i + 1) * 5),
+                }),
+                time_col="time",
+                static_covariates=pd.Series([i, i * 10], index=["ID", "multiplier"]),
+                metadata={"name": f"series_{i}"},
+            )
+            series_list.append(ts)
+
+        # Convert to DataFrame
+        df = to_group_dataframe(
+            series_list,
+            group_cols="ID",
+            static_cols="multiplier",
+            metadata_cols="name",
+            time_col="time",
+            backend=backend,
+        )
+
+        # Recreate series
+        series_recreated = TimeSeries.from_group_dataframe(
+            df,
+            group_cols="ID",
+            static_cols="multiplier",
+            metadata_cols="name",
+            time_col="time",
+        )
+
+        # Check that we got the same number of series
+        assert len(series_recreated) == n_series
+
+        # Check each series matches
+        for orig, recreated in zip(series_list, series_recreated):
+            assert orig.time_index.equals(recreated.time_index)
+            np.testing.assert_array_equal(orig.values(), recreated.values())
+            pd.testing.assert_frame_equal(
+                orig.static_covariates, recreated.static_covariates
+            )
+            assert orig.metadata == recreated.metadata
+
+    def test_to_group_dataframe_multivariate(self):
+        """Test with multivariate series"""
+        from darts import to_group_dataframe
+
+        # Create multivariate series
+        ts1 = TimeSeries.from_dataframe(
+            pd.DataFrame({
+                "time": generate_index("2020-01-01", length=3, freq="D"),
+                "a": [1, 2, 3],
+                "b": [4, 5, 6],
+            }),
+            time_col="time",
+            static_covariates=pd.Series([0], index=["ID"]),
+        )
+        ts2 = TimeSeries.from_dataframe(
+            pd.DataFrame({
+                "time": generate_index("2020-01-01", length=3, freq="D"),
+                "a": [7, 8, 9],
+                "b": [10, 11, 12],
+            }),
+            time_col="time",
+            static_covariates=pd.Series([1], index=["ID"]),
+        )
+
+        df = to_group_dataframe([ts1, ts2], group_cols="ID", time_col="time")
+
+        assert "a" in df.columns
+        assert "b" in df.columns
+        assert len(df) == 6
+
+    def test_to_group_dataframe_errors(self):
+        """Test error handling"""
+        from darts import to_group_dataframe
+
+        # Empty series list
+        with pytest.raises(ValueError, match="cannot be empty"):
+            to_group_dataframe([])
+
+        # Inconsistent number of components
+        ts1 = TimeSeries.from_values(np.arange(5).reshape(-1, 1))
+        ts2 = TimeSeries.from_values(np.arange(10).reshape(-1, 2))
+        with pytest.raises(ValueError, match="same number of components"):
+            to_group_dataframe([ts1, ts2])
+
+        # Stochastic series (n_samples > 1)
+        ts_stochastic = TimeSeries.from_values(np.arange(15).reshape(5, 1, 3))
+        with pytest.raises(ValueError, match="deterministic series"):
+            to_group_dataframe([ts_stochastic])
+
+        # Missing static covariate
+        ts_no_static = TimeSeries.from_values(np.arange(5).reshape(-1, 1))
+        with pytest.raises(ValueError, match="has no static covariates"):
+            to_group_dataframe([ts_no_static], group_cols="ID")
+
+        # Invalid backend
+        ts = TimeSeries.from_values(np.arange(5).reshape(-1, 1))
+        with pytest.raises(ValueError, match="Invalid backend"):
+            to_group_dataframe([ts], backend="invalid")
+
+    def test_to_group_dataframe_static_cols_true(self):
+        """Test static_cols=True includes all static covariates"""
+        from darts import to_group_dataframe
+
+        ts1 = TimeSeries.from_values(
+            np.arange(3).reshape(-1, 1),
+            static_covariates=pd.Series([0, "A", 100], index=["ID", "cat", "val"]),
+        )
+        ts2 = TimeSeries.from_values(
+            np.arange(3, 6).reshape(-1, 1),
+            static_covariates=pd.Series([1, "B", 200], index=["ID", "cat", "val"]),
+        )
+
+        df = to_group_dataframe([ts1, ts2], group_cols="ID", static_cols=True)
+
+        # All static covariates should be included except ID (used as group)
+        assert "ID" in df.columns
+        assert "cat" in df.columns
+        assert "val" in df.columns
+
+    def test_to_group_dataframe_metadata_true(self):
+        """Test metadata_cols=True includes all metadata"""
+        from darts import to_group_dataframe
+
+        ts1 = TimeSeries.from_values(
+            np.arange(3).reshape(-1, 1),
+            static_covariates=pd.Series([0], index=["ID"]),
+            metadata={"a": 1, "b": 2, "c": 3},
+        )
+        ts2 = TimeSeries.from_values(
+            np.arange(3, 6).reshape(-1, 1),
+            static_covariates=pd.Series([1], index=["ID"]),
+            metadata={"a": 4, "b": 5, "c": 6},
+        )
+
+        df = to_group_dataframe([ts1, ts2], group_cols="ID", metadata_cols=True)
+
+        assert "a" in df.columns
+        assert "b" in df.columns
+        assert "c" in df.columns
+
+    def test_to_group_dataframe_custom_value_cols(self):
+        """Test custom value column names"""
+        from darts import to_group_dataframe
+
+        ts1 = TimeSeries.from_dataframe(
+            pd.DataFrame({
+                "time": generate_index("2020-01-01", length=3, freq="D"),
+                "x": [1, 2, 3],
+                "y": [4, 5, 6],
+            }),
+            time_col="time",
+            static_covariates=pd.Series([0], index=["ID"]),
+        )
+
+        df = to_group_dataframe(
+            [ts1], group_cols="ID", value_cols=["x", "y"], time_col="time"
+        )
+
+        assert "x" in df.columns
+        assert "y" in df.columns
+
+    def test_to_group_dataframe_multiple_group_cols(self):
+        """Test with multiple group columns"""
+        from darts import to_group_dataframe
+
+        ts1 = TimeSeries.from_values(
+            np.arange(3).reshape(-1, 1),
+            static_covariates=pd.Series([0, "A"], index=["st1", "st2"]),
+        )
+        ts2 = TimeSeries.from_values(
+            np.arange(3, 6).reshape(-1, 1),
+            static_covariates=pd.Series([0, "B"], index=["st1", "st2"]),
+        )
+        ts3 = TimeSeries.from_values(
+            np.arange(6, 9).reshape(-1, 1),
+            static_covariates=pd.Series([1, "A"], index=["st1", "st2"]),
+        )
+
+        df = to_group_dataframe([ts1, ts2, ts3], group_cols=["st1", "st2"])
+
+        assert "st1" in df.columns
+        assert "st2" in df.columns
+        assert len(df) == 9
+        # Check unique combinations
+        unique_groups = df[["st1", "st2"]].drop_duplicates()
+        assert len(unique_groups) == 3
