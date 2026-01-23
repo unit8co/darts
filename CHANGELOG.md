@@ -17,6 +17,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- We set an upper version cap on `pandas<3.0.0` until we officially support it. [#2995](https://github.com/unit8co/darts/pull/2995) by [Dennis Bader](https://github.com/dennisbader).
+
 ### For developers of the library:
 
 ## [0.40.0](https://github.com/unit8co/darts/tree/0.40.0) (2025-12-23)
