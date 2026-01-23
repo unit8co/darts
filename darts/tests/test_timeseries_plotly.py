@@ -172,7 +172,6 @@ class TestTimeSeriesPlotly:
                 {"alpha": 0.1, "color": "blue"},
                 {"opacity": 0.4, "color": "blue"},
                 {"color": ["blue", "red"]},
-                {"width": 1000, "height": 600},
                 {"line_width": 3},
             ],
         ),

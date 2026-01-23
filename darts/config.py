@@ -61,50 +61,6 @@ _DARTS_COLORS = [
     "#ba0f0f",
 ]
 
-# Register Darts Plotly template (if plotly is available)
-try:
-    import plotly.graph_objects as go
-    import plotly.io as pio
-
-    PLOTLY_AVAILABLE = True
-
-    pio.templates["darts"] = go.layout.Template(
-        layout=go.Layout(
-            font=dict(family="Arial, sans-serif", size=14, color="black"),
-            paper_bgcolor="white",
-            plot_bgcolor="white",
-            colorway=_DARTS_COLORS,
-            showlegend=True,
-            legend=dict(
-                bgcolor="rgba(255, 255, 255, 0.8)",
-                x=1,
-                y=1,
-                yanchor="top",
-                xanchor="right",
-                font=dict(size=14),
-                borderwidth=0,
-            ),
-            xaxis=dict(
-                showline=True,
-                linecolor="#dedede",
-                showgrid=False,
-                title=dict(font=dict(size=16, color="black")),
-            ),
-            yaxis=dict(
-                showline=False,
-                showgrid=True,
-                gridcolor="#dedede",
-                gridwidth=1,
-                zeroline=True,
-                zerolinecolor="#dedede",
-            ),
-            margin=dict(l=50, r=50, t=50, b=50),
-        ),
-        data=dict(scatter=[go.Scatter(line=dict(width=3))]),
-    )
-except ImportError:
-    PLOTLY_AVAILABLE = False
-
 
 class _Option:
     """Internal class representing a single configuration option."""
@@ -247,7 +203,8 @@ class _OptionsManager:
                 self._original_mpl_params = None
 
         # plotly
-        if PLOTLY_AVAILABLE:
+        try:
+            import plotly.graph_objects as go
             import plotly.io as pio
 
             if value:
@@ -255,13 +212,49 @@ class _OptionsManager:
                 if not self._darts_plotting_style_applied:
                     self._original_plotly_template = pio.templates.default
 
-                # apply the registered 'darts' plotly template
-                pio.templates.default = "darts"
+                # assign the darts plotly template directly
+                pio.templates.default = go.layout.Template(
+                    layout=go.Layout(
+                        font=dict(family="Arial, sans-serif", size=14, color="black"),
+                        paper_bgcolor="white",
+                        plot_bgcolor="white",
+                        colorway=_DARTS_COLORS,
+                        showlegend=True,
+                        legend=dict(
+                            bgcolor="rgba(255, 255, 255, 0.8)",
+                            x=1,
+                            y=1,
+                            yanchor="top",
+                            xanchor="right",
+                            font=dict(size=14),
+                            borderwidth=0,
+                        ),
+                        xaxis=dict(
+                            showline=True,
+                            linecolor="#dedede",
+                            showgrid=False,
+                            title=dict(font=dict(size=16, color="black")),
+                        ),
+                        yaxis=dict(
+                            showline=False,
+                            showgrid=True,
+                            gridcolor="#dedede",
+                            gridwidth=1,
+                            zeroline=True,
+                            zerolinecolor="#dedede",
+                        ),
+                        margin=dict(l=50, r=50, t=50, b=50),
+                    ),
+                    data=dict(scatter=[go.Scatter(line=dict(width=3))]),
+                )
             else:
                 # restore the previous default
                 if self._original_plotly_template is not None:
                     pio.templates.default = self._original_plotly_template
                     self._original_plotly_template = None
+        except ImportError:
+            # plotly not available, skip plotly configuration
+            pass
 
         # update the state tracker
         self._darts_plotting_style_applied = value

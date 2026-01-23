@@ -4418,9 +4418,6 @@ class TimeSeries:
         color: Optional[Union[str, Sequence[str]]] = None,
         c: Optional[Union[str, Sequence[str]]] = None,
         downsample_threshold: int = 100_000,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-        template: Optional[str] = None,
         **kwargs,
     ) -> "go.Figure":
         """Plot the series using Plotly.
@@ -4462,13 +4459,6 @@ class TimeSeries:
             The maximum number of total data points (time steps * components * traces) to plot.
             If exceeded, the series will be automatically downsampled using a constant step
             size to avoid rendering crashes. Set to -1 to disable downsampling. Defaults to 100,000.
-        width
-            Optionally, the width of the figure in pixels.
-        height
-            Optionally, the height of the figure in pixels.
-        template
-            Optionally, the name of a Plotly template to use for the figure (e.g., 'plotly', 'plotly_white', 'none').
-            Setting `template='darts'` will use the Darts-specific colorway and formatting.
         **kwargs
             Additional keyword arguments to pass to `plotly.graph_objects.Scatter()` for trace customization
             (e.g., `line_dash`, `line_width`, `marker_symbol`, `opacity`, or `hovertemplate`).
@@ -4491,9 +4481,6 @@ class TimeSeries:
             color=color,
             c=c,
             downsample_threshold=downsample_threshold,
-            width=width,
-            height=height,
-            template=template,
             **kwargs,
         )
 

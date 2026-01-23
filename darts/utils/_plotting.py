@@ -7,7 +7,7 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 from copy import deepcopy
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.axes
 import matplotlib.colors as mcolors
@@ -26,10 +26,10 @@ logger = get_logger(__name__)
 
 def prepare_plot_params(
     series: TimeSeries,
-    central_quantile: Union[float, str],
-    low_quantile: Optional[float],
-    high_quantile: Optional[float],
-    label: Union[str, Sequence[str]],
+    central_quantile: float | str,
+    low_quantile: float | None,
+    high_quantile: float | None,
+    label: str | Sequence[str],
     max_nr_components: int,
     color: Any,
     c: Any,
@@ -116,17 +116,17 @@ def prepare_plot_params(
 def plot(
     series: TimeSeries,
     new_plot: bool = False,
-    central_quantile: Union[float, str] = 0.5,
-    low_quantile: Optional[float] = 0.05,
-    high_quantile: Optional[float] = 0.95,
+    central_quantile: float | str = 0.5,
+    low_quantile: float | None = 0.05,
+    high_quantile: float | None = 0.95,
     default_formatting: bool = True,
-    title: Optional[str] = None,
-    label: Optional[Union[str, Sequence[str]]] = "",
+    title: str | None = None,
+    label: str | Sequence[str] | None = "",
     max_nr_components: int = 10,
-    ax: Optional[matplotlib.axes.Axes] = None,
-    alpha: Optional[float] = None,
-    color: Optional[Union[str, tuple, Sequence[str, tuple]]] = None,
-    c: Optional[Union[str, tuple, Sequence[str, tuple]]] = None,
+    ax: matplotlib.axes.Axes | None = None,
+    alpha: float | None = None,
+    color: str | tuple | Sequence[str, tuple] | None = None,
+    c: str | tuple | Sequence[str, tuple] | None = None,
     *args,
     **kwargs,
 ) -> matplotlib.axes.Axes:
@@ -307,20 +307,17 @@ def plot(
 
 def plotly(
     series: TimeSeries,
-    fig: Optional[go.Figure] = None,
-    central_quantile: Union[float, str] = 0.5,
-    low_quantile: Optional[float] = 0.05,
-    high_quantile: Optional[float] = 0.95,
-    title: Optional[str] = None,
-    label: Optional[Union[str, Sequence[str]]] = "",
+    fig: go.Figure | None = None,
+    central_quantile: float | str = 0.5,
+    low_quantile: float | None = 0.05,
+    high_quantile: float | None = 0.95,
+    title: str | None = None,
+    label: str | Sequence[str] | None = "",
     max_nr_components: int = 10,
-    alpha: Optional[float] = None,
-    color: Optional[Union[str, Sequence[str]]] = None,
-    c: Optional[Union[str, Sequence[str]]] = None,
+    alpha: float | None = None,
+    color: str | Sequence[str] | None = None,
+    c: str | Sequence[str] | None = None,
     downsample_threshold: int = 100_000,
-    width: Optional[int] = None,
-    height: Optional[int] = None,
-    template: Optional[str] = None,
     **kwargs,
 ) -> go.Figure:
     """Plot a TimeSeries using Plotly.
@@ -367,13 +364,6 @@ def plotly(
         The maximum number of total data points (time steps * components * traces) to plot.
         If exceeded, the series will be automatically downsampled using a constant step
         size to avoid rendering crashes. Set to -1 to disable downsampling. Defaults to 100,000.
-    width
-        Optionally, the width of the figure in pixels.
-    height
-        Optionally, the height of the figure in pixels.
-    template
-        Optionally, the name of a Plotly template to use for the figure (e.g., 'plotly', 'plotly_white', 'none').
-        Setting `template='darts'` will use the Darts-specific colorway and formatting.
     **kwargs
         Additional keyword arguments to pass to `plotly.graph_objects.Scatter()` for trace customization
         (e.g., `line_dash`, `line_width`, `marker_symbol`, `opacity`, or `hovertemplate`).
@@ -385,7 +375,6 @@ def plotly(
     """
     try:
         import plotly.graph_objects as go
-        import plotly.io as pio
     except ImportError:
         raise_log(
             ImportError(
@@ -394,7 +383,7 @@ def plotly(
             logger,
         )
 
-    def _get_active_colorway(template_name=None):
+    def _get_active_colorway(fig):
         plotly_default_colors = [
             "#636EFA",
             "#EF553B",
@@ -407,8 +396,7 @@ def plotly(
             "#FF97FF",
             "#FECB52",
         ]
-        target = template_name or pio.templates.default
-        template = pio.templates[target] if target in pio.templates else None
+        template = fig.layout.template
         colorway = (
             getattr(template.layout, "colorway", None)
             if hasattr(template, "layout")
@@ -445,8 +433,8 @@ def plotly(
 
     color_cycle_start_idx = 0
     if color is None:
-        # use colors from provided template or default template
-        resolved_colors = _get_active_colorway(template_name=template)
+        # use colors from figure template
+        resolved_colors = _get_active_colorway(fig)
         # count existing main traces for correct color cycling if plotting multiple series
         color_cycle_start_idx = len([t for t in fig.data if t.hoverinfo != "skip"])
     elif isinstance(color, str):
@@ -600,10 +588,7 @@ def plotly(
     fig.update_layout(
         title=title,
         xaxis_title=series.time_dim,
-        template=template or pio.templates.default,
         hovermode="x unified",
-        width=width,
-        height=height,
     )
 
     return fig
