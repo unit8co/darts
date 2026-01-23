@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added function `to_group_dataframe()` to convert a list of TimeSeries objects into a "long" format DataFrame. This function is the inverse operation of `TimeSeries.from_group_dataframe()`, enabling full roundtrip conversion between TimeSeries lists and grouped DataFrames. [#2997](https://github.com/unit8co/darts/pull/2997) by [Tiberiu Sabau](https://github.com/tibisabau).
+
 **Fixed**
 
 - Fixed bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).
