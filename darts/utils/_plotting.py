@@ -104,6 +104,22 @@ def prepare_plot_params(
         )
     color = color if color is not None else c
 
+    # color sequence length validation
+    if (
+        isinstance(color, Sequence)
+        and not isinstance(color, str)
+        and not isinstance(color, tuple)
+    ):
+        if len(color) not in {series.n_components, n_components_to_plot}:
+            raise_log(
+                ValueError(
+                    f"The `color` sequence must have the same length as the number of series components "
+                    f"({series.n_components}) or as the number of plotted components ({n_components_to_plot}). "
+                    f"Received length `{len(color)}`."
+                ),
+                logger,
+            )
+
     # alpha preprocessing
     alpha_ci = alpha if alpha is not None else 0.25
     alpha_line = 1 if series.is_stochastic else alpha
@@ -212,20 +228,8 @@ def plot(
     alpha_ci = prepared_params["alpha_ci"]
     alpha_line = prepared_params["alpha_line"]
 
-    # separate color validation
-    if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
-        if len(color) != series.n_components and len(color) != n_components_to_plot:
-            raise_log(
-                ValueError(
-                    f"The `color` sequence must have the same length as the number of series components "
-                    f"({series.n_components}) or as the number of plotted components ({n_components_to_plot}). "
-                    f"Received length `{len(label)}`."
-                ),
-                logger,
-            )
-        custom_colors = True
-    else:
-        custom_colors = False
+    # determine if custom colors (sequence of colors) are provided
+    custom_colors = isinstance(color, Sequence) and not isinstance(color, (str, tuple))
 
     kwargs["alpha"] = alpha_line
     if not any(lw in kwargs for lw in ["lw", "linewidth"]):
@@ -455,18 +459,7 @@ def plotly(
         # single color string provided: wrap in list to allow infinite cycling
         resolved_colors = [color]
     elif isinstance(color, Sequence):
-        # sequence of strings provided: validate length
-        if len(color) not in {series.n_components, n_components_to_plot}:
-            expected_str = " or ".join(
-                map(str, sorted({series.n_components, n_components_to_plot}))
-            )
-            raise_log(
-                ValueError(
-                    f"The `color` sequence length ({len(color)}) is invalid. "
-                    f"It must match the number of components ({expected_str})."
-                ),
-                logger,
-            )
+        # sequence of strings provided (length already validated in prepare_plot_params)
         resolved_colors = list(color)
     else:
         raise_log(
