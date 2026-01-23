@@ -238,10 +238,7 @@ class TestStaticCovariatesTransformer:
         assert actual_columns == expected_columns
 
         first_static_covs = transformed[0].static_covariates
-        assert first_static_covs["Country_US"].iloc[0] == 1.0
-        assert first_static_covs["Country_China"].iloc[0] == 0.0
-        assert first_static_covs["City_New York"].iloc[0] == 1.0
-        assert first_static_covs["City_Beijing"].iloc[0] == 0.0
+    assert first_static_covs.iloc[0].tolist() == [1.0, 0.0, 1.0, 0.0]
 
         second_static_covs = transformed[1].static_covariates
         assert second_static_covs["Country_China"].iloc[0] == 1.0
