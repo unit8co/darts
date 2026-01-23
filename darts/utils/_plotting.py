@@ -55,6 +55,13 @@ def _prepare_plot_params(
                 ),
                 logger,
             )
+        if low_quantile >= high_quantile:
+            raise_log(
+                ValueError(
+                    f"low_quantile ({low_quantile}) must be less than high_quantile ({high_quantile})."
+                ),
+                logger,
+            )
 
     # component slicing
     n_components_to_plot = (
@@ -200,7 +207,7 @@ def plot(
     low_quantile
         The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,
         this is applied to each component separately (i.e., displaying marginal distributions). No confidence
-        interval is shown if `confidence_low_quantile` is None (default 0.05).
+        interval is shown if `low_quantile` is None (default 0.05).
     high_quantile
         The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
         this is applied to each component separately (i.e., displaying marginal distributions). No confidence
@@ -374,7 +381,7 @@ def plotly(
     low_quantile
         The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,
         this is applied to each component separately (i.e., displaying marginal distributions). No confidence
-        interval is shown if `confidence_low_quantile` is None (default 0.05).
+        interval is shown if `low_quantile` is None (default 0.05).
     high_quantile
         The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
         this is applied to each component separately (i.e., displaying marginal distributions). No confidence

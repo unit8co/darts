@@ -411,6 +411,12 @@ class TestTimeSeriesPlotly:
         ):
             self.series_dt_p.plotly(low_quantile=-0.1, high_quantile=0.5)
 
+        # 1b. Quantile ordering validation
+        with pytest.raises(
+            ValueError, match="low_quantile.*must be less than high_quantile"
+        ):
+            self.series_dt_p.plotly(low_quantile=0.9, high_quantile=0.1)
+
         # 2. Component Slicing & Warning (max_nr_components)
         with caplog.at_level(logging.WARNING):
             fig = self.series_dt_d.plotly(max_nr_components=1)
