@@ -228,23 +228,24 @@ class TestStaticCovariatesTransformer:
 
         transformed = transformer.fit_transform(series)
 
-        expected_columns = {
-            "City_Beijing",
-            "City_New York",
+        expected_columns = [
             "Country_China",
             "Country_US",
-        }
-        actual_columns = set(transformed[0].static_covariates.columns.tolist())
-        assert actual_columns == expected_columns
+            "City_Beijing",
+            "City_New York",
+        ]
+        assert transformed[0].static_covariates.columns.tolist() == expected_columns
+        assert transformed[1].static_covariates.columns.tolist() == expected_columns
 
+        # Series 0: Country="US", City="New York"
+        # Expected: [Country_China=0.0, Country_US=1.0, City_Beijing=0.0, City_New York=1.0]
         first_static_covs = transformed[0].static_covariates
-    assert first_static_covs.iloc[0].tolist() == [1.0, 0.0, 1.0, 0.0]
+        assert first_static_covs.iloc[0].tolist() == [0.0, 1.0, 0.0, 1.0]
 
+        # Series 1: Country="China", City="Beijing"
+        # Expected: [Country_China=1.0, Country_US=0.0, City_Beijing=1.0, City_New York=0.0]
         second_static_covs = transformed[1].static_covariates
-        assert second_static_covs["Country_China"].iloc[0] == 1.0
-        assert second_static_covs["Country_US"].iloc[0] == 0.0
-        assert second_static_covs["City_Beijing"].iloc[0] == 1.0
-        assert second_static_covs["City_New York"].iloc[0] == 0.0
+        assert second_static_covs.iloc[0].tolist() == [1.0, 0.0, 1.0, 0.0]
 
         recovered = transformer.inverse_transform(transformed)
         for i in range(2):
