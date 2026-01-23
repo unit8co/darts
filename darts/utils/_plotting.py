@@ -405,10 +405,15 @@ def plotly(
         return list(colorway) if colorway else plotly_default_colors
 
     def _modify_color_opacity(color, alpha):
+        # if color is already in rgba/hsla format, just replace alpha
         if "(" in color:
+            # find prefix (rgb, rgba, hsl, hsla)
             prefix = re.search(r"^[a-z]+", color.lower()).group().rstrip("a")
+            # find numeric values
             values = re.findall(r"[-+]?\d*\.?\d+%?", color)[:3]
+            # reconstruct with new alpha
             return f"{prefix}a({', '.join(values)}, {alpha})"
+        # else, convert to rgba and set alpha
         r, g, b, _ = mcolors.to_rgba(color)
         return f"rgba({int(r * 255)}, {int(g * 255)}, {int(b * 255)}, {alpha})"
 
