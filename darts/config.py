@@ -189,8 +189,9 @@ class _OptionsManager:
         }
         # remember if user applied Darts style
         self._darts_plotting_style_applied = False
-        # store original plotly template to restore later
+        # store original templates to restore later
         self._original_plotly_template = None
+        self._original_mpl_params = None
 
     @staticmethod
     def _validate_positive_int(value: Any):
@@ -211,6 +212,10 @@ class _OptionsManager:
         from matplotlib import cycler
 
         if value:
+            # store current matplotlib params before applying darts style
+            if not self._darts_plotting_style_applied:
+                self._original_mpl_params = mpl.rcParams.copy()
+
             # apply Darts plotting style to matplotlib
             colors = cycler(color=_DARTS_COLORS)
             u8plots_mplstyle = {
@@ -235,9 +240,11 @@ class _OptionsManager:
                 "xtick.bottom": False,
             }
             mpl.rcParams.update(u8plots_mplstyle)
-        elif self._darts_plotting_style_applied:
-            # restore default matplotlib options
-            mpl.rcParams.update(mpl.rcParamsDefault)
+        else:
+            # restore previous matplotlib options
+            if self._original_mpl_params is not None:
+                mpl.rcParams.update(self._original_mpl_params)
+                self._original_mpl_params = None
 
         # plotly
         if PLOTLY_AVAILABLE:
@@ -245,7 +252,7 @@ class _OptionsManager:
 
             if value:
                 # store existing default to restore later
-                if self._original_plotly_template is None:
+                if not self._darts_plotting_style_applied:
                     self._original_plotly_template = pio.templates.default
 
                 # apply the registered 'darts' plotly template
