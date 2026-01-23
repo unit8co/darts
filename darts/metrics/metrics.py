@@ -1744,8 +1744,8 @@ def sape(
     .. math::
         200 \\cdot \\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|}
 
-    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some
-    :math:`t`. Consider using the Absolute Scaled Error (:func:`~darts.metrics.metrics.ase`)  in these cases.
+    When :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some :math:`t` (i.e., both actual and
+    prediction are zero), the error for that time step is defined as 0.
 
     If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
     specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
@@ -1785,11 +1785,6 @@ def sape(
     verbose
         Optionally, whether to print operations progress.
 
-    Raises
-    ------
-    ValueError
-        If `actual_series` and `pred_series` contain some zeros at the same time index.
-
     Returns
     -------
     float
@@ -1822,14 +1817,14 @@ def sape(
         remove_nan_union=True,
         q=q,
     )
-    if not np.logical_or(y_true != 0, y_pred != 0).all():
-        raise_log(
-            ValueError(
-                "`actual_series` must be strictly positive to compute the sMAPE."
-            ),
-            logger=logger,
-        )
-    return 200.0 * np.abs(y_true - y_pred) / (np.abs(y_true) + np.abs(y_pred))
+    numerator = 200 * np.abs(y_true - y_pred)
+    denominator = np.abs(y_true) + np.abs(y_pred)
+    return np.divide(
+        numerator,
+        denominator,
+        out=np.zeros_like(numerator, dtype=y_true.dtype),
+        where=denominator != 0,
+    )
 
 
 @multi_ts_support
@@ -1854,9 +1849,8 @@ def smape(
         200 \\cdot \\frac{1}{T}
         \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }
 
-    Note that it will raise a `ValueError` if :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0`
-    for some :math:`t`. Consider using the Mean Absolute Scaled Error (:func:`~darts.metrics.metrics.mase`) in these
-    cases.
+    When :math:`\\left| y_t \\right| + \\left| \\hat{y}_t \\right| = 0` for some :math:`t` (i.e., both actual and
+    prediction are zero), the error for that time step is 0.
 
     If :math:`\\hat{y}_t` are stochastic (contains several samples) or quantile predictions, use parameter `q` to
     specify on which quantile(s) to compute the metric on. By default, it uses the median 0.5 quantile
@@ -1890,11 +1884,6 @@ def smape(
         (sequential). Setting the parameter to `-1` means using all the available processors.
     verbose
         Optionally, whether to print operations progress.
-
-    Raises
-    ------
-    ValueError
-        If the `actual_series` and the `pred_series` contain some zeros at the same time index.
 
     Returns
     -------
