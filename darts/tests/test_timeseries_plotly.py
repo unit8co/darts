@@ -370,7 +370,9 @@ class TestTimeSeriesPlotly:
 
         # 2. Trigger: Color sequence length mismatch
         # (Assuming series has 2 components, we pass 3 colors)
-        with pytest.raises(ValueError, match="The `color` sequence length.*is invalid"):
+        with pytest.raises(
+            ValueError, match="The `color` sequence must have the same length"
+        ):
             self.series_dt_d.plotly(color=["red", "blue", "green"])
 
         # 3. Trigger: Partial quantiles (low_quantile=None) -> No ribbon logic
