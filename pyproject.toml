@@ -219,3 +219,13 @@ filename = "conda_recipe/darts/meta.yaml"
 filename = "docs/source/conf.py"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "u8darts/pyproject.toml"
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[[tool.bumpversion.files]]
+filename = "u8darts/pyproject.toml"
+search = 'darts=={current_version}'
+replace = 'darts=={new_version}'

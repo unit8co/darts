@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=57", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "u8darts"
+version = "0.40.0"
+description = "⚠️ DEPRECATED - Use 'darts' package instead. This legacy compatibility shim redirects to 'darts'. Maintained until June 2027, then discontinued."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "Apache-2.0"}
+keywords = ["time series", "forecasting", "DEPRECATED", "redirect"]
+maintainers = [
+    {name = "Unit8 SA", email = "darts@unit8.co"}
+]
+classifiers = [
+    "Development Status :: 7 - Inactive",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python",
+    "Topic :: Software Development",
+    "Topic :: Scientific/Engineering",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX",
+    "Operating System :: Unix",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+# Core u8darts simply depends on darts with exact version match
+dependencies = ["darts==0.40.0"]
+
+[project.urls]
+Homepage = "https://unit8co.github.io/darts/"
+Documentation = "https://unit8co.github.io/darts/"
+Repository = "https://github.com/unit8co/darts"
+"Migration Guide" = "https://github.com/unit8co/darts/blob/master/MIGRATION.md"
+
+[project.optional-dependencies]
+# Redirect all extras to darts
+torch = ["darts[torch]==0.40.0"]
+notorch = ["darts[notorch]==0.40.0"]
+all = ["darts[all]==0.40.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["u8darts*"]
