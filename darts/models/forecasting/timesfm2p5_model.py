@@ -113,6 +113,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         self.input_patch_len = self.config.input_patch_len  # 32
         self.output_patch_len = self.config.output_patch_len  # 128
         self.num_layers = self.config.stacked_transformers.num_layers  # 20
+        # see below `user_quantile_indices` for explanation of +1
         self.num_quantiles_plus_one = len(self.config.quantiles) + 1  # 10
 
         # padding length for input target series to make its length a multiple of
