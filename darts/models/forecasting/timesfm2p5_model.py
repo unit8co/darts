@@ -17,9 +17,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from darts.logging import get_logger, raise_log
-from darts.models.components.huggingface_connector import (
-    HuggingFaceConnector,
-)
+from darts.models.components.huggingface_connector import HuggingFaceConnector
 from darts.models.components.timesfm2p5_submodels import (
     _ResidualBlock,
     _ResidualBlockConfig,
@@ -29,11 +27,10 @@ from darts.models.components.timesfm2p5_submodels import (
     _TransformerConfig,
     _update_running_stats,
 )
-from darts.models.forecasting.foundation_model import (
-    FoundationModel,
-)
+from darts.models.forecasting.foundation_model import FoundationModel
 from darts.models.forecasting.pl_forecasting_module import (
     PLForecastingModule,
+    io_processor,
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
 from darts.utils.likelihood_models.torch import QuantileRegression
@@ -184,6 +181,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         return output_ts
 
     # TODO: fine-tuning support
+    @io_processor
     def forward(self, x_in: PLModuleInput, *args, **kwargs) -> Any:
         """TimesFM 2.5 model forward pass.
 
@@ -368,8 +366,8 @@ class TimesFM2p5Model(FoundationModel):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         use_reversible_instance_norm
-            Whether to use reversible instance normalization `RINorm` against distribution shift. Ignored by
-            TimesFM 2.5 as it has its own `RINorm` implementation.
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [3]_.
+            It is only applied to the features of the target series and not the covariates.
         batch_size
             Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
@@ -480,6 +478,8 @@ class TimesFM2p5Model(FoundationModel):
                 arXiv https://arxiv.org/abs/2310.10688.
         .. [2] "A decoder-only foundation model for time-series forecasting", 2024. Google Research.
                 https://research.google/blog/a-decoder-only-foundation-model-for-time-series-forecasting/
+        .. [3] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
         Examples
         --------
