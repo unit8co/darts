@@ -16,7 +16,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Maintains API consistency with the existing `plot()` method for easy adoption
   - Supports deterministic and stochastic, univariate and multivariate series
   - Allows overlaying multiple series on the same figure via the `fig` parameter
-  - Customizable with layout parameters (`title`, `width`, `height`, `template`) and trace styling via `**kwargs`
+  - Customizable trace styling via `**kwargs`
   - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
   - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
   - Plotly remains an optional dependency and can be installed with `pip install plotly`
