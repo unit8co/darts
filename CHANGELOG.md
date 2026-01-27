@@ -5,19 +5,69 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 
-[Full Changelog](https://github.com/unit8co/darts/compare/0.39.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.40.0...master)
 
 ### For users of the library:
 
 **Improved**
 
-- `TorchForecastingModel` parameter `torch_metrics` now supports all input metric types from ``torchmetrics.MetricCollection``. Eg. now you can also pass a dictionary or sequence of metrics. [#2958](https://github.com/unit8co/darts/pull/2958) by [CorticallyAI](https://github.com/CorticallyAI).
+- Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
+  - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
+  - Maintains API consistency with the existing `plot()` method for easy adoption
+  - Supports deterministic and stochastic, univariate and multivariate series
+  - Allows overlaying multiple series on the same figure via the `fig` parameter
+  - Customizable trace styling via `**kwargs`
+  - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
+  - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
+  - Plotly remains an optional dependency and can be installed with `pip install plotly`
+
+**Fixed**
+
+- Fixed bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).
+- Fixed a bug in `TorchTrainingDataset` where `max_samples_per_ts` was not acting as an upper bound on the number of samples per time series. Now `max_samples_per_ts` correctly acts as an upper bound, capping the dataset size at the actual number of samples that can be extracted from the longest series. [#2987](https://github.com/unit8co/darts/pull/2987) by [Dustin Brunner](https://github.com/brunnedu).
+- Updated s(m)ape to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2984](https://github.com/unit8co/darts/pull/2984) by [eschibli](https://github.com/eschibli).
+
+**Dependencies**
+
+- We set an upper version cap on `pandas<3.0.0` until we officially support it. [#2995](https://github.com/unit8co/darts/pull/2995) by [Dennis Bader](https://github.com/dennisbader).
+
+### For developers of the library:
+
+## [0.40.0](https://github.com/unit8co/darts/tree/0.40.0) (2025-12-23)
+
+### For users of the library:
+
+**Improved**
+
+- Improvements to `SKLearnModel`:
+  - 🚀🚀 Optimized auto-regressive historical forecasts (when `forecast_horizon > output_chunk_length`), increasing throughput by multiple orders of magnitude! Now all historical forecasting scenarios are optimized. [#2921](https://github.com/unit8co/darts/pull/2921) by [Alain Gysi](https://github.com/Kurokabe)
+  - `predict()` now raises a more informative exception when the input target series are too short. [#2921](https://github.com/unit8co/darts/pull/2921) by [Dennis Bader](https://github.com/dennisbader).
+- Improvements to `TorchForecastingModel`:
+  - Added support for two new pre-trained `Chronos2Model` variants (both trained and released by Amazon) with identical forecasting support as the original model. To use them, simply set `hub_model_name` to one of the two below when creating the model. [#2962](https://github.com/unit8co/darts/pull/2962) by [Zhihao Dai](https://github.com/daidahao).
+    - [`"autogluon/chronos-2-small"`](https://huggingface.co/autogluon/chronos-2-small) : a smaller 28M parameter Chronos-2 model.
+    - [`"autogluon/chronos-2-synth"`](https://huggingface.co/autogluon/chronos-2-synth) : a 120M parameter Chronos-2 model trained on synthetic data only.
+  - Model creation parameter `torch_metrics` now supports all input metric types from ``torchmetrics.MetricCollection``. Eg. now you can also pass a dictionary or sequence of metrics. [#2958](https://github.com/unit8co/darts/pull/2958) by [CorticallyAI](https://github.com/CorticallyAI).
+- 🚀 Added a new configuration system to Darts, similar to pandas' options and settings. [#2956](https://github.com/unit8co/darts/pull/2956) by [Dennis Bader](https://github.com/dennisbader).
+  - The configuration API includes:
+    - `describe_option()`: get an option's description.
+    - `get_option()`: get an option's current value.
+    - `set_option()`: set an option's value.
+    - `reset_option()`: reset an option to its default value.
+    - `option_context()`: apply temporary option changes only within the `with option():` scope.
+  - Users can now configure global options such as:
+    - `display.[max_rows, max_cols]`: Maximum number of rows or columns to display in TimeSeries representation (default: 10)
+    - 🟠 `plotting.use_darts_style`: Whether to apply Darts' custom matplotlib plotting style (default: False). Changes take effect immediately and apply to all subsequent plots. The Darts plotting style is now not applied anymore by default. To activate it call `set_option('plotting.use_darts_style', True)` before plotting.
 
 **Fixed**
 
 - Fixed an issue in `TFTExplainer` where attempting to explain a list of series longer than the model's batch size resulted in an `IndexError`. A more informative error message is now raised instead. [#2957](https://github.com/unit8co/darts/pull/2957) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed an issue in `TorchForecastingModel` where it was not possible to run historical forecasts with `overlap=True` if the only possible start point was one step after the end of the target series (e.g. the equivalent to a `predict()` call). [#2921](https://github.com/unit8co/darts/pull/2921) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed an issue in `SKLearnModel` where attempting to run historical forecasts on a multivariate target series with component-specific lags did not work properly. [#2921](https://github.com/unit8co/darts/pull/2921) by [Dennis Bader](https://github.com/dennisbader).
+- Fixed a bug in `SKLearnModel` with `multi_models=False` where running historical forecasts using `start=None` started later than the actual first possible start point. [#2921](https://github.com/unit8co/darts/pull/2921) by [Dennis Bader](https://github.com/dennisbader).
 
 **Dependencies**
+
+- We set an upper version cap on `scikit-learn<1.8.0` until CatBoost officially supports it. [#2972](https://github.com/unit8co/darts/pull/2972) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
 

@@ -660,9 +660,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _check_optimizable_historical_forecasts(
         self,
-        forecast_horizon: int,
         retrain: Union[bool, int, Callable[..., bool]],
-        show_warnings: bool,
     ) -> bool:
         """By default, historical forecasts cannot be optimized"""
         return False
@@ -940,11 +938,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if (
             enable_optimization
             and model.supports_optimized_historical_forecasts
-            and model._check_optimizable_historical_forecasts(
-                forecast_horizon=forecast_horizon,
-                retrain=retrain,
-                show_warnings=show_warnings,
-            )
+            and model._check_optimizable_historical_forecasts(retrain)
         ):
             forecasts = model._optimized_historical_forecasts(
                 series=series,
