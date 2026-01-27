@@ -205,4 +205,5 @@ __all__ = [
     "ConformalNaiveModel",
     "ConformalQRModel",
     "Chronos2Model",
+    "TimesFM2p5Model",
 ]
