@@ -15,7 +15,7 @@ if not TORCH_AVAILABLE:
 from darts import TimeSeries
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TimesFM2p5Model
-from darts.tests.conftest import TORCH_AVAILABLE, tfm_kwargs
+from darts.tests.conftest import tfm_kwargs
 from darts.utils.likelihood_models import QuantileRegression
 
 # quantiles used during TimesFM 2.5 pre-training
