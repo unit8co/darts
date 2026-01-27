@@ -94,7 +94,7 @@ explicit = true  # Only use this index for packages explicitly configured to use
 zip-safe = false
 
 [tool.setuptools.packages.find]
-exclude = ["examples*", "static*", "datasets*", "darts_logs*", "conda_recipe*", "from_df_times*"]
+exclude = ["examples*", "static*", "datasets*", "darts_logs*", "conda_recipe*"]
 
 [tool.setuptools.package-data]
 darts = ["py.typed"]

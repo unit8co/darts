@@ -4,6 +4,24 @@ Below, we detail how to install Darts using either `conda` or `pip`.
 
 ## From PyPI
 
+### ⚠️ Important: Package Name Change
+
+**If you previously used `u8darts`:** The package has been renamed to `darts` for simplicity.
+
+**Migration:**
+```bash
+pip uninstall u8darts
+pip install "darts[all]"  # or appropriate extras
+```
+
+**Your code doesn't need changes** - both packages import as `import darts`.
+
+**Full guide:** [MIGRATION.md](MIGRATION.md)
+
+---
+
+### Installation Options
+
 Darts offers a modular installation system with optional dependencies. Choose the installation that fits your needs:
 
 * **Core only** (without neural networks, Prophet, LightGBM, CatBoost, XGBoost, StatsForecast): `pip install darts`
@@ -12,8 +30,6 @@ Darts offers a modular installation system with optional dependencies. Choose th
 * **All available models**: `pip install "darts[all]"`
 
 If installation fails on your platform, please follow the official installation guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
-
-**Note:** The legacy `u8darts` package is deprecated. Please use `darts` with the appropriate extras as shown above.
 
 ## From conda-forge
 Create a conda environment (e.g., for Python 3.11):
