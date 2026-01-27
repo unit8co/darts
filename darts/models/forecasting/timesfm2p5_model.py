@@ -33,7 +33,7 @@ from darts.models.forecasting.pl_forecasting_module import (
     io_processor,
 )
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
-from darts.utils.likelihood_models.torch import QuantileRegression
+from darts.utils.likelihood_models import QuantileRegression
 
 logger = get_logger(__name__)
 
@@ -130,7 +130,10 @@ class _TimesFM2p5Module(PLForecastingModule):
             self.config.output_projection_quantiles
         )
 
-        self.future_length = self.output_chunk_shift + (self.output_chunk_length or 0)
+        self.future_slice = slice(
+            self.output_chunk_shift,
+            self.output_chunk_shift + (self.output_chunk_length or 0),
+        )
 
         # gather indices of user-specified quantiles
         user_quantiles: list[float] = (
@@ -166,15 +169,22 @@ class _TimesFM2p5Module(PLForecastingModule):
             Quantile predictions of shape `(batch_size, num_input_patches, output_patch_len * num_quantiles_plus_one)`.
             The last dimension contains the (unused) mean followed by nine quantile predictions (0.1 to 0.9).
         """
+        # See comments in `forward()` for explanation of dimension notations.
+        # `inputs`, `masks`: (B * C, Q, I)
+        # `tokenizer_inputs`: (B * C, Q, I * 2)
         tokenizer_inputs = torch.cat([inputs, masks.to(inputs.dtype)], dim=-1)
-        input_embeddings = self.tokenizer(tokenizer_inputs)
 
-        output_embeddings = input_embeddings
+        # tokenization
+        # `output_embeddings`: (B * C, Q, D)
+        output_embeddings = self.tokenizer(tokenizer_inputs)
+
+        # stacked transformer layers
         for _, layer in enumerate(self.stacked_xf):
-            output_embeddings = layer(
-                output_embeddings,
-                masks[..., -1],
-            )
+            # -> (B * C, Q, D)
+            output_embeddings = layer(output_embeddings, masks[..., -1])
+
+        # output projections
+        # `output_ts`: (B * C, Q, O * W)
         output_ts = self.output_projection_point(output_embeddings)
         # output_quantile_spread = self.output_projection_quantiles(output_embeddings)
 
@@ -198,33 +208,49 @@ class _TimesFM2p5Module(PLForecastingModule):
             probabilistic forecasts, or `(n_samples, n_time_steps, n_targets, 1)` for
             deterministic forecasts (median only).
         """
+        # B: batch size
+        # L: input chunk length
+        # T: output chunk length
+        # I = 32: input patch length
+        # O = 128: output patch length
+        # P: minimum left-pad length such that (P+L) is divisible by I
+        # Z = P + L: padded input chunk length
+        # Q = Z / I: patches for the input chunk
+        # W = 10: quantiles + 1 (mean + 9 quantiles)
+        # C: target components
+        # D: hidden dimensions
+        # N: likelihood quantiles (user-specified)
+
+        # `x_past`: (B, L, C)
         x_past, _, _ = x_in
 
         # TimesFM 2.5 is a univariate model and its inputs does not have a variable dimension,
-        # so here we reshape x_past to (n_samples * n_variables, n_time_steps)
+        # so here we reshape `x_past` to (B * C, L)
         x_past = x_past.permute(0, 2, 1).reshape(-1, self.input_chunk_length)
 
         # We assume there are no missing values in x_past, so strip_leading_nans() and
         # linear_interpolation() are not needed here.
 
         # left-pad x_past with NaNs to make its length a multiple of input_patch_len (32)
+        # `x_past` -> (B * C, Z)
         if self.pad_len > 0:
             x_past = F.pad(x_past, (self.pad_len, 0), value=float("nan"))
 
         # create mask for x_past
+        # `x_mask`: (B * C, Z)
         mask = torch.isnan(x_past)
 
         # divide x_past and mask into patches of size input_patch_len (32)
+        # -> (B * C, Q, I)
         patched_x_past = x_past.unfold(1, self.input_patch_len, self.input_patch_len)
         patched_mask = mask.unfold(1, self.input_patch_len, self.input_patch_len)
-
         # determine batch size and number of input patches after patching
-        batch_size, num_input_patches, _ = patched_x_past.shape
+        batch_comp_size, num_input_patches, _ = patched_x_past.shape
 
-        # running stats
-        n = torch.zeros(batch_size, device=patched_x_past.device)
-        mu = torch.zeros(batch_size, device=patched_x_past.device)
-        sigma = torch.zeros(batch_size, device=patched_x_past.device)
+        # running stats of mean (mu) and stddev (sigma) for each input patch
+        n = torch.zeros(batch_comp_size, device=patched_x_past.device)
+        mu = torch.zeros(batch_comp_size, device=patched_x_past.device)
+        sigma = torch.zeros(batch_comp_size, device=patched_x_past.device)
         patch_mu = []
         patch_sigma = []
         for i in range(num_input_patches):
@@ -233,38 +259,43 @@ class _TimesFM2p5Module(PLForecastingModule):
             )
             patch_mu.append(mu)
             patch_sigma.append(sigma)
+        # `context_mu`, `context_sigma`: (B * C, Q)
         context_mu = torch.stack(patch_mu, dim=1)
         context_sigma = torch.stack(patch_sigma, dim=1)
 
         # normalize inputs and apply mask
+        # `normed_inputs`: (B * C, Q, I)
         normed_inputs = _revin(patched_x_past, context_mu, context_sigma, reverse=False)
         normed_inputs = torch.where(patched_mask, 0.0, normed_inputs)
 
         # forward pass
+        # `normed_outputs`: (B * C, Q, O * W)
         normed_outputs = self._forward(normed_inputs, patched_mask)
 
         # inverse normalization
+        # `renormed_outputs`: (B * C, Q, O * W)
         renormed_outputs = _revin(
             normed_outputs, context_mu, context_sigma, reverse=True
         )
 
         # use only the last patch
+        # -> (B * C, O * W)
         renormed_outputs = renormed_outputs[:, -1]
 
-        # reshape renormed_outputs to (n_samples, n_targets, output_patch_len, quantiles+1)
+        # -> (B, C, O, W)
         renormed_outputs = torch.reshape(
             renormed_outputs,
             (-1, self.n_targets, self.output_patch_len, self.num_quantiles_plus_one),
         )
-        # permute to (n_samples, output_patch_len, n_targets, quantiles+1)
+        # -> (B, O, C, W)
         renormed_outputs = renormed_outputs.permute(0, 2, 1, 3)
 
         # truncate to output_chunk_length
-        renormed_outputs = renormed_outputs[
-            :, self.output_chunk_shift : self.future_length, :, :
-        ]
+        # -> (B, T, C, W)
+        renormed_outputs = renormed_outputs[:, self.future_slice, :, :]
 
         # select only user-specified quantiles or median if deterministic
+        # -> (B, T, C, N)
         renormed_outputs = renormed_outputs[:, :, :, self.user_quantile_indices]
 
         return renormed_outputs
