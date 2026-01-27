@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts import TimeSeries, concatenate
+from darts import TimeSeries, concatenate, to_group_dataframe
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.tests.conftest import POLARS_AVAILABLE
 from darts.timeseries import (
@@ -165,9 +165,8 @@ class TestTimeSeriesStaticCovariate:
             "time": time,
             "x": values,
         })
-        ts = TimeSeries.from_group_dataframe(
-            self.pd_to_backend(df, backend), group_cols="group", time_col="time"
-        )
+        df = self.pd_to_backend(df, backend)
+        ts = TimeSeries.from_group_dataframe(df, group_cols="group", time_col="time")
 
         # check the time index
         assert ts[0].time_index.equals(index_expected)
@@ -176,6 +175,19 @@ class TestTimeSeriesStaticCovariate:
         # check the values
         assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
         assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
+
+        reconstructed = to_group_dataframe(
+            ts, backend=backend, add_static_cov=True, time_as_index=False
+        )
+        cols = sorted(reconstructed.columns)
+        if backend == "pandas":
+            reconstructed = reconstructed.sort_values(["time", "group"])[cols]
+            original = df.sort_values(["time", "group"])[cols]
+        else:
+            reconstructed = reconstructed.sort(["time", "group"])[cols]
+            original = df.sort(["time", "group"])[cols]
+
+        assert np.all(reconstructed.to_numpy() == original.to_numpy())
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)
     def test_timeseries_from_longitudinal_df(self, backend):
@@ -213,7 +225,7 @@ class TestTimeSeriesStaticCovariate:
             metadata_cols=["st1", "constant"],
         )
         assert len(ts_groups2) == self.n_groups
-        for i, ts in enumerate(ts_groups2):
+        for i, ts in enumerate():
             assert ts.static_covariates.shape == (1, 2)
             assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
             assert (ts.static_covariates_values(copy=False) == [[i, 1]]).all()

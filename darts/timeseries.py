@@ -1772,6 +1772,8 @@ class TimeSeries:
         backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
         time_as_index: bool = True,
         suppress_warnings: bool = False,
+        add_static_cov: Optional[Union[list[str], str, bool]] = True,
+        add_metadata: Optional[Union[list[str], str, bool]] = False,
     ):
         """Return a DataFrame representation of the series in a given `backend`.
 
@@ -1829,23 +1831,84 @@ class TimeSeries:
         else:
             columns = self.components
             data = values[:, :, 0]
+        data_dict = {col: data[:, idx] for idx, col in enumerate(columns)}
 
+        # handle static covariates
+        if self.has_static_covariates and add_static_cov:
+            static_covs = self.static_covariates
+            components = list(static_covs.index)
+
+            if isinstance(add_static_cov, bool):
+                # Add all the static cov cols
+                static_cov_cols = static_covs.columns
+            elif isinstance(add_static_cov, (str, list)):
+                static_cov_cols = (
+                    [add_static_cov]
+                    if isinstance(add_static_cov, str)
+                    else add_static_cov
+                )
+                if not all(isinstance(x, str) for x in static_cov_cols):
+                    raise_log(
+                        ValueError("All values in add_static_cov must be of type str"),
+                        logger=logger,
+                    )
+            else:
+                raise_log(
+                    ValueError("add_static_cov must be of type bool, str or List[str]"),
+                    logger=logger,
+                )
+            for static_cov_col in static_cov_cols:
+                for comp in components:
+                    value = static_covs.loc[comp, static_cov_col]
+                    data_col = np.full(data.shape[0], value)
+                    if len(components) > 1:
+                        column = "_".join((comp, static_cov_col))
+                    else:
+                        column = static_cov_col
+                    data_dict[column] = data_col
+                    columns = columns.append(pd.Index([column]))
+
+        # handle metadata
+        if self.has_metadata and add_metadata:
+            metadata = self.metadata
+            if isinstance(add_metadata, bool):
+                # Add all the metadata
+                metadata_cols = metadata.keys()
+            elif isinstance(add_metadata, (str, list)):
+                metadata_cols = (
+                    [add_metadata] if isinstance(add_metadata, str) else add_metadata
+                )
+                if not all(isinstance(x, str) for x in metadata_cols):
+                    raise_log(
+                        ValueError("All values in add_metadata must be of type str"),
+                        logger=logger,
+                    )
+            else:
+                raise_log(
+                    ValueError("add_metadata must be of type bool, str or list[str]"),
+                    logger=logger,
+                )
+            for metadata_col in metadata_cols:
+                data_col = np.full(data.shape[0], metadata[metadata_col])
+                columns = columns.append(pd.Index([metadata_col]))
+                data_dict[metadata_col] = data_col
         time_index = self._time_index
 
         if copy:
-            data = data.copy()
+            data_dict = data_dict.copy()
             time_index = time_index.copy()
 
         if time_as_index:
             # special path for pandas with index
-            return pd.DataFrame(data=data, index=time_index, columns=columns)
+            output_df = pd.DataFrame.from_dict(data=data_dict)
+            output_df.index = time_index
+            return output_df
 
-        data = {
-            time_index.name: time_index,  # set time_index as left-most column
-            **{col: data[:, idx] for idx, col in enumerate(columns)},
-        }
+        time_index_name = str(time_index.name)
+        data_dict[time_index_name] = time_index
+        data_dict = {time_index.name: data_dict.pop(time_index_name), **data_dict}
 
-        return nw.from_dict(data, backend=backend).to_native()
+        return nw.from_dict(data_dict, backend=backend).to_native()
 
     def schema(self, copy: bool = True) -> dict[str, Any]:
         """Return the schema of the series as a dictionary.
@@ -6115,6 +6178,39 @@ def slice_intersect(series: Sequence[TimeSeries]) -> list[TimeSeries]:
         series_intersected.append(series_.slice_intersect(intersection))
 
     return series_intersected
+
+
+def to_group_dataframe(
+    series: Union[TimeSeries, Sequence[TimeSeries]],
+    copy: bool = True,
+    backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
+    time_as_index: bool = True,
+    suppress_warnings: bool = False,
+    add_static_cov: Union[bool, str, list[str], None] = False,
+    add_metadata: Union[bool, str, list[str], None] = False,
+):
+    dfs = []
+
+    if isinstance(series, TimeSeries):
+        series = [series]
+
+    for idx, serie in enumerate(series):
+        _df = serie.to_dataframe(
+            copy,
+            backend,
+            time_as_index,
+            suppress_warnings,
+            add_static_cov,
+            add_metadata,
+        )
+        _df = nw.from_native(_df)
+        dfs.append(_df)
+
+    df = nw.concat(dfs)
+    df = df.to_native()
+    if backend == "pandas" and not time_as_index:
+        df.reset_index(inplace=True, drop=True)
+    return df
 
 
 def _finite_rows_boundaries(
