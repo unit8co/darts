@@ -166,7 +166,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         Returns
         -------
         torch.Tensor
-            Quantile predictions of shape `(batch_size, num_input_patches, output_patch_len * num_quantiles_plus_one)`.
+            Quantile predictions of shape `(batch_size, output_patch_len * num_quantiles_plus_one)`.
             The last dimension contains the (unused) mean followed by nine quantile predictions (0.1 to 0.9).
         """
         # See comments in `forward()` for explanation of dimension notations.
@@ -183,10 +183,14 @@ class _TimesFM2p5Module(PLForecastingModule):
             # -> (B * C, Q, D)
             output_embeddings = layer(output_embeddings, masks[..., -1])
 
+        # use only the last patch embeddings
+        # `last_embeddings`: (B * C, D)
+        last_embeddings = output_embeddings[:, -1, :]
+
         # output projections
-        # `output_ts`: (B * C, Q, O * W)
-        output_ts = self.output_projection_point(output_embeddings)
-        # output_quantile_spread = self.output_projection_quantiles(output_embeddings)
+        # `output_ts`: (B * C, O * W)
+        output_ts = self.output_projection_point(last_embeddings)
+        # output_quantile_spread = self.output_projection_quantiles(last_embeddings)
 
         return output_ts
 
@@ -248,6 +252,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         batch_comp_size, num_input_patches, _ = patched_x_past.shape
 
         # running stats of mean (mu) and stddev (sigma) for each input patch
+        # `n`, `mu`, `sigma`: (B * C,)
         n = torch.zeros(batch_comp_size, device=patched_x_past.device)
         mu = torch.zeros(batch_comp_size, device=patched_x_past.device)
         sigma = torch.zeros(batch_comp_size, device=patched_x_past.device)
@@ -269,18 +274,12 @@ class _TimesFM2p5Module(PLForecastingModule):
         normed_inputs = torch.where(patched_mask, 0.0, normed_inputs)
 
         # forward pass
-        # `normed_outputs`: (B * C, Q, O * W)
+        # `normed_outputs`: (B * C, O * W)
         normed_outputs = self._forward(normed_inputs, patched_mask)
 
         # inverse normalization
-        # `renormed_outputs`: (B * C, Q, O * W)
-        renormed_outputs = _revin(
-            normed_outputs, context_mu, context_sigma, reverse=True
-        )
-
-        # use only the last patch
-        # -> (B * C, O * W)
-        renormed_outputs = renormed_outputs[:, -1]
+        # `renormed_outputs`: (B * C, O * W)
+        renormed_outputs = _revin(normed_outputs, mu, sigma, reverse=True)
 
         # -> (B, C, O, W)
         renormed_outputs = torch.reshape(
