@@ -13,6 +13,7 @@ from darts.utils.statistics import (
     plot_ccf,
     plot_pacf,
     plot_residuals_analysis,
+    plot_tolerance_curve,
     remove_seasonality,
     remove_trend,
     stationarity_test_adf,
@@ -245,3 +246,94 @@ class TestPlot:
         plot_pacf(self.series)
         plot_ccf(self.series, self.series)
         plt.close()
+
+
+class TestPlotToleranceCurve:
+    # univariate series
+    actual_uni = TimeSeries.from_values(np.array([1.0, 2.0, 3.0, 4.0, 5.0]))
+    pred_uni = TimeSeries.from_values(np.array([1.1, 2.2, 2.9, 4.1, 5.0]))
+
+    # multivariate series
+    actual_multi = TimeSeries.from_values(
+        np.column_stack([[1.0, 2.0, 3.0, 4.0, 5.0], [10.0, 20.0, 30.0, 40.0, 50.0]]),
+        columns=["c1", "c2"],
+    )
+    pred_multi = TimeSeries.from_values(
+        np.column_stack([[1.1, 2.2, 2.9, 4.1, 5.0], [11.0, 22.0, 29.0, 41.0, 50.0]]),
+        columns=["c1", "c2"],
+    )
+
+    # stochastic series
+    pred_stoch = TimeSeries.from_values(
+        np.random.rand(5, 1, 10) + np.arange(1.0, 6.0).reshape(-1, 1, 1)
+    )
+
+    @pytest.mark.parametrize(
+        "actual,pred,kwargs",
+        [
+            ("actual_uni", "pred_uni", {}),
+            ("actual_multi", "pred_multi", {}),
+            ("actual_uni", "pred_stoch", {}),
+            ("actual_uni", "pred_stoch", {"q": 0.25}),
+            ("actual_uni", "pred_uni", {"default_formatting": False}),
+            ("actual_uni", "pred_uni", {"min_tolerance": 0.1, "max_tolerance": 0.9}),
+            ("actual_uni", "pred_uni", {"step": 0.05}),
+        ],
+    )
+    def test_plot_tolerance_curve_params(self, actual, pred, kwargs):
+        plot_tolerance_curve(getattr(self, actual), getattr(self, pred), **kwargs)
+        plt.close()
+
+    def test_plot_tolerance_curve_with_axis(self):
+        _, ax = plt.subplots()
+        plot_tolerance_curve(self.actual_uni, self.pred_uni, axis=ax)
+        plt.close()
+
+    @pytest.mark.parametrize(
+        "kwargs,match",
+        [
+            ({"min_tolerance": -0.1}, "min_tolerance must be >= 0"),
+            ({"max_tolerance": 1.5}, "max_tolerance must be <= 1"),
+            (
+                {"min_tolerance": 0.8, "max_tolerance": 0.5},
+                "min_tolerance must be >= 0",
+            ),
+            ({"step": 0}, "step must be positive"),
+            ({"step": -0.1}, "step must be positive"),
+            ({"step": 2.0}, "step must be positive"),
+            ({"q": 1.5}, "q must be between 0 and 1"),
+        ],
+    )
+    def test_plot_tolerance_curve_invalid_params(self, kwargs, match):
+        with pytest.raises(ValueError, match=match):
+            plot_tolerance_curve(self.actual_uni, self.pred_uni, **kwargs)
+
+    def test_plot_tolerance_curve_component_mismatch(self):
+        with pytest.raises(ValueError, match="must have the same number of components"):
+            plot_tolerance_curve(self.actual_multi, self.pred_uni)
+
+    def test_plot_tolerance_curve_intersect(self):
+        # indexes partially overlap
+        actual = TimeSeries.from_times_and_values(
+            pd.date_range("2020-01-01", periods=10, freq="D"), np.arange(10.0)
+        )
+        pred = TimeSeries.from_times_and_values(
+            pd.date_range("2020-01-05", periods=10, freq="D"), np.arange(10.0)
+        )
+        plot_tolerance_curve(actual, pred, intersect=True)
+        plt.close()
+
+    def test_plot_tolerance_curve_no_overlap(self):
+        actual = TimeSeries.from_times_and_values(
+            pd.date_range("2020-01-01", periods=5, freq="D"), np.arange(5.0)
+        )
+        pred = TimeSeries.from_times_and_values(
+            pd.date_range("2020-02-01", periods=5, freq="D"), np.arange(5.0)
+        )
+        with pytest.raises(ValueError, match="at least one overlapping time step"):
+            plot_tolerance_curve(actual, pred, intersect=True)
+
+    def test_plot_tolerance_curve_constant_series(self):
+        actual_const = TimeSeries.from_values(np.array([5.0, 5.0, 5.0, 5.0, 5.0]))
+        with pytest.raises(ValueError, match="range of actual values"):
+            plot_tolerance_curve(actual_const, self.pred_uni)
