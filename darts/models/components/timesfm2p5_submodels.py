@@ -21,7 +21,20 @@ on 23 December 2025.
 # Modifications for Darts
 
 Adapted for Darts with custom `PLForecastingModule` and `FoundationModel` integration:
-- TODO
+- Remove auto-regressive logic as it is handled by `PLForecastingModule` using Monte Carlo sampling.
+- Remove `decode_cache` and cache-related logic used for auto-regressive decoding.
+- Remove `strip_leading_nans()` and `linear_interpolation()` in data preprocessing, as we assume
+    no missing values in historical target data.
+- Remove unused modules and functions like `RandomFourierFeatures`.
+- Replace TimesFM's reversible instance normalization (`normalize_inputs=True`) with Darts' `RINorm` (`io_processor()`).
+    Outputs might be different due to implementation differences. However, moving patchwise normalization
+    via `update_running_stats()` is retained to align with the source implementation.
+- Drop support for covariates (XReg). Users can achieve similar functionality by coupling with Darts' `SKLearnModel`,
+    and Scikit-learn's `Ridge` regressor, see https://github.com/unit8co/darts/issues/2976 for details.
+- Simplify `update_running_stats()` under the no-missing-values assumption.
+- Project only the last patch to outputs instead of all patches, as XReg with covariates is not used here.
+- Integrate likelihood model with Darts `QuantileRegression` for probabilistic forecasting.
+- Load model weights from HuggingFace Hub using `HuggingFaceConnector`.
 """
 
 import math
