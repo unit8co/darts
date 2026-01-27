@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -12,11 +13,16 @@ if not TORCH_AVAILABLE:
         allow_module_level=True,
     )
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.datasets import ElectricityConsumptionZurichDataset
 from darts.models import TimesFM2p5Model
 from darts.tests.conftest import tfm_kwargs
-from darts.utils.likelihood_models import QuantileRegression
+from darts.utils.likelihood_models import GaussianLikelihood, QuantileRegression
+from darts.utils.timeseries_generation import (
+    gaussian_timeseries,
+    linear_timeseries,
+    sine_timeseries,
+)
 
 # quantiles used during TimesFM 2.5 pre-training
 all_quantiles = [
@@ -55,9 +61,34 @@ class TestTimesFM2p5Model:
     # ---- Fidelity Tests ---- #
     # load validation inputs once for fidelity tests
     ts_energy_train, ts_energy_val = load_validation_inputs()
+    # maximum context (input_chunk_length + output_chunk_length + output_chunk_shift)
+    context_limit = 16384
     # maximum prediction length w/o triggering auto-regression where the results
     # would diverge from the original implementation due to different sampling methods
     max_prediction_length = 128
+
+    # ---- Dummy Tests ---- #
+    # univariate time series
+    series = linear_timeseries(length=200, dtype=np.float32, column_name="A")
+    past_cov = linear_timeseries(length=200, dtype=np.float32, column_name="B")
+    future_cov = linear_timeseries(length=300, dtype=np.float32, column_name="C")
+    # multivariate time series
+    series_multi = concatenate(
+        [
+            linear_timeseries(length=200, dtype=np.float32, column_name="A"),
+            sine_timeseries(length=200, dtype=np.float32, column_name="B"),
+            gaussian_timeseries(length=200, dtype=np.float32, column_name="C"),
+        ],
+        axis=1,
+    )
+    series_multi_2 = concatenate(
+        [
+            linear_timeseries(length=150, dtype=np.float32, column_name="A"),
+            sine_timeseries(length=150, dtype=np.float32, column_name="B"),
+            gaussian_timeseries(length=150, dtype=np.float32, column_name="C"),
+        ],
+        axis=1,
+    )
 
     @pytest.mark.slow
     @pytest.mark.parametrize("probabilistic", [True, False])
@@ -133,9 +164,7 @@ class TestTimesFM2p5Model:
             **tfm_kwargs,
         )
         # fit model w/o fine-tuning
-        model.fit(
-            series=self.ts_energy_train,
-        )
+        model.fit(series=self.ts_energy_train)
 
         # predict on the validation inputs w/ covariates
         pred = model.predict(
@@ -163,3 +192,191 @@ class TestTimesFM2p5Model:
 
         # compare predictions to original
         np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
+
+    @pytest.mark.slow
+    def test_creation(self):
+        # can use shorter input/output chunk length than max
+        model = TimesFM2p5Model(
+            input_chunk_length=11,
+            output_chunk_length=13,
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series)
+        pred = model.predict(n=10, series=self.series)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+
+        # cannot create longer input chunk length than max
+        with pytest.raises(ValueError, match=r"`input_chunk_length` \d+ plus"):
+            TimesFM2p5Model(
+                input_chunk_length=self.context_limit,
+                output_chunk_length=11,
+                **tfm_kwargs,
+            )
+
+        # cannot create longer output chunk length than max
+        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
+            TimesFM2p5Model(
+                input_chunk_length=19,
+                output_chunk_length=self.max_prediction_length + 1,
+                **tfm_kwargs,
+            )
+
+        # cannot create longer output chunk length + output chunk shift than max
+        with pytest.raises(ValueError, match=r"`output_chunk_length` \d+ plus"):
+            TimesFM2p5Model(
+                input_chunk_length=23,
+                output_chunk_length=self.max_prediction_length - 1,
+                output_chunk_shift=3,
+                **tfm_kwargs,
+            )
+
+        # cannot use likelihood others than QuantileRegression
+        with pytest.raises(ValueError, match="Only QuantileRegression likelihood is"):
+            TimesFM2p5Model(
+                input_chunk_length=29,
+                output_chunk_length=12,
+                likelihood=GaussianLikelihood(),
+                **tfm_kwargs,
+            )
+
+        # cannot use quantiles other than those used in pre-training
+        with pytest.raises(
+            ValueError, match="must be a subset of TimesFM 2.5 quantiles"
+        ):
+            TimesFM2p5Model(
+                input_chunk_length=7,
+                output_chunk_length=6,
+                likelihood=QuantileRegression(quantiles=[0.23, 0.5, 0.77]),
+                **tfm_kwargs,
+            )
+
+    @pytest.mark.slow
+    def test_default(self):
+        # default model is deterministic
+        model = TimesFM2p5Model(
+            input_chunk_length=3,
+            output_chunk_length=4,
+            **tfm_kwargs,
+        )
+
+        # calling `fit()` should not use `trainer.fit()`
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(series=self.series)
+            mock_fit.assert_not_called()
+        assert model.model_created
+        assert not model.supports_probabilistic_prediction
+
+        # predictions should not be probabilistic
+        pred = model.predict(n=10, series=self.series)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 10
+        assert pred.n_components == 1
+
+        # default model allows autoregressive predictions (6 > 4)
+        pred_ar = model.predict(n=6, series=self.series)
+        assert isinstance(pred_ar, TimeSeries)
+        assert len(pred_ar) == 6
+        assert pred_ar.n_components == 1
+
+    @pytest.mark.slow
+    def test_probabilistic(self):
+        # probabilistic model
+        model = TimesFM2p5Model(
+            input_chunk_length=5,
+            output_chunk_length=6,
+            likelihood=QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
+            **tfm_kwargs,
+        )
+
+        # calling `fit()` should not use `trainer.fit()`
+        with patch("pytorch_lightning.Trainer.fit") as mock_fit:
+            model.fit(series=self.series)
+            mock_fit.assert_not_called()
+        assert model.model_created
+        assert model.supports_probabilistic_prediction
+
+        # predictions should be probabilistic
+        pred = model.predict(
+            n=5, series=self.series, predict_likelihood_parameters=True
+        )
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 5
+        assert pred.n_components == 3  # 3 quantiles
+
+        # probabilistic model allows autoregressive predictions (8 > 6)
+        pred_ar = model.predict(
+            n=8,
+            series=self.series,
+            num_samples=10,
+        )
+        assert isinstance(pred_ar, TimeSeries)
+        assert len(pred_ar) == 8
+        assert pred_ar.n_components == 1  # sampling yields single component
+        assert pred_ar.n_samples == 10
+
+    @pytest.mark.slow
+    @pytest.mark.parametrize("probabilistic", [True, False])
+    def test_multivariate(self, probabilistic: bool):
+        # create model
+        model = TimesFM2p5Model(
+            input_chunk_length=3,
+            output_chunk_length=8,
+            likelihood=(
+                QuantileRegression(quantiles=[0.1, 0.5, 0.9]) if probabilistic else None
+            ),
+            **tfm_kwargs,
+        )
+        model.fit(series=self.series_multi)
+        pred = model.predict(n=7, predict_likelihood_parameters=probabilistic)
+        assert isinstance(pred, TimeSeries)
+        assert len(pred) == 7
+        if probabilistic:
+            assert pred.n_components == 9  # 3 variables x 3 quantiles
+        else:
+            assert pred.n_components == 3
+
+    def test_covariates(self):
+        model = TimesFM2p5Model(
+            input_chunk_length=21,
+            output_chunk_length=23,
+            **tfm_kwargs,
+        )
+
+        # past covariates are not supported
+        with pytest.raises(ValueError, match="does not support `past_covariates`"):
+            model.fit(series=self.series, past_covariates=self.past_cov)
+
+        # future covariates are not supported
+        with pytest.raises(ValueError, match="does not support `future_covariates`"):
+            model.fit(series=self.series, future_covariates=self.future_cov)
+
+        # past and future covariates are not supported
+        with pytest.raises(
+            ValueError, match="does not support `past_covariates`, `future_covariates`"
+        ):
+            model.fit(
+                series=self.series,
+                past_covariates=self.past_cov,
+                future_covariates=self.future_cov,
+            )
+
+    @pytest.mark.slow
+    def test_multiple_series(self):
+        # create model
+        model = TimesFM2p5Model(
+            input_chunk_length=2,
+            output_chunk_length=3,
+            **tfm_kwargs,
+        )
+        model.fit(series=[self.series_multi, self.series_multi_2])
+        pred = model.predict(n=5, series=[self.series_multi, self.series_multi_2])
+
+        # check that we get a list of predictions
+        assert isinstance(pred, list) and len(pred) == 2
+        assert all(isinstance(p, TimeSeries) for p in pred)
+
+        # check that each prediction has correct length
+        assert all(len(p) == 5 for p in pred)
+        # check that each prediction is deterministic with 3 components
+        assert all(p.n_components == 3 for p in pred)
