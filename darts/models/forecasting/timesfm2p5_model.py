@@ -338,8 +338,8 @@ class TimesFM2p5Model(FoundationModel):
         hub_model_name
             The model ID on HuggingFace Hub. Default: ``"google/timesfm-2.5-200m-pytorch"``.
         hub_model_revision
-            The model version to use. This can be a branch name, tag name, or commit hash. Default is ``None``, which
-            will use the default branch from ``hub_model_name``.
+            The model version to use. This can be a branch name, tag name, or commit hash. Default is
+            ``1d952420fba87f3c6dee4f240de0f1a0fbc790e3``, which will use the October 2, 2025 release of TimesFM 2.5.
         local_dir
             Optional local directory to load the pre-downloaded model. If specified and the directory is empty, the
             model will be downloaded from HuggingFace Hub and saved to this directory. Default is ``None``, which will
