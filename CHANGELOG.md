@@ -10,10 +10,27 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For users of the library:
 
 **Improved**
-  - Implemented a new metric called `autc` (area under tolerance curve), which computes the fraction of points within tolerance bands across a range of tolerances (defined as % of target range), then computes the normalized AUC of that curve to get a [0, 1] score, along with helper function `plot_tolerance_curve` for visual inspection of the curves. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
+
+- Implemented a new metric called `autc` (area under tolerance curve), which computes the fraction of points within tolerance bands across a range of tolerances (defined as % of target range), then computes the normalized AUC of that curve to get a [0, 1] score, along with helper function `plot_tolerance_curve` for visual inspection of the curves. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
+  - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
+  - Maintains API consistency with the existing `plot()` method for easy adoption
+  - Supports deterministic and stochastic, univariate and multivariate series
+  - Allows overlaying multiple series on the same figure via the `fig` parameter
+  - Customizable trace styling via `**kwargs`
+  - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
+  - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
+  - Plotly remains an optional dependency and can be installed with `pip install plotly`
+
 **Fixed**
 
+- Fixed bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).
+- Fixed a bug in `TorchTrainingDataset` where `max_samples_per_ts` was not acting as an upper bound on the number of samples per time series. Now `max_samples_per_ts` correctly acts as an upper bound, capping the dataset size at the actual number of samples that can be extracted from the longest series. [#2987](https://github.com/unit8co/darts/pull/2987) by [Dustin Brunner](https://github.com/brunnedu).
+- Updated s(m)ape to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2984](https://github.com/unit8co/darts/pull/2984) by [eschibli](https://github.com/eschibli).
+
 **Dependencies**
+
+- We set an upper version cap on `pandas<3.0.0` until we officially support it. [#2995](https://github.com/unit8co/darts/pull/2995) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
 
