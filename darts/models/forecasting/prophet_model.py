@@ -97,13 +97,9 @@ class Prophet(FutureCovariatesLocalForecastingModel):
             ..
         country_holidays
             An optional country code, for which holidays can be taken into account by Prophet.
+            See `holidays package <https://holidays.readthedocs.io/en/latest/#available-countries>`__ for available
+            country codes.
 
-            See: https://github.com/vacanza/holidays
-
-            In addition to those countries, Prophet includes holidays for these
-            countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
-            Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
-            Egypt (EG), China (CN), and Russia (RU).
         cap
             Parameter specifying the maximum carrying capacity when predicting with logistic growth.
             Mandatory when `growth = 'logistic'`, otherwise ignored.
