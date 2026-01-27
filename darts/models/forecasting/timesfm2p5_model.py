@@ -294,6 +294,7 @@ class TimesFM2p5Model(FoundationModel):
         and better predictive accuracy.
 
         This model supports either univariate or multivariate time series, but does not support covariates.
+        For multivariate time series, the model is applied independently to each component.
 
         By default, using this model will automatically download and cache the pre-trained model from HuggingFace Hub
         (`google/timesfm-2.5-200m-pytorch <https://huggingface.co/google/timesfm-2.5-200m-pytorch/tree/main>`_).
