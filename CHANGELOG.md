@@ -11,6 +11,16 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
+  - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
+  - Maintains API consistency with the existing `plot()` method for easy adoption
+  - Supports deterministic and stochastic, univariate and multivariate series
+  - Allows overlaying multiple series on the same figure via the `fig` parameter
+  - Customizable trace styling via `**kwargs`
+  - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
+  - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
+  - Plotly remains an optional dependency and can be installed with `pip install plotly`
+
 **Fixed**
 
 - Fixed bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).

@@ -103,6 +103,14 @@ except ImportError:
     logger.warning("Polars not installed - Some tests will be skipped.")
     POLARS_AVAILABLE = False
 
+try:
+    import plotly  # noqa: F401
+
+    PLOTLY_AVAILABLE = True
+except ImportError:
+    logger.warning("Plotly not installed - Some tests will be skipped.")
+    PLOTLY_AVAILABLE = False
+
 tfm_kwargs: dict[str, Any] = {
     "pl_trainer_kwargs": {
         "accelerator": "cpu",
