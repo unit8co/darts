@@ -26,6 +26,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).
 - Fixed a bug in `TorchTrainingDataset` where `max_samples_per_ts` was not acting as an upper bound on the number of samples per time series. Now `max_samples_per_ts` correctly acts as an upper bound, capping the dataset size at the actual number of samples that can be extracted from the longest series. [#2987](https://github.com/unit8co/darts/pull/2987) by [Dustin Brunner](https://github.com/brunnedu).
 - Updated s(m)ape to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2984](https://github.com/unit8co/darts/pull/2984) by [eschibli](https://github.com/eschibli).
+- Updates outdated links to [holidays package](https://holidays.readthedocs.io/en/latest/#available-countries) in `TimeSeries`, `holidays_timeseries()`, and `Prophet`. [#2999](https://github.com/unit8co/darts/pull/2999) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
