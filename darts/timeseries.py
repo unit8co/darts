@@ -1777,7 +1777,7 @@ class TimeSeries:
         backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
         time_as_index: bool = True,
         suppress_warnings: bool = False,
-        add_static_cov: Optional[Union[list[str], str, bool]] = True,
+        add_static_cov: Optional[Union[list[str], str, bool]] = False,
         add_metadata: Optional[Union[list[str], str, bool]] = False,
     ):
         """Return a DataFrame representation of the series in a given `backend`.
@@ -1800,7 +1800,14 @@ class TimeSeries:
             Only effective with the pandas `backend`.
         suppress_warnings
             Whether to suppress the warnings for the `DataFrame` creation.
-
+        add_static_cov
+            Whether to add static covariates from the time series as columns in the resulting dataframe (one column per
+            component-static covariate pair). Can be a bool in case all the static covariates should be added, or a
+            string/list of string in case only a subset are needed.
+        add_metadata
+            Whether to add metadata from the time series as columns in the resulting dataframe (one column per
+            metadata). Can be a bool in case all the metadata should be added, or a string/list of string in case only
+            a subset are needed.
         Returns
         -------
         DataFrame
