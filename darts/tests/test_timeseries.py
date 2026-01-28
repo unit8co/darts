@@ -1634,15 +1634,10 @@ class TestTimeSeries:
         df_01 = series.to_dataframe()
         df_012 = series.to_dataframe()
 
-        PANDAS_210 = pd.__version__ >= "2.1.0"
-        select_map = "map"
-        if not PANDAS_210:
-            select_map = "applymap"
-
-        df_0[["0"]] = getattr(df_0[["0"]], select_map)(fn)
-        df_2[["2"]] = getattr(df_2[["2"]], select_map)(fn)
-        df_01[["0", "1"]] = getattr(df_01[["0", "1"]], select_map)(fn)
-        df_012 = getattr(df_012, select_map)(fn)
+        df_0[["0"]] = df_0[["0"]].map(fn)
+        df_2[["2"]] = df_2[["2"]].map(fn)
+        df_01[["0", "1"]] = df_01[["0", "1"]].map(fn)
+        df_012 = df_012.map(fn)
 
         series_0 = TimeSeries.from_dataframe(df_0, freq="D")
         series_2 = TimeSeries.from_dataframe(df_2, freq="D")

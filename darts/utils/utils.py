@@ -104,27 +104,25 @@ class ModelMode(Enum):
     NONE = None
 
 
-# TODO: remove this at some point when we set a lower cap on pandas v2.2.0
-pd_above_v22 = pd.__version__ >= "2.2"
 freqs = {
-    "YE": "YE" if pd_above_v22 else "A",
-    "YS": "YS" if pd_above_v22 else "AS",
-    "BYS": "BYS" if pd_above_v22 else "BAS",
-    "BYE": "BYE" if pd_above_v22 else "BA",
-    "QE": "QE" if pd_above_v22 else "Q",
-    "BQE": "BQE" if pd_above_v22 else "BQ",
-    "ME": "ME" if pd_above_v22 else "M",
-    "SME": "SME" if pd_above_v22 else "SM",
-    "BME": "BME" if pd_above_v22 else "BM",
-    "CBME": "CBME" if pd_above_v22 else "CBM",
-    "h": "h" if pd_above_v22 else "H",
-    "bh": "bh" if pd_above_v22 else "BH",
-    "cbh": "cbh" if pd_above_v22 else "CBH",
-    "min": "min" if pd_above_v22 else "T",
-    "s": "s" if pd_above_v22 else "S",
-    "ms": "ms" if pd_above_v22 else "L",
-    "us": "us" if pd_above_v22 else "U",
-    "ns": "ns" if pd_above_v22 else "N",
+    "YE": "YE",
+    "YS": "YS",
+    "BYS": "BYS",
+    "BYE": "BYE",
+    "QE": "QE",
+    "BQE": "BQE",
+    "ME": "ME",
+    "SME": "SME",
+    "BME": "BME",
+    "CBME": "CBME",
+    "h": "h",
+    "bh": "bh",
+    "cbh": "cbh",
+    "min": "min",
+    "s": "s",
+    "ms": "ms",
+    "us": "us",
+    "ns": "ns",
 }
 
 
@@ -483,9 +481,10 @@ def n_steps_between(
             # for lower pandas versions ~1.5.0, business frequencies wrongly have a period alias.
             # taking the period difference as computed in `else` gives wrong results.
             # in this (worst) case for special frequencies (e.g "C*"), we must generate the index
+            # TODO: improve comment, verify behavior across pandas 2.x and 3.x for edge cases.
             is_reversed = end < start
             if is_reversed:
-                # always generate an increasing index, since pandas (v2.2.1) gives inconsistent result for
+                # always generate an increasing index, since pandas gives inconsistent result for
                 # negative/decreasing frequencies. Then reverse the index in case of negative/decreasing
                 # input frequency
                 start, end = end, start
@@ -571,7 +570,7 @@ def generate_index(
         if freq.n < 0:
             if start is not None and not freq.is_on_offset(start):
                 # for anchored negative frequencies, and `start` does not intersect with `freq`:
-                # pandas (v2.2.1) generates an index that starts one step before `start` -> remove this step
+                # pandas generates an index that starts one step before `start` -> remove this step
                 index = index[1:]
             elif end is not None and not freq.is_on_offset(end):
                 # if `start` intersects with `freq`, then the same can happen for `end` -> remove this step
