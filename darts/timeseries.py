@@ -1909,9 +1909,7 @@ class TimeSeries:
             output_df.index = time_index
             return output_df
 
-        time_index_name = str(time_index.name)
-        data_dict[time_index_name] = time_index
-        data_dict = {time_index.name: data_dict.pop(time_index_name), **data_dict}
+        data_dict = {time_index.name: time_index, **data_dict}
 
         return nw.from_dict(data_dict, backend=backend).to_native()
 

@@ -197,6 +197,7 @@ class TestTimeSeriesStaticCovariate:
         expected = df.sort_values(["ID", "time"])
         reconstructed = reconstructed.sort_values(["ID", "time"])
         reconstructed["ID"] = reconstructed["ID"].astype(int)
+        reconstructed.reset_index(inplace=True, drop=True)
         assert reconstructed.equals(expected)
 
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
@@ -283,6 +284,9 @@ class TestTimeSeriesStaticCovariate:
             "set": ["B"] * 20 + ["A"] * 10,
         })
         add_static_cov, expected_cols = config
+        expected_cols = (
+            [expected_cols] if isinstance(expected_cols, str) else expected_cols
+        )
         df_subset = df[["value", "ID", *expected_cols]]
         ts_list = TimeSeries.from_group_dataframe(
             df_subset, group_cols="ID", static_cols=expected_cols
