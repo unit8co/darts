@@ -6131,6 +6131,48 @@ def to_group_dataframe(
     add_static_cov: Union[bool, str, list[str], None] = False,
     add_metadata: Union[bool, str, list[str], None] = False,
 ):
+    """
+    Return a grouped DataFrame representation from one or multiple `TimeSeries`.
+
+    This method converts a single `TimeSeries` or a sequence of `TimeSeries` into individual DataFrames
+    using `TimeSeries.to_dataframe()` and concatenates them into a single DataFrame.
+    This is particularly useful when working with collections of time series that share a common schema
+    and need to be represented in a tabular format for downstream processing.
+
+    Each series is converted independently, and the resulting DataFrames are concatenated row-wise
+    using the specified backend.
+
+    Parameters
+    ----------
+    series
+        A single `TimeSeries` or a sequence of `TimeSeries` to convert into a grouped DataFrame.
+    copy
+        Whether to return a copy of the resulting DataFrame. Leave it to True unless you know what you are doing.
+    backend
+        The backend to which to export the `TimeSeries`. See the `narwhals documentation
+        <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`__ for all supported
+        backends.
+    time_as_index
+        Whether to set the time index as the index of the DataFrame or in the left-most column.
+        Only effective with the pandas `backend`.
+    suppress_warnings
+        Whether to suppress warnings raised during the DataFrame creation.
+    add_static_cov
+        Whether to add static covariates from the time series as columns in the resulting DataFrame
+        (one column per component–static covariate pair). Can be a bool in case all the static covariates
+        should be added, or a string/list of strings in case only a subset is needed.
+    add_metadata
+        Whether to add metadata from the time series as columns in the resulting DataFrame
+        (one column per metadata entry). Can be a bool in case all metadata should be added,
+        or a string/list of strings in case only a subset is needed.
+
+    Returns
+    -------
+    DataFrame
+        A grouped DataFrame representation of the input `TimeSeries`(s) in the specified `backend`.
+        The DataFrame is obtained by concatenating the individual DataFrames generated from each series.
+    """
+
     dfs = []
 
     if isinstance(series, TimeSeries):
