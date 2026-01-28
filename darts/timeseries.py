@@ -3600,7 +3600,7 @@ class TimeSeries:
 
         The holiday component is binary where `1` corresponds to a time step falling on a holiday.
 
-        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`__.
+        Available countries can be found `here <https://holidays.readthedocs.io/en/latest/#available-countries>`__.
 
         This works only for deterministic time series (i.e., made of 1 sample).
 
