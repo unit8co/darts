@@ -20,7 +20,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
   - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
   - Plotly remains an optional dependency and can be installed with `pip install plotly`
-- Added `to_group_dataframe()`function that takes a list of series as an input and returns a long format dataframe.
+- Added `to_group_dataframe()`function that takes a list of series as an input and returns a long format dataframe. [#2965](https://github.com/unit8co/darts/issues/2965) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
   - Added support for static covariates and metatada in the `TimeSeries.to_dataframe()` method. Those can be added as columns in the result dataframe.
   - Two new arguments for the `TimeSeries.to_dataframe()` method control the addition of metadata and static covariates.
   - Component level static covariates are also supported in `to_group_dataframe()` and `TimeSeries.to_dataframe()`
