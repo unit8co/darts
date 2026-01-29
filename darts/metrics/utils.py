@@ -1036,56 +1036,25 @@ def _compute_score(
     return scores
 
 
-def _get_tolerances_and_coverages(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
+def _get_tolerance_levels(
     min_tolerance: float,
     max_tolerance: float,
     step: float,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Computes tolerance levels and per-component coverages for AUTC computation.
-
-    Parameters
-    ----------
-    y_true
-        The actual values as a numpy array.
-    y_pred
-        The predicted values as a numpy array.
-    min_tolerance
-        The minimum tolerance level as a fraction of the series range.
-    max_tolerance
-        The maximum tolerance level as a fraction of the series range.
-    step
-        The step size between tolerance levels.
-
-    Returns
-    -------
-    tuple[np.ndarray, np.ndarray]
-        - tolerances: array of tolerance levels
-        - coverages: array of coverages with shape (n_tolerances, ...) preserving input dimensions except time
-    """
-    # range of actual values (max - min) for each component
-    y_range = np.nanmax(y_true, axis=TIME_AX) - np.nanmin(y_true, axis=TIME_AX)
-
-    # handle case where range is zero (constant series)
-    if np.any(y_range == 0):
-        raise ValueError(
-            "The range of actual values (max - min) must be strictly positive for all "
-            "components to compute the AUTC. Found zero range for at least one component."
+):
+    """Computes normalized tolerance levels."""
+    if not (0.0 <= min_tolerance < max_tolerance <= 1.0):
+        raise_log(
+            ValueError(
+                "min_tolerance must be >= 0, max_tolerance must be <= 1, and min_tolerance < max_tolerance."
+            ),
+            logger=logger,
         )
-
-    # compute absolute errors normalized by half the range
-    abs_errors = np.abs(y_true - y_pred)
-    half_range = y_range / 2
-    normalized_errors = abs_errors / half_range
-
-    # get tolerance levels
+    if step <= 0 or step > (max_tolerance - min_tolerance):
+        raise_log(
+            ValueError(
+                "step must be positive and not larger than (max_tolerance - min_tolerance)."
+            ),
+            logger=logger,
+        )
     num_steps = int(round((max_tolerance - min_tolerance) / step)) + 1
-    tolerances = np.linspace(min_tolerance, max_tolerance, num_steps)
-
-    # get coverage for each tolerance level (fraction of points within tolerance)
-    coverages = np.array([
-        np.nanmean(normalized_errors <= tol, axis=TIME_AX) for tol in tolerances
-    ])
-
-    return tolerances, coverages
+    return np.linspace(min_tolerance, max_tolerance, num_steps)

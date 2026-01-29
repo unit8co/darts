@@ -22,7 +22,7 @@ from darts.metrics.utils import (
     _confusion_matrix,
     _get_error_scale,
     _get_quantile_intervals,
-    _get_tolerances_and_coverages,
+    _get_tolerance_levels,
     _get_values_or_raise,
     _get_wrapped_metric,
     _LabelReduction,
@@ -2406,6 +2406,65 @@ def coefficient_of_variation(
 
 @multi_ts_support
 @multivariate_support
+def _tolerance_coverages(
+    actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+    pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+    intersect: bool = True,
+    *,
+    min_tolerance: float = 0.0,
+    max_tolerance: float = 1.0,
+    step: float = 0.01,
+    q: Optional[Union[float, list[float], tuple[np.ndarray, pd.Index]]] = None,
+    component_reduction: Optional[Callable[[np.ndarray], float]] = np.nanmean,
+    series_reduction: Optional[Callable[[np.ndarray], Union[float, np.ndarray]]] = None,
+    n_jobs: int = 1,
+    verbose: bool = False,
+) -> METRIC_OUTPUT_TYPE:
+    """Computes the tolerance coverages for different tolerance levels.
+
+    More info in metric `autc()`.
+    """
+    y_true, y_pred = _get_values_or_raise(
+        actual_series,
+        pred_series,
+        intersect,
+        remove_nan_union=True,
+        q=q,
+    )
+
+    # range of actual values (max - min) for each component
+    y_range = np.nanmax(y_true, axis=TIME_AX) - np.nanmin(y_true, axis=TIME_AX)
+
+    # handle case where range is zero (constant series)
+    if np.any(y_range == 0):
+        raise ValueError(
+            "The range of actual values (max - min) must be strictly positive for all "
+            "components to compute the AUTC. Found zero range for at least one component."
+        )
+
+    tolerances = _get_tolerance_levels(
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
+    )
+
+    # compute absolute errors normalized by half the range
+    abs_errors = np.abs(y_true - y_pred)
+    half_range = y_range / 2
+    normalized_errors = abs_errors / half_range
+
+    # get coverage for each tolerance level (fraction of points within tolerance)
+    # -> (n components, n quantiles, n coverages)
+    coverages = np.nanmean(
+        np.expand_dims(normalized_errors, -1) <= tolerances, axis=TIME_AX
+    )
+    # 'abuse' the first dimension which is normally the time dimension for the coverages
+    # -> (n coverages, n components, n quantiles)
+    return coverages.transpose((2, 0, 1))
+
+
+@multi_ts_support
+@multivariate_support
 def autc(
     actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     pred_series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -2511,27 +2570,17 @@ def autc(
     --------
     :func:`~darts.utils.statistics.plot_tolerance_curve` : Plot the tolerance curve for visual inspection.
     """
-
-    if step <= 0 or step > (max_tolerance - min_tolerance):
-        raise_log(
-            ValueError(
-                "`step` must be positive and not larger than (max_tolerance - min_tolerance)."
-            ),
-            logger=logger,
-        )
-
-    y_true, y_pred = _get_values_or_raise(
+    coverages = _get_wrapped_metric(_tolerance_coverages)(
         actual_series,
         pred_series,
         intersect,
-        remove_nan_union=True,
         q=q,
     )
-
-    tolerances, coverages = _get_tolerances_and_coverages(
-        y_true, y_pred, min_tolerance, max_tolerance, step
+    tolerances = _get_tolerance_levels(
+        min_tolerance=min_tolerance,
+        max_tolerance=max_tolerance,
+        step=step,
     )
-
     return np.trapezoid(coverages, tolerances, axis=0)
 
 

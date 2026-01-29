@@ -160,8 +160,6 @@ def metric_autc(y_true, y_pred, n_tolerances=101, **kwargs):
     y_true = y_true[:, 0]  # univariate
     y_pred = y_pred[:, 0]
     y_range = np.max(y_true) - np.min(y_true)
-    if y_range == 0:
-        raise ValueError("Zero range")
     abs_errors = np.abs(y_true - y_pred)
     half_range = y_range / 2
     normalized_errors = abs_errors / half_range
@@ -868,6 +866,7 @@ class TestMetrics:
                 (metrics.mae, False),
                 (metrics.mse, False),
                 (metrics.rmse, False),
+                (metrics.autc, False),
                 (metrics.rmsle, False),
                 (metrics.mase, False),
                 (metrics.msse, False),
@@ -975,6 +974,7 @@ class TestMetrics:
             (metrics.mae, 0, False, {}),
             (metrics.mse, 0, False, {}),
             (metrics.rmse, 0, False, {}),
+            (metrics.autc, 1, False, {}),
             (metrics.rmsle, 0, False, {}),
             (metrics.mase, 0, False, {}),
             (metrics.msse, 0, False, {}),
@@ -1430,6 +1430,7 @@ class TestMetrics:
             (metrics.mae, "max", {}),
             (metrics.mse, "max", {}),
             (metrics.rmse, "max", {}),
+            (metrics.autc, "min", {}),
             (metrics.rmsle, "max", {}),
             (metrics.mape, "max", {}),
             (metrics.wmape, "max", {}),
@@ -1725,6 +1726,7 @@ class TestMetrics:
                 metrics.sape,
                 metrics.arre,
                 metrics.ql,
+                metrics.autc,
                 # time aggregates
                 metrics.merr,
                 metrics.mae,
@@ -2278,3 +2280,26 @@ class TestMetrics:
         with pytest.raises(NotImplementedError) as exc:
             utils._get_wrapped_metric(None, n_wrappers=4)
         assert str(exc.value) == "Only 2-3 wrappers are currently supported"
+
+    @pytest.mark.parametrize(
+        "kwargs,match",
+        [
+            ({"min_tolerance": -0.1}, "min_tolerance must be >= 0"),
+            ({"max_tolerance": 1.5}, "max_tolerance must be <= 1"),
+            (
+                {"min_tolerance": 0.8, "max_tolerance": 0.5},
+                "min_tolerance must be >= 0",
+            ),
+            ({"step": 0}, "step must be positive"),
+            ({"step": -0.1}, "step must be positive"),
+            ({"step": 2.0}, "step must be positive"),
+        ],
+    )
+    def test_autc_invalid_params(self, kwargs, match):
+        with pytest.raises(ValueError, match=match):
+            metrics.autc(self.series1, self.series2, **kwargs)
+
+    def test_autc_constant_series(self):
+        series1_const = self.series1.with_values(np.ones(self.series1.shape))
+        with pytest.raises(ValueError, match="range of actual values"):
+            metrics.autc(series1_const, self.series2)
