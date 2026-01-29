@@ -24,7 +24,7 @@ COPY README.md /app/
 COPY examples/ /app/examples/
 
 # Set Python path so imports work correctly
-ENV PYTHONPATH=/app
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Default command opens a bash shell for interactive use
 CMD ["/bin/bash"]
