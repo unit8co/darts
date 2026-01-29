@@ -12,6 +12,10 @@ from darts.config import (
     reset_option,
     set_option,
 )
+from darts.tests.conftest import PLOTLY_AVAILABLE
+
+if PLOTLY_AVAILABLE:
+    import plotly.io as pio
 
 
 @pytest.fixture(scope="function", autouse=True)
@@ -233,8 +237,48 @@ class TestConfig:
         reset_option("plotting.use_darts_style")
         assert mpl.rcParams == user_style
 
-        # Setting Darts style will override this behavior
+        # Setting Darts style and resetting should restore user's style
         set_option("plotting.use_darts_style", True)
         reset_option("plotting.use_darts_style")
-        assert mpl.rcParams != user_style
-        assert mpl.rcParams == mpl.rcParamsDefault
+        assert mpl.rcParams == user_style
+
+    @pytest.mark.skipif(not PLOTLY_AVAILABLE, reason="requires plotly")
+    def test_plotting_style_callback_plotly(self):
+        """Test that changing plotting.use_darts_style updates plotly template."""
+        # Store original template
+        original_template = pio.templates.default
+
+        # Apply Darts style
+        set_option("plotting.use_darts_style", True)
+        assert pio.templates.default != original_template
+        darts_template = pio.templates.default
+
+        # Remove Darts style
+        set_option("plotting.use_darts_style", False)
+        assert pio.templates.default == original_template
+
+        # Re-apply Darts style
+        set_option("plotting.use_darts_style", True)
+        assert pio.templates.default == darts_template
+
+        # Reset style
+        reset_option("plotting.use_darts_style")
+        assert pio.templates.default == original_template
+
+    @pytest.mark.skipif(not PLOTLY_AVAILABLE, reason="requires plotly")
+    def test_plotting_no_user_template_override_on_reset_plotly(self):
+        """Test that resetting plotting.use_darts_style preserves user's plotly template."""
+        # Set a custom template
+        pio.templates.default = "plotly_dark"
+        user_template = pio.templates.default
+        assert user_template == "plotly_dark"
+
+        # Resetting style should not override user's template
+        reset_option("plotting.use_darts_style")
+        assert pio.templates.default == user_template
+
+        # Setting Darts style and resetting should restore user's template
+        set_option("plotting.use_darts_style", True)
+        assert pio.templates.default != user_template
+        reset_option("plotting.use_darts_style")
+        assert pio.templates.default == user_template
