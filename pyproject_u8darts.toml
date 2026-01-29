@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "u8darts"
 version = "0.40.0"
-description = "⚠️ DEPRECATED - Use 'darts' package instead. This legacy compatibility package redirects to 'darts'. Maintained until June 2027, then discontinued."
+description = "⚠️ DEPRECATED - Use 'darts' package instead. This legacy compatibility package redirects to 'darts'."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
