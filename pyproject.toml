@@ -36,7 +36,7 @@ dependencies = [
     "narwhals>=1.25.1",
     "nfoursid>=1.0.0",
     "numpy>=1.19.0",
-    "pandas>=1.0.5",
+    "pandas>=1.0.5,<3.0.0",
     "pyod>=0.9.5",
     "requests>=2.22.0",
     "scikit-learn>=1.6.0,<1.8.0",
@@ -159,6 +159,7 @@ optional = [
     "polars>=1.37.1",
     "pydantic>=2.12.5",
     "ray>=2.53.0",
+    "plotly"
 ]
 release = [
     "bump-my-version>=1.2.5",
