@@ -6,7 +6,7 @@ WORKDIR /app
 
 # Install uv from official Astral source
 # Using the standalone installer for reliability
-COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.9 /uv /usr/local/bin/uv
 
 # Copy dependency files first for better layer caching
 # These change less frequently than source code
