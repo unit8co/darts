@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "u8darts"
 version = "0.40.0"
 description = "⚠️ DEPRECATED - Use 'darts' package instead. This legacy compatibility package redirects to 'darts'."
-readme = "README.md"
+readme = "U8README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 keywords = ["time series", "forecasting", "DEPRECATED", "redirect"]
