@@ -7,6 +7,7 @@ from typing import Optional, TypedDict
 
 import torch
 from neuralforecast.common._base_model import BaseModel
+from neuralforecast.losses.pytorch import BasePointLoss
 
 from darts.logging import get_logger, raise_log
 from darts.models.forecasting.pl_forecasting_module import (
@@ -15,19 +16,26 @@ from darts.models.forecasting.pl_forecasting_module import (
 )
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.likelihood_models.torch import TorchLikelihood
 
 logger = get_logger(__name__)
 
-# B: batch size / number of windows
-# L: input chunk length / input window length
-# H: output chunk length / horizon
-# C: target components / number of series
-# X: past covariate components / historical exogenous variables
-# F: future covariate components / future exogenous variables
-# S: static covariate components / static exogenous variables
-# N: likelihood parameters
 
 """
+
+Throughout this file, we use the following notation for tensor shapes:
+
+    SYMBOL: Darts / NeuralForecast definition
+    ------------------------------------------------
+    B: batch size / number of windows
+    L: input chunk length / input window length
+    H: output chunk length / horizon
+    C: target components / number of series
+    X: past covariate components / historical exogenous variables
+    F: future covariate components / future exogenous variables
+    S: static covariate components / static exogenous variables (per target component)
+    N: likelihood parameters
+
 In NeuralForecast, `BaseModel.forward()` takes a single argument which is a dictionary
 containing all inputs. See `BaseModel._parse_windows()` and `BaseModel.training_step()`
 to see how these inputs are being built and used.
@@ -36,7 +44,7 @@ We thus define the expected keys and their types below:
 """
 
 
-class _Window_Batch(TypedDict):
+class _WindowBatch(TypedDict):
     insample_y: torch.Tensor
     insample_mask: torch.Tensor
     # outsample_y: Optional[torch.Tensor]
@@ -47,6 +55,7 @@ class _Window_Batch(TypedDict):
 
 
 IGNORED_NF_MODEL_PARAM_NAMES = {
+    "loss",
     "valid_loss",
     "learning_rate",
     "max_steps",
@@ -79,13 +88,18 @@ IGNORED_NF_MODEL_PARAM_NAMES = {
     "dataloader_kwargs",
 }
 
+
 # TODO: implement pseudo loss class to pass to `nf_model.loss`
+class _PseudoLoss(BasePointLoss):
+    def __init__(self, likelihood: Optional[TorchLikelihood]):
+        n_likelihood_params = likelihood.num_parameters if likelihood is not None else 1
+        super().__init__(outputsize_multiplier=n_likelihood_params)
 
 
 class _NFModel(BaseModel):
     """This serves as a protocol for expected NeuralForecast BaseModel API."""
 
-    def forward(self, window_batch: _Window_Batch) -> torch.Tensor: ...
+    def forward(self, window_batch: _WindowBatch) -> torch.Tensor: ...
 
 
 class _PLForecastingModule(PLForecastingModule):
@@ -136,7 +150,7 @@ class _PLForecastingModule(PLForecastingModule):
             futr_exog = torch.cat([x_past[:, :, self.future_slice], x_future], dim=1)
         if x_static is not None:
             stat_exog = x_static.squeeze(1)
-        window_batch = _Window_Batch(
+        window_batch = _WindowBatch(
             insample_y=insample_y,
             insample_mask=insample_mask,
             hist_exog=hist_exog,
@@ -259,9 +273,13 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             n_stat_covs = static_covariates.size
             stat_exog_list = build_exog_list("stat_exog", n_stat_covs)
 
+        # set loss to pseudo loss with correct number of likelihood parameters
+        loss = _PseudoLoss(self.likelihood)
+
         # initialize nf_model instance
         nf_model = self.nf_model_class(
             **self.nf_model_params,
+            loss=loss,
             n_series=1,  # TODO: multivariate support
             futr_exog_list=futr_exog_list,
             hist_exog_list=hist_exog_list,
