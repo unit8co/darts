@@ -184,6 +184,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
     def __init__(
         self,
         model: BaseModel,
+        use_static_covariates: bool = True,
         **kwargs,
     ):
         super().__init__(**self._extract_torch_model_params(**self.model_params))
@@ -214,6 +215,9 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 ),
                 logger,
             )
+
+        # consider static covariates if supported by `nf_model_class`
+        self._considers_static_covariates = use_static_covariates
 
     def _validate_nf_model_params(self) -> None:
         ignored_params_in_use = IGNORED_NF_MODEL_PARAM_NAMES.intersection(
@@ -293,3 +297,15 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             n_future_covs=n_future_covs,
             **pl_module_params,
         )
+
+    @property
+    def supports_past_covariates(self) -> bool:
+        return self.nf_model_class.EXOGENOUS_HIST
+
+    @property
+    def supports_future_covariates(self) -> bool:
+        return self.nf_model_class.EXOGENOUS_FUTR
+
+    @property
+    def supports_static_covariates(self) -> bool:
+        return self.nf_model_class.EXOGENOUS_STAT
