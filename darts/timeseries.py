@@ -51,10 +51,9 @@ from copy import deepcopy
 from inspect import signature
 from io import StringIO
 from types import ModuleType
-from typing import Any, Callable, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Literal, Optional, Union
 
 import matplotlib.axes
-import matplotlib.pyplot as plt
 import narwhals as nw
 import numpy as np
 import pandas as pd
@@ -72,6 +71,8 @@ from darts.utils._formatting import (
     make_collapsible_section,
     make_paragraph,
 )
+from darts.utils._plotting import plot as _plot
+from darts.utils._plotting import plotly as _plotly
 from darts.utils.utils import (
     SUPPORTED_RESAMPLE_METHODS,
     dataframe_col_to_time_index,
@@ -84,6 +85,9 @@ if sys.version_info >= (3, 11):
     from typing import Self
 else:
     from typing_extensions import Self
+
+if TYPE_CHECKING:
+    import plotly.graph_objects as go
 
 logger = get_logger(__name__)
 
@@ -3552,7 +3556,7 @@ class TimeSeries:
 
         The holiday component is binary where `1` corresponds to a time step falling on a holiday.
 
-        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`__.
+        Available countries can be found `here <https://holidays.readthedocs.io/en/latest/#available-countries>`__.
 
         This works only for deterministic time series (i.e., made of 1 sample).
 
@@ -4367,7 +4371,7 @@ class TimeSeries:
         *args,
         **kwargs,
     ) -> matplotlib.axes.Axes:
-        """Plot the series.
+        """Plot the series using Matplotlib.
 
         Parameters
         ----------
@@ -4381,7 +4385,7 @@ class TimeSeries:
         low_quantile
             The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
-            interval is shown if `confidence_low_quantile` is None (default 0.05).
+            interval is shown if `low_quantile` is None (default 0.05).
         high_quantile
             The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
@@ -4421,175 +4425,105 @@ class TimeSeries:
         matplotlib.axes.Axes
             Either the passed `ax` axis, a newly created one if `new_plot=True`, or the existing one.
         """
-        alpha_confidence_intvls = 0.25
+        return _plot(
+            self,
+            new_plot=new_plot,
+            central_quantile=central_quantile,
+            low_quantile=low_quantile,
+            high_quantile=high_quantile,
+            default_formatting=default_formatting,
+            title=title,
+            label=label,
+            max_nr_components=max_nr_components,
+            ax=ax,
+            alpha=alpha,
+            color=color,
+            c=c,
+            *args,
+            **kwargs,
+        )
 
-        if central_quantile != "mean":
-            if not (
-                isinstance(central_quantile, float) and 0.0 <= central_quantile <= 1.0
-            ):
-                raise_log(
-                    ValueError(
-                        'central_quantile must be either "mean", or a float between 0 and 1.'
-                    ),
-                    logger,
-                )
+    def plotly(
+        self,
+        fig: Optional["go.Figure"] = None,
+        central_quantile: Union[float, str] = 0.5,
+        low_quantile: Optional[float] = 0.05,
+        high_quantile: Optional[float] = 0.95,
+        title: Optional[str] = None,
+        label: Optional[Union[str, Sequence[str]]] = "",
+        max_nr_components: int = 10,
+        alpha: Optional[float] = None,
+        color: Optional[Union[str, Sequence[str]]] = None,
+        c: Optional[Union[str, Sequence[str]]] = None,
+        downsample_threshold: int = 100_000,
+        **kwargs,
+    ) -> "go.Figure":
+        """Plot the series using Plotly.
 
-        if high_quantile is not None and low_quantile is not None:
-            if not (0.0 <= low_quantile <= 1.0 and 0.0 <= high_quantile <= 1.0):
-                raise_log(
-                    ValueError(
-                        "confidence interval low and high quantiles must be between 0 and 1.",
-                    ),
-                    logger,
-                )
+        Parameters
+        ----------
+        fig
+            Optionally, a Plotly `go.Figure` object to plot on. If provided, the series will be added to this
+            figure. If None, a new figure will be created.
+        central_quantile
+            The quantile (between 0 and 1) to plot as a "central" value, if the series is stochastic (i.e., if
+            it has multiple samples). This will be applied on each component separately (i.e., to display quantiles
+            of the components' marginal distributions). For instance, setting `central_quantile=0.5` will plot the
+            median of each component. `central_quantile` can also be set to 'mean'.
+        low_quantile
+            The quantile to use for the lower bound of the plotted confidence interval. Similar to `central_quantile`,
+            this is applied to each component separately (i.e., displaying marginal distributions). No confidence
+            interval is shown if `low_quantile` is None (default 0.05).
+        high_quantile
+            The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
+            this is applied to each component separately (i.e., displaying marginal distributions). No confidence
+            interval is shown if `high_quantile` is None (default 0.95).
+        title
+            Optionally, a plot title.
+        label
+            Can either be a string or list of strings. If a string and the series only has a single component, it is
+            used as the label for that component. If a string and the series has multiple components, it is used as
+            a prefix for each component name. If a list of strings with length equal to the number of components in
+            the series, the labels will be mapped to the components in order.
+        max_nr_components
+            The maximum number of components of a series to plot. -1 means all components will be plotted.
+        alpha
+            Optionally, set the line alpha for deterministic series, or the confidence interval alpha for
+            probabilistic series.
+        color
+            Set the line color(s). Can be a single color string (name or hex), or a sequence of
+            strings (one per component). If a sequence, it must match the number of components.
+            By default, colors are pulled from the active Plotly template.
+        c
+            An alias for `color`.
+        downsample_threshold
+            The maximum number of total data points (time steps * components * traces) to plot.
+            If exceeded, the series will be automatically downsampled using a constant step
+            size to avoid rendering crashes. Set to -1 to disable downsampling. Defaults to 100,000.
+        **kwargs
+            Additional keyword arguments to pass to `plotly.graph_objects.Scatter()` for trace customization
+            (e.g., `line_dash`, `line_width`, `marker_symbol`, `opacity`, or `hovertemplate`).
 
-        if max_nr_components == -1:
-            n_components_to_plot = self.n_components
-        else:
-            n_components_to_plot = min(self.n_components, max_nr_components)
-
-        if self.n_components > n_components_to_plot:
-            logger.warning(
-                f"Number of series components ({self.n_components}) is larger than the maximum number of "
-                f"components to plot ({max_nr_components}). Plotting only the first `{max_nr_components}` "
-                f"components. You can adjust the number of components to plot using `max_nr_components`."
-            )
-
-        if not isinstance(label, str) and isinstance(label, Sequence):
-            if len(label) != self.n_components and len(label) != n_components_to_plot:
-                raise_log(
-                    ValueError(
-                        f"The `label` sequence must have the same length as the number of series components "
-                        f"({self.n_components}) or as the number of plotted components ({n_components_to_plot}). "
-                        f"Received length `{len(label)}`."
-                    ),
-                    logger,
-                )
-            custom_labels = True
-        else:
-            custom_labels = False
-
-        if color and c:
-            raise_log(
-                ValueError(
-                    "`color` and `c` must not be used simultaneously, use one or the other."
-                ),
-                logger,
-            )
-        color = color or c
-        if not isinstance(color, (str, tuple)) and isinstance(color, Sequence):
-            if len(color) != self.n_components and len(color) != n_components_to_plot:
-                raise_log(
-                    ValueError(
-                        f"The `color` sequence must have the same length as the number of series components "
-                        f"({self.n_components}) or as the number of plotted components ({n_components_to_plot}). "
-                        f"Received length `{len(label)}`."
-                    ),
-                    logger,
-                )
-            custom_colors = True
-        else:
-            custom_colors = False
-
-        kwargs["alpha"] = alpha
-        if not any(lw in kwargs for lw in ["lw", "linewidth"]):
-            kwargs["lw"] = 2
-
-        if new_plot:
-            fig, ax = plt.subplots()
-        else:
-            if ax is None:
-                ax = plt.gca()
-
-        for i, comp_name in enumerate(self.components[:n_components_to_plot]):
-            comp_ts = self[comp_name]
-
-            if self.is_stochastic:
-                if central_quantile == "mean":
-                    central_ts = comp_ts.mean()
-                else:
-                    central_ts = comp_ts.quantile(q=central_quantile)
-            else:
-                central_ts = comp_ts
-
-            central_series = central_ts.to_series()  # shape: (time,)
-
-            if custom_labels:
-                label_to_use = label[i]
-            else:
-                if label == "":
-                    label_to_use = comp_name
-                elif len(self.components) == 1:
-                    label_to_use = label
-                else:
-                    label_to_use = f"{label}_{comp_name}"
-            kwargs["label"] = label_to_use
-            kwargs["c"] = color[i] if custom_colors else color
-
-            kwargs_central = deepcopy(kwargs)
-            if self.is_stochastic:
-                kwargs_central["alpha"] = 1
-            # line plot
-            if len(central_series) > 1:
-                p = central_series.plot(
-                    *args,
-                    ax=ax,
-                    **kwargs_central,
-                )
-                color_used = (
-                    p.get_lines()[-1].get_color() if default_formatting else None
-                )
-            # point plot
-            elif len(central_series) == 1:
-                p = ax.plot(
-                    [self.start_time()],
-                    central_series.values[0],
-                    "o",
-                    *args,
-                    **kwargs_central,
-                )
-                color_used = p[0].get_color() if default_formatting else None
-            # empty plot
-            else:
-                p = ax.plot(
-                    [],
-                    [],
-                    *args,
-                    **kwargs_central,
-                )
-                color_used = p[0].get_color() if default_formatting else None
-            ax.set_xlabel(self.time_dim)
-
-            # Optionally show confidence intervals
-            if (
-                self.is_stochastic
-                and low_quantile is not None
-                and high_quantile is not None
-            ):
-                low_series = comp_ts.quantile(q=low_quantile).to_series()
-                high_series = comp_ts.quantile(q=high_quantile).to_series()
-                # filled area
-                if len(low_series) > 1:
-                    ax.fill_between(
-                        self.time_index,
-                        low_series,
-                        high_series,
-                        color=color_used,
-                        alpha=(alpha if alpha is not None else alpha_confidence_intvls),
-                    )
-                # filled line
-                elif len(low_series) == 1:
-                    ax.plot(
-                        [self.start_time(), self.start_time()],
-                        [low_series.values[0], high_series.values[0]],
-                        "-+",
-                        color=color_used,
-                        lw=2,
-                    )
-
-        ax.legend()
-        ax.set_title(title if title is not None else "")
-        return ax
+        Returns
+        -------
+        plotly.graph_objects.Figure
+            The Plotly figure object containing the plot. Call `.show()` on the returned figure to display it.
+        """
+        return _plotly(
+            self,
+            fig=fig,
+            central_quantile=central_quantile,
+            low_quantile=low_quantile,
+            high_quantile=high_quantile,
+            title=title,
+            label=label,
+            max_nr_components=max_nr_components,
+            alpha=alpha,
+            color=color,
+            c=c,
+            downsample_threshold=downsample_threshold,
+            **kwargs,
+        )
 
     def with_columns_renamed(
         self, col_names: Union[list[str], str], col_names_new: Union[list[str], str]
