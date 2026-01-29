@@ -40,6 +40,7 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 """
 
 import itertools
+import json
 import math
 import pickle
 import re
@@ -1508,43 +1509,28 @@ class TimeSeries:
         >>> series.shape
         (3, 1, 1)
         """
-        import json
-
-        # Parse the JSON string
         parsed = json.loads(json_str)
-
-        # Extract static covariates from JSON if present
-        json_static_covariates = None
-        if "static_covariates" in parsed:
-            static_cov_data = parsed.pop("static_covariates")
-            json_static_covariates = pd.read_json(
-                StringIO(json.dumps(static_cov_data)), orient="split"
+        json_sc = parsed.pop("static_covariates", None)
+        if json_sc is not None and static_covariates is None:
+            static_covariates = pd.DataFrame(
+                data=json_sc["data"], index=json_sc["index"], columns=json_sc["columns"]
             )
-
-        # Extract hierarchy from JSON if present
-        json_hierarchy = parsed.pop("hierarchy", None)
-
-        # Extract metadata from JSON if present
-        json_metadata = parsed.pop("metadata", None)
-
-        # Use provided parameters if given, otherwise use values from JSON
-        final_static_covariates = (
-            static_covariates
-            if static_covariates is not None
-            else json_static_covariates
-        )
-        final_hierarchy = hierarchy if hierarchy is not None else json_hierarchy
-        final_metadata = metadata if metadata is not None else json_metadata
-
-        # Create the dataframe from the remaining JSON data
+        if hierarchy is None:
+            hierarchy = parsed.pop("hierarchy", None)
+        else:
+            parsed.pop("hierarchy", None)
+        if metadata is None:
+            metadata = parsed.pop("metadata", None)
+        else:
+            parsed.pop("metadata", None)
         df = pd.read_json(StringIO(json.dumps(parsed)), orient="split")
 
         return cls.from_dataframe(
             df=df,
-            static_covariates=final_static_covariates,
-            hierarchy=final_hierarchy,
-            metadata=final_metadata,
-            copy=False,  # JSON is immutable, so no need to copy
+            static_covariates=static_covariates,
+            hierarchy=hierarchy,
+            metadata=metadata,
+            copy=False,
         )
 
     @classmethod
@@ -4317,23 +4303,15 @@ class TimeSeries:
         --------
         TimeSeries.from_json : Create a TimeSeries from a JSON string.
         """
-        import json
-
-        # Get the base dataframe JSON
-        base_json = self.to_dataframe().to_json(orient="split", date_format="iso")
-        result = json.loads(base_json)
-
-        # Add static covariates if present
+        result = json.loads(
+            self.to_dataframe().to_json(orient="split", date_format="iso")
+        )
         if self.static_covariates is not None:
             result["static_covariates"] = json.loads(
                 self.static_covariates.to_json(orient="split")
             )
-
-        # Add hierarchy if present
         if self.hierarchy is not None:
             result["hierarchy"] = self.hierarchy
-
-        # Add metadata if present
         if self.metadata is not None:
             result["metadata"] = self.metadata
 
