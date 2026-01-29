@@ -407,6 +407,19 @@ def drop_after_index(
     return slice_index(index, index[0], split_point)
 
 
+def freq_to_timedelta(freq: Union[str, pd.DateOffset]) -> pd.Timedelta:
+    """Convert a frequency (string or DateOffset) to :class:`pd.Timedelta`.
+
+    Use when a timedelta is needed for division etc.; :func:`pd.to_timedelta`
+    does not accept DateOffset in pandas 3+.
+    """
+    out = pd.to_timedelta(freq, errors="coerce")
+    if out is not pd.NaT:
+        return out
+    freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+    return (pd.Timestamp(0) + freq) - pd.Timestamp(0)
+
+
 def n_steps_between(
     end: Union[pd.Timestamp, int],
     start: Union[pd.Timestamp, int],
@@ -467,8 +480,11 @@ def n_steps_between(
             logger=logger,
         )
     # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W')
+    # Use freq_to_timedelta so diff // freq_td is Timedelta // Timedelta (pandas 3: Timedelta // DateOffset unsupported)
     if pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
         diff = end - start
+        if isinstance(diff, pd.Timedelta):
+            freq = freq_to_timedelta(freq)
         if abs(diff) != diff:
             # (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency
             # (e.g., "2D" or step=2), then computing `diff // freq` can be one off

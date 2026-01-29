@@ -3004,7 +3004,7 @@ class TestTimeSeriesFromDataFrame:
             df=self.pd_to_backend(df, backend), time_col="Time"
         )
 
-        assert ts.time_index.dtype == "datetime64[ns]"
+        assert str(ts.time_index.dtype) in ("datetime64[ns]", "datetime64[us]")
         assert ts.time_index.name == "Time"
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)
@@ -3019,7 +3019,7 @@ class TestTimeSeriesFromDataFrame:
             df=self.pd_to_backend(df, backend), time_col="Time"
         )
 
-        assert ts.time_index.dtype == "datetime64[ns]"
+        assert str(ts.time_index.dtype) in ("datetime64[ns]", "datetime64[us]")
         assert ts.time_index.name == "Time"
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)

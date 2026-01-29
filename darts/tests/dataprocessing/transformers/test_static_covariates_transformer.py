@@ -160,8 +160,10 @@ class TestStaticCovariatesTransformer:
             ]),
         )
         series_recovered2 = scaler.inverse_transform(series_tr2[0])
-        assert self.series1.static_covariates.equals(
-            series_recovered2.static_covariates
+        # TODO: fix with the different dtypes (pd3 infers as str)
+        pd.testing.assert_frame_equal(
+            self.series1.static_covariates,
+            series_recovered2.static_covariates,
         )
 
         np.testing.assert_almost_equal(
@@ -173,16 +175,19 @@ class TestStaticCovariatesTransformer:
             ]),
         )
         series_recovered3 = scaler.inverse_transform(series_tr2[1])
-        assert self.series2.static_covariates.equals(
-            series_recovered3.static_covariates
+        pd.testing.assert_frame_equal(
+            self.series2.static_covariates,
+            series_recovered3.static_covariates,
         )
 
         series_recovered_multi = scaler.inverse_transform(series_tr2)
-        assert self.series1.static_covariates.equals(
-            series_recovered_multi[0].static_covariates
+        pd.testing.assert_frame_equal(
+            self.series1.static_covariates,
+            series_recovered_multi[0].static_covariates,
         )
-        assert self.series2.static_covariates.equals(
-            series_recovered_multi[1].static_covariates
+        pd.testing.assert_frame_equal(
+            self.series2.static_covariates,
+            series_recovered_multi[1].static_covariates,
         )
 
     def test_zero_cardinality_multi_series(self):
@@ -208,8 +213,14 @@ class TestStaticCovariatesTransformer:
         transformer.fit([ts1, ts2])
         ts1_enc, ts2_enc = transformer.transform([ts1, ts2])
         ts1_inv, ts2_inv = transformer.inverse_transform([ts1_enc, ts2_enc])
-        pd.testing.assert_frame_equal(ts1_inv.static_covariates, ts1.static_covariates)
-        pd.testing.assert_frame_equal(ts2_inv.static_covariates, ts2.static_covariates)
+        pd.testing.assert_frame_equal(
+            ts1_inv.static_covariates,
+            ts1.static_covariates,
+        )
+        pd.testing.assert_frame_equal(
+            ts2_inv.static_covariates,
+            ts2.static_covariates,
+        )
 
     def test_cols_cat_order_different_from_data(self):
         series = [
@@ -268,5 +279,8 @@ class TestStaticCovariatesTransformer:
 
         series_tr_copy = series_tr.copy()
         series_recovered = scaler.inverse_transform(series_tr)
-        assert series.static_covariates.equals(series_recovered.static_covariates)
+        pd.testing.assert_frame_equal(
+            series.static_covariates,
+            series_recovered.static_covariates,
+        )
         assert series_tr == series_tr_copy

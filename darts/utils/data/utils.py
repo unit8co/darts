@@ -12,6 +12,7 @@ import pandas as pd
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.utils.ts_utils import series2seq
+from darts.utils.utils import freq_to_timedelta
 
 logger = get_logger(__name__)
 
@@ -79,8 +80,10 @@ def _index_diff(
     if isinstance(freq, int):
         return int(other - self)
 
-    elif freq.freqstr in DIVISIBLE_FREQS:
-        return int((other - self) / freq)
+    freqstr = getattr(freq, "freqstr", None)
+    if freqstr is not None and freqstr in DIVISIBLE_FREQS:
+        freq_td = freq_to_timedelta(freq)
+        return int((other - self) / freq_td)
 
     # /!\ THIS IS TAKING LINEAR TIME IN THE LENGTH OF THE SERIES
     # it won't scale if the end of target and covariates are far apart and the freq is not in DIVISIBLE_FREQS

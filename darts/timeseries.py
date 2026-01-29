@@ -417,9 +417,9 @@ class TimeSeries:
 
             # Calling astype is costly even when there's no change...
             if not cols_to_cast.empty:
-                static_covariates = static_covariates.astype(
-                    {col: self.dtype for col in cols_to_cast}, copy=False
-                )
+                static_covariates = static_covariates.astype({
+                    col: self.dtype for col in cols_to_cast
+                })
 
         # prepare metadata
         if metadata is not None and not isinstance(metadata, dict):
