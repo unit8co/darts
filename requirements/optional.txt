@@ -6,3 +6,4 @@ polars
 ray
 pydantic
 xarray
+plotly
