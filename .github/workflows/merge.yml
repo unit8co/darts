@@ -20,8 +20,9 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9.26"
+          version: "0.9"
           enable-cache: true
+          python-version: '3.12'
 
       - name: "Install Dev Dependencies"
         run: |
@@ -58,8 +59,9 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9.26"
+          version: "0.9"
           enable-cache: true
+          python-version: ${{ matrix.python-version }}
 
       - name: "Install Dependencies Flavour ${{ matrix.flavour }}"
         run: |
@@ -127,8 +129,9 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9.26"
+          version: "0.9"
           enable-cache: true
+          python-version: '3.11'
 
       - name: "Install Dependencies"
         run: |
@@ -165,8 +168,9 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9.26"
+          version: "0.9"
           enable-cache: true
+          python-version: '3.11'
 
       - name: "Install pandoc"
         run: |
