@@ -341,35 +341,9 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         verbose
             An integer or a boolean that can be set to 1 to display catboost's default verbose output
         **kwargs
-            Additional kwargs passed to `catboost.CatboostRegressor.fit()`
+            Additional kwargs passed to `catboost.CatBoostRegressor.fit()`
         """
         verbose = verbose if verbose is not None else 0
-        # likelihood = self.likelihood
-        # if isinstance(likelihood, QuantileRegression):
-        #     # empty model container in case of multiple calls to fit, e.g. when backtesting
-        #     self._model_container.clear()
-        #     for quantile in likelihood.quantiles:
-        #         this_quantile = str(quantile)
-        #         # translating to catboost argument
-        #         self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
-        #         self.model = self._create_model(**self.kwargs)
-        #         super().fit(
-        #             series=series,
-        #             past_covariates=past_covariates,
-        #             future_covariates=future_covariates,
-        #             val_series=val_series,
-        #             val_past_covariates=val_past_covariates,
-        #             val_future_covariates=val_future_covariates,
-        #             max_samples_per_ts=max_samples_per_ts,
-        #             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-        #             sample_weight=sample_weight,
-        #             val_sample_weight=val_sample_weight,
-        #             verbose=verbose,
-        #             **kwargs,
-        #         )
-        #         # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
-        #         self._model_container[quantile] = self.model
-        #     return self
 
         super().fit(
             series=series,
