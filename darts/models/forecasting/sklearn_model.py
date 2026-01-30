@@ -659,6 +659,7 @@ class SKLearnModel(GlobalForecastingModel):
             # for quantile-models, the estimators are grouped by quantiles
             if quantile is None:
                 quantile = likelihood.quantiles[likelihood._median_idx]
+            # TODO: handle CatBoost multiquantile case
             elif quantile not in self._model_container:
                 raise_log(
                     ValueError(

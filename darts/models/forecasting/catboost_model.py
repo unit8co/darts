@@ -35,11 +35,13 @@ from darts.models.forecasting.sklearn_model import (
     LAGS_TYPE,
     SKLearnModelWithCategoricalFeatures,
     _ClassifierMixin,
-    _QuantileModelContainer,
 )
 from darts.typing import TimeSeriesLike
 from darts.utils.likelihood_models.base import LikelihoodType
-from darts.utils.likelihood_models.sklearn import QuantileRegression, _get_likelihood
+from darts.utils.likelihood_models.sklearn import (
+    QuantileRegression,
+    _get_likelihood,
+)
 
 logger = get_logger(__name__)
 
@@ -276,8 +278,9 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             "poisson": "Poisson",
             "gaussian": "RMSEWithUncertainty",
         }
-        if likelihood == LikelihoodType.Quantile.value:
-            self._model_container = _QuantileModelContainer()
+        if isinstance(self._likelihood, QuantileRegression):
+            quantiles_str = ", ".join(f"{q:.3f}" for q in self._likelihood.quantiles)
+            self.kwargs["loss_function"] = f"MultiQuantile:alpha={quantiles_str}"
         else:
             self.kwargs["loss_function"] = likelihood_map[likelihood]
 
@@ -341,32 +344,32 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             Additional kwargs passed to `catboost.CatboostRegressor.fit()`
         """
         verbose = verbose if verbose is not None else 0
-        likelihood = self.likelihood
-        if isinstance(likelihood, QuantileRegression):
-            # empty model container in case of multiple calls to fit, e.g. when backtesting
-            self._model_container.clear()
-            for quantile in likelihood.quantiles:
-                this_quantile = str(quantile)
-                # translating to catboost argument
-                self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
-                self.model = self._create_model(**self.kwargs)
-                super().fit(
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                    val_series=val_series,
-                    val_past_covariates=val_past_covariates,
-                    val_future_covariates=val_future_covariates,
-                    max_samples_per_ts=max_samples_per_ts,
-                    n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
-                    sample_weight=sample_weight,
-                    val_sample_weight=val_sample_weight,
-                    verbose=verbose,
-                    **kwargs,
-                )
-                # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
-                self._model_container[quantile] = self.model
-            return self
+        # likelihood = self.likelihood
+        # if isinstance(likelihood, QuantileRegression):
+        #     # empty model container in case of multiple calls to fit, e.g. when backtesting
+        #     self._model_container.clear()
+        #     for quantile in likelihood.quantiles:
+        #         this_quantile = str(quantile)
+        #         # translating to catboost argument
+        #         self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
+        #         self.model = self._create_model(**self.kwargs)
+        #         super().fit(
+        #             series=series,
+        #             past_covariates=past_covariates,
+        #             future_covariates=future_covariates,
+        #             val_series=val_series,
+        #             val_past_covariates=val_past_covariates,
+        #             val_future_covariates=val_future_covariates,
+        #             max_samples_per_ts=max_samples_per_ts,
+        #             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
+        #             sample_weight=sample_weight,
+        #             val_sample_weight=val_sample_weight,
+        #             verbose=verbose,
+        #             **kwargs,
+        #         )
+        #         # store the trained model in the container as it might have been wrapped by MultiOutputRegressor
+        #         self._model_container[quantile] = self.model
+        #     return self
 
         super().fit(
             series=series,
