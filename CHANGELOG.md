@@ -11,6 +11,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- Added new time aggregated metric `autc()` (Area Under Tolerance Curve): The tolerance curve gives the fraction of predicted target values within tolerance bands of the actual target values across a range of tolerances (defined as % of target range). The AUTC is the normalized area under this tolerance curve and given as a score between [0, 1]. Higher scores are better. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- Added new plotting function `darts.utils.statistics.plot_tolerance_curve()` to plot the tolerance curve described above. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
 - Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
   - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
   - Maintains API consistency with the existing `plot()` method for easy adoption
