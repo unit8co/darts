@@ -881,6 +881,70 @@ class TestDataset:
             "with `1 <= min_lh <= max_lh`."
         )
 
+    def test_max_samples_per_ts_upper_bound(self):
+        # Use cov1 with length 100
+        series = self.cov1
+
+        # With input_chunk_length=11, output_chunk_length=13, and shift=24
+        # size_of_both_chunks = max(11, 24 + 13) = 37
+        # actual extractable samples = 100 - 37 + 1 = 64
+
+        # Case 1: max_samples_per_ts=None should extract all 64 samples
+        ds_no_limit = ShiftedTorchTrainingDataset(
+            series=series,
+            input_chunk_length=11,
+            output_chunk_length=13,
+            shift=24,
+            max_samples_per_ts=None,
+        )
+        assert len(ds_no_limit) == 64
+
+        # Case 2: max_samples_per_ts > actual max should cap at actual max (64)
+        ds_high_limit = ShiftedTorchTrainingDataset(
+            series=series,
+            input_chunk_length=11,
+            output_chunk_length=13,
+            shift=24,
+            max_samples_per_ts=5000,  # Much higher than 64
+        )
+        # Should be capped at 64, not 5000
+        assert len(ds_high_limit) == 64
+
+        # Case 3: max_samples_per_ts < actual max should use the limit
+        ds_low_limit = ShiftedTorchTrainingDataset(
+            series=series,
+            input_chunk_length=11,
+            output_chunk_length=13,
+            shift=24,
+            max_samples_per_ts=50,
+        )
+        assert len(ds_low_limit) == 50
+
+        # Case 4: Test with stride > 1
+        # actual extractable samples with stride=2 = ceil(64 / 2) = 32
+        ds_stride = ShiftedTorchTrainingDataset(
+            series=series,
+            input_chunk_length=11,
+            output_chunk_length=13,
+            shift=24,
+            stride=2,
+            max_samples_per_ts=100,
+        )
+        assert len(ds_stride) == 32
+
+        # Case 5: Multiple series with different lengths
+        series1 = gaussian_timeseries(length=50)  # 50 - 37 + 1 = 14 samples
+        series2 = gaussian_timeseries(length=100)  # 100 - 37 + 1 = 64 samples
+        ds_multi = ShiftedTorchTrainingDataset(
+            series=[series1, series2],
+            input_chunk_length=11,
+            output_chunk_length=13,
+            shift=24,
+            max_samples_per_ts=5000,
+        )
+        # Should be capped at 64 (max of both series), so 2 * 64 = 128
+        assert len(ds_multi) == 2 * 64
+
     def test_past_covariates_sequential_dataset(self):
         # one target series
         ds = SequentialTorchTrainingDataset(

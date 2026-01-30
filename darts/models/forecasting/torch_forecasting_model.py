@@ -2477,21 +2477,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _check_optimizable_historical_forecasts(
         self,
-        forecast_horizon: int,
         retrain: Union[bool, int, Callable[..., bool]],
-        show_warnings: bool,
     ) -> bool:
-        """
-        Historical forecast can be optimized only if `retrain=False` and `forecast_horizon <= model.output_chunk_length`
-        (no auto-regression required).
-        """
-        return _check_optimizable_historical_forecasts_global_models(
-            model=self,
-            forecast_horizon=forecast_horizon,
-            retrain=retrain,
-            show_warnings=show_warnings,
-            allow_autoregression=True,
-        )
+        """Historical forecast can be optimized if no re-training is involved"""
+        return _check_optimizable_historical_forecasts_global_models(retrain)
 
     def _optimized_historical_forecasts(
         self,
@@ -2521,7 +2510,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             forecast_horizon=forecast_horizon,
-            allow_autoregression=True,
         )
         forecasts_list = _optimized_historical_forecasts(
             model=self,

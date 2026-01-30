@@ -4809,3 +4809,34 @@ class TestHistoricalforecast:
         if use_sw:
             kwargs["sample_weight"] = sw
         return kwargs
+
+    @pytest.mark.parametrize(
+        "model",
+        [LinearRegressionModel(lags=3, output_chunk_length=2)]
+        + (
+            [
+                NLinearModel(
+                    input_chunk_length=3,
+                    output_chunk_length=2,
+                    n_epochs=1,
+                    **tfm_kwargs,
+                )
+            ]
+            if TORCH_AVAILABLE
+            else []
+        ),
+    )
+    def test_historical_forecast_start_after_end_of_series(self, model):
+        series = tg.linear_timeseries(length=model.min_train_series_length)
+        model = model.untrained_model().fit(series)
+
+        series_minimal = series[:3]
+        preds = model.historical_forecasts(
+            forecast_horizon=model.output_chunk_length,
+            series=series_minimal,
+            overlap_end=True,
+            retrain=False,
+            last_points_only=False,
+        )
+        assert isinstance(preds, list) and len(preds) == 1
+        assert preds[0].start_time() == series_minimal.end_time() + series_minimal.freq

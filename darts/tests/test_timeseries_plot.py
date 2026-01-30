@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts import TimeSeries
+from darts import TimeSeries, option_context
 from darts.utils.utils import generate_index
 
 
@@ -41,36 +41,38 @@ class TestTimeSeriesPlot:
             ["dt", "ri"],
             ["d", "p"],
             [True, False],
+            [True, False],
         ),
     )
     def test_plot_single_series(self, mock_show, config):
-        index_type, stoch_type, use_ax = config
-        series = getattr(self, f"series_{index_type}_{stoch_type}")
-        if use_ax:
-            _, ax = plt.subplots()
-        else:
-            ax = None
-        series.plot(ax=ax)
+        index_type, stoch_type, use_ax, use_darts_style = config
+        with option_context("plotting.use_darts_style", use_darts_style):
+            series = getattr(self, f"series_{index_type}_{stoch_type}")
+            if use_ax:
+                _, ax = plt.subplots()
+            else:
+                ax = None
+            series.plot(ax=ax)
 
-        # For deterministic series with len > 1: one line per component
-        # For probabilistic series with len > 1: one line per component + one area per component
-        ax = ax if use_ax else plt.gca()
+            # For deterministic series with len > 1: one line per component
+            # For probabilistic series with len > 1: one line per component + one area per component
+            ax = ax if use_ax else plt.gca()
 
-        # Count lines (Line2D objects with multiple data points representing actual lines)
-        lines = [line for line in ax.lines if len(line.get_xdata()) > 1]
-        assert len(lines) == self.n_comps
+            # Count lines (Line2D objects with multiple data points representing actual lines)
+            lines = [line for line in ax.lines if len(line.get_xdata()) > 1]
+            assert len(lines) == self.n_comps
 
-        # For probabilistic: count filled areas (PolyCollection from fill_between)
-        if series.is_stochastic:
-            areas = [
-                coll
-                for coll in ax.collections
-                if isinstance(coll, mcollections.PolyCollection)
-            ]
-            assert len(areas) == self.n_comps
+            # For probabilistic: count filled areas (PolyCollection from fill_between)
+            if series.is_stochastic:
+                areas = [
+                    coll
+                    for coll in ax.collections
+                    if isinstance(coll, mcollections.PolyCollection)
+                ]
+                assert len(areas) == self.n_comps
 
-        plt.show()
-        plt.close()
+            plt.show()
+            plt.close()
 
     @patch("matplotlib.pyplot.show")
     @pytest.mark.parametrize(
@@ -206,17 +208,6 @@ class TestTimeSeriesPlot:
         (index_type, kwargs), stoch_type = config, "p"
         series = getattr(self, f"series_{index_type}_{stoch_type}")
         series.plot(**kwargs)
-        plt.show()
-        plt.close()
-
-    @patch("matplotlib.pyplot.show")
-    @pytest.mark.parametrize("config", ["dt", "ri"])
-    def test_plot_multiple_series(self, mock_show, config):
-        index_type = config
-        series1 = getattr(self, f"series_{index_type}_d")
-        series2 = getattr(self, f"series_{index_type}_p")
-        series1.plot()
-        series2.plot()
         plt.show()
         plt.close()
 

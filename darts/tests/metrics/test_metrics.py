@@ -155,6 +155,19 @@ def metric_f1(y_true, y_pred):
     return sklearn.metrics.f1_score(y_true.flatten(), y_pred.flatten(), average="macro")
 
 
+def metric_autc(y_true, y_pred, n_tolerances=101, **kwargs):
+    """Reference implementation for AUTC metric."""
+    y_true = y_true[:, 0]  # univariate
+    y_pred = y_pred[:, 0]
+    y_range = np.max(y_true) - np.min(y_true)
+    abs_errors = np.abs(y_true - y_pred)
+    half_range = y_range / 2
+    normalized_errors = abs_errors / half_range
+    tolerances = np.linspace(0, 1, n_tolerances)
+    coverages = np.array([np.mean(normalized_errors <= tol) for tol in tolerances])
+    return np.trapezoid(coverages, tolerances)
+
+
 class TestMetrics:
     np.random.seed(42)
     pd_train = pd.Series(
@@ -207,15 +220,10 @@ class TestMetrics:
         "metric",
         [
             metrics.ape,
-            metrics.sape,
             metrics.mape,
-            metrics.smape,
         ],
     )
     def test_ape_zero(self, metric):
-        with pytest.raises(ValueError):
-            metric(self.series1, self.series1)
-
         with pytest.raises(ValueError):
             metric(self.series1, self.series1)
 
@@ -225,6 +233,21 @@ class TestMetrics:
                 self.series1 - self.series1.to_series().mean(),
                 self.series1 - self.series1.to_series().mean(),
             )
+
+    @pytest.mark.parametrize(
+        "metric",
+        [
+            metrics.sape,
+            metrics.smape,
+        ],
+    )
+    def test_sape_zero_denom(self, metric):
+        assert np.allclose(metric(self.series0, self.series0), 0.0), (
+            "Expected SAPE to be 0.0 when both series are identical"
+        )
+        assert np.allclose(metric(self.series1, self.series1), 0.0), (
+            "Expected SAPE to be 0.0 when both series are identical"
+        )
 
     @pytest.mark.parametrize(
         "config",
@@ -254,6 +277,7 @@ class TestMetrics:
             (metrics.smape, False, {}),
             (metrics.ope, False, {}),
             (metrics.marre, False, {}),
+            (metrics.autc, False, {}),
             (metrics.r2_score, False, {}),
             (metrics.coefficient_of_variation, False, {}),
             (metrics.qr, True, {}),
@@ -842,6 +866,7 @@ class TestMetrics:
                 (metrics.mae, False),
                 (metrics.mse, False),
                 (metrics.rmse, False),
+                (metrics.autc, False),
                 (metrics.rmsle, False),
                 (metrics.mase, False),
                 (metrics.msse, False),
@@ -949,6 +974,7 @@ class TestMetrics:
             (metrics.mae, 0, False, {}),
             (metrics.mse, 0, False, {}),
             (metrics.rmse, 0, False, {}),
+            (metrics.autc, 1, False, {}),
             (metrics.rmsle, 0, False, {}),
             (metrics.mase, 0, False, {}),
             (metrics.msse, 0, False, {}),
@@ -1404,6 +1430,7 @@ class TestMetrics:
             (metrics.mae, "max", {}),
             (metrics.mse, "max", {}),
             (metrics.rmse, "max", {}),
+            (metrics.autc, "min", {}),
             (metrics.rmsle, "max", {}),
             (metrics.mape, "max", {}),
             (metrics.wmape, "max", {}),
@@ -1503,6 +1530,7 @@ class TestMetrics:
             (metrics.smape, metric_smape, {}, {}),
             (metrics.ope, metric_ope, {}, {}),
             (metrics.marre, metric_marre, {}, {}),
+            (metrics.autc, metric_autc, {}, {}),
             (metrics.r2_score, sklearn.metrics.r2_score, {}, {}),
             (metrics.coefficient_of_variation, metric_cov, {}, {}),
             (metrics.accuracy, metric_macc, {}, {}),
@@ -1698,6 +1726,7 @@ class TestMetrics:
                 metrics.sape,
                 metrics.arre,
                 metrics.ql,
+                metrics.autc,
                 # time aggregates
                 metrics.merr,
                 metrics.mae,
@@ -2251,3 +2280,26 @@ class TestMetrics:
         with pytest.raises(NotImplementedError) as exc:
             utils._get_wrapped_metric(None, n_wrappers=4)
         assert str(exc.value) == "Only 2-3 wrappers are currently supported"
+
+    @pytest.mark.parametrize(
+        "kwargs,match",
+        [
+            ({"min_tolerance": -0.1}, "min_tolerance must be >= 0"),
+            ({"max_tolerance": 1.5}, "max_tolerance must be <= 1"),
+            (
+                {"min_tolerance": 0.8, "max_tolerance": 0.5},
+                "min_tolerance must be >= 0",
+            ),
+            ({"step": 0}, "step must be positive"),
+            ({"step": -0.1}, "step must be positive"),
+            ({"step": 2.0}, "step must be positive"),
+        ],
+    )
+    def test_autc_invalid_params(self, kwargs, match):
+        with pytest.raises(ValueError, match=match):
+            metrics.autc(self.series1, self.series2, **kwargs)
+
+    def test_autc_constant_series(self):
+        series1_const = self.series1.with_values(np.ones(self.series1.shape))
+        with pytest.raises(ValueError, match="range of actual values"):
+            metrics.autc(series1_const, self.series2)

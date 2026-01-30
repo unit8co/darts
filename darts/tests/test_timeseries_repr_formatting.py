@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts import TimeSeries
+from darts import TimeSeries, option_context
 
 MAX_ROWS = 10
 MAX_COLS = 10
@@ -469,3 +469,22 @@ class TestTimeSeriesReprFormatting:
         original_values = self.simple_series.values()
         _ = self.simple_series._repr_html_()
         assert np.array_equal(original_values, self.simple_series.values())
+
+    def test_timeseries_repr_uses_display_config(self):
+        """Test that TimeSeries repr respects display configuration."""
+        values = helper_generate_values((10, 10, 1))
+        ts = TimeSeries.from_values(values)
+
+        # Change config and get representation to show less rows and columns
+        with option_context("display.max_rows", 3, "display.max_cols", 5):
+            repr_str_small = ts._get_values_repr("string")[0]
+
+        expected = textwrap.dedent(
+            """\
+                  0     1  ...     8     9
+            0   0.0   5.0  ...  40.0  45.0
+            ..  ...   ...  ...   ...   ...
+            9   9.0  14.0  ...  49.0  54.0
+            """
+        ).rstrip()
+        assert repr_str_small == expected

@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -5,6 +7,7 @@ import pytest
 
 from darts import TimeSeries
 from darts.datasets import AirPassengersDataset
+from darts.utils.likelihood_models.sklearn import QuantileRegression
 from darts.utils.statistics import (
     check_seasonality,
     extract_trend_and_seasonality,
@@ -13,6 +16,7 @@ from darts.utils.statistics import (
     plot_ccf,
     plot_pacf,
     plot_residuals_analysis,
+    plot_tolerance_curve,
     remove_seasonality,
     remove_trend,
     stationarity_test_adf,
@@ -244,4 +248,76 @@ class TestPlot:
         plot_acf(self.series)
         plot_pacf(self.series)
         plot_ccf(self.series, self.series)
+        plt.close()
+
+
+class TestPlotToleranceCurve:
+    # univariate series
+    actual_uni = TimeSeries.from_values(np.array([1.0, 2.0, 3.0, 4.0, 5.0]))
+    pred_uni = TimeSeries.from_values(np.array([1.1, 2.2, 2.9, 4.1, 5.0]))
+
+    # multivariate series
+    actual_multi = TimeSeries.from_values(
+        np.column_stack([[1.0, 2.0, 3.0, 4.0, 5.0], [10.0, 20.0, 30.0, 40.0, 50.0]]),
+        columns=["c1", "c2"],
+    )
+    pred_multi = TimeSeries.from_values(
+        np.column_stack([[1.1, 2.2, 2.9, 4.1, 5.0], [11.0, 22.0, 29.0, 41.0, 50.0]]),
+        columns=["c1", "c2"],
+    )
+
+    # multiple multivariate series
+    multi_actual_multi = [actual_multi] * 2
+    multi_pred_multi = [pred_multi] * 2
+
+    # stochastic series
+    pred_stoch = TimeSeries.from_values(
+        np.random.rand(5, 1, 10) + np.arange(1.0, 6.0).reshape(-1, 1, 1)
+    )
+    pred_stoch_multi = TimeSeries.from_values(
+        np.random.rand(5, 2, 10) + np.arange(1.0, 6.0).reshape(-1, 1, 1)
+    )
+
+    # quantile predictions
+    pred_q_uni = TimeSeries.from_values(
+        np.random.rand(5, 3, 1),
+        columns=QuantileRegression(1, [0.1, 0.5, 0.9]).component_names(actual_uni),
+    )
+    pred_q_multi = TimeSeries.from_values(
+        np.random.rand(5, 6, 1),
+        columns=QuantileRegression(1, [0.1, 0.5, 0.9]).component_names(actual_multi),
+    )
+
+    @patch("matplotlib.pyplot.show")
+    @pytest.mark.parametrize(
+        "actual,pred,kwargs",
+        [
+            ("actual_uni", "pred_uni", {}),
+            ("actual_multi", "pred_multi", {}),
+            ("multi_actual_multi", "multi_pred_multi", {}),
+            ("actual_uni", "pred_stoch", {}),
+            ("actual_uni", "pred_stoch", {"q": 0.25}),
+            ("actual_uni", "pred_stoch", {"q": [0.25, 0.5, 0.75]}),
+            ("actual_multi", "pred_stoch_multi", {"q": 0.25}),
+            ("actual_multi", "pred_stoch_multi", {"q": [0.25, 0.5, 0.75]}),
+            ("actual_uni", "pred_q_uni", {"q": 0.1}),
+            ("actual_uni", "pred_q_uni", {"q": 0.5}),
+            ("actual_uni", "pred_q_uni", {"q": [0.1, 0.5, 0.9]}),
+            ("actual_multi", "pred_q_multi", {"q": 0.1}),
+            ("actual_multi", "pred_q_multi", {"q": 0.5}),
+            ("actual_multi", "pred_q_multi", {"q": [0.1, 0.5, 0.9]}),
+            ("actual_uni", "pred_uni", {"min_tolerance": 0.1, "max_tolerance": 0.9}),
+            ("actual_uni", "pred_uni", {"step": 0.05}),
+        ],
+    )
+    def test_plot_tolerance_curve_params(self, mock_show, actual, pred, kwargs):
+        plot_tolerance_curve(getattr(self, actual), getattr(self, pred), **kwargs)
+        plt.show()
+        plt.close()
+
+    @patch("matplotlib.pyplot.show")
+    def test_plot_tolerance_curve_with_axis(self, mock_show):
+        _, ax = plt.subplots()
+        plot_tolerance_curve(self.actual_uni, self.pred_uni, axis=ax)
+        plt.show()
         plt.close()
