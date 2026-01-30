@@ -12,7 +12,12 @@ from darts.config import (
     reset_option,
     set_option,
 )
-from darts.timeseries import TimeSeries, concatenate, slice_intersect
+from darts.timeseries import (
+    TimeSeries,
+    concatenate,
+    slice_intersect,
+    to_group_dataframe,
+)
 
 __version__ = "0.40.0"
 
@@ -20,6 +25,7 @@ __all__ = [
     "TimeSeries",
     "concatenate",
     "slice_intersect",
+    "to_group_dataframe",
     "get_option",
     "set_option",
     "reset_option",
