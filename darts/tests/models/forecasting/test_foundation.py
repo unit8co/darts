@@ -194,7 +194,7 @@ class TestFoundationModel:
             input_chunk_length=12,
             output_chunk_length=6,
             enable_finetuning=True,
-            n_epochs=1,
+            n_epochs=5,
             **tfm_kwargs,
         )
         assert model._requires_training is True
@@ -249,7 +249,7 @@ class TestFoundationModel:
 
         # 2. Freezing logic
         # We call fit to initialize the model and trigger the callback setup automatically
-        model.fit(self.series, epochs=1)
+        model.fit(self.series, epochs=5)
 
         # Check requires_grad status.
         found_any = False
@@ -310,7 +310,7 @@ class TestFoundationModel:
         )
 
         # 1. Initialize and fit
-        model.fit(self.series, epochs=1)
+        model.fit(self.series, epochs=5)
 
         # Verify transformation happened
         assert isinstance(model.internal_model, PeftModel), (

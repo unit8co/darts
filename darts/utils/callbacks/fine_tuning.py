@@ -1,4 +1,3 @@
-from copy import deepcopy
 from functools import partial
 from typing import Any, Callable, Optional
 
@@ -210,28 +209,31 @@ class PeftCallback(ModelTransformCallback):
             return
 
         if isinstance(peft_model, PeftModel):
-            # Merge adapters into the base model weights
-            # TODO: This might be inefficient for large models, think about a better way
-            model_copy = deepcopy(peft_model)
-            setattr(pl_module, self.model_attribute, peft_model.merge_and_unload())
+            # In-place merge of adapters into the base model weights.
+            # This is memory-efficient as it avoids a full deepcopy and works on GPU.
+            peft_model.merge_adapter()
             try:
-                # Get the state dict of the base model
-                # This returns the weights including the merged adapters
-                # base_state_dict = peft_model.get_base_model().state_dict()
-
-                # We need to prepend the model attribute name to the keys
-                # because the PL module expects keys to start with `model.` (or `model_attribute.`)
+                # Obtain the state_dict of the base model (which now has merged weights).
+                # We filter out the adapter-specific keys (e.g. lora_A, lora_B)
+                # and restore the original key names by removing PEFT wrapper prefixes (e.g. base_layer).
+                # This allows the model to be loaded back as a standard (non-PEFT) model.
                 prefix = self.model_attribute + "."
-                new_state_dict = {
-                    prefix + k: v
-                    for k, v in getattr(pl_module, self.model_attribute)
-                    .state_dict()
-                    .items()
-                }
+                new_state_dict = {}
+                # IMPORTANT: We move merged weights to CPU. This avoids GPU OOM
+                # (holding two copies of the parameters on GPU) and ensures we have
+                # a 'snapshot' that won't be changed by the subsequent unmerge.
+                for k, v in peft_model.get_base_model().state_dict().items():
+                    if any(sub in k for sub in ["lora_", "modules_to_save"]):
+                        continue
+
+                    # PEFT wraps layers and adds a ".base_layer" to the key path
+                    # We only replace if it's followed by a dot to avoid partial matches
+                    clean_key = k.replace(".base_layer.", ".")
+                    new_state_dict[prefix + clean_key] = v.cpu().clone()
 
                 # Update the checkpoint
                 checkpoint["state_dict"] = new_state_dict
 
             finally:
-                # Unmerge adapters to keep the current model in PEFT mode
-                setattr(pl_module, self.model_attribute, model_copy)
+                # Restore the adapters (unmerge from base weights) to allow training to continue.
+                peft_model.unmerge_adapter()
