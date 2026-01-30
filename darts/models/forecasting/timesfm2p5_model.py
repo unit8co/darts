@@ -48,6 +48,7 @@ class _TimesFM2p5_200M_Definition:
     context_limit = 16384
     input_patch_len: int = 32
     output_patch_len: int = 128
+    output_quantile_len: int = 1024
     quantiles: list[float] = field(
         default_factory=lambda: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
     )
@@ -112,6 +113,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # default model parameters (config.json is ignored)
         self.input_patch_len = self.config.input_patch_len  # 32
         self.output_patch_len = self.config.output_patch_len  # 128
+        self.output_quantile_len = self.config.output_quantile_len  # 1024
         self.num_layers = self.config.stacked_transformers.num_layers  # 20
         # see below `user_quantile_indices` for explanation of +1
         self.num_quantiles_plus_one = len(self.config.quantiles) + 1  # 10
@@ -192,10 +194,10 @@ class _TimesFM2p5Module(PLForecastingModule):
 
         # output projections
         # `output_ts`: (B * C, O * W)
-        output_ts = self.output_projection_point(last_embeddings)
-        # output_quantile_spread = self.output_projection_quantiles(last_embeddings)
+        # output_ts = self.output_projection_point(last_embeddings)
+        output_quantile_spread = self.output_projection_quantiles(last_embeddings)
 
-        return output_ts
+        return output_quantile_spread
 
     # TODO: fine-tuning support
     @io_processor
@@ -287,7 +289,7 @@ class _TimesFM2p5Module(PLForecastingModule):
         # -> (B, C, O, W)
         renormed_outputs = torch.reshape(
             renormed_outputs,
-            (-1, self.n_targets, self.output_patch_len, self.num_quantiles_plus_one),
+            (-1, self.n_targets, self.output_quantile_len, self.num_quantiles_plus_one),
         )
         # -> (B, O, C, W)
         renormed_outputs = renormed_outputs.permute(0, 2, 1, 3)
@@ -355,7 +357,7 @@ class TimesFM2p5Model(FoundationModel):
             auto-regression. This is useful when the covariates don't extend far enough into the future, or to prohibit
             the model from using future values of past and / or future covariates for prediction (depending on the
             model's covariate support).
-            For TimesFM 2.5, `output_chunk_length + output_chunk_shift` must be less than or equal to 128.
+            For TimesFM 2.5, `output_chunk_length + output_chunk_shift` must be less than or equal to 1,024.
         output_chunk_shift
             Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
             input chunk end). This will create a gap between the input and output. If the model supports
@@ -583,7 +585,7 @@ class TimesFM2p5Model(FoundationModel):
             )
 
         # validate `output_chunk_length` and `output_chunk_shift` against model's output limits
-        prediction_length = config.output_patch_len
+        prediction_length = config.output_quantile_len
         if output_chunk_length + output_chunk_shift > prediction_length:
             raise_log(
                 ValueError(

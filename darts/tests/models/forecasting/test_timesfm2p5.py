@@ -65,7 +65,7 @@ class TestTimesFM2p5Model:
     context_limit = 16384
     # maximum prediction length w/o triggering auto-regression where the results
     # would diverge from the original implementation due to different sampling methods
-    max_prediction_length = 128
+    max_prediction_length = 1024
 
     # ---- Dummy Tests ---- #
     # univariate time series
@@ -168,14 +168,12 @@ class TestTimesFM2p5Model:
 
         # predict on the validation inputs w/ covariates
         pred = model.predict(
-            n=self.max_prediction_length,
+            n=128,
             predict_likelihood_parameters=probabilistic,
         )
         assert isinstance(pred, TimeSeries)
         # reshape to (time, variables, quantiles)
-        pred_np = pred.values().reshape(
-            self.max_prediction_length, self.ts_energy_train.n_components, -1
-        )
+        pred_np = pred.values().reshape(128, self.ts_energy_train.n_components, -1)
 
         # load the original predictions
         path = (
