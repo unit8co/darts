@@ -3,18 +3,46 @@
 Below, we detail how to install Darts using either `conda` or `pip`.
 
 ## From PyPI
-Install Darts with all models except the ones from optional dependencies (Prophet, LightGBM, CatBoost, XGBoost, StatsForecast see more on that [here](#enabling-optional-dependencies)): `pip install darts`.
 
-If this fails on your platform, please follow the official installation
-guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
+### ⚠️ Important: Package Name Change
 
-As some dependencies are relatively big or involve non-Python dependencies,
-we also maintain the `u8darts` package, which provides the following alternate lighter install options:
+**If you previously used `u8darts`:** The package has been renamed to `darts` for simplicity.
 
-* Install Darts with all available models: `pip install "u8darts[all]"`
-* Install core only (without neural networks, Prophet, LightGBM, Catboost, XGBoost and StatsForecast): `pip install u8darts`
-* Install core + Prophet + LightGBM + CatBoost + XGBoost + StatsForecast: `pip install "u8darts[notorch]"`
-* Install core + neural networks (PyTorch): `pip install "u8darts[torch]"` (equivalent to `pip install darts`)
+**Migration:**
+```bash
+pip uninstall u8darts
+pip install "darts[all]"  # or appropriate extras
+```
+
+**Your code doesn't need changes** - both packages import as `import darts`.
+
+**Full guide:** [MIGRATION.md](MIGRATION.md)
+
+---
+
+### Installation Options
+
+Darts offers a modular installation system with optional dependencies. Choose the installation that fits your needs:
+
+* **Core only** (without neural networks, Prophet, LightGBM, CatBoost, XGBoost, StatsForecast): `pip install darts`
+* **Core + PyTorch** (for neural network models): `pip install "darts[torch]"`
+* **Core + Prophet, LightGBM, CatBoost, XGBoost, StatsForecast** (no neural networks): `pip install "darts[notorch]"`
+* **All available models**: `pip install "darts[all]"`
+
+If installation fails on your platform, please follow the official installation guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
+
+## From uv
+
+[uv](https://docs.astral.sh/uv/) is a fast Python package manager. Add Darts to your project:
+
+```bash
+uv add darts
+uv add "darts[torch]"
+uv add "darts[notorch]"
+uv add "darts[all]"
+```
+
+Then install with `uv sync`.
 
 ## From conda-forge
 Create a conda environment (e.g., for Python 3.11):
@@ -28,16 +56,18 @@ Activate the environment
 
 As some models have relatively heavy dependencies, we provide four conda-forge packages:
 
-* Install Darts with all available models: `conda install -c conda-forge -c pytorch u8darts-all`
-* Install core only (without neural networks, Prophet, LightGBM, Catboost, XGBoost and StatsForecast): `conda install -c conda-forge u8darts`
-* Install core + Prophet + LightGBM + CatBoost + XGBoost + StatsForecast: `conda install -c conda-forge u8darts-notorch`
-* Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
+* Install Darts with all available models: `conda install -c conda-forge -c pytorch darts-all`
+* Install core only (without neural networks, Prophet, LightGBM, CatBoost, XGBoost, StatsForecast): `conda install -c conda-forge darts`
+* Install core + Prophet + LightGBM + CatBoost + XGBoost + StatsForecast: `conda install -c conda-forge darts-notorch`
+* Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch darts-torch`
 
 
 ## Other Information
 
 ### Enabling Optional Dependencies
-As of version 0.38.0, we made the default `darts` package more lightweight. Packages Prophet, CatBoost, LightGBM, XGBoost and StatsForecast will not be installed anymore. Don't worry though, we keep supporting our model wrappers `Prophet`, `CatBoostModel`, `LightGBMModel`, `XGBoost` and `StatsForecast` in Darts. If you want to use any of them, you will need to manually install the corresponding packages (or install a Darts flavor as described above).
+The default `darts` package includes only core dependencies. Packages Prophet, CatBoost, LightGBM, XGBoost and StatsForecast are not installed by default. We still fully support our model wrappers `Prophet`, `CatBoostModel`, `LightGBMModel`, `XGBoost` and `StatsForecast` in Darts. To use any of them, you can either:
+- Install the appropriate extras: `pip install "darts[notorch]"` or `pip install "darts[all]"`
+- Or manually install the corresponding packages as described below:
 
 #### Prophet
 Install the `prophet` package (version 1.1.1 or more recent) using the [Prophet install guide](https://facebook.github.io/prophet/docs/installation.html#python)

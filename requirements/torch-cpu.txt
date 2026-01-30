@@ -1,2 +1,0 @@
--i https://download.pytorch.org/whl/cpu
-torch>=2.0.0

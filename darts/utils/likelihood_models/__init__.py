@@ -34,8 +34,7 @@ try:
 except ModuleNotFoundError:
     logger.warning(
         "Support for PyTorch based likelihood models not available. "
-        'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
-        'or "u8darts-torch" or "u8darts-all" (with conda).'
+        'To enable them, install "darts[torch]" or "darts[all]": pip install "darts[torch]"'
     )
     BernoulliLikelihood = NotImportedModule(module_name="(Py)Torch", warn=False)
     BetaLikelihood = NotImportedModule(module_name="(Py)Torch", warn=False)
