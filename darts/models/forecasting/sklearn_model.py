@@ -92,7 +92,12 @@ from darts.utils.likelihood_models.sklearn import (
     SKLearnLikelihood,
     _get_likelihood,
 )
-from darts.utils.multioutput import MultiOutputMixin, get_multioutput_estimator_cls
+from darts.utils.multioutput import (
+    MultiOutputMixin,
+    RecurrentMultiOutputMixin,
+    get_multioutput_estimator_cls,
+    get_recurrent_multioutput_estimator_cls,
+)
 from darts.utils.ts_utils import get_single_series, seq2series, series2seq
 from darts.utils.utils import ModelType, random_method
 
@@ -118,6 +123,7 @@ class SKLearnModel(GlobalForecastingModel):
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
         random_state: Optional[int] = None,
+        dir_rec: Optional[bool] = False,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -214,6 +220,10 @@ class SKLearnModel(GlobalForecastingModel):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
             Controls the randomness for reproducible forecasting.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
 
         Examples
         --------
@@ -257,6 +267,7 @@ class SKLearnModel(GlobalForecastingModel):
         self._static_covariates_shape: Optional[tuple[int, int]] = None
         self._lagged_feature_names: Optional[list[str]] = None
         self._lagged_label_names: Optional[list[str]] = None
+        self.dir_rec = dir_rec
 
         # optionally, the model can be wrapped in a likelihood model
         self._likelihood: Optional[SKLearnLikelihood] = getattr(
@@ -729,8 +740,10 @@ class SKLearnModel(GlobalForecastingModel):
             last_static_covariates_shape=self._static_covariates_shape,
             stride=stride,
         )
-        # create validation sets for MultiOutputMixin
-        if val_labels.ndim == 2 and isinstance(self.model, MultiOutputMixin):
+        # create validation sets for MultiOutputMixin and RecurrentMultiOutputMixin
+        if val_labels.ndim == 2 and isinstance(
+            self.model, (MultiOutputMixin, RecurrentMultiOutputMixin)
+        ):
             val_sets, val_weights = [], []
             for i in range(val_labels.shape[1]):
                 val_sets.append((val_samples, val_labels[:, i]))
@@ -1035,8 +1048,31 @@ class SKLearnModel(GlobalForecastingModel):
             self.output_chunk_length > 1 and self.multi_models
         )
 
-        # If multi-output required and model doesn't support it natively, wrap it in a MultiOutputMixin
-        if (
+        # If direct-recursive prediction is enabled, wrap it in RecurrentMultiOutputMixin
+        # Note: dir_rec ALWAYS requires wrapping (even if model supports native multi-output)
+        if self.dir_rec:
+            val_set_name, val_weight_name = self.val_set_params
+            mor_kwargs = {
+                "eval_set_name": val_set_name,
+                "eval_weight_name": val_weight_name,
+            }
+            mor_kwargs["output_chunk_length"] = self.output_chunk_length
+
+            if (
+                n_jobs_multioutput_wrapper is not None
+                and n_jobs_multioutput_wrapper != 1
+            ):
+                logger.warning(
+                    "Direct-recursive multi-output prediction is sequential by design. "
+                    "`n_jobs_multioutput_wrapper` parameter will be ignored."
+                )
+
+            self.model = get_recurrent_multioutput_estimator_cls(self._model_type)(
+                estimator=self.model, **mor_kwargs
+            )
+
+        # Elif multi-output required and model doesn't support it natively, wrap it in a MultiOutputMixin
+        elif (
             requires_multioutput
             and not isinstance(self.model, MultiOutputMixin)
             and (
@@ -1058,7 +1094,7 @@ class SKLearnModel(GlobalForecastingModel):
             )
 
         if (
-            not isinstance(self.model, MultiOutputMixin)
+            not isinstance(self.model, (MultiOutputMixin, RecurrentMultiOutputMixin))
             and n_jobs_multioutput_wrapper is not None
         ):
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
@@ -1521,7 +1557,7 @@ class SKLearnModel(GlobalForecastingModel):
         """Whether the model supports a validation set during training."""
         return (
             self.model.supports_sample_weight
-            if isinstance(self.model, MultiOutputMixin)
+            if isinstance(self.model, (MultiOutputMixin, RecurrentMultiOutputMixin))
             else has_fit_parameter(self.model, "sample_weight")
         )
 
@@ -1627,6 +1663,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
         categorical_future_covariates: Optional[Union[str, list[str]]] = None,
         categorical_static_covariates: Optional[Union[str, list[str]]] = None,
         random_state: Optional[int] = None,
+        dir_rec: Optional[bool] = False,
     ):
         """
         Extension of `SKLearnModel` for regression models that support categorical features.
@@ -1730,6 +1767,10 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
             categorical.
         random_state
             Controls the randomness for reproducible forecasting.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
         """
         super().__init__(
             lags=lags,
@@ -1742,6 +1783,7 @@ class SKLearnModelWithCategoricalFeatures(SKLearnModel, ABC):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
 
         if categorical_static_covariates is not None and not use_static_covariates:
@@ -1945,6 +1987,7 @@ class RegressionModel(SKLearnModel):
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
         random_state: Optional[int] = None,
+        dir_rec: Optional[bool] = False,
     ):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
@@ -2044,6 +2087,10 @@ class RegressionModel(SKLearnModel):
             that all target `series` have the same static covariate dimensionality in ``fit()`` and ``predict()``.
         random_state
             Controls the randomness for reproducible forecasting.
+        dir_rec
+            Whether to use direct-recursive strategy for multi-step forecasting. When True, each forecast
+            horizon uses predictions from previous horizons as additional input features. This creates a
+            chained prediction where step t+2 uses the prediction for step t+1 as a feature. Default: False.
 
         Examples
         --------
@@ -2092,6 +2139,7 @@ class RegressionModel(SKLearnModel):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
 
 
@@ -2202,6 +2250,7 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
         multi_models: Optional[bool] = True,
         use_static_covariates: bool = True,
         random_state: Optional[int] = None,
+        dir_rec: Optional[bool] = False,
     ):
         """SKLearn Classifier Model
 
@@ -2374,4 +2423,5 @@ class SKLearnClassifierModel(_ClassifierMixin, SKLearnModel):
             multi_models=multi_models,
             use_static_covariates=use_static_covariates,
             random_state=random_state,
+            dir_rec=dir_rec,
         )
