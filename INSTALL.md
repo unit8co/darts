@@ -31,6 +31,19 @@ Darts offers a modular installation system with optional dependencies. Choose th
 
 If installation fails on your platform, please follow the official installation guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
 
+## From uv
+
+[uv](https://docs.astral.sh/uv/) is a fast Python package manager. Add Darts to your project:
+
+```bash
+uv add darts
+uv add "darts[torch]"
+uv add "darts[notorch]"
+uv add "darts[all]"
+```
+
+Then install with `uv sync`.
+
 ## From conda-forge
 Create a conda environment (e.g., for Python 3.11):
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
