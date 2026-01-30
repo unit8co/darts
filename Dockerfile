@@ -8,6 +8,10 @@ WORKDIR /app
 # Using the standalone installer for reliability
 COPY --from=ghcr.io/astral-sh/uv:0.9 /uv /usr/local/bin/uv
 
+# Copy source code
+COPY darts/ /app/darts/
+COPY README.md /app/
+
 # Copy dependency files first for better layer caching
 # These change less frequently than source code
 COPY pyproject.toml uv.lock /app/
@@ -15,10 +19,6 @@ COPY pyproject.toml uv.lock /app/
 # Install dependencies using uv
 # --no-dev would install only core dependencies, but we want dev-all for the full environment
 RUN uv sync --group dev-all --frozen
-
-# Copy source code
-COPY darts/ /app/darts/
-COPY README.md /app/
 
 # Copy examples
 COPY examples/ /app/examples/
