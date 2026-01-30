@@ -1034,3 +1034,27 @@ def _compute_score(
         # micro f1 score: score_func(sum(x))
         scores = scores.reshape((-1, 1))
     return scores
+
+
+def _get_tolerance_levels(
+    min_tolerance: float,
+    max_tolerance: float,
+    step: float,
+):
+    """Computes normalized tolerance levels."""
+    if not (0.0 <= min_tolerance < max_tolerance <= 1.0):
+        raise_log(
+            ValueError(
+                "min_tolerance must be >= 0, max_tolerance must be <= 1, and min_tolerance < max_tolerance."
+            ),
+            logger=logger,
+        )
+    if step <= 0 or step > (max_tolerance - min_tolerance):
+        raise_log(
+            ValueError(
+                "step must be positive and not larger than (max_tolerance - min_tolerance)."
+            ),
+            logger=logger,
+        )
+    num_steps = int(round((max_tolerance - min_tolerance) / step)) + 1
+    return np.linspace(min_tolerance, max_tolerance, num_steps)
