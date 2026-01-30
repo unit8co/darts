@@ -22,6 +22,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
   - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
   - Plotly remains an optional dependency and can be installed with `pip install plotly`
+- Added support for full and partial fine-tuning of foundation models with integrated layer freezing and `PeftCallback` for LoRA integration. [#2964](https://github.com/unit8co/darts/issues/2964) by [Alain Gysi](https://github.com/Kurokabe)
 
 **Fixed**
 
