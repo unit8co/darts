@@ -13,4 +13,3 @@ shap>=0.40.0
 statsmodels>=0.14.0
 tqdm>=4.60.0
 typing-extensions
-xarray>=0.17.0

@@ -154,13 +154,9 @@ class TestDynamicTimeWarping:
             assert 1 > dist
 
     def test_warp(self):
-        # Support different time dimension names
-        xa1 = self.series1.data_array().rename({"time": "time1"})
-        xa2 = self.series2.data_array().rename({"time": "time2"})
-
         static_covs = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
-        series1 = TimeSeries.from_xarray(xa1).with_static_covariates(static_covs)
-        series2 = TimeSeries.from_xarray(xa2).with_static_covariates(static_covs)
+        series1 = self.series1.with_static_covariates(static_covs)
+        series2 = self.series2.with_static_covariates(static_covs)
         series1_copy = series1.copy()
         series2_copy = series2.copy()
 
@@ -211,6 +207,17 @@ class TestDynamicTimeWarping:
     def test_plot(self):
         align = dtw.dtw(self.series2, self.series1)
         align.plot()
+        align.plot_alignment()
+        plt.close()
+
+    def test_plot_alignment_range_index(self):
+        series1 = TimeSeries.from_values(np.sin(np.linspace(0, 2 * np.pi, 20)))
+        series2 = TimeSeries.from_values(np.cos(np.linspace(0, 2 * np.pi, 20)))
+
+        assert not series1.has_datetime_index
+        assert not series2.has_datetime_index
+
+        align = dtw.dtw(series1, series2)
         align.plot_alignment()
         plt.close()
 

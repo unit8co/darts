@@ -657,28 +657,31 @@ def _plot_series(series, ax_id, linewidth, label_name, **kwargs):
     label_name
         Name that will appear in the legend.
     """
-    data_array = series.data_array(copy=False)
-    for i, c in enumerate(data_array.component[:10]):
-        comp = data_array.sel(component=c)
+    for i, c in enumerate(series.components[:10]):
+        comp_series = series[c]
 
-        if comp.sample.size > 1:
-            central_series = comp.mean(dim="sample")
-            low_series = comp.quantile(q=0.05, dim="sample")
-            high_series = comp.quantile(q=0.95, dim="sample")
+        if series.is_stochastic:
+            central_series = comp_series.mean(axis=2)
+            low_series = comp_series.quantile(q=0.05)
+            high_series = comp_series.quantile(q=0.95)
         else:
-            central_series = comp
+            central_series = comp_series
 
         label_to_use = (
             (label_name + ("_" + str(i) if len(series.components) > 1 else ""))
             if label_name != ""
-            else "" + str(str(c.values))
+            else "" + str(c)
         )
 
         central_series.plot(ax=ax_id, linewidth=linewidth, label=label_to_use, **kwargs)
 
-        if comp.sample.size > 1:
+        if series.is_stochastic:
             ax_id.fill_between(
-                series.time_index, low_series, high_series, alpha=0.25, **kwargs
+                series.time_index,
+                low_series.values().flatten(),
+                high_series.values().flatten(),
+                alpha=0.25,
+                **kwargs,
             )
 
 

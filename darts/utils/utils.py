@@ -36,6 +36,13 @@ try:
 except ImportError:
     TORCH_AVAILABLE = False
 
+try:
+    import xarray  # noqa: F401
+
+    XARRAY_AVAILABLE = True
+except ImportError:
+    XARRAY_AVAILABLE = False
+
 logger = get_logger(__name__)
 
 MAX_TORCH_SEED_VALUE = (1 << 31) - 1  # to accommodate 32-bit architectures
@@ -797,3 +804,10 @@ def dataframe_col_to_time_index(
     if not time_index.name:
         time_index.name = time_col
     return time_index
+
+
+def is_dataarray(obj: Any) -> bool:
+    """Return if the given object is a xarray DataArray"""
+    if not XARRAY_AVAILABLE:
+        return False
+    return isinstance(obj, xarray.DataArray)

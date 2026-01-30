@@ -71,6 +71,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Dependencies**
 
+- Moved `xarray` from core dependencies to optional dependencies. [#2974](https://github.com/unit8co/darts/pull/2974) by [Jakub Chłapek](https://github.com/jakubchlapek).
 - We set an upper version cap on `scikit-learn<1.8.0` until CatBoost officially supports it. [#2972](https://github.com/unit8co/darts/pull/2972) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:

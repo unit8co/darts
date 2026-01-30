@@ -57,7 +57,6 @@ import matplotlib.axes
 import narwhals as nw
 import numpy as np
 import pandas as pd
-import xarray as xr
 from narwhals.utils import Implementation
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import kurtosis, skew
@@ -78,6 +77,7 @@ from darts.utils.utils import (
     dataframe_col_to_time_index,
     expand_arr,
     generate_index,
+    is_dataarray,
     n_steps_between,
 )
 
@@ -507,7 +507,7 @@ class TimeSeries:
     @classmethod
     def from_xarray(
         cls,
-        xa: xr.DataArray,
+        xa,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[Union[str, int]] = None,
         fillna_value: Optional[float] = None,
@@ -580,6 +580,15 @@ class TimeSeries:
         >>> series.shape
         (3, 1, 1)
         """
+        try:
+            import xarray as xr  # noqa: F401
+        except ImportError:
+            raise_log(
+                ImportError(
+                    "xarray required. Please install it with `pip install xarray`."
+                ),
+                logger=logger,
+            )
         return cls(
             times=xa.get_index(xa.dims[TIME_AX]),
             values=xa.values,
@@ -1736,7 +1745,7 @@ class TimeSeries:
     ================
     """
 
-    def data_array(self, copy: bool = True) -> xr.DataArray:
+    def data_array(self, copy: bool = True):
         """Return an ``xarray.DataArray`` representation of the series.
 
         Parameters
@@ -1749,6 +1758,15 @@ class TimeSeries:
         xarray.DataArray
             An ``xarray.DataArray`` representation of  represents the time series.
         """
+        try:
+            import xarray as xr  # noqa: F401
+        except ImportError:
+            raise_log(
+                ImportError(
+                    "xarray required. Please install it with `pip install xarray`."
+                ),
+                logger=logger,
+            )
         xa = xr.DataArray(
             self._values,
             dims=(self._time_dim,) + DIMS[-2:],
@@ -3663,6 +3681,15 @@ class TimeSeries:
         [2.5]
         [4.5]]
         """
+        try:
+            import xarray as xr  # noqa: F401
+        except ImportError:
+            raise_log(
+                ImportError(
+                    "xarray required. Please install it with `pip install xarray`."
+                ),
+                logger=logger,
+            )
         method_kwargs = method_kwargs or {}
         if isinstance(freq, pd.DateOffset):
             freq = freq.freqstr
@@ -3671,7 +3698,6 @@ class TimeSeries:
             indexer={self._time_dim: freq},
             **kwargs,
         )
-
         if method in SUPPORTED_RESAMPLE_METHODS:
             applied_method = getattr(xr.core.resample.DataArrayResample, method)
             new_xa = applied_method(resample, **method_kwargs)
@@ -4888,13 +4914,12 @@ class TimeSeries:
 
     def _extract_values(
         self,
-        other: Union[Self, xr.DataArray, np.ndarray],
+        other: Union[Self, np.ndarray],
     ) -> Self:
         """Extract values from another series or array and check for compatible shapes."""
-
         if isinstance(other, TimeSeries):
             other_vals = other._values
-        elif isinstance(other, xr.DataArray):
+        elif is_dataarray(other):
             other_vals = other.values
         else:
             other_vals = other
@@ -5299,7 +5324,7 @@ class TimeSeries:
         return len(self._values)
 
     def __add__(self, other):
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+        if isinstance(other, (TimeSeries, np.ndarray)) or is_dataarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
             raise_log(
@@ -5316,7 +5341,7 @@ class TimeSeries:
         return self + other
 
     def __sub__(self, other):
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+        if isinstance(other, (TimeSeries, np.ndarray)) or is_dataarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
             raise_log(
@@ -5333,7 +5358,7 @@ class TimeSeries:
         return other + (-self)
 
     def __mul__(self, other):
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+        if isinstance(other, (TimeSeries, np.ndarray)) or is_dataarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
             raise_log(
@@ -5357,7 +5382,7 @@ class TimeSeries:
                     logger,
                 )
             n = float(n)
-        elif isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
+        elif isinstance(n, (TimeSeries, np.ndarray)) or is_dataarray(n):
             n = self._extract_values(n)  # elementwise power
         else:
             raise_log(
@@ -5374,7 +5399,7 @@ class TimeSeries:
         if isinstance(other, (int, float, np.integer)):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
-        elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+        elif isinstance(other, (TimeSeries, np.ndarray)) or is_dataarray(other):
             other = self._extract_values(other)
             if (other == 0).any():
                 raise_log(
@@ -5415,7 +5440,7 @@ class TimeSeries:
         return ts
 
     def __lt__(self, other) -> np.ndarray:
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+        if isinstance(other, (TimeSeries, np.ndarray)) or is_dataarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
             raise_log(
@@ -5427,7 +5452,7 @@ class TimeSeries:
         return np.less(self._values, other)
 
     def __gt__(self, other) -> np.ndarray:
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+        if isinstance(other, (TimeSeries, np.ndarray)) or is_dataarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
             raise_log(
@@ -5439,7 +5464,7 @@ class TimeSeries:
         return np.greater(self._values, other)
 
     def __le__(self, other) -> np.ndarray:
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+        if isinstance(other, (TimeSeries, np.ndarray)) or is_dataarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
             raise_log(
@@ -5451,7 +5476,7 @@ class TimeSeries:
         return np.less_equal(self._values, other)
 
     def __ge__(self, other) -> np.ndarray:
-        if isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
+        if isinstance(other, (TimeSeries, np.ndarray)) or is_dataarray(other):
             other = self._extract_values(other)
         elif not isinstance(other, (int, float, np.integer)):
             raise_log(
