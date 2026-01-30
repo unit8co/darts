@@ -446,7 +446,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         return outputs, labels
 
 
-class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
+class CatBoostClassifierModel(CatBoostModel, _ClassifierMixin):
     def __init__(
         self,
         lags: int | list | None = None,
