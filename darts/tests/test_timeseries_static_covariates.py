@@ -1059,26 +1059,45 @@ class TestTimeSeriesJSONSerialization:
 
     def test_json_override_attributes(self):
         """Test that from_json parameters can override JSON-embedded attributes."""
-        ts = linear_timeseries(length=10)
-        static_cov = pd.Series([0.0, 1.0], index=["st1", "st2"])
-        metadata = {"key1": "value1"}
-        ts = ts.with_static_covariates(static_cov).with_metadata(metadata)
+        components = ["total", "a", "b"]
+        hierarchy = {"a": ["total"], "b": ["total"]}
+        static_cov = pd.DataFrame(
+            [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+            index=components,
+            columns=["sc1", "sc2"],
+        )
+        metadata = {"description": "test series", "version": 1}
 
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
+            static_covariates=static_cov,
+            metadata=metadata,
+        )
         json_str = ts.to_json()
 
         # Override with different values
-        new_static_cov = pd.Series([2.0, 3.0], index=["st3", "st4"])
+        new_static_cov = pd.DataFrame(
+            [[10.0, 11.0], [12.0, 13.0], [14.0, 5.0]],
+            index=components,
+            columns=["sc_new1", "sc_new2"],
+        )
         new_metadata = {"key2": "value2"}
+        new_hierarchy = {"total": ["b"], "b": ["a"]}
         ts_restored = TimeSeries.from_json(
-            json_str, static_covariates=new_static_cov, metadata=new_metadata
+            json_str,
+            static_covariates=new_static_cov,
+            metadata=new_metadata,
+            hierarchy=new_hierarchy,
         )
 
         # Check that overrides worked
         # When a Series is passed, it becomes a single-row DataFrame with the series index as columns
         assert ts_restored.static_covariates is not None
-        assert list(ts_restored.static_covariates.columns) == ["st3", "st4"]
-        assert ts_restored.static_covariates.iloc[0].values.tolist() == [2.0, 3.0]
+        assert ts_restored.static_covariates.equals(new_static_cov)
         assert ts_restored.metadata == new_metadata
+        assert ts_restored.hierarchy == new_hierarchy
 
     def test_json_without_attributes(self):
         """Test JSON serialization for series without optional attributes."""

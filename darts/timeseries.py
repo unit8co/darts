@@ -1514,15 +1514,22 @@ class TimeSeries:
         (3, 1, 1)
         """
         parsed = json.loads(json_str)
-        json_sc = parsed.pop("static_covariates", None)
-        if json_sc is not None and static_covariates is None:
-            static_covariates = pd.DataFrame(
-                data=json_sc["data"], index=json_sc["index"], columns=json_sc["columns"]
-            )
-        hierarchy = parsed.pop("hierarchy", hierarchy)
-        metadata = parsed.pop("metadata", metadata)
-        df = pd.read_json(StringIO(json.dumps(parsed)), orient="split")
 
+        static_covariates_ = parsed.pop("static_covariates", None)
+        if static_covariates_ is not None and static_covariates is None:
+            static_covariates = pd.read_json(
+                StringIO(json.dumps(static_covariates_)), orient="split"
+            )
+
+        hierarchy_ = parsed.pop("hierarchy", None)
+        if hierarchy is None:
+            hierarchy = hierarchy_
+
+        metadata_ = parsed.pop("metadata", None)
+        if metadata is None:
+            metadata = metadata_
+
+        df = pd.read_json(StringIO(json.dumps(parsed)), orient="split")
         return cls.from_dataframe(
             df=df,
             static_covariates=static_covariates,
