@@ -1519,14 +1519,8 @@ class TimeSeries:
             static_covariates = pd.DataFrame(
                 data=json_sc["data"], index=json_sc["index"], columns=json_sc["columns"]
             )
-        if hierarchy is None:
-            hierarchy = parsed.pop("hierarchy", None)
-        else:
-            parsed.pop("hierarchy", None)
-        if metadata is None:
-            metadata = parsed.pop("metadata", None)
-        else:
-            parsed.pop("metadata", None)
+        hierarchy = parsed.pop("hierarchy", hierarchy)
+        metadata = parsed.pop("metadata", metadata)
         df = pd.read_json(StringIO(json.dumps(parsed)), orient="split")
 
         return cls.from_dataframe(
