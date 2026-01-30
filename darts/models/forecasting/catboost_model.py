@@ -26,7 +26,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from catboost import CatBoostClassifier, CatBoostRegressor, Pool
+from catboost import CatBoost, CatBoostClassifier, CatBoostRegressor, Pool
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log
@@ -47,6 +47,8 @@ logger = get_logger(__name__)
 
 
 class CatBoostModel(SKLearnModelWithCategoricalFeatures):
+    model: CatBoostRegressor
+
     def __init__(
         self,
         lags: LAGS_TYPE | None = None,
@@ -151,7 +153,8 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             and variance couple, which capture data (aleatoric) uncertainty.
             This will overwrite any `objective` parameter.
         quantiles
-            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+            Fit the model to these quantiles if the `likelihood` is set to `quantile`. Default is `None` and
+            will use :class:`~darts.utils.likelihood_models.sklearn.QuantileRegression`'s default quantiles.
         random_state
             Controls the randomness for reproducible forecasting.
         multi_models
@@ -166,7 +169,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             Optionally, component name or list of component names specifying the past covariates that should be treated
             as categorical by the underlying `CatBoostRegressor`. The components that are specified as categorical
             must be integer-encoded. For more information on how CatBoost handles categorical features,
-            visit: `Categorical feature support documentatio
+            visit: `Categorical feature support documentation
             <https://catboost.ai/docs/en/features/categorical-features>`__.
         categorical_future_covariates
             Optionally, component name or list of component names specifying the future covariates that should be
@@ -245,7 +248,8 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         self.kwargs["loss_function"] = self.model.get_params().get("loss_function")
 
     @staticmethod
-    def _create_model(**kwargs):
+    def _create_model(**kwargs) -> CatBoost:
+        """Instantiate the underlying CatBoostRegressor model"""
         return CatBoostRegressor(**kwargs)
 
     def _set_likelihood(
@@ -336,6 +340,10 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             `"linear"` or `"exponential"` decay - the further in the past, the lower the weight. The weights are
             computed globally based on the length of the longest series in `series`. Then for each series, the weights
             are extracted from the end of the global weights. This gives a common time weighting across all series.
+        stride
+            The number of time steps between consecutive samples, applied starting from the end of the series. The same
+            stride will be applied to both the training and evaluation set (if supplied and supported). This should be
+            used with caution as it might introduce bias in the forecasts.
         val_sample_weight
             Same as for `sample_weight` but for the evaluation dataset.
         verbose
@@ -356,6 +364,7 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
             n_jobs_multioutput_wrapper=n_jobs_multioutput_wrapper,
             sample_weight=sample_weight,
             val_sample_weight=val_sample_weight,
+            stride=stride,
             verbose=verbose,
             **kwargs,
         )
@@ -429,12 +438,12 @@ class CatBoostModel(SKLearnModelWithCategoricalFeatures):
         If categorical features are specified, the samples are converted into a pandas DataFrame and categorical
         columns are cast to integer.
         """
-        samples, labels = super()._format_samples(samples, labels=labels)
+        outputs, labels = super()._format_samples(samples, labels=labels)
         if len(self._categorical_indices) != 0:
             # transform into pandas df and cast categorical columns to int
-            samples = pd.DataFrame(samples)
-            samples = samples.astype({col: int for col in self._categorical_indices})
-        return samples, labels
+            outputs = pd.DataFrame(outputs)
+            outputs = outputs.astype({col: int for col in self._categorical_indices})
+        return outputs, labels
 
 
 class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
@@ -617,7 +626,7 @@ class CatBoostClassifierModel(_ClassifierMixin, CatBoostModel):
         )
 
     @staticmethod
-    def _create_model(**kwargs):
+    def _create_model(**kwargs) -> CatBoostClassifier:
         """Instantiate the underlying CatBoostClassifier model"""
 
         # `CatBoostClassifier.predict` lacks a dimension when the task is binary classification compared to multi-class
