@@ -2,10 +2,13 @@
 TimesFM 2.5
 -----------
 
-For detailed examples and tutorials, see:
+TimesFM 2.5 can be used the same way as other foundation models (e.g. Chronos2), with the exception
+that it does not support any type of covariates.
 
-* `TimesFM 2.5 Model Examples
-  <https://unit8co.github.io/darts/examples/xxx.html>`__
+For detailed examples and tutorials, check out the Chronos2 notebook:
+
+* `Chronos-2 Foundation Model Examples
+  <https://unit8co.github.io/darts/examples/25-Chronos-2-examples.html>`__
 """
 
 import os
@@ -326,7 +329,7 @@ class TimesFM2p5Model(FoundationModel):
         This model supports either univariate or multivariate time series, but does not support covariates.
         For multivariate time series, the model is applied independently to each component.
 
-        By default, using this model will automatically download and cache the pre-trained model from HuggingFace Hub
+        Using this model will automatically download and cache the pre-trained model from HuggingFace Hub
         (`google/timesfm-2.5-200m-pytorch <https://huggingface.co/google/timesfm-2.5-200m-pytorch/tree/main>`_).
         Alternatively, you can specify a local directory containing the model config and weights using the ``local_dir``
         parameter.
@@ -540,6 +543,11 @@ class TimesFM2p5Model(FoundationModel):
         [[1005.7882 ]]
         [[1005.79565]]]
 
+        .. note::
+            TimesFM 2.5 does not support covariates natively. The source implementation uses `Xreg` to fit a ridge
+            regression between covariates and the target series (or forecast residuals) as a pre/post-processing step.
+            You can implement a similar approach externally in Darts.
+            See `Issue #2976 <https://github.com/unit8co/darts/issues/2976#issuecomment-3691415141>`_ for details.
         .. note::
             Fine-tuning of TimesFM 2.5 is not supported at the moment.
         .. note::
