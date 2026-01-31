@@ -11,6 +11,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- 🚀🚀 Added new forecasting model `TimesFM2p5Model`: Google's pre-trained 200M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#2980](https://github.com/unit8co/darts/pull/2980) by [Zhihao Dai](https://github.com/daidahao).
 - Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
   - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
   - Maintains API consistency with the existing `plot()` method for easy adoption
