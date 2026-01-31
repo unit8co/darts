@@ -6,7 +6,6 @@ This file contains several abstract classes:
 
     * FoundationModel: base class for foundation forecasting models with PyTorch Lightning backend,
         inheriting from :class:`MixedCovariatesTorchModel` and :class:`TorchForecastingModel`.
-    * HuggingFaceModelMixin: mixin class for loading model configuration and weights from HuggingFace Hub.
 """
 
 from abc import ABC
@@ -44,7 +43,7 @@ class FoundationModel(MixedCovariatesTorchModel, ABC):
         super().__init__(**kwargs). Also, please implement the abstract method :func:`_create_model()`.
 
         If the model requires downloading configuration files and model weights from HuggingFace, please
-        also inherit from :class:`HuggingFaceModelMixin` and use its methods to load the model configuration
+        instantiate a :class:`HuggingFaceConnector` and use its methods to load the model configuration
         inside :func:`__init__()` and to load the model weights inside :func:`_create_model()`.
 
         Parameters
