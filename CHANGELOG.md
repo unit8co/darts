@@ -94,6 +94,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Redesigned the landing (home) page with grid cards to quickly point users to the most important resources.
   - Added a right navigation sidebar on API pages for easier navigation.
 
+- Improved the `save`/`load` methods for `TorchForecastingModel` to support `os.PathLike` objects as file path. [#2947](https://github.com/unit8co/darts/pull/2947) by [Timon Erhart](https://github.com/timonerhart)
+
 **Fixed**
 
 **Dependencies**
