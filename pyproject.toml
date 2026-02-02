@@ -70,10 +70,7 @@ notorch = [
     "statsforecast>=1.4",
     "xgboost>=2.1.4",
 ]
-all = [
-    "darts[torch]",
-    "darts[notorch]",
-]
+all = ["darts[torch,notorch]"]
 # CPU-only PyTorch for CI testing
 torch-cpu = ["torch>=2.0.0"]
 
