@@ -177,7 +177,7 @@ class TestTimeSeriesGeneration:
 
         # test overflow
         with pytest.raises(ValueError):
-            holidays_timeseries(time_index_1, "US", add_length=99999)
+            holidays_timeseries(time_index_1, "US", add_length=999999)
 
         # test date is too short
         with pytest.raises(ValueError):

@@ -19,7 +19,7 @@ from darts.timeseries import (
     TIME_AX,
     TimeSeries,
 )
-from darts.utils.utils import generate_index
+from darts.utils.utils import freq_to_timedelta, generate_index
 
 logger = get_logger(__name__)
 
@@ -459,6 +459,12 @@ def _extend_time_index_until(
 
         try:
             end += add_length * freq
+            # Pandas 3.0: check if result exceeds max timestamp, backwards compatible as pandas 3.0 now
+            # uses datetime64[us] instead of datetime64[ns], so the max is higher
+            if isinstance(end, pd.Timestamp) and end > pd.Timestamp.max:
+                raise pd.errors.OutOfBoundsDatetime(
+                    f"Result {end} exceeds Timestamp.max"
+                )
         except pd.errors.OutOfBoundsDatetime:
             raise_log(
                 ValueError(
@@ -493,8 +499,14 @@ def _extend_time_index_until(
         )
 
         ahead = timestamp - end
+        # Pandas 3.0: convert offset to Timedelta for modulo operation
+        if datetime_index:
+            freq_as_timedelta = freq_to_timedelta(freq)
+            divisible = (ahead % freq_as_timedelta) == pd.Timedelta(0)
+        else:
+            divisible = (ahead % freq) == 0
         raise_if_not(
-            (ahead % freq) == pd.Timedelta(0),
+            divisible,
             f"End date must correspond with frequency {freq} of the time axis",
             logger,
         )
