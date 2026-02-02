@@ -593,14 +593,31 @@ def generate_index(
             freq=freq,
             name=name,
         )
+
+        # handle negative frequencies
         if freq.n < 0:
-            if start is not None and not freq.is_on_offset(start):
-                # for anchored negative frequencies, and `start` does not intersect with `freq`:
-                # pandas generates an index that starts one step before `start` -> remove this step
-                index = index[1:]
-            elif end is not None and not freq.is_on_offset(end):
-                # if `start` intersects with `freq`, then the same can happen for `end` -> remove this step
-                index = index[:-1]
+            if PANDAS_30_OR_GREATER:
+                # if start is not on the frequency offset, pandas snaps to the wrong anchor point
+                if (
+                    start is not None
+                    and end is not None
+                    and not freq.is_on_offset(start)
+                ):
+                    # generate forward sequence to find correct starting point
+                    forward_idx = pd.date_range(start=end, end=start, freq=-freq)
+                    if len(forward_idx) > 0:
+                        # use last element of forward sequence as adjusted start
+                        index = pd.date_range(
+                            start=forward_idx[-1], end=end, freq=freq, name=name
+                        )
+            else:
+                if start is not None and not freq.is_on_offset(start):
+                    # for anchored negative frequencies, and `start` does not intersect with `freq`:
+                    # pandas generates an index that starts one step before `start` -> remove this step
+                    index = index[1:]
+                elif end is not None and not freq.is_on_offset(end):
+                    # if `start` intersects with `freq`, then the same can happen for `end` -> remove this step
+                    index = index[:-1]
     else:  # int
         step = 1 if freq is None else freq
         if start is None:
