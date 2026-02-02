@@ -30,7 +30,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 **Dependencies**
 
 - We set an upper version cap on `pandas<3.0.0` until we officially support it. [#2995](https://github.com/unit8co/darts/pull/2995) by [Dennis Bader](https://github.com/dennisbader).
-- Bumped minimum supported versions to `pandas>=2.2.0` and `numpy>=2.2.0`. Added support for `pandas 3.x`; removed backwards-compatibility code for pandas and numpy versions below 2.x.
+- Bumped minimum supported versions to `pandas>=2.2.0` and `numpy>=2.2.0`. Added support for `pandas 3.x`; removed backwards-compatibility code for pandas and numpy versions below 2.x. [#3004](https://github.com/unit8co/darts/pull/3004) by [Jakub Chłapek](https://github.com/jakubchlapek)
 
 ### For developers of the library:
 
