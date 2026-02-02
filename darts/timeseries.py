@@ -1864,9 +1864,20 @@ class TimeSeries:
                         ValueError("All values in add_static_cov must be of type str"),
                         logger=logger,
                     )
+                missing_cols = [
+                    col for col in static_cov_cols if col not in static_covs.columns
+                ]
+                if missing_cols:
+                    raise_log(
+                        ValueError(
+                            f"The following static covariates to add via `add_static_cov` do not exist: {missing_cols}."
+                            f"Available static covariates are: {list(static_covs.columns)}"
+                        ),
+                        logger=logger,
+                    )
             else:
                 raise_log(
-                    ValueError("add_static_cov must be of type bool, str or List[str]"),
+                    ValueError("add_static_cov must be of type bool, str or list[str]"),
                     logger=logger,
                 )
             for static_cov_col in static_cov_cols:
@@ -1878,7 +1889,6 @@ class TimeSeries:
                     else:
                         column = static_cov_col
                     data_dict[column] = data_col
-                    columns = columns.append(pd.Index([column]))
 
         # handle metadata
         if self.has_metadata and add_metadata:
@@ -1895,6 +1905,17 @@ class TimeSeries:
                         ValueError("All values in add_metadata must be of type str"),
                         logger=logger,
                     )
+                missing_cols = [
+                    col for col in metadata_cols if col not in metadata.keys()
+                ]
+                if missing_cols:
+                    raise_log(
+                        ValueError(
+                            f"The following metadata to add via `add_metadata` do not exist: {missing_cols}."
+                            f"Available static covariates are: {list(metadata.keys())}"
+                        ),
+                        logger=logger,
+                    )
             else:
                 raise_log(
                     ValueError("add_metadata must be of type bool, str or list[str]"),
@@ -1902,7 +1923,6 @@ class TimeSeries:
                 )
             for metadata_col in metadata_cols:
                 data_col = np.full(data.shape[0], metadata[metadata_col])
-                columns = columns.append(pd.Index([metadata_col]))
                 data_dict[metadata_col] = data_col
         time_index = self._time_index
 
@@ -6128,8 +6148,9 @@ def to_group_dataframe(
     backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
     time_as_index: bool = True,
     suppress_warnings: bool = False,
-    add_static_cov: Union[bool, str, list[str], None] = False,
+    add_static_cov: Union[bool, str, list[str], None] = True,
     add_metadata: Union[bool, str, list[str], None] = False,
+    add_group_col: Optional[bool] = False,
 ):
     """
     Return a grouped DataFrame representation from one or multiple `TimeSeries`.
@@ -6160,11 +6181,15 @@ def to_group_dataframe(
     add_static_cov
         Whether to add static covariates from the time series as columns in the resulting DataFrame
         (one column per component–static covariate pair). Can be a bool in case all the static covariates
-        should be added, or a string/list of strings in case only a subset is needed.
+        should be added, or a string/list of strings in case only a subset is needed. True by default as static
+        covariates should be provided to specify groups.
     add_metadata
         Whether to add metadata from the time series as columns in the resulting DataFrame
         (one column per metadata entry). Can be a bool in case all metadata should be added,
         or a string/list of strings in case only a subset is needed.
+    add_group_col
+        Whether to add a group column in the resulting long format dataframe. The values of that group column will go
+        from 1 to the number of time series in the input list
 
     Returns
     -------
@@ -6174,25 +6199,28 @@ def to_group_dataframe(
     """
 
     dfs = []
+    backend = Implementation.from_backend(backend)
 
     if isinstance(series, TimeSeries):
         series = [series]
 
     for idx, serie in enumerate(series):
         _df = serie.to_dataframe(
-            copy,
-            backend,
-            time_as_index,
-            suppress_warnings,
-            add_static_cov,
-            add_metadata,
+            copy=copy,
+            backend=backend,
+            time_as_index=time_as_index,
+            suppress_warnings=suppress_warnings,
+            add_static_cov=add_static_cov,
+            add_metadata=add_metadata,
         )
         _df = nw.from_native(_df)
+        if add_group_col:
+            _df = _df.with_columns(nw.lit(idx).alias("group"))
         dfs.append(_df)
 
     df = nw.concat(dfs)
     df = df.to_native()
-    if backend == "pandas" and not time_as_index:
+    if backend.is_pandas() and not time_as_index:
         df.reset_index(inplace=True, drop=True)
     return df
 

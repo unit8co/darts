@@ -177,7 +177,8 @@ class TestTimeSeriesStaticCovariate:
         assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
         assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
 
-    def test_grouped_pandas_creation(self):
+    @pytest.mark.parametrize("time_as_index", [True, False])
+    def test_grouped_pandas_creation(self, time_as_index):
         df = pd.DataFrame({
             "time": pd.date_range(start="2023-01-01", periods=10, freq="D").tolist()
             * 3,
@@ -188,17 +189,26 @@ class TestTimeSeriesStaticCovariate:
         series = TimeSeries.from_group_dataframe(
             df, group_cols="ID", value_cols=["value"], time_col="time"
         )
-        reconstructed = to_group_dataframe(
-            series,
-            add_static_cov=True,
-            add_metadata=False,
-            time_as_index=False,
-        )
-        expected = df.sort_values(["ID", "time"])
-        reconstructed = reconstructed.sort_values(["ID", "time"])
-        reconstructed["ID"] = reconstructed["ID"].astype(int)
-        reconstructed.reset_index(inplace=True, drop=True)
-        assert reconstructed.equals(expected)
+
+        def assert_reconstruction(ts_input, expected_subset):
+            reconstructed = to_group_dataframe(
+                ts_input,
+                add_static_cov=True,
+                add_metadata=False,
+                time_as_index=False,
+            )
+            reconstructed = reconstructed.sort_values(["ID", "time"])
+            reconstructed["ID"] = reconstructed["ID"].astype(int)
+            reconstructed.reset_index(inplace=True, drop=True)
+            if not time_as_index:
+                reconstructed.reset_index(inplace=True, drop=True)
+                assert isinstance(reconstructed.index, pd.RangeIndex)
+                assert reconstructed.index.tolist() == list(range(len(reconstructed)))
+            assert reconstructed.equals(expected_subset)
+
+        assert_reconstruction(series, df.sort_values(["ID", "time"]))
+        # single TimeSeries
+        assert_reconstruction(series[0], df.sort_values(["ID", "time"]).iloc[:10])
 
     @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
     def test_grouped_polars_creation(self):
@@ -269,6 +279,29 @@ class TestTimeSeriesStaticCovariate:
         reconstructed["ID"] = reconstructed["ID"].astype(int)
         assert reconstructed.equals(expected)
 
+    def test_no_group_col_by_default(self):
+        df = pd.DataFrame({
+            "time": pd.date_range("2023-01-01", periods=3, freq="D"),
+            "value": [1.0, 2.0, 3.0],
+            "ID": [0, 0, 0],
+        })
+
+        ts = TimeSeries.from_group_dataframe(
+            df,
+            group_cols="ID",
+            value_cols="value",
+            time_col="time",
+        )
+
+        reconstructed = to_group_dataframe(
+            ts, add_static_cov=True, add_metadata=False, add_group_col=True
+        )
+        assert "group" in reconstructed.columns
+        group_per_id = reconstructed.groupby("ID")["group"].nunique()
+        assert (group_per_id == 1).all()
+        groups = sorted(reconstructed["group"].unique())
+        assert groups == list(range(len(groups)))
+
     @pytest.mark.parametrize(
         "config",
         zip(
@@ -299,6 +332,81 @@ class TestTimeSeriesStaticCovariate:
         reconstructed = reconstructed.sort_values(["ID"])
         reconstructed = reconstructed[expected.columns]
         assert reconstructed.equals(expected)
+
+    @pytest.mark.parametrize(
+        "add_static_cov, add_metadata",
+        [
+            (["static", 42], 3.14),
+            (42, ["source", None]),
+            (["static", "nonexistent_column"], ["source", "nonexistent_meta"]),
+        ],
+    )
+    def test_invalid_add_static_cov_metadata_type_raises(
+        self, add_static_cov, add_metadata
+    ):
+        df = pd.DataFrame({
+            "value": [1.0, 2.0, 3.0],
+            "ID": [0, 0, 0],
+            "static": ["A", "A", "A"],
+        })
+
+        ts1 = TimeSeries.from_group_dataframe(
+            df, group_cols="ID", static_cols=["static"]
+        )
+        with pytest.raises(ValueError):
+            to_group_dataframe(ts1, add_static_cov=add_static_cov)
+
+        df = df.drop(columns=["static"])
+        df["source"] = "test"
+        ts2 = TimeSeries.from_group_dataframe(
+            df, group_cols="ID", metadata_cols=["source"]
+        )
+        with pytest.raises(ValueError):
+            to_group_dataframe(ts2, add_metadata=add_metadata)
+
+    def test_grouped_component_level_static_covariates(self):
+        df = pd.DataFrame({
+            "time": pd.date_range("2023-01-01", periods=3, freq="D").tolist() * 2,
+            "value1": [1.0, 2.0, 3.0] * 2,
+            "value2": [4.0, 5.0, 6.0] * 2,
+            "ID": [0] * 3 + [1] * 3,
+        })
+        static_covs = pd.DataFrame(
+            {
+                "source": ["sensor_A", "sensor_B"],
+                "region": ["EU", "US"],
+            },
+            index=[0, 1],
+        )
+
+        ts_list = [
+            ts.with_static_covariates(static_covs)
+            for ts in TimeSeries.from_group_dataframe(
+                df,
+                group_cols="ID",
+                value_cols=["value1", "value2"],
+                time_col="time",
+            )
+        ]
+
+        reconstructed = to_group_dataframe(
+            ts_list,
+            add_static_cov=True,
+            add_metadata=False,
+            time_as_index=False,
+        )
+        expected_cols = [
+            "value1_source",
+            "value2_source",
+            "value1_region",
+            "value2_region",
+        ]
+        assert all(col in reconstructed.columns for col in expected_cols)
+
+        assert (reconstructed["value1_source"] == static_covs["source"].loc[0]).all()
+        assert (reconstructed["value2_source"] == static_covs["source"].loc[1]).all()
+        assert (reconstructed["value1_region"] == static_covs["region"].loc[0]).all()
+        assert (reconstructed["value2_region"] == static_covs["region"].loc[1]).all()
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)
     def test_timeseries_from_longitudinal_df(self, backend):
