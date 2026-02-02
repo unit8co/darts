@@ -50,6 +50,11 @@ jobs:
           args: ${{ github.event.inputs.bump_type }}
           github-token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
 
+      - name: "Check version bump"
+        if: steps.bump_version.outputs.bumped == 'true'
+        run: |
+          echo "Version was bumped from ${{ steps.bump_version.outputs.previous-version }} to ${{ steps.bump_version.outputs.current-version }}!"
+
       - name: "Create new release"
         id: create_release
         uses: actions/create-release@latest
