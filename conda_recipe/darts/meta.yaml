@@ -2,8 +2,8 @@
 {% set project = pyproject.get('project', {}) %}
 
 package:
-  name: {{ project.get('name', 'darts') }}
-  version: {{ project.get('version', '0.40.0') }}
+  name: "darts"
+  version: "0.40.0"
 
 source:
   # Project root directory (where pyproject.toml lives)

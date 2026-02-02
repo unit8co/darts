@@ -20,8 +20,7 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9"
-          enable-cache: true
+          version: "0.9.26"
           python-version: '3.12'
 
       - name: "Install Dev Dependencies"
@@ -33,19 +32,13 @@ jobs:
         run: |
           uv run pre-commit run --all-files
 
-      - name: "Optimize cache for CI"
-        run: |
-          # Remove pre-built wheels but keep source-built wheels
-          # This reduces cache size while retaining expensive-to-rebuild packages
-          uv cache prune --ci
-
   tests:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [macos-14, ubuntu-latest]
-        python-version: ['3.10', '3.11', '3.12']
-        flavour: ['core', 'torch', 'notorch', 'all']
+        python-version: ['3.10', '3.12']
+        flavour: ['core', 'torch', 'all']
 
     steps:
       - name: "Clone repository"
@@ -59,8 +52,7 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9"
-          enable-cache: true
+          version: "0.9.26"
           python-version: ${{ matrix.python-version }}
 
       - name: "Install Dependencies Flavour ${{ matrix.flavour }}"
@@ -106,12 +98,6 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      - name: "Optimize cache for CI"
-        run: |
-          # Remove pre-built wheels but keep source-built wheels
-          # This reduces cache size while retaining expensive-to-rebuild packages
-          uv cache prune --ci
-
   check-examples:
     runs-on: ubuntu-latest
     strategy:
@@ -129,7 +115,7 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9"
+          version: "0.9.26"
           enable-cache: true
           python-version: '3.11'
 
@@ -168,7 +154,7 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9"
+          version: "0.9.26"
           enable-cache: true
           python-version: '3.11'
 

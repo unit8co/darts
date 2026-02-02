@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - master
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -19,8 +20,7 @@ jobs:
       - name: "Install uv"
         uses: astral-sh/setup-uv@v7
         with:
-          version: "0.9"
-          enable-cache: true
+          version: "0.9.26"
           python-version: '3.11'
 
       - name: "Install Dev Dependencies"
@@ -31,12 +31,6 @@ jobs:
       - name: "Lint"
         run: |
           uv run pre-commit run --all-files
-
-      - name: "Optimize cache for CI"
-        run: |
-          # Remove pre-built wheels but keep source-built wheels
-          # This reduces cache size while retaining expensive-to-rebuild packages
-          uv cache prune --ci
 
   tests:
     runs-on: ${{ matrix.os }}

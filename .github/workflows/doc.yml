@@ -20,6 +20,7 @@ jobs:
         with:
           version: "0.9.26"
           enable-cache: true
+          python-version: '3.11'
 
       - name: "Install pandoc"
         run: |

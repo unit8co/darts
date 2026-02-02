@@ -44,7 +44,7 @@ dependencies = [
     "shap>=0.40.0",
     "statsmodels>=0.14.0",
     "tqdm>=4.60.0",
-    "typing-extensions",
+    "typing-extensions>=4.0.0",
     "xarray>=0.17.0",
 ]
 
@@ -162,7 +162,8 @@ release = [
     "bump-my-version>=1.2.5",
     "docutils==0.21.2",
     "ipykernel==7.1.0",
-    "ipython>=8.0.0,<9.0.0",
+    "ipython==9.7.0; python_version >= '3.11'",
+    "ipython==8.38.0; python_version < '3.11'",
     "ipython-genutils==0.2.0",
     "ipywidgets==8.1.8",
     "jinja2==3.1.6",
@@ -208,6 +209,8 @@ replace = '__version__ = "{new_version}"'
 
 [[tool.bumpversion.files]]
 filename = "conda_recipe/darts/meta.yaml"
+search = '__version__ = "{current_version}"'
+replace = '__version__ = "{new_version}"'
 
 [[tool.bumpversion.files]]
 filename = "docs/source/conf.py"

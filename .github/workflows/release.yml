@@ -16,13 +16,13 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: "1. Clone repository"
+      - name: "Clone repository"
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
           fetch-depth: '1'
 
-      - name: "2. Set up Python 3.11"
+      - name: "Set up Python 3.11"
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
@@ -31,17 +31,11 @@ jobs:
         uses: astral-sh/setup-uv@v7
         with:
           version: "0.9.26"
-          enable-cache: true
+          python-version: '3.11'
 
       - name: "Install release dependencies"
         run: |
           uv sync --group release
-
-      - name: "Optimize cache for CI"
-        run: |
-          # Remove pre-built wheels but keep source-built wheels
-          # This reduces cache size while retaining expensive-to-rebuild packages
-          uv cache prune --ci
 
       - name: "Bump version, commit, and tag"
         id: bump_version
@@ -73,7 +67,7 @@ jobs:
       - name: "Clone repository"
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Fetch all history and tags
+          fetch-tags: true  # Fetch all tags
 
       - name: "Get latest version tag"
         id: get_version
@@ -116,6 +110,7 @@ jobs:
         with:
           version: "0.9.26"
           enable-cache: true
+          python-version: '3.11'
 
       - name: "Install pandoc"
         run: |
