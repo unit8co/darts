@@ -126,7 +126,7 @@ class TestTimesFM2p5Model:
                 max_context=1024,
                 max_horizon=1024,
                 normalize_inputs=False,
-                use_continuous_quantile_head=False,
+                use_continuous_quantile_head=True,
                 force_flip_invariance=False,
                 infer_is_positive=False,
                 fix_quantile_crossing=False,
