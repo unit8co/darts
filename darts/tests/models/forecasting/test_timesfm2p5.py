@@ -63,8 +63,7 @@ class TestTimesFM2p5Model:
     ts_energy_train, ts_energy_val = load_validation_inputs()
     # maximum context (input_chunk_length + output_chunk_length + output_chunk_shift)
     context_limit = 16384
-    # maximum prediction length w/o triggering auto-regression where the results
-    # would diverge from the original implementation due to different sampling methods
+    # maximum prediction length of the chosen output head
     max_prediction_length = 1024
 
     # ---- Dummy Tests ---- #
@@ -125,7 +124,7 @@ class TestTimesFM2p5Model:
         model.compile(
             timesfm.ForecastConfig(
                 max_context=1024,
-                max_horizon=256,
+                max_horizon=1024,
                 normalize_inputs=False,
                 use_continuous_quantile_head=False,
                 force_flip_invariance=False,
@@ -133,8 +132,10 @@ class TestTimesFM2p5Model:
                 fix_quantile_crossing=False,
             )
         )
+        # setting horizon to 1024 allows us to get maximum prediction length of the larger head
+        # but will trigger autoregressive predictions internally
         point_forecast, quantile_forecast = model.forecast(
-            horizon=128, # use output_patch_len here to prevent auto-regressive forecasting
+            horizon=1024, # use output_quantile_len here to maximize prediction length
             inputs=[
                 series
                 for series in ts_energy_train.values().T
@@ -168,12 +169,14 @@ class TestTimesFM2p5Model:
 
         # predict on the validation inputs w/ covariates
         pred = model.predict(
-            n=128,
+            n=self.max_prediction_length,
             predict_likelihood_parameters=probabilistic,
         )
         assert isinstance(pred, TimeSeries)
         # reshape to (time, variables, quantiles)
-        pred_np = pred.values().reshape(128, self.ts_energy_train.n_components, -1)
+        pred_np = pred.values().reshape(
+            self.max_prediction_length, self.ts_energy_train.n_components, -1
+        )
 
         # load the original predictions
         path = (
@@ -183,13 +186,20 @@ class TestTimesFM2p5Model:
             / "timesfm2p5_prediction"
             / "timesfm2p5.npz"
         )
-        original = np.load(path)["pred"]
+        original: np.ndarray = np.load(path)["pred"]
 
         if not probabilistic:
             original = original[:, :, [4]]  # median quantile
 
-        # compare predictions to original
-        np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
+        original_mean = original.mean(axis=0, keepdims=True)
+        normalized_deviation = np.abs(pred_np - original) / original_mean
+
+        # check that normalized deviation is close to zero
+        np.testing.assert_allclose(
+            normalized_deviation,
+            np.zeros_like(normalized_deviation),
+            rtol=1e-3,
+        )
 
     @pytest.mark.slow
     def test_creation(self):
