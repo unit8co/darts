@@ -156,7 +156,7 @@ optional = [
     "polars>=1.37.1",
     "pydantic>=2.12.5",
     "ray>=2.53.0",
-    "plotly"
+    "plotly>=6.5.2"
 ]
 release = [
     "bump-my-version>=1.2.5",
