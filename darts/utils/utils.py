@@ -579,6 +579,13 @@ def generate_index(
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         freq = "D" if freq is None else freq
         freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+
+        # Pandas 3.0: date_range with end + periods may return empty index
+        # if end is not on the frequency anchor. Snap end to the frequency.
+        if PANDAS_30_OR_GREATER:
+            if end is not None and length is not None and not freq.is_on_offset(end):
+                end = freq.rollback(end)
+
         index = pd.date_range(
             start=start,
             end=end,
