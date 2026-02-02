@@ -417,7 +417,7 @@ def freq_to_timedelta(freq: Union[str, pd.DateOffset]) -> pd.Timedelta:
     does not accept DateOffset in pandas 3+.
     """
     out = pd.to_timedelta(freq, errors="coerce")
-    if out is not pd.NaT:
+    if not pd.isna(out):
         return out
     freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
     return (pd.Timestamp(0) + freq) - pd.Timestamp(0)
