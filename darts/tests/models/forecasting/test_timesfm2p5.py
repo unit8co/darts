@@ -198,7 +198,7 @@ class TestTimesFM2p5Model:
         np.testing.assert_allclose(
             normalized_deviation,
             np.zeros_like(normalized_deviation),
-            rtol=1e-3,
+            atol=1e-3,
         )
 
     @pytest.mark.slow
