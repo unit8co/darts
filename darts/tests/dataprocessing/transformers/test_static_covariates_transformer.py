@@ -32,8 +32,7 @@ class TestStaticCovariatesTransformer:
             "cont2": [0.3, 0.4, 0.5],
             "cat2": ["c", "d", "e"],
         }
-    )
-    static_covs2["cat1"] = static_covs2["cat1"].astype("O")
+    ).astype(dtype={"cat1": "O", "cat2": "O"})
     series2 = TimeSeries.from_times_and_values(
         times=series.time_index,
         values=np.concatenate([series.values()] * 3, axis=1),
@@ -160,7 +159,6 @@ class TestStaticCovariatesTransformer:
             ]),
         )
         series_recovered2 = scaler.inverse_transform(series_tr2[0])
-        # TODO: fix with the different dtypes (pd3 infers as str)
         pd.testing.assert_frame_equal(
             self.series1.static_covariates,
             series_recovered2.static_covariates,

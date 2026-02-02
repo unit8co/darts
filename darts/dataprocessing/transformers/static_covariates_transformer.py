@@ -175,6 +175,11 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         # Collate static covariates of all `series`:
         stat_covs = pd.concat([s.static_covariates for s in series], axis=0)
 
+        # Store original dtypes for restoring during inverse_transform
+        # (pandas 3.0 compatibility) since string columns are now inferred
+        # as string dtype explicitly instead of object dtype
+        original_dtypes = stat_covs.dtypes.to_dict()
+
         # Extract column names and masks in data order
         (
             cols_num,
@@ -226,6 +231,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             "mask_cat": mask_cat_dict,
             "col_map_cat": col_map_cat_dict,
             "n_cat_cols": n_cat_cols,
+            "original_dtypes": original_dtypes,
         }
 
     @staticmethod
@@ -382,6 +388,7 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         mask_cat = fitted_params["mask_cat"][method]
         col_map_cat = fitted_params["col_map_cat"][method]
         n_cat_cols = fitted_params["n_cat_cols"][method]
+        original_dtypes = fitted_params["original_dtypes"]
 
         vals_num, vals_cat = StaticCovariatesTransformer._extract_static_covs(
             series, mask_num, mask_cat
@@ -407,8 +414,15 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             if isinstance(tr_out_cat, csr_matrix):
                 tr_out_cat = tr_out_cat.toarray()
 
+        # Pass original_dtypes only for inverse_transform to restore original column dtypes
         series = StaticCovariatesTransformer._add_back_static_covs(
-            series, tr_out_num, tr_out_cat, mask_num, mask_cat, col_map_cat
+            series,
+            tr_out_num,
+            tr_out_cat,
+            mask_num,
+            mask_cat,
+            col_map_cat,
+            original_dtypes=original_dtypes if method == "inverse_transform" else None,
         )
 
         return series
@@ -432,12 +446,13 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
         mask_num: np.ndarray,
         mask_cat: np.ndarray,
         col_map_cat: dict[str, str],
+        original_dtypes: Optional[dict] = None,
     ) -> TimeSeries:
         """
         Adds transformed static covariates back to original `TimeSeries`. The categorical component
         mapping is used to correctly name categorical components with a one-to-many mapping
         between their untransformed and transformed versions (e.g. components generated using
-        one-hot encoding).
+        one-hot encoding). If original_dtypes is provided, the columns are cast back to their original dtypes.
         """
         data = {}
         idx_num, idx_cat = 0, 0
@@ -465,6 +480,16 @@ class StaticCovariatesTransformer(FittableDataTransformer, InvertibleDataTransfo
             columns=static_cov_columns,
             index=series.static_covariates.index,
         )
+
+        # Restore original dtypes for inverse_transform (pandas 3.0 compatibility)
+        if original_dtypes is not None:
+            for col, dtype in original_dtypes.items():
+                if col in transformed_static_covs.columns:
+                    # TODO: this whole approach can maybe be improved as .astype can be costly
+                    transformed_static_covs[col] = transformed_static_covs[col].astype(
+                        dtype
+                    )
+
         return TimeSeries(
             times=series.time_index,
             values=series.all_values(copy=False),

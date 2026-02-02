@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from narwhals import DataFrame
+from packaging import version
 from pandas._libs.tslibs.offsets import BusinessMixin
 from sklearn.utils import check_random_state
 from tqdm import tqdm
@@ -35,6 +36,8 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
+
+PANDAS_30_OR_GREATER = version.parse(pd.__version__) >= version.parse("3.0.0")
 
 logger = get_logger(__name__)
 

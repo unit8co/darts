@@ -17,7 +17,7 @@ from darts.timeseries import (
     STATIC_COV_TAG,
 )
 from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.utils import generate_index
+from darts.utils.utils import PANDAS_30_OR_GREATER, generate_index
 
 TEST_BACKENDS = ["pandas"]
 
@@ -470,9 +470,11 @@ class TestTimeSeriesStaticCovariate:
         assert (ts.static_covariates_values(copy=False) != -1.0).all()
 
         # changing values of view should change original DataFrame
-        vals = ts.static_covariates_values(copy=False)
-        vals[:] = -1.0
-        assert (ts.static_covariates_values(copy=False) == -1.0).all()
+        # In pandas 3.0+, DataFrame.values returns a read-only array
+        if not PANDAS_30_OR_GREATER:
+            vals = ts.static_covariates_values(copy=False)
+            vals[:] = -1.0
+            assert (ts.static_covariates_values(copy=False) == -1.0).all()
 
         ts = ts.with_static_covariates(None)
         assert ts.static_covariates is None
