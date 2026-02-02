@@ -30,6 +30,7 @@ compute the deterministic metrics on:
     Other metrics:
         - :func:`R2 <darts.metrics.metrics.r2_score>`: Coefficient of Determination
         - :func:`CV <darts.metrics.metrics.coefficient_of_variation>`: Coefficient of Variation
+        - :func:`AUTC <darts.metrics.metrics.autc>`: Area Under Tolerance Curve
 
 - Per time step:
     Absolute metrics:
@@ -99,6 +100,7 @@ from darts.metrics.metrics import (
     ape,
     arre,
     ase,
+    autc,
     coefficient_of_variation,
     confusion_matrix,
     dtw_metric,
@@ -167,6 +169,7 @@ __all__ = [
     "ape",
     "arre",
     "ase",
+    "autc",
     "coefficient_of_variation",
     "dtw_metric",
     "err",

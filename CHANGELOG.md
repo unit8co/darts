@@ -11,6 +11,9 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 **Improved**
 
+- `TimeSeries.to_json()` and `from_json()` now support serialization and deserialization of static covariates, metadata, and hierarchy. The optional parameters in `from_json()` can still be used to override or provide these values if they are not present in the JSON string. [#2996](https://github.com/unit8co/darts/pull/2996) by [Tiberiu Sabau](https://github.com/tibisabau).
+- Added new time aggregated metric `autc()` (Area Under Tolerance Curve): The tolerance curve gives the fraction of predicted target values within tolerance bands of the actual target values across a range of tolerances (defined as % of target range). The AUTC is the normalized area under this tolerance curve and given as a score between [0, 1]. Higher scores are better. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
+- Added new plotting function `darts.utils.statistics.plot_tolerance_curve()` to plot the tolerance curve described above. [#2994](https://github.com/unit8co/darts/pull/2994) by [Jakub Chłapek](https://github.com/jakubchlapek)
 - Added `TimeSeries.plotly()` method for interactive time series visualization using Plotly backend. [#2977](https://github.com/unit8co/darts/pull/2977) by [Dustin Brunner](https://github.com/brunnedu).
   - Provides interactive plotting with zoom, pan, hover tooltips, and legend interactions
   - Maintains API consistency with the existing `plot()` method for easy adoption
@@ -26,6 +29,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - Fixed bug in `StaticCovariatesTransformer` where one-hot encoded column names were incorrectly assigned when the order of columns specified in `cols_cat` differed from the actual data column order. This caused silent data corruption where column names combined wrong feature names with wrong category values (e.g., `City_US` instead of `Country_US`). [#2989](https://github.com/unit8co/darts/pull/2989) by [Dustin Brunner](https://github.com/brunnedu).
 - Fixed a bug in `TorchTrainingDataset` where `max_samples_per_ts` was not acting as an upper bound on the number of samples per time series. Now `max_samples_per_ts` correctly acts as an upper bound, capping the dataset size at the actual number of samples that can be extracted from the longest series. [#2987](https://github.com/unit8co/darts/pull/2987) by [Dustin Brunner](https://github.com/brunnedu).
 - Updated s(m)ape to not raise a ValueError when actuals and predictions are zero for the same timestep. [#2984](https://github.com/unit8co/darts/pull/2984) by [eschibli](https://github.com/eschibli).
+- Updated outdated links to [holidays package](https://holidays.readthedocs.io/en/latest/#available-countries) in `TimeSeries`, `holidays_timeseries()`, and `Prophet`. [#2999](https://github.com/unit8co/darts/pull/2999) by [Zhihao Dai](https://github.com/daidahao).
 
 **Dependencies**
 
