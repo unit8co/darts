@@ -13,7 +13,7 @@ from darts import concatenate as darts_concatenate
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.utils.data.tabularization import create_lagged_prediction_data
 from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.utils import freq_to_timedelta
+from darts.utils.utils import n_steps_between
 
 
 class TestCreateLaggedPredictionData:
@@ -284,13 +284,9 @@ class TestCreateLaggedPredictionData:
                         start=series_times[0], end=feature_times[-1], freq=series.freq
                     )
             elif add_to_start:
-                step = series_times[0] - feature_times[0]
-                freq = (
-                    freq_to_timedelta(series.freq)
-                    if isinstance(step, pd.Timedelta)
-                    else series.freq
+                num_prepended = n_steps_between(
+                    start=feature_times[0], end=series_times[0], freq=series.freq
                 )
-                num_prepended = step // freq
                 if is_range_idx:
                     # `+ 1` since `stop` index is exclusive:
                     series_times = pd.RangeIndex(

@@ -20,7 +20,7 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_log
 from darts.utils.data.utils import _process_sample_weight
 from darts.utils.ts_utils import get_single_series, series2seq
-from darts.utils.utils import freq_to_timedelta, n_steps_between
+from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
@@ -1351,14 +1351,13 @@ def _create_lagged_data_by_intersecting_times(
             if add_to_start or add_to_end:
                 new_start = shared_times[0] if add_to_start else None
                 new_end = shared_times[-1] if add_to_end else None
-                # TODO: replace with n_steps_between here
-                step = time_index_i[0] - shared_times[0]
-                freq = (
-                    freq_to_timedelta(series_i.freq)
-                    if isinstance(step, pd.Timedelta)
-                    else series_i.freq
+                num_prepended = (
+                    n_steps_between(
+                        start=shared_times[0], end=time_index_i[0], freq=series_i.freq
+                    )
+                    if add_to_start
+                    else 0
                 )
-                num_prepended = (step // freq) if add_to_start else 0
                 time_index_i = _extend_time_index(
                     time_index_i, series_i.freq, new_start=new_start, new_end=new_end
                 )
