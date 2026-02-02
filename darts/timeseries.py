@@ -73,6 +73,7 @@ from darts.utils._formatting import (
 from darts.utils._plotting import plot as _plot
 from darts.utils._plotting import plotly as _plotly
 from darts.utils.utils import (
+    PANDAS_30_OR_GREATER,
     SUPPORTED_RESAMPLE_METHODS,
     dataframe_col_to_time_index,
     expand_arr,
@@ -2664,6 +2665,32 @@ class TimeSeries:
             return self[start:end]
         else:
             time_index = self.time_index.intersection(other.time_index)
+            # Pandas 3.0: intersection() may lose self.freq when indices have different frequencies
+            if PANDAS_30_OR_GREATER:
+                if (
+                    hasattr(time_index, "freq")
+                    and time_index.freq is None
+                    and len(time_index) > 0
+                ):
+                    # try to infer freq from the intersection timestamps, then use coarser of the two
+                    inferred_freq = (
+                        pd.infer_freq(time_index) if len(time_index) > 1 else None
+                    )
+                    if inferred_freq is not None:
+                        # rebuild index with inferred freq
+                        time_index = type(time_index)(time_index, freq=inferred_freq)
+                    elif (
+                        self.freq is not None
+                        and other.freq is not None
+                        and hasattr(self.freq, "nanos")
+                        and hasattr(other.freq, "nanos")
+                    ):
+                        # rebuild index with coarser freq (larger nanos = lower frequency)
+                        coarser_freq = max(self.freq, other.freq, key=lambda x: x.nanos)
+                        time_index = type(time_index)(time_index, freq=coarser_freq)
+                    elif self.freq is not None:
+                        # rebuild index with self.freq
+                        time_index = type(time_index)(time_index, freq=self.freq)
             return self[time_index]
 
     def slice_intersect_values(self, other: Self, copy: bool = False) -> np.ndarray:
@@ -3532,7 +3559,7 @@ class TimeSeries:
 
         The holiday component is binary where `1` corresponds to a time step falling on a holiday.
 
-        Available countries can be found `here <https://github.com/dr-prodigy/python-holidays#available-countries>`__.
+        Available countries can be found `here <https://holidays.readthedocs.io/en/latest/#available-countries>`__.
 
         This works only for deterministic time series (i.e., made of 1 sample).
 
