@@ -40,7 +40,7 @@ and discuss it with some of the core team.
 3. Clone the forked repository locally.
 4. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 5. Install all development dependencies: `uv sync --group dev-all`
-6. Set up [automatic code formatting and linting](#code-formatting-and-linting)
+6. Set up [automatic code formatting and linting](#code-formatting-and-linting): `uv run pre-commit install`
 7. Create a new branch:
     * Branch off from the **master** branch.
     * Prefix the branch with the type of update you are making:
