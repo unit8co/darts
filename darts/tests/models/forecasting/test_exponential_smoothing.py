@@ -94,7 +94,7 @@ class TestExponentialSmoothing:
 
     def test_random_errors(self):
         """Test whether random_errors parameter is correctly passed to simulate()"""
-        series = tg.sine_timeseries(length=100, freq="H")
+        series = tg.sine_timeseries(length=100, freq="h")
         model = ExponentialSmoothing(random_state=42)
         model.fit(series)
         pred = model.predict(n=10, num_samples=10, random_state=42)
@@ -108,7 +108,7 @@ class TestExponentialSmoothing:
 
     def test_error(self):
         """Test whether error parameter is correctly passed to simulate()"""
-        series = tg.sine_timeseries(length=100, freq="H")
+        series = tg.sine_timeseries(length=100, freq="h")
         model = ExponentialSmoothing(random_state=42)
         model.fit(series)
         pred = model.predict(n=10, num_samples=10, random_state=42)
