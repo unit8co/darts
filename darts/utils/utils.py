@@ -4,6 +4,7 @@ Additional util functions
 """
 
 import contextlib
+import math
 from collections.abc import Iterator
 from enum import Enum
 from functools import wraps
@@ -410,19 +411,6 @@ def drop_after_index(
     return slice_index(index, index[0], split_point)
 
 
-def freq_to_timedelta(freq: Union[str, pd.DateOffset]) -> pd.Timedelta:
-    """Convert a frequency (string or DateOffset) to :class:`pd.Timedelta`.
-
-    Use when a timedelta is needed for division etc.; :func:`pd.to_timedelta`
-    does not accept DateOffset in pandas 3+.
-    """
-    out = pd.to_timedelta(freq, errors="coerce")
-    if not pd.isna(out):
-        return out
-    freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
-    return (pd.Timestamp(0) + freq) - pd.Timestamp(0)
-
-
 def n_steps_between(
     end: Union[pd.Timestamp, int],
     start: Union[pd.Timestamp, int],
@@ -482,12 +470,10 @@ def n_steps_between(
             ),
             logger=logger,
         )
-    # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W')
-    # Use freq_to_timedelta so diff // freq_td is Timedelta // Timedelta (pandas 3: Timedelta // DateOffset unsupported)
-    if pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
+
+    # frequency has a fixed period (e.g. non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W'), or integer step)
+    if isinstance(freq, int) or pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
         diff = end - start
-        if isinstance(diff, pd.Timedelta):
-            freq = freq_to_timedelta(freq)
         if abs(diff) != diff:
             # (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency
             # (e.g., "2D" or step=2), then computing `diff // freq` can be one off
@@ -500,10 +486,9 @@ def n_steps_between(
             # for lower pandas versions ~1.5.0, business frequencies wrongly have a period alias.
             # taking the period difference as computed in `else` gives wrong results.
             # in this (worst) case for special frequencies (e.g "C*"), we must generate the index
-            # TODO: improve comment, verify behavior across pandas 2.x and 3.x for edge cases.
             is_reversed = end < start
             if is_reversed:
-                # always generate an increasing index, since pandas gives inconsistent result for
+                # always generate an increasing index, since pandas (v2.2.1) gives inconsistent result for
                 # negative/decreasing frequencies. Then reverse the index in case of negative/decreasing
                 # input frequency
                 start, end = end, start
@@ -522,6 +507,51 @@ def n_steps_between(
             # floor division by the frequency multiplier ("2MS" has multiplier 2)
             n_steps = diff // freq.n
     return n_steps
+
+
+def infer_freq_intersection(
+    freq: Union[int, str, pd.tseries.offsets.DateOffset],
+    other: Union[int, str, pd.tseries.offsets.DateOffset],
+) -> Union[int, pd.tseries.offsets.DateOffset]:
+    """Infers the frequency at which two frequencies `freq` and `other` intersect.
+
+    Parameters
+    ----------
+    freq
+        The first frequency.
+    other
+        The other frequency.
+
+    Raises
+    ------
+    ValueError
+        If the intersecting frequency cannot be inferred.
+    """
+    freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+    other = pd.tseries.frequencies.to_offset(other) if isinstance(other, str) else other
+
+    if freq == other:
+        return freq
+
+    if isinstance(freq, int):
+        # e.g. (4, 1), (24, 3)
+        n_self, n_other = freq, other
+    elif freq.base == other.base:
+        # e.g. (4W-MON, W-MON), (24h, 3h); frequency with the same base frequency
+        n_self, n_other = freq.n, other.n
+    else:
+        try:
+            # e.g. (4D, 2h), (24h, 3min); only frequency with constant / fixed period
+            n_self, n_other = freq.nanos, other.nanos
+        except ValueError as exc:
+            # e.g. (W-MON, MS, ...); frequencies with non-fixed period
+            raise_log(
+                ValueError(
+                    f"Cannot find intersecting frequency between ({freq}, {other}): {exc}"
+                ),
+                logger=logger,
+            )
+    return freq * (math.lcm(n_self, n_other) // n_self)
 
 
 def generate_index(
@@ -567,14 +597,15 @@ def generate_index(
         f"`start` to None.",
         logger,
     )
+
+    start = pd.Timestamp(start) if isinstance(start, str) else start
+    end = pd.Timestamp(end) if isinstance(end, str) else end
+
     raise_if(
         end is not None and start is not None and type(start) is not type(end),
         "index generation with `start` and `end` requires equal object types of `start` and `end`",
         logger,
     )
-
-    start = pd.Timestamp(start) if isinstance(start, str) else start
-    end = pd.Timestamp(end) if isinstance(end, str) else end
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         freq = "D" if freq is None else freq
@@ -638,6 +669,39 @@ def generate_index(
             name=name,
         )
     return index
+
+
+def get_lower_frequency(
+    freq: Union[int, pd.tseries.offsets.DateOffset],
+    other: Union[int, pd.tseries.offsets.DateOffset],
+) -> Union[int, pd.tseries.offsets.DateOffset]:
+    """Returns the lower (larger period) frequency between `freq` and `other`.
+
+    Parameters
+    ----------
+    freq
+        The first frequency.
+    other
+        The other frequency.
+    """
+    if freq == other:
+        return freq
+
+    # frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W'), or integer step
+    # simply get the max
+    if isinstance(freq, int) or (
+        pd.to_timedelta(freq, errors="coerce") is not pd.NaT
+        and pd.to_timedelta(other, errors="coerce") is not pd.NaT
+    ):
+        return min(freq, other)
+
+    # otherwise, find the lower frequency by comparing the number of steps between two arbitrary points for each
+    # frequency
+    freq_steps = 4
+    start = pd.Timestamp("2000-01-01")
+    end = start + freq_steps * freq
+    other_steps = n_steps_between(end=end, start=start, freq=other)
+    return freq if other_steps > freq_steps else other
 
 
 def expand_arr(arr: np.ndarray, ndim: int):

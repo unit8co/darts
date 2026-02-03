@@ -534,6 +534,32 @@ class TestTimeSeries:
         freq, mixed_freq = config
         helper_test_intersect(freq, mixed_freq, is_univariate=True)
 
+    # @pytest.mark.parametrize(
+    #     "freq,other,expected",
+    #     [("3D", "4h", "")],
+    # )
+    # def test_intersect_weird_freqs(self, freq, other, expected):
+    #     """Tests slice intersection between two series with datetime or range index with identical and
+    #     mixed frequencies."""
+    #     freq, mixed_freq = config
+    #     helper_test_intersect(freq, mixed_freq, is_univariate=True)
+    #
+    # def test_intersect_freq_multiple(self):
+    #     """Tests slice intersection between two series with datetime or range index with identical and
+    #     mixed frequencies."""
+    #
+    #     values = np.ones((8, 1, 1))
+    #     ts_4d = TimeSeries.from_times_and_values(
+    #         times=generate_index(start="2000-01-01", length=8, freq="4D"),
+    #         values=values,
+    #     )
+    #     ts_3d = TimeSeries.from_times_and_values(
+    #         times=generate_index(start="2000-01-01", length=8, freq="3D"),
+    #         values=values,
+    #     )
+    #
+    #     helper_test_intersect(freq, mixed_freq, is_univariate=True)
+
     def test_shift(self):
         helper_test_shift(self.series1)
 

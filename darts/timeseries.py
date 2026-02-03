@@ -74,11 +74,11 @@ from darts.utils._formatting import (
 from darts.utils._plotting import plot as _plot
 from darts.utils._plotting import plotly as _plotly
 from darts.utils.utils import (
-    PANDAS_30_OR_GREATER,
     SUPPORTED_RESAMPLE_METHODS,
     dataframe_col_to_time_index,
     expand_arr,
     generate_index,
+    infer_freq_intersection,
     n_steps_between,
 )
 
@@ -1518,9 +1518,7 @@ class TimeSeries:
 
         static_covariates_ = parsed.pop("static_covariates", None)
         if static_covariates_ is not None and static_covariates is None:
-            static_covariates = pd.read_json(
-                StringIO(json.dumps(static_covariates_)), orient="split"
-            )
+            static_covariates = pd.DataFrame(**static_covariates_)
 
         hierarchy_ = parsed.pop("hierarchy", None)
         if hierarchy is None:
@@ -2690,32 +2688,13 @@ class TimeSeries:
             return self[start:end]
         else:
             time_index = self.time_index.intersection(other.time_index)
-            # Pandas 3.0: intersection() may lose self.freq when indices have different frequencies
-            if PANDAS_30_OR_GREATER:
-                if (
-                    hasattr(time_index, "freq")
-                    and time_index.freq is None
-                    and len(time_index) > 0
-                ):
-                    # try to infer freq from the intersection timestamps, then use coarser of the two
-                    inferred_freq = (
-                        pd.infer_freq(time_index) if len(time_index) > 1 else None
-                    )
-                    if inferred_freq is not None:
-                        # rebuild index with inferred freq
-                        time_index = type(time_index)(time_index, freq=inferred_freq)
-                    elif (
-                        self.freq is not None
-                        and other.freq is not None
-                        and hasattr(self.freq, "nanos")
-                        and hasattr(other.freq, "nanos")
-                    ):
-                        # rebuild index with coarser freq (larger nanos = lower frequency)
-                        coarser_freq = max(self.freq, other.freq, key=lambda x: x.nanos)
-                        time_index = type(time_index)(time_index, freq=coarser_freq)
-                    elif self.freq is not None:
-                        # rebuild index with self.freq
-                        time_index = type(time_index)(time_index, freq=self.freq)
+            # frequency is lost when len(time_index) < 3
+            if (
+                len(time_index) > 0
+                and isinstance(time_index, pd.DatetimeIndex)
+                and time_index.freq is None
+            ):
+                time_index.freq = infer_freq_intersection(self.freq, other.freq)
             return self[time_index]
 
     def slice_intersect_values(self, other: Self, copy: bool = False) -> np.ndarray:

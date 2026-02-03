@@ -176,8 +176,8 @@ class TestTimeSeriesGeneration:
         test_routine(time_index_1, "AR", until=pd.Timestamp("2016-01-01"))
 
         # test overflow
-        with pytest.raises(ValueError):
-            holidays_timeseries(time_index_1, "US", add_length=999999)
+        with pytest.raises(pd.errors.OutOfBoundsDatetime):
+            holidays_timeseries(time_index_1, "US", add_length=int(1e9))
 
         # test date is too short
         with pytest.raises(ValueError):
