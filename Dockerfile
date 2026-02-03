@@ -10,24 +10,18 @@ COPY --from=ghcr.io/astral-sh/uv:0.9.26 /uv /usr/local/bin/uv
 
 # Copy source code
 COPY darts/ /app/darts/
-COPY README.md /app/
-
-# Copy dependency files first for better layer caching
-# These change less frequently than source code
-COPY pyproject.toml uv.lock /app/
+# Copy only the files explicitly needed for installation
+COPY pyproject.toml README.md /app/
 
 # Install dependencies using uv
 # --no-dev would install only core dependencies, but we want dev-all for the full environment
-RUN uv sync --group dev-all --frozen
+RUN uv sync --group dev-all
 
 # Copy examples
 COPY examples/ /app/examples/
 
 # Set Python path so imports work correctly
 ENV PATH="/app/.venv/bin:$PATH"
-
-# Default command opens a bash shell for interactive use
-CMD ["/bin/bash"]
 
 # Build and run instructions:
 # docker build . -t darts:latest

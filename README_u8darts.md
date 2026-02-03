@@ -1,9 +1,8 @@
 # ⚠️⚠️⚠️ Summary ⚠️⚠️⚠️
-⚠️⚠️⚠️ The `u8darts` PyPI package is deprecated use `darts` instead ⚠️⚠️⚠️
-
+⚠️⚠️⚠️ As of version `0.41.0`: The `u8darts` PyPI package is deprecated use `darts` instead ⚠️⚠️⚠️
 # How to fix the error for the main use cases
-- use `pip install darts` rather than `pip install u8darts`
-- replace `u8darts` by `darts` in your pip requirements files (requirements.txt, setup.py, setup.cfg, Pipfile, etc ...)
+- use `pip install darts>=0.41.0` rather than `pip install u8darts`
+- replace `u8darts` by `darts>=0.41.0` in your pip requirements files (pyproject.toml, requirements.txt, setup.py, setup.cfg, Pipfile, etc ...)
 - if the `u8darts` package is used by one of your dependencies it would be great if you take some time to track which package uses `u8darts` instead of `darts` and report it to their issue tracker
 
 # Time Series Made Easy in Python

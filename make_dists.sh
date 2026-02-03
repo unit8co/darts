@@ -29,11 +29,16 @@ echo "--------------------------------------"
 cp pyproject.toml pyproject_darts.toml
 cp pyproject_u8darts.toml pyproject.toml
 
+# Swap README files
+cp README.md README_darts.md
+cp README_u8darts.md README.md
+
 # Build u8darts (metadata-only package)
 uv build
 
-# Restore original pyproject.toml
+# Restore original files
 mv pyproject_darts.toml pyproject.toml
+mv README_darts.md README.md
 
 echo "✓ Built u8darts package:"
 ls -lh dist/
@@ -47,8 +52,10 @@ echo ""
 echo "Packages built:"
 ls -1 dist/
 echo ""
-echo "To upload to PyPI:"
-echo "  twine upload dist/*"
-echo ""
 echo "To upload to TestPyPI:"
-echo "  twine upload --repository testpypi dist/*"
+echo "uv run twine upload --repository testpypi dist/darts-$VERSION*"
+echo "uv run twine upload --repository testpypi dist/u8darts-$VERSION*"
+echo ""
+echo "To upload to PyPI:"
+echo "uv run twine upload dist/darts-$VERSION*"
+echo "uv run twine upload dist/u8darts-$VERSION*"

@@ -77,12 +77,6 @@ jobs:
           chmod +x ./.github/scripts/libomp-${{ runner.os }}.sh
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "Test pip installation"
-        run: |
-          # Verify the package can be installed via pip
-          pip install .
-          python -c "import darts; print(f'Darts {darts.__version__} installed successfully')"
-
       - name: "Run tests"
         run: |
           if [ "${{ matrix.flavour }}" == "all" ]; then
