@@ -63,8 +63,9 @@ class TestTimesFM2p5Model:
     ts_energy_train, ts_energy_val = load_validation_inputs()
     # maximum context (input_chunk_length + output_chunk_length + output_chunk_shift)
     context_limit = 16384
-    # maximum prediction length of the chosen output head
-    max_prediction_length = 1024
+    # maximum prediction length w/o triggering auto-regression where the results
+    # would diverge from the original implementation due to different sampling methods
+    max_prediction_length = 128
 
     # ---- Dummy Tests ---- #
     # univariate time series
@@ -124,18 +125,16 @@ class TestTimesFM2p5Model:
         model.compile(
             timesfm.ForecastConfig(
                 max_context=1024,
-                max_horizon=1024,
+                max_horizon=256,
                 normalize_inputs=False,
-                use_continuous_quantile_head=True,
+                use_continuous_quantile_head=False,
                 force_flip_invariance=False,
                 infer_is_positive=False,
                 fix_quantile_crossing=False,
             )
         )
-        # setting horizon to 1024 allows us to get maximum prediction length of the larger head
-        # but will trigger autoregressive predictions internally
         point_forecast, quantile_forecast = model.forecast(
-            horizon=1024, # use output_quantile_len here to maximize prediction length
+            horizon=128, # use output_patch_len here to prevent auto-regressive forecasting
             inputs=[
                 series
                 for series in ts_energy_train.values().T
@@ -186,20 +185,13 @@ class TestTimesFM2p5Model:
             / "timesfm2p5_prediction"
             / "timesfm2p5.npz"
         )
-        original: np.ndarray = np.load(path)["pred"]
+        original = np.load(path)["pred"]
 
         if not probabilistic:
             original = original[:, :, [4]]  # median quantile
 
-        original_mean = original.mean(axis=0, keepdims=True)
-        normalized_deviation = np.abs(pred_np - original) / original_mean
-
-        # check that normalized deviation is close to zero
-        np.testing.assert_allclose(
-            normalized_deviation,
-            np.zeros_like(normalized_deviation),
-            atol=1e-3,
-        )
+        # compare predictions to original
+        np.testing.assert_allclose(pred_np, original, rtol=1e-5, atol=1e-5)
 
     @pytest.mark.slow
     def test_creation(self):
