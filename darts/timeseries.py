@@ -40,6 +40,7 @@ Optionally, ``TimeSeries`` can store static covariates, a hierarchy, and / or me
 """
 
 import itertools
+import json
 import math
 import pickle
 import re
@@ -1450,6 +1451,10 @@ class TimeSeries:
 
         At the moment this only supports deterministic time series (i.e., made of 1 sample).
 
+        If the JSON string contains static covariates, hierarchy, or metadata, they will be automatically
+        loaded. The optional parameters `static_covariates`, `hierarchy`, and `metadata` can be used to
+        override or provide these values if they are not present in the JSON string.
+
         Parameters
         ----------
         json_str
@@ -1462,6 +1467,7 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in
             ``value_cols``). This adds control for component-specific static covariates.
+            If the JSON string already contains static covariates, this parameter will override them.
         hierarchy
             Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
             for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
@@ -1487,8 +1493,10 @@ class TimeSeries:
             The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
             different levels are consistent), see `hierarchical reconciliation
             <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html>`__.
+            If the JSON string already contains a hierarchy, this parameter will override it.
         metadata
             Optionally, a dictionary with metadata to be added to the TimeSeries.
+            If the JSON string already contains metadata, this parameter will override it.
 
         Returns
         -------
@@ -1501,16 +1509,33 @@ class TimeSeries:
         >>> json_str = (
         >>>     '{"columns":["vals"],"index":["2020-01-01","2020-01-02","2020-01-03"],"data":[[0.0],[1.0],[2.0]]}'
         >>> )
-        >>> series = TimeSeries.from_json("data.csv")
+        >>> series = TimeSeries.from_json(json_str)
         >>> series.shape
         (3, 1, 1)
         """
+        parsed = json.loads(json_str)
+
+        static_covariates_ = parsed.pop("static_covariates", None)
+        if static_covariates_ is not None and static_covariates is None:
+            static_covariates = pd.read_json(
+                StringIO(json.dumps(static_covariates_)), orient="split"
+            )
+
+        hierarchy_ = parsed.pop("hierarchy", None)
+        if hierarchy is None:
+            hierarchy = hierarchy_
+
+        metadata_ = parsed.pop("metadata", None)
+        if metadata is None:
+            metadata = metadata_
+
+        df = pd.read_json(StringIO(json.dumps(parsed)), orient="split")
         return cls.from_dataframe(
-            df=pd.read_json(StringIO(json_str), orient="split"),
+            df=df,
             static_covariates=static_covariates,
             hierarchy=hierarchy,
             metadata=metadata,
-            copy=False,  # JSON is immutable, so no need to copy
+            copy=False,
         )
 
     @classmethod
@@ -4359,17 +4384,31 @@ class TimeSeries:
 
         At the moment this function works only on deterministic time series (i.e., made of 1 sample).
 
-        Notes
-        -----
-        Static covariates are not returned in the JSON string. When using `TimeSeries.from_json()`, the static
-        covariates can be added with input argument `static_covariates`.
+        The JSON string includes the series values, time index, component names, as well as static covariates,
+        hierarchy, and metadata (if any).
 
         Returns
         -------
         str
             A JSON String representing the series
+
+        See Also
+        --------
+        TimeSeries.from_json : Create a TimeSeries from a JSON string.
         """
-        return self.to_dataframe().to_json(orient="split", date_format="iso")
+        result = json.loads(
+            self.to_dataframe().to_json(orient="split", date_format="iso")
+        )
+        if self.static_covariates is not None:
+            result["static_covariates"] = json.loads(
+                self.static_covariates.to_json(orient="split")
+            )
+        if self.hierarchy is not None:
+            result["hierarchy"] = self.hierarchy
+        if self.metadata is not None:
+            result["metadata"] = self.metadata
+
+        return json.dumps(result)
 
     def to_csv(self, *args, **kwargs):
         """Write the deterministic series to a CSV file.

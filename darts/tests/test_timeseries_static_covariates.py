@@ -130,7 +130,10 @@ class TestTimeSeriesStaticCovariate:
             tag, ts, TimeSeries.from_csv(f_csv, time_col="time", **kwargs)
         )
         self.helper_test_transfer(tag, ts, TimeSeries.from_pickle(f_pkl))
+        # Test with kwargs (backward compatibility)
         self.helper_test_transfer(tag, ts, TimeSeries.from_json(ts_json, **kwargs))
+        # Test without kwargs (new automatic serialization)
+        self.helper_test_transfer(tag, ts, TimeSeries.from_json(ts_json))
 
     def test_invalid_metadata(self):
         ts = linear_timeseries(length=10)
@@ -1196,3 +1199,146 @@ class TestTimeSeriesStaticCovariate:
             )
         else:  # metadata
             assert ts_new.metadata == ts.metadata
+
+
+class TestTimeSeriesJSONSerialization:
+    """Test JSON serialization with static_covariates, metadata, and hierarchy."""
+
+    def test_json_with_static_covariates(self):
+        """Test that static covariates are preserved in JSON serialization."""
+        ts = linear_timeseries(length=10)
+        static_cov = pd.Series([0.0, 1.0], index=["st1", "st2"])
+        ts = ts.with_static_covariates(static_cov)
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that static covariates are preserved
+        assert ts_restored.static_covariates is not None
+        assert ts_restored.static_covariates.equals(ts.static_covariates)
+
+    def test_json_with_metadata(self):
+        """Test that metadata is preserved in JSON serialization."""
+        ts = linear_timeseries(length=10)
+        metadata = {"key1": "value1", "key2": 42, "key3": [1, 2, 3]}
+        ts = ts.with_metadata(metadata)
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that metadata is preserved
+        assert ts_restored.metadata is not None
+        assert ts_restored.metadata == ts.metadata
+
+    def test_json_with_hierarchy(self):
+        """Test that hierarchy is preserved in JSON serialization."""
+        components = ["total", "a", "b", "ax", "bx"]
+        hierarchy = {
+            "ax": ["a"],
+            "bx": ["b"],
+            "a": ["total"],
+            "b": ["total"],
+        }
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
+        )
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that hierarchy is preserved
+        assert ts_restored.hierarchy is not None
+        assert ts_restored.hierarchy == ts.hierarchy
+        assert ts_restored.top_level_component == ts.top_level_component
+        assert ts_restored.bottom_level_components == ts.bottom_level_components
+
+    def test_json_with_all_attributes(self):
+        """Test JSON serialization with all attributes (static_covariates, metadata, hierarchy)."""
+        components = ["total", "a", "b"]
+        hierarchy = {"a": ["total"], "b": ["total"]}
+        static_cov = pd.DataFrame(
+            [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+            index=components,
+            columns=["sc1", "sc2"],
+        )
+        metadata = {"description": "test series", "version": 1}
+
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
+            static_covariates=static_cov,
+            metadata=metadata,
+        )
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check all attributes are preserved
+        assert ts_restored.static_covariates is not None
+        assert ts_restored.static_covariates.equals(ts.static_covariates)
+        assert ts_restored.metadata == ts.metadata
+        assert ts_restored.hierarchy == ts.hierarchy
+        assert ts_restored.top_level_component == ts.top_level_component
+        assert ts_restored.bottom_level_components == ts.bottom_level_components
+
+    def test_json_override_attributes(self):
+        """Test that from_json parameters can override JSON-embedded attributes."""
+        components = ["total", "a", "b"]
+        hierarchy = {"a": ["total"], "b": ["total"]}
+        static_cov = pd.DataFrame(
+            [[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]],
+            index=components,
+            columns=["sc1", "sc2"],
+        )
+        metadata = {"description": "test series", "version": 1}
+
+        ts = TimeSeries.from_values(
+            values=np.random.rand(10, len(components)),
+            columns=components,
+            hierarchy=hierarchy,
+            static_covariates=static_cov,
+            metadata=metadata,
+        )
+        json_str = ts.to_json()
+
+        # Override with different values
+        new_static_cov = pd.DataFrame(
+            [[10.0, 11.0], [12.0, 13.0], [14.0, 5.0]],
+            index=components,
+            columns=["sc_new1", "sc_new2"],
+        )
+        new_metadata = {"key2": "value2"}
+        new_hierarchy = {"total": ["b"], "b": ["a"]}
+        ts_restored = TimeSeries.from_json(
+            json_str,
+            static_covariates=new_static_cov,
+            metadata=new_metadata,
+            hierarchy=new_hierarchy,
+        )
+
+        # Check that overrides worked
+        # When a Series is passed, it becomes a single-row DataFrame with the series index as columns
+        assert ts_restored.static_covariates is not None
+        assert ts_restored.static_covariates.equals(new_static_cov)
+        assert ts_restored.metadata == new_metadata
+        assert ts_restored.hierarchy == new_hierarchy
+
+    def test_json_without_attributes(self):
+        """Test JSON serialization for series without optional attributes."""
+        ts = linear_timeseries(length=10)
+
+        # Serialize and deserialize
+        json_str = ts.to_json()
+        ts_restored = TimeSeries.from_json(json_str)
+
+        # Check that optional attributes are None
+        assert ts_restored.static_covariates is None
+        assert ts_restored.metadata is None
+        assert ts_restored.hierarchy is None
