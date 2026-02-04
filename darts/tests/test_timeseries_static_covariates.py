@@ -282,7 +282,8 @@ class TestTimeSeriesStaticCovariate:
         reconstructed["ID"] = reconstructed["ID"].astype(int)
         assert reconstructed.equals(expected)
 
-    def test_no_group_col_by_default(self):
+    @pytest.mark.parametrize("add_group_col", [True, "added_group_col"])
+    def test_no_group_col_by_default(self, add_group_col):
         df = pd.DataFrame({
             "time": pd.date_range("2023-01-01", periods=3, freq="D"),
             "value": [1.0, 2.0, 3.0],
@@ -297,12 +298,15 @@ class TestTimeSeriesStaticCovariate:
         )
 
         reconstructed = to_group_dataframe(
-            ts, add_static_cov=True, add_metadata=False, add_group_col=True
+            ts, add_static_cov=True, add_metadata=False, add_group_col=add_group_col
         )
-        assert "group" in reconstructed.columns
-        group_per_id = reconstructed.groupby("ID")["group"].nunique()
+        if not isinstance(add_group_col, str):
+            add_group_col = "group"
+
+        assert add_group_col in reconstructed.columns
+        group_per_id = reconstructed.groupby("ID")[add_group_col].nunique()
         assert (group_per_id == 1).all()
-        groups = sorted(reconstructed["group"].unique())
+        groups = sorted(reconstructed[add_group_col].unique())
         assert groups == list(range(len(groups)))
 
     @pytest.mark.parametrize(

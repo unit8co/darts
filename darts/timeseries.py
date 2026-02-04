@@ -6189,7 +6189,7 @@ def to_group_dataframe(
     suppress_warnings: bool = False,
     add_static_cov: Union[bool, str, list[str], None] = True,
     add_metadata: Union[bool, str, list[str], None] = False,
-    add_group_col: Optional[bool] = False,
+    add_group_col: Union[bool, str] = False,
 ):
     """
     Return a grouped DataFrame representation from one or multiple `TimeSeries`.
@@ -6227,8 +6227,9 @@ def to_group_dataframe(
         (one column per metadata entry). Can be a bool in case all metadata should be added,
         or a string/list of strings in case only a subset is needed.
     add_group_col
-        Whether to add a group column in the resulting long format dataframe. The values of that group column will go
-        from 0 to the number of time series minus 1 in the input list
+        Whether to add a group column in the resulting long format dataframe. Can be a bool in which case the group
+        column's name will be "group", or a string corresponding to the group column's name. The values of that group
+        column will go from 0 to the number of time series minus 1 in the input list.
 
     Returns
     -------
@@ -6254,7 +6255,10 @@ def to_group_dataframe(
         )
         _df = nw.from_native(_df)
         if add_group_col:
-            _df = _df.with_columns(nw.lit(idx).alias("group"))
+            if isinstance(add_group_col, str):
+                _df = _df.with_columns(nw.lit(idx).alias(add_group_col))
+            else:
+                _df = _df.with_columns(nw.lit(idx).alias("group"))
         dfs.append(_df)
 
     df = nw.concat(dfs)
