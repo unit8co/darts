@@ -1937,7 +1937,7 @@ class TimeSeries:
                     raise_log(
                         ValueError(
                             f"The following metadata to add via `add_metadata` do not exist: {missing_cols}."
-                            f"Available static covariates are: {list(metadata.keys())}"
+                            f"Available metadata are: {list(metadata.keys())}"
                         ),
                         logger=logger,
                     )
