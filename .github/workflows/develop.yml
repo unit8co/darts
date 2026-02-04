@@ -60,8 +60,8 @@ jobs:
         run: |
           # Testing against latest compatible versions
           # dev-all group includes everything: dev, optional, release, torch, notorch
-          # --extra torch-cpu uses CPU-only PyTorch from the configured index
-          uv sync --group dev-all --extra torch-cpu
+          # --group torch-cpu uses CPU-only PyTorch from the configured index
+          uv sync --group dev-all --group torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -110,7 +110,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # Testing against latest compatible versions
-          uv sync --group dev-all --extra torch-cpu
+          uv sync --group dev-all --group torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -151,7 +151,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # Testing against latest compatible versions
-          uv sync --group dev-all --extra torch-cpu
+          uv sync --group dev-all --group torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |

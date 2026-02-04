@@ -63,13 +63,13 @@ jobs:
             uv sync --group dev
           elif [ "${{ matrix.flavour }}" == "torch" ]; then
             # Torch: base deps + torch extra + CPU-only PyTorch + dev tools
-            uv sync --group dev --extra torch --extra torch-cpu
+            uv sync --group dev --extra torch --group torch-cpu
           elif [ "${{ matrix.flavour }}" == "notorch" ]; then
             # Notorch: base deps + notorch extra + dev tools
             uv sync --group dev --extra notorch
           elif [ "${{ matrix.flavour }}" == "all" ]; then
             # All: dev-all group includes everything (dev, optional, release, torch, notorch)
-            uv sync --group dev-all --extra torch-cpu
+            uv sync --group dev-all --group torch-cpu
           fi
 
       - name: "Install libomp (for LightGBM)"
@@ -116,7 +116,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # Testing against latest compatible versions
-          uv sync --group dev-all --extra torch-cpu
+          uv sync --group dev-all --group torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |
@@ -159,7 +159,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # Testing against latest compatible versions
-          uv sync --group dev-all --extra torch-cpu
+          uv sync --group dev-all --group torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |

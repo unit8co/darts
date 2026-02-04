@@ -29,7 +29,7 @@ jobs:
       - name: "Install Dependencies"
         run: |
           # Testing against latest compatible versions
-          uv sync --group dev-all --extra torch-cpu
+          uv sync --group dev-all --group torch-cpu
 
       - name: "Install libomp (for LightGBM)"
         run: |

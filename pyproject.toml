@@ -71,12 +71,10 @@ notorch = [
     "xgboost>=2.1.4",
 ]
 all = ["darts[torch,notorch]"]
-# CPU-only PyTorch for CI testing
-torch-cpu = ["torch>=2.0.0"]
 
 [tool.uv.sources]
-# Use PyTorch CPU-only index when torch-cpu extra is enabled
-torch = { index = "pytorch-cpu", marker = "extra == 'torch-cpu'" }
+# Use PyTorch CPU-only index when torch-cpu group is enabled
+torch = { index = "pytorch-cpu", group = "torch-cpu" }
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
@@ -142,12 +140,13 @@ max-line-length = 120
 [dependency-groups]
 # Developer-only dependency groups (not accessible via pip)
 # For uv users: uv sync --group dev-all (includes all extras)
-# For CI: uv sync --group dev-all --extra torch-cpu (uses CPU-only PyTorch)
+# For CI: uv sync --group dev-all --group torch-cpu (uses CPU-only PyTorch)
 dev = [
     "pre-commit>=4.5.1",
     "pytest-cov>=7.0.0",
     "testfixtures>=8.3.0",
 ]
+torch-cpu = ["torch>=2.0.0"]
 optional = [
     "onnx>=1.20.1",
     "onnxruntime>=1.23.2",
