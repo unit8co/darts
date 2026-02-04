@@ -1,23 +1,26 @@
 # Installation Guide
 
-Below, we detail how to install Darts using either `conda` or `pip`.
+## ⚠️ Important: Darts PyPI Package Changes As of Version 0.41.0
+As of Darts version 0.41.0, we have made changes to our PyPI packages:
 
-## From PyPI
+- darts: darts now replaces u8darts with all of its installation options (see section above).
+- u8darts: we will stop maintaining the u8darts package in favor of darts. Version 0.41.0 will be the last released version.
+We made these changes to simplify the installation and maintenance of Darts.
 
-### ⚠️ Important: Package Name Change
+#### Migration from Darts versions <0.41.0 to >=0.41.0
+No code changes are required - only package installations changes.
 
-**If you previously used `u8darts`:** The package has been renamed to `darts` for simplicity.
+For `darts` users:
 
-**Migration:**
-```bash
-pip uninstall u8darts
-pip install "darts[all]"  # or appropriate extras
 ```
-
-**Your code doesn't need changes** - both packages import as `import darts`.
-
-**Full guide:** [MIGRATION.md](MIGRATION.md)
-
+# the original `pip install darts` becomes:
+pip install "darts[torch]>=0.41.0"
+For u8darts users:
+```
+```
+# the original `pip install u8darts[option]` becomes:
+pip install "darts[option]>=0.41.0"  # or appropriate extras (e.g. darts[all])
+```
 ---
 
 ### From PyPI
