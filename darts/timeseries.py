@@ -6228,7 +6228,7 @@ def to_group_dataframe(
         or a string/list of strings in case only a subset is needed.
     add_group_col
         Whether to add a group column in the resulting long format dataframe. The values of that group column will go
-        from 1 to the number of time series in the input list
+        from 0 to the number of time series minus 1 in the input list
 
     Returns
     -------
