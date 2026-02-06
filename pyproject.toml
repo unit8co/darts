@@ -207,11 +207,6 @@ search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
 
 [[tool.bumpversion.files]]
-filename = "conda_recipe/darts/meta.yaml"
-search = '__version__ = "{current_version}"'
-replace = '__version__ = "{new_version}"'
-
-[[tool.bumpversion.files]]
 filename = "docs/source/conf.py"
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'

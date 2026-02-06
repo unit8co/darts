@@ -1,7 +1,10 @@
-# ⚠️⚠️⚠️ Summary ⚠️⚠️⚠️
+# ⚠️⚠️⚠️ Important: Migration from u8darts to darts ⚠️⚠️⚠️
+
 ⚠️⚠️⚠️ As of version `0.41.0`: The `u8darts` PyPI package is deprecated use `darts` instead ⚠️⚠️⚠️
-# How to fix the error for the main use cases
-- use `pip install darts>=0.41.0` rather than `pip install u8darts`
+
+## How to migrate from Darts versions <=0.40.0 to versions >=0.41.0
+
+- use `pip install "darts[option]>=0.41.0"` rather than `pip install "u8darts[option]"` (e.g. `pip install "darts[all]>=0.41.0"`)
 - replace `u8darts` by `darts>=0.41.0` in your pip requirements files (pyproject.toml, requirements.txt, setup.py, setup.cfg, Pipfile, etc ...)
 - if the `u8darts` package is used by one of your dependencies it would be great if you take some time to track which package uses `u8darts` instead of `darts` and report it to their issue tracker
 
