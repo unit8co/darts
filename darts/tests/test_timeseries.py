@@ -534,31 +534,91 @@ class TestTimeSeries:
         freq, mixed_freq = config
         helper_test_intersect(freq, mixed_freq, is_univariate=True)
 
-    # @pytest.mark.parametrize(
-    #     "freq,other,expected",
-    #     [("3D", "4h", "")],
-    # )
-    # def test_intersect_weird_freqs(self, freq, other, expected):
-    #     """Tests slice intersection between two series with datetime or range index with identical and
-    #     mixed frequencies."""
-    #     freq, mixed_freq = config
-    #     helper_test_intersect(freq, mixed_freq, is_univariate=True)
-    #
-    # def test_intersect_freq_multiple(self):
-    #     """Tests slice intersection between two series with datetime or range index with identical and
-    #     mixed frequencies."""
-    #
-    #     values = np.ones((8, 1, 1))
-    #     ts_4d = TimeSeries.from_times_and_values(
-    #         times=generate_index(start="2000-01-01", length=8, freq="4D"),
-    #         values=values,
-    #     )
-    #     ts_3d = TimeSeries.from_times_and_values(
-    #         times=generate_index(start="2000-01-01", length=8, freq="3D"),
-    #         values=values,
-    #     )
-    #
-    #     helper_test_intersect(freq, mixed_freq, is_univariate=True)
+    @pytest.mark.parametrize(
+        "config",
+        list(
+            itertools.product(
+                [
+                    (1, 1, 1),  # integer step
+                    (1, 2, 2),
+                    (3, 4, 12),
+                    ("h", "h", "h"),  # same freq base (with fixed period)
+                    ("h", "2h", "2h"),
+                    ("3h", "4h", "12h"),
+                    ("D", "D", "D"),  # same freq base (with fixed period)
+                    ("D", "2D", "2D"),
+                    ("3D", "4D", "12D"),
+                    ("W-MON", "W-MON", "W-MON"),  # same freq base (no fixed period)
+                    ("W-MON", "2W-MON", "2W-MON"),
+                    ("3W-MON", "4W-MON", "12W-MON"),
+                    ("2MS", "11MS", "22MS"),
+                    (
+                        "h",
+                        "D",
+                        "24h",
+                    ),  # mixed bases but with fixed period (returns multiple of first freq)
+                    ("D", "24h", "D"),
+                    ("3h", "D", "24h"),
+                    ("3h", "33min", "33h"),
+                    ("33min", "3h", "1980min"),
+                    (
+                        "D1h",
+                        "4h",
+                        "100h",
+                    ),  # "D1h" gets converted to "25h" -> result in "100h"
+                    ("4h", "D1h", "100h"),
+                    (
+                        "7D",
+                        "W-MON",
+                        "raises",
+                    ),  # otherwise, raises with at least one non-fixed freq
+                    ("W-MON", "W-TUE", "raises"),
+                    ("h", "MS", "raises"),
+                    ("B", "1h", "raises"),
+                ],
+                [1, 2, 3],
+            )
+        )[3:4],
+    )
+    def test_intersect_more_freqs(self, config):
+        """Tests slice intersection between two series with datetime or range index with identical and
+        mixed frequencies."""
+
+        (freq, other, expected), n_intersection = config
+        # generate the intersecting indices
+        if isinstance(freq, int):
+            index_freq = pd.RangeIndex(start=0, stop=freq * 1000, step=freq)
+            index_other = pd.RangeIndex(start=0, stop=other * 1000, step=other)
+        else:
+            index_freq = pd.date_range("2000-01-01", periods=1000, freq=freq)
+            index_other = pd.date_range("2000-01-01", periods=1000, freq=other)
+
+        # pandas can natively infer the frequency with at least 3 entries
+        intersection_working = index_freq.intersection(index_other)[:n_intersection]
+        assert len(intersection_working) == n_intersection
+
+        # generate the actual indices that span over this time frame
+        index_freq = generate_index(
+            start=intersection_working[0], end=intersection_working[-1], freq=freq
+        )
+        index_other = generate_index(
+            start=intersection_working[0], end=intersection_working[-1], freq=other
+        )
+        ts_freq = TimeSeries.from_times_and_values(
+            times=index_freq,
+            values=np.arange(len(index_freq)),
+        )
+        ts_other = TimeSeries.from_times_and_values(
+            times=index_other,
+            values=np.arange(len(index_other)),
+        )
+        if expected == "raises" and n_intersection < 3:
+            with pytest.raises(ValueError, match=""):
+                _ = ts_freq.slice_intersect(ts_other)
+        else:
+            ts_intersection = ts_freq.slice_intersect(ts_other)
+            assert len(ts_intersection) == n_intersection
+            assert ts_intersection.freq == expected
 
     def test_shift(self):
         helper_test_shift(self.series1)
