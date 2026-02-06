@@ -1634,15 +1634,10 @@ class TestTimeSeries:
         df_01 = series.to_dataframe()
         df_012 = series.to_dataframe()
 
-        PANDAS_210 = pd.__version__ >= "2.1.0"
-        select_map = "map"
-        if not PANDAS_210:
-            select_map = "applymap"
-
-        df_0[["0"]] = getattr(df_0[["0"]], select_map)(fn)
-        df_2[["2"]] = getattr(df_2[["2"]], select_map)(fn)
-        df_01[["0", "1"]] = getattr(df_01[["0", "1"]], select_map)(fn)
-        df_012 = getattr(df_012, select_map)(fn)
+        df_0[["0"]] = df_0[["0"]].map(fn)
+        df_2[["2"]] = df_2[["2"]].map(fn)
+        df_01[["0", "1"]] = df_01[["0", "1"]].map(fn)
+        df_012 = df_012.map(fn)
 
         series_0 = TimeSeries.from_dataframe(df_0, freq="D")
         series_2 = TimeSeries.from_dataframe(df_2, freq="D")
@@ -2194,11 +2189,16 @@ def helper_test_intersect(freq, is_mixed_freq: bool, is_univariate: bool):
         freq_other = freq * 2
         n_steps = 21
     else:  # 2 or "2D"
-        freq_other = freq / 2
+        # For pandas 3.0: division of offsets is not supported, so we use .n for the multiplier
+        freq_other = type(freq)(n=freq.n // 2) if hasattr(freq, "n") else freq / 2
         n_steps = 11
     freq_other = int(freq_other) if isinstance(freq_other, float) else freq_other
     # if freq_other has a higher freq, we expect the slice to have the higher freq
-    freq_expected = freq if freq > freq_other else freq_other
+    # For pandas 3.0: comparison of offsets is not supported, use .nanos for comparison
+    if hasattr(freq, "nanos") and hasattr(freq_other, "nanos"):
+        freq_expected = max(freq, freq_other, key=lambda x: x.nanos)
+    else:
+        freq_expected = freq if freq > freq_other else freq_other
     idx = generate_index(start=start, freq=freq, length=n_steps)
     end = idx[-1]
 
@@ -2327,13 +2327,13 @@ def helper_test_shift(test_series: TimeSeries):
     )
 
     with pytest.raises(Exception):
-        test_series.shift(1e6)
+        test_series.shift(1e9)
 
     seriesM = TimeSeries(
         pd.date_range("20130101", "20130601", freq=freqs["ME"]), range(5)
     )
     with pytest.raises(OverflowError):
-        seriesM.shift(1e4)
+        seriesM.shift(1e7)
 
     seriesD = TimeSeries(pd.date_range("20130101", "20130101"), range(1), freq="D")
     seriesE = seriesD.shift(1)
@@ -3009,7 +3009,7 @@ class TestTimeSeriesFromDataFrame:
             df=self.pd_to_backend(df, backend), time_col="Time"
         )
 
-        assert ts.time_index.dtype == "datetime64[ns]"
+        assert str(ts.time_index.dtype) in ("datetime64[ns]", "datetime64[us]")
         assert ts.time_index.name == "Time"
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)
@@ -3024,7 +3024,7 @@ class TestTimeSeriesFromDataFrame:
             df=self.pd_to_backend(df, backend), time_col="Time"
         )
 
-        assert ts.time_index.dtype == "datetime64[ns]"
+        assert str(ts.time_index.dtype) in ("datetime64[ns]", "datetime64[us]")
         assert ts.time_index.name == "Time"
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)

@@ -637,7 +637,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         Parameters
         ----------
         freq
-            frequency string of the underlying TimeSeries's time index (pd.DateTimeIndex.freq_str)
+            frequency string of the underlying TimeSeries's time index (pd.DatetimeIndex.freqstr).
         """
 
         # this regex extracts all digits from `freq`: exp: '30S' -> 30
@@ -650,29 +650,44 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seconds_per_day = 86400
         days = 0
-        if freq in ["A", "BA", "Y", "BY", "RE"] or freq.startswith((
-            "A",
-            "BA",
-            "Y",
-            "BY",
+        if freq in ["YE", "YS", "BYE", "BYS", "RE"] or freq.startswith((
+            "YE",
+            "YS",
+            "BYE",
+            "BYS",
             "RE",
         )):  # year
             days = 365.25
-        elif freq in ["Q", "BQ", "REQ"] or freq.startswith((
-            "Q",
-            "BQ",
+        elif freq in ["QE", "BQE", "QS", "BQS", "REQ"] or freq.startswith((
+            "QE",
+            "BQE",
+            "QS",
+            "BQS",
             "REQ",
         )):  # quarter
             days = 3 * 30.4375
         elif freq in [
-            "M",
-            "BM",
-            "CBM",
-            "SM",
-            "LWOM",
+            "ME",
+            "BME",
+            "CBME",
+            "MS",
+            "BMS",
+            "CBMS",
             "WOM",
-        ] or freq.startswith(("M", "BME", "BS", "CBM", "SM", "LWOM", "WOM")):  # month
+            "LWOM",
+        ] or freq.startswith((
+            "ME",
+            "BME",
+            "CBME",
+            "MS",
+            "BMS",
+            "CBMS",
+            "WOM",
+            "LWOM",
+        )):  # month
             days = 30.4375
+        elif freq in ["SME", "SMS"] or freq.startswith(("SME", "SMS")):  # semi-month
+            days = 30.4375 / 2
         elif freq == "W" or freq.startswith("W-"):  # week
             days = 7.0
         elif freq in ["B", "C"]:  # business day
@@ -680,7 +695,7 @@ class Prophet(FutureCovariatesLocalForecastingModel):
         elif freq in ["D"]:  # day
             days = 1.0
         else:
-            # all freqs higher than "D" are lower case in pandas >= 2.2.0
+            # all freqs higher than "D" are lower case
             freq_lower = freq.lower()
             if freq_lower in ["h", "bh", "cbh"]:  # hour
                 days = 1 / 24

@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from narwhals import DataFrame
+from packaging import version
 from pandas._libs.tslibs.offsets import BusinessMixin
 from sklearn.utils import check_random_state
 from tqdm import tqdm
@@ -35,6 +36,8 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
+
+PANDAS_30_OR_GREATER = version.parse(pd.__version__) >= version.parse("3.0.0")
 
 logger = get_logger(__name__)
 
@@ -104,27 +107,25 @@ class ModelMode(Enum):
     NONE = None
 
 
-# TODO: remove this at some point when we set a lower cap on pandas v2.2.0
-pd_above_v22 = pd.__version__ >= "2.2"
 freqs = {
-    "YE": "YE" if pd_above_v22 else "A",
-    "YS": "YS" if pd_above_v22 else "AS",
-    "BYS": "BYS" if pd_above_v22 else "BAS",
-    "BYE": "BYE" if pd_above_v22 else "BA",
-    "QE": "QE" if pd_above_v22 else "Q",
-    "BQE": "BQE" if pd_above_v22 else "BQ",
-    "ME": "ME" if pd_above_v22 else "M",
-    "SME": "SME" if pd_above_v22 else "SM",
-    "BME": "BME" if pd_above_v22 else "BM",
-    "CBME": "CBME" if pd_above_v22 else "CBM",
-    "h": "h" if pd_above_v22 else "H",
-    "bh": "bh" if pd_above_v22 else "BH",
-    "cbh": "cbh" if pd_above_v22 else "CBH",
-    "min": "min" if pd_above_v22 else "T",
-    "s": "s" if pd_above_v22 else "S",
-    "ms": "ms" if pd_above_v22 else "L",
-    "us": "us" if pd_above_v22 else "U",
-    "ns": "ns" if pd_above_v22 else "N",
+    "YE": "YE",
+    "YS": "YS",
+    "BYS": "BYS",
+    "BYE": "BYE",
+    "QE": "QE",
+    "BQE": "BQE",
+    "ME": "ME",
+    "SME": "SME",
+    "BME": "BME",
+    "CBME": "CBME",
+    "h": "h",
+    "bh": "bh",
+    "cbh": "cbh",
+    "min": "min",
+    "s": "s",
+    "ms": "ms",
+    "us": "us",
+    "ns": "ns",
 }
 
 
@@ -409,6 +410,19 @@ def drop_after_index(
     return slice_index(index, index[0], split_point)
 
 
+def freq_to_timedelta(freq: Union[str, pd.DateOffset]) -> pd.Timedelta:
+    """Convert a frequency (string or DateOffset) to :class:`pd.Timedelta`.
+
+    Use when a timedelta is needed for division etc.; :func:`pd.to_timedelta`
+    does not accept DateOffset in pandas 3+.
+    """
+    out = pd.to_timedelta(freq, errors="coerce")
+    if not pd.isna(out):
+        return out
+    freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+    return (pd.Timestamp(0) + freq) - pd.Timestamp(0)
+
+
 def n_steps_between(
     end: Union[pd.Timestamp, int],
     start: Union[pd.Timestamp, int],
@@ -469,8 +483,11 @@ def n_steps_between(
             logger=logger,
         )
     # Series frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W')
+    # Use freq_to_timedelta so diff // freq_td is Timedelta // Timedelta (pandas 3: Timedelta // DateOffset unsupported)
     if pd.to_timedelta(freq, errors="coerce") is not pd.NaT:
         diff = end - start
+        if isinstance(diff, pd.Timedelta):
+            freq = freq_to_timedelta(freq)
         if abs(diff) != diff:
             # (A) when diff is negative, not perfectly divisible by freq, and freq is a multiple of a base frequency
             # (e.g., "2D" or step=2), then computing `diff // freq` can be one off
@@ -483,9 +500,10 @@ def n_steps_between(
             # for lower pandas versions ~1.5.0, business frequencies wrongly have a period alias.
             # taking the period difference as computed in `else` gives wrong results.
             # in this (worst) case for special frequencies (e.g "C*"), we must generate the index
+            # TODO: improve comment, verify behavior across pandas 2.x and 3.x for edge cases.
             is_reversed = end < start
             if is_reversed:
-                # always generate an increasing index, since pandas (v2.2.1) gives inconsistent result for
+                # always generate an increasing index, since pandas gives inconsistent result for
                 # negative/decreasing frequencies. Then reverse the index in case of negative/decreasing
                 # input frequency
                 start, end = end, start
@@ -561,6 +579,13 @@ def generate_index(
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         freq = "D" if freq is None else freq
         freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
+
+        # Pandas 3.0: date_range with end + periods may return empty index
+        # if end is not on the frequency anchor. Snap end to the frequency.
+        if PANDAS_30_OR_GREATER:
+            if end is not None and length is not None and not freq.is_on_offset(end):
+                end = freq.rollback(end)
+
         index = pd.date_range(
             start=start,
             end=end,
@@ -568,14 +593,31 @@ def generate_index(
             freq=freq,
             name=name,
         )
+
+        # handle negative frequencies
         if freq.n < 0:
-            if start is not None and not freq.is_on_offset(start):
-                # for anchored negative frequencies, and `start` does not intersect with `freq`:
-                # pandas (v2.2.1) generates an index that starts one step before `start` -> remove this step
-                index = index[1:]
-            elif end is not None and not freq.is_on_offset(end):
-                # if `start` intersects with `freq`, then the same can happen for `end` -> remove this step
-                index = index[:-1]
+            if PANDAS_30_OR_GREATER:
+                # if start is not on the frequency offset, pandas snaps to the wrong anchor point
+                if (
+                    start is not None
+                    and end is not None
+                    and not freq.is_on_offset(start)
+                ):
+                    # generate forward sequence to find correct starting point
+                    forward_idx = pd.date_range(start=end, end=start, freq=-freq)
+                    if len(forward_idx) > 0:
+                        # use last element of forward sequence as adjusted start
+                        index = pd.date_range(
+                            start=forward_idx[-1], end=end, freq=freq, name=name
+                        )
+            else:
+                if start is not None and not freq.is_on_offset(start):
+                    # for anchored negative frequencies, and `start` does not intersect with `freq`:
+                    # pandas generates an index that starts one step before `start` -> remove this step
+                    index = index[1:]
+                elif end is not None and not freq.is_on_offset(end):
+                    # if `start` intersects with `freq`, then the same can happen for `end` -> remove this step
+                    index = index[:-1]
     else:  # int
         step = 1 if freq is None else freq
         if start is None:
