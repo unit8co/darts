@@ -1,6 +1,6 @@
 # Installation Guide
 
-⚠️ Note: If you migrate to darts version >=0.41.0 from versions <0.41.0, refer to the [migration guidlines below](#-important-darts-pypi-package-changes-as-of-version-0410)
+⚠️ Note: If you migrate to darts version >=0.41.0 from versions <0.41.0, refer to the [migration guidelines below](#important-darts-pypi-package-changes-as-of-version-0410)
 
 ## From PyPI
 
@@ -57,7 +57,7 @@ jupyter lab --ip 0.0.0.0 --no-browser --allow-root
 
 Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
 
-## ⚠️ Important: Darts PyPI Package Changes As of Version 0.41.0
+## Important: Darts PyPI Package Changes As of Version 0.41.0
 As of Darts version 0.41.0, we have made changes to our PyPI packages:
 
 - `darts`: `darts` now replaces `u8darts` with all of its installation options (see section above).
