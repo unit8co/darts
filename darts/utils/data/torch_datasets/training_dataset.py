@@ -170,19 +170,24 @@ class ShiftedTorchTrainingDataset(TorchTrainingDataset):
 
         size_of_both_chunks = max(input_chunk_length, shift + output_chunk_length)
 
-        # setup samples
-        if max_samples_per_ts is None:
-            # read all time series to get the maximum size
-            max_samples_per_ts = max(len(ts) for ts in series) - size_of_both_chunks + 1
-            if max_samples_per_ts <= 0:
-                raise_log(
-                    ValueError(
-                        f"The input `series` are too short to extract even a single sample. "
-                        f"Expected min length: `{size_of_both_chunks}`, received max length: "
-                        f"`{max_samples_per_ts + size_of_both_chunks - 1}`."
-                    )
+        # compute the maximum available samples over all series
+        max_available_indices = max(len(ts) for ts in series) - size_of_both_chunks + 1
+        max_available_samples = ceil(max_available_indices / stride)
+
+        if max_available_indices <= 0:
+            raise_log(
+                ValueError(
+                    f"The input `series` are too short to extract even a single sample. "
+                    f"Expected min length: `{size_of_both_chunks}`, received max length: "
+                    f"`{max(len(ts) for ts in series)}`."
                 )
-            max_samples_per_ts = ceil(max_samples_per_ts / stride)
+            )
+
+        if max_samples_per_ts is None:
+            max_samples_per_ts = max_available_samples
+        else:
+            # upper bound maximum available samples by max_samples_per_ts
+            max_samples_per_ts = min(max_samples_per_ts, max_available_samples)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
