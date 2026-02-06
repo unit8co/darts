@@ -69,7 +69,7 @@ try:
 except ModuleNotFoundError:
     logger.warning(
         "Support for Torch based models not available. "
-        'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
+        'To enable them, install "darts[torch]" or "darts[all]" (with pip); '
         'or "u8darts-torch" or "u8darts-all" (with conda).'
     )
     BlockRNNModel = NotImportedModule(module_name="(Py)Torch", warn=False)

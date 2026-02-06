@@ -9,6 +9,10 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 
 ### For users of the library:
 
+**Migration from PyPI `u8darts` package to `darts` package**
+
+- The `darts` PyPI package now replaces `u8darts` with the same installation options (e.g. `darts`, `darts[torch]`, `darts[notorch]`, `darts[all]`). No code changes are required. If you currently use `u8darts`, switch to `pip install "darts[option]>=0.41.0"` and replace `u8darts` by `darts>=0.41.0` in your requirements files (e.g. `pyproject.toml`, `requirements.txt`, ...). See the [migration guide](https://github.com/unit8co/darts/blob/master/INSTALL.md#important-darts-pypi-package-changes-as-of-version-0410) for details.
+
 **Improved**
 
 - 🚀🚀 Added new forecasting model `TimesFM2p5Model`: Google's pre-trained 200M-parameter foundational model for zero-shot forecasting. It supports univariate, multivariate, and multiple time series forecasting without training and can output deterministic or probabilistic forecasts. [#2980](https://github.com/unit8co/darts/pull/2980) by [Zhihao Dai](https://github.com/daidahao).
@@ -37,6 +41,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - We set an upper version cap on `pandas<3.0.0` until we officially support it. [#2995](https://github.com/unit8co/darts/pull/2995) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
+
+- Migrated the dependency management and tooling to [uv](https://docs.astral.sh/uv/). Use `uv sync --group dev-all` to setup your development environment; See the [contribution guide](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) for further information. [#2993](https://github.com/unit8co/darts/pull/2993) by [Jules Authier](https://github.com/authierj).
 
 ## [0.40.0](https://github.com/unit8co/darts/tree/0.40.0) (2025-12-23)
 
