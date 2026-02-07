@@ -41,6 +41,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 - We set an upper version cap on `pandas<3.0.0` until we officially support it. [#2995](https://github.com/unit8co/darts/pull/2995) by [Dennis Bader](https://github.com/dennisbader).
 
 ### For developers of the library:
+- Removed unit tests from the package distribution (PyPI and conda-forge) to reduce package size. [#2979](https://github.com/unit8co/darts/pull/2979) and [u8darts-feedstock#59](https://github.com/conda-forge/u8darts-feedstock/pull/59) by [Zhihao Dai](https://github.com/daidahao).
 
 - Migrated the dependency management and tooling to [uv](https://docs.astral.sh/uv/). Use `uv sync --group dev-all` to setup your development environment; See the [contribution guide](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) for further information. [#2993](https://github.com/unit8co/darts/pull/2993) by [Jules Authier](https://github.com/authierj).
 

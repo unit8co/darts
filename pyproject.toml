@@ -85,7 +85,7 @@ explicit = true  # Only use this index for packages explicitly configured to use
 zip-safe = false
 
 [tool.setuptools.packages.find]
-exclude = ["examples*", "datasets*", "docs*"]
+exclude = ["examples*", "datasets*", "docs*", "darts.tests*"]
 
 [tool.setuptools.package-data]
 darts = ["py.typed"]
