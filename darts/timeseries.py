@@ -828,7 +828,7 @@ class TimeSeries:
                     "`pandas.RangeIndex(len(df))`. If this is not desired consider adding a time column "
                     "to your `DataFrame` and defining `time_col`."
                 )
-            # if we are here, the dataframe was pandas
+            # if we are here, the DataFrame was pandas
             elif not (
                 isinstance(time_index, VALID_INDEX_TYPES)
                 or np.issubdtype(time_index.dtype, np.integer)
@@ -1802,37 +1802,38 @@ class TimeSeries:
         backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
         time_as_index: bool = True,
         suppress_warnings: bool = False,
-        add_static_cov: Optional[Union[list[str], str, bool]] = False,
-        add_metadata: Optional[Union[list[str], str, bool]] = False,
+        add_static_covariates: Union[bool, str, list[str]] = False,
+        add_metadata: Union[bool, str, list[str]] = False,
     ):
         """Return a DataFrame representation of the series in a given `backend`.
 
         Each of the series components will appear as a column in the DataFrame.
-        If the series is stochastic, the samples are returned as columns of the dataframe with column names
+        If the series is stochastic, the samples are returned as columns of the DataFrame with column names
         as 'component_s#' (e.g. with two components and two samples:
         'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
 
         Parameters
         ----------
         copy
-            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
+            Whether to return a copy of the DataFrame. Leave it to True unless you know what you are doing.
         backend
             The backend to which to export the `TimeSeries`. See the `narwhals documentation
             <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`__ for all supported
             backends.
         time_as_index
-            Whether to set the time index as the index of the dataframe or in the left-most column.
+            Whether to set the time index as the index of the DataFrame or in the left-most column.
             Only effective with the pandas `backend`.
         suppress_warnings
             Whether to suppress the warnings for the `DataFrame` creation.
-        add_static_cov
-            Whether to add static covariates from the time series as columns in the resulting dataframe (one column per
-            component-static covariate pair). Can be a bool in case all the static covariates should be added, or a
-            string/list of string in case only a subset are needed.
+        add_static_covariates
+            Whether to add the series' static covariates to the resulting DataFrame (one column per component-static
+            covariate pair). If a bool, controls whether to add all static covariates or none. If a string, or list of
+            strings, specifies the subset of static covariate columns / names to add.
         add_metadata
-            Whether to add metadata from the time series as columns in the resulting dataframe (one column per
-            metadata). Can be a bool in case all the metadata should be added, or a string/list of string in case only
-            a subset are needed.
+            Whether to add the series' metadata to the resulting DataFrame (one column per metadata entry). If a bool,
+            controls whether to add all metadata entries or none. If a string, or list of strings, specifies the subset
+            of metadata keys / names to add.
+
         Returns
         -------
         DataFrame
@@ -1868,102 +1869,81 @@ class TimeSeries:
         else:
             columns = self.components
             data = values[:, :, 0]
-        data_dict = {col: data[:, idx] for idx, col in enumerate(columns)}
+        data = {col: data[:, idx] for idx, col in enumerate(columns)}
 
         # handle static covariates
-        if self.has_static_covariates and add_static_cov:
+        if add_static_covariates and self.has_static_covariates:
             static_covs = self.static_covariates
             components = list(static_covs.index)
 
-            if isinstance(add_static_cov, bool):
-                # Add all the static cov cols
-                static_cov_cols = static_covs.columns
-            elif isinstance(add_static_cov, (str, list)):
-                static_cov_cols = (
-                    [add_static_cov]
-                    if isinstance(add_static_cov, str)
-                    else add_static_cov
-                )
-                if not all(isinstance(x, str) for x in static_cov_cols):
-                    raise_log(
-                        ValueError("All values in add_static_cov must be of type str"),
-                        logger=logger,
-                    )
-                missing_cols = [
-                    col for col in static_cov_cols if col not in static_covs.columns
-                ]
-                if missing_cols:
-                    raise_log(
-                        ValueError(
-                            f"The following static covariates to add via `add_static_cov` do not exist: {missing_cols}."
-                            f"Available static covariates are: {list(static_covs.columns)}"
-                        ),
-                        logger=logger,
-                    )
+            if isinstance(add_static_covariates, bool):
+                static_cov_cols = static_covs.columns.tolist()
+            elif isinstance(add_static_covariates, str):
+                static_cov_cols = [add_static_covariates]
             else:
+                static_cov_cols = add_static_covariates
+
+            missing_cols = set(static_cov_cols) - set(static_covs.columns)
+            if missing_cols:
                 raise_log(
-                    ValueError("add_static_cov must be of type bool, str or list[str]"),
+                    ValueError(
+                        f"The following static covariates to add via `add_static_covariates` "
+                        f"do not exist: {missing_cols}. Available static covariates are: "
+                        f"{static_covs.columns.tolist()}"
+                    ),
                     logger=logger,
                 )
+
             for static_cov_col in static_cov_cols:
                 for comp in components:
                     value = static_covs.loc[comp, static_cov_col]
-                    data_col = np.full(data.shape[0], value)
+                    data_col = np.full(len(self), value)
                     if len(components) > 1:
-                        column = "_".join((comp, static_cov_col))
+                        column = "_".join((static_cov_col, comp))
                     else:
                         column = static_cov_col
-                    data_dict[column] = data_col
+                    data[column] = data_col
 
         # handle metadata
-        if self.has_metadata and add_metadata:
+        if add_metadata and self.has_metadata:
             metadata = self.metadata
+
             if isinstance(add_metadata, bool):
-                # Add all the metadata
-                metadata_cols = metadata.keys()
-            elif isinstance(add_metadata, (str, list)):
-                metadata_cols = (
-                    [add_metadata] if isinstance(add_metadata, str) else add_metadata
-                )
-                if not all(isinstance(x, str) for x in metadata_cols):
-                    raise_log(
-                        ValueError("All values in add_metadata must be of type str"),
-                        logger=logger,
-                    )
-                missing_cols = [
-                    col for col in metadata_cols if col not in metadata.keys()
-                ]
-                if missing_cols:
-                    raise_log(
-                        ValueError(
-                            f"The following metadata to add via `add_metadata` do not exist: {missing_cols}."
-                            f"Available metadata are: {list(metadata.keys())}"
-                        ),
-                        logger=logger,
-                    )
+                metadata_cols = list(metadata)
+            elif isinstance(add_metadata, str):
+                metadata_cols = [add_metadata]
             else:
+                metadata_cols = add_metadata
+
+            missing_cols = set(metadata_cols) - set(metadata)
+            if missing_cols:
                 raise_log(
-                    ValueError("add_metadata must be of type bool, str or list[str]"),
+                    ValueError(
+                        f"The following metadata to add via `add_metadata` "
+                        f"do not exist: {missing_cols}. Available metadata are: "
+                        f"{set(metadata)}"
+                    ),
                     logger=logger,
                 )
+
             for metadata_col in metadata_cols:
-                data_col = np.full(data.shape[0], metadata[metadata_col])
-                data_dict[metadata_col] = data_col
+                data_col = np.full(len(self), metadata[metadata_col])
+                data[metadata_col] = data_col
+
         time_index = self._time_index
 
         if copy:
-            data_dict = data_dict.copy()
+            data = data.copy()
             time_index = time_index.copy()
 
         if time_as_index:
             # special path for pandas with index
-            output_df = pd.DataFrame.from_dict(data=data_dict)
-            output_df.index = time_index
-            return output_df
+            return pd.DataFrame(data=data, index=time_index)
 
-        data_dict = {time_index.name: time_index, **data_dict}
+        # set time_index as left-most column
+        data = {time_index.name or self.time_dim: time_index, **data}
 
-        return nw.from_dict(data_dict, backend=backend).to_native()
+        return nw.from_dict(data, backend=backend).to_native()
 
     def schema(self, copy: bool = True) -> dict[str, Any]:
         """Return the schema of the series as a dictionary.
@@ -4215,7 +4195,7 @@ class TimeSeries:
                 logger,
             )
 
-        # read series dataframe
+        # read series DataFrame
         ts_df = self.to_dataframe(copy=False, suppress_warnings=True)
 
         # store some original attributes of the series
@@ -4353,7 +4333,7 @@ class TimeSeries:
                 drop_before_index:
             ]
 
-        # revert dataframe to TimeSeries
+        # revert DataFrame to TimeSeries
         new_index = original_index.__class__(resulting_transformations.index)
 
         if convert_hierarchy:
@@ -6021,7 +6001,7 @@ def concatenate(
     drop_hierarchy: bool = True,
     drop_metadata: bool = False,
 ):
-    """Concatenate multiple series along a given axis.
+    """Concatenates multiple series along a given axis.
 
     ``axis`` can be an integer in (0, 1, 2) to denote (time, component, sample) or, alternatively, a string denoting
     the corresponding dimension of the underlying ``DataArray``.
@@ -6056,6 +6036,9 @@ def concatenate(
     TimeSeries
         The concatenated series.
     """
+    if isinstance(series, TimeSeries):
+        series = [series]
+
     axis = TimeSeries._get_axis(axis)
     vals = [ts.all_values(copy=False) for ts in series]
 
@@ -6153,7 +6136,7 @@ def concatenate(
 
 
 def slice_intersect(series: Sequence[TimeSeries]) -> list[TimeSeries]:
-    """Return a list of series, where all series have been intersected along the time index.
+    """Returns a list of series, where all series have been intersected along the time index.
 
     Parameters
     ----------
@@ -6182,30 +6165,27 @@ def slice_intersect(series: Sequence[TimeSeries]) -> list[TimeSeries]:
 
 
 def to_group_dataframe(
-    series: Union[TimeSeries, Sequence[TimeSeries]],
+    series: Sequence[TimeSeries],
     copy: bool = True,
     backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
     time_as_index: bool = True,
     suppress_warnings: bool = False,
-    add_static_cov: Union[bool, str, list[str], None] = True,
-    add_metadata: Union[bool, str, list[str], None] = False,
+    add_static_covariates: Union[bool, str, list[str]] = True,
+    add_metadata: Union[bool, str, list[str]] = False,
     add_group_col: Union[bool, str] = False,
 ):
-    """
-    Return a grouped DataFrame representation from one or multiple `TimeSeries`.
+    """Converts a sequence of `TimeSeries` into a long DataFrame representation.
 
-    This method converts a single `TimeSeries` or a sequence of `TimeSeries` into individual DataFrames
-    using `TimeSeries.to_dataframe()` and concatenates them into a single DataFrame.
+    It converts each series into individual DataFrames and then concatenates them row-wise into a long DataFrame
+    using the specified backend.
+
     This is particularly useful when working with collections of time series that share a common schema
     and need to be represented in a tabular format for downstream processing.
-
-    Each series is converted independently, and the resulting DataFrames are concatenated row-wise
-    using the specified backend.
 
     Parameters
     ----------
     series
-        A single `TimeSeries` or a sequence of `TimeSeries` to convert into a grouped DataFrame.
+        A sequence of `TimeSeries` to convert into a long DataFrame.
     copy
         Whether to return a copy of the resulting DataFrame. Leave it to True unless you know what you are doing.
     backend
@@ -6217,52 +6197,49 @@ def to_group_dataframe(
         Only effective with the pandas `backend`.
     suppress_warnings
         Whether to suppress warnings raised during the DataFrame creation.
-    add_static_cov
-        Whether to add static covariates from the time series as columns in the resulting DataFrame
-        (one column per component–static covariate pair). Can be a bool in case all the static covariates
-        should be added, or a string/list of strings in case only a subset is needed. True by default as static
-        covariates should be provided to specify groups.
+    add_static_covariates
+        Whether to add the series' static covariates to the resulting DataFrame (one column per component-static
+        covariate pair). If a bool, controls whether to add all static covariates or none. If a string, or list of
+        strings, specifies the subset of static covariate columns / names to add.
     add_metadata
-        Whether to add metadata from the time series as columns in the resulting DataFrame
-        (one column per metadata entry). Can be a bool in case all metadata should be added,
-        or a string/list of strings in case only a subset is needed.
+        Whether to add the series' metadata to the resulting DataFrame (one column per metadata entry). If a bool,
+        controls whether to add all metadata entries or none. If a string, or list of strings, specifies the subset
+        of metadata keys / names to add.
     add_group_col
-        Whether to add a group column in the resulting long format dataframe. Can be a bool in which case the group
-        column's name will be "group", or a string corresponding to the group column's name. The values of that group
-        column will go from 0 to the number of time series minus 1 in the input list.
+        Whether to add a integer group column to the resulting DataFrame that serves as a mapping between DataFrame
+        rows and their corresponding time series. If a bool, indicates whether to add a group column with the name
+        "group". If a string, adds a group column with the name being that string value.
 
     Returns
     -------
     DataFrame
-        A grouped DataFrame representation of the input `TimeSeries`(s) in the specified `backend`.
-        The DataFrame is obtained by concatenating the individual DataFrames generated from each series.
+        A long DataFrame representation of the input sequence of `TimeSeries` in the specified `backend`.
     """
 
-    dfs = []
     backend = Implementation.from_backend(backend)
 
     if isinstance(series, TimeSeries):
         series = [series]
 
-    for idx, serie in enumerate(series):
-        _df = serie.to_dataframe(
+    df = []
+    group_col = add_group_col if isinstance(add_group_col, str) else "group"
+    for idx, series_ in enumerate(series):
+        df_ = series_.to_dataframe(
             copy=copy,
             backend=backend,
             time_as_index=time_as_index,
             suppress_warnings=suppress_warnings,
-            add_static_cov=add_static_cov,
+            add_static_covariates=add_static_covariates,
             add_metadata=add_metadata,
         )
-        _df = nw.from_native(_df)
+        df_ = nw.from_native(df_)
         if add_group_col:
-            if isinstance(add_group_col, str):
-                _df = _df.with_columns(nw.lit(idx).alias(add_group_col))
-            else:
-                _df = _df.with_columns(nw.lit(idx).alias("group"))
-        dfs.append(_df)
+            df_ = df_.with_columns(nw.lit(idx).alias(group_col))
+        df.append(df_)
 
-    df = nw.concat(dfs)
-    df = df.to_native()
+    df = nw.concat(df).to_native()
+
+    # pandas keeps the row index of each df, reset it here if it does not represent the time index
     if backend.is_pandas() and not time_as_index:
         df.reset_index(inplace=True, drop=True)
     return df

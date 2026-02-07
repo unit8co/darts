@@ -135,6 +135,137 @@ class TestTimeSeriesStaticCovariate:
         # Test without kwargs (new automatic serialization)
         self.helper_test_transfer(tag, ts, TimeSeries.from_json(ts_json))
 
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_dataframe_add_static_covariates(self, backend):
+        """Tests adding global as well as component specific static covariates to dataframe."""
+        df = pd.DataFrame({
+            "time": [0, 1, 2],
+            "a": [1.0, 2.0, 3.0],
+            "b": [4.0, 5.0, 6.0],
+        })
+        df = self.pd_to_backend(df, backend)
+        static_covs = pd.DataFrame(
+            {"sc1": ["a"], "sc2": ["b"]}, index=["global_components"]
+        )
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="time",
+            static_covariates=static_covs,
+        )
+        assert series.static_covariates.equals(static_covs)
+
+        # sanity check that by default no static covs are added
+        kwargs = {"backend": backend, "time_as_index": False}
+        assert series.to_dataframe(**kwargs).equals(df)
+
+        # adding all static covariates
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates=True)
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc1", "sc2"]
+        assert (df_out[["sc1", "sc2"]] == static_covs.values).all().all()
+
+        # adding a single column as string
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates="sc2")
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2"]
+        assert (df_out[["sc2"]] == static_covs[["sc2"]].values).all().all()
+
+        # adding a list of columns with different order
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates=["sc2", "sc1"])
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2", "sc1"]
+        assert (
+            (df_out[["sc2", "sc1"]] == static_covs[["sc2", "sc1"]].values).all().all()
+        )
+
+        with pytest.raises(ValueError, match="`add_static_covariates` do not exist"):
+            _ = series.to_dataframe(
+                **kwargs, add_static_covariates=["does_not_exist", "sc1"]
+            )
+
+        # component specific static covariates
+        static_covs = pd.DataFrame(
+            {"sc1": ["aa", "ab"], "sc2": ["ba", "bb"]}, index=["a", "b"]
+        )
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="time",
+            static_covariates=static_covs,
+        )
+        assert series.static_covariates.equals(static_covs)
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_static_covariates=True)
+        ).to_pandas()
+        assert df_out.columns.tolist() == [
+            "time",
+            "a",
+            "b",
+            "sc1_a",
+            "sc1_b",
+            "sc2_a",
+            "sc2_b",
+        ]
+        assert (
+            (
+                df_out[["sc1_a", "sc1_b", "sc2_a", "sc2_b"]]
+                == static_covs.values.flatten(order="K")
+            )
+            .all()
+            .all()
+        )
+
+    @pytest.mark.parametrize("backend", TEST_BACKENDS)
+    def test_to_dataframe_add_metadata(self, backend):
+        """Tests adding metadata to dataframe."""
+        df = pd.DataFrame({
+            "time": [0, 1, 2],
+            "a": [1.0, 2.0, 3.0],
+            "b": [4.0, 5.0, 6.0],
+        })
+        df = self.pd_to_backend(df, backend)
+        metadata = {"sc1": "a", "sc2": "b"}
+        series = TimeSeries.from_dataframe(
+            df,
+            time_col="time",
+            metadata=metadata,
+        )
+        assert series.metadata == metadata
+
+        # sanity check that by default no metadata are added
+        kwargs = {"backend": backend, "time_as_index": False}
+        assert series.to_dataframe(**kwargs).equals(df)
+
+        # adding all metadata
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_metadata=True)
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc1", "sc2"]
+        assert (df_out[["sc1", "sc2"]] == metadata.values()).all().all()
+
+        # adding a single column as string
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_metadata="sc2")
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2"]
+        assert (df_out[["sc2"]] == metadata["sc2"]).all().all()
+
+        # adding a list of columns with different order
+        df_out = nw.from_native(
+            series.to_dataframe(**kwargs, add_metadata=["sc2", "sc1"])
+        ).to_pandas()
+        assert df_out.columns.tolist() == ["time", "a", "b", "sc2", "sc1"]
+        assert (
+            (df_out[["sc2", "sc1"]] == [metadata[key] for key in ["sc2", "sc1"]])
+            .all()
+            .all()
+        )
+
+        with pytest.raises(ValueError, match="`add_metadata` do not exist"):
+            _ = series.to_dataframe(**kwargs, add_metadata=["does_not_exist", "sc1"])
+
     def test_invalid_metadata(self):
         ts = linear_timeseries(length=10)
         with pytest.raises(ValueError) as exc:
@@ -180,78 +311,57 @@ class TestTimeSeriesStaticCovariate:
         assert (ts[0].values().flatten() == [values[2], values[1], values[0]]).all()
         assert (ts[1].values().flatten() == [values[3], values[4], values[5]]).all()
 
-    @pytest.mark.parametrize("time_as_index", [True, False])
-    def test_grouped_pandas_creation(self, time_as_index):
-        df = pd.DataFrame({
-            "time": pd.date_range(start="2023-01-01", periods=10, freq="D").tolist()
-            * 3,
-            "value": [float(i) for i in range(10)] * 3,
-            "ID": [0] * 10 + [1] * 10 + [2] * 10,
-        })
-
-        series = TimeSeries.from_group_dataframe(
-            df, group_cols="ID", value_cols=["value"], time_col="time"
-        )
-
-        def assert_reconstruction(ts_input, expected_subset):
-            reconstructed = to_group_dataframe(
-                ts_input,
-                add_static_cov=True,
-                add_metadata=False,
-                time_as_index=False,
-            )
-            reconstructed = reconstructed.sort_values(["ID", "time"])
-            reconstructed["ID"] = reconstructed["ID"].astype(int)
-            reconstructed.reset_index(inplace=True, drop=True)
-            if not time_as_index:
-                reconstructed.reset_index(inplace=True, drop=True)
-                assert isinstance(reconstructed.index, pd.RangeIndex)
-                assert reconstructed.index.tolist() == list(range(len(reconstructed)))
-            assert reconstructed.equals(expected_subset)
-
-        assert_reconstruction(series, df.sort_values(["ID", "time"]))
-        # single TimeSeries
-        assert_reconstruction(series[0], df.sort_values(["ID", "time"]).iloc[:10])
-
-    @pytest.mark.skipif(not POLARS_AVAILABLE, reason="requires polars")
-    def test_grouped_polars_creation(self):
-        df = pl.DataFrame(
+    @pytest.mark.parametrize(
+        "backend,time_as_index",
+        itertools.product(
+            TEST_BACKENDS,
+            [True, False],
+        ),
+    )
+    def test_to_group_dataframe_creation(self, backend, time_as_index):
+        df_pd = pd.DataFrame(
             data={
                 "time": pd.date_range(start="2023-01-01", periods=10, freq="D"),
                 "value": [float(i) for i in range(10)],
-                "ID": [0] * 5 + [1] * 5,
+                "ID": [0.0] * 5 + [1.0] * 5,
             }
         )
+        df = self.pd_to_backend(df_pd, backend)
         series = TimeSeries.from_group_dataframe(
             df,
             time_col="time",
             group_cols="ID",
             value_cols="value",
         )
+
+        if time_as_index and backend == "polars":
+            time_as_index = False
+        elif time_as_index:
+            df_pd = df_pd.set_index("time")
+
         reconstructed = to_group_dataframe(
             series,
-            add_static_cov=True,
-            backend="polars",
+            add_static_covariates=True,
+            backend=backend,
+            time_as_index=time_as_index,
         )
-        expected = df.sort(["time"])
-        reconstructed = reconstructed.sort(["time"])
-        assert reconstructed.equals(expected)
+        reconstructed_pd = nw.from_native(reconstructed).to_pandas()
+        expected = df_pd.sort_values(["ID", "time"])
+        reconstructed_pd = reconstructed_pd.sort_values(["ID", "time"])
+        assert reconstructed_pd.equals(expected)
 
     @pytest.mark.parametrize(
-        "config",
-        zip(
-            [True, ["source", "version", "created"], "source"],
-            [
-                ["source", "version", "created"],
-                ["source", "version", "created"],
-                "source",
-            ],
-        ),
+        "add_metadata,metadata_cols",
+        [
+            (True, ["source", "version", "created"]),
+            (["source", "version", "created"], ["source", "version", "created"]),
+            ("source", "source"),
+        ],
     )
-    def test_grouped_metadata_support(self, config):
+    def test_to_group_dataframe_metadata_support(self, add_metadata, metadata_cols):
         df = pd.DataFrame({
             "value": [float(i) for i in range(10)] * 2,
-            "ID": [0] * 10 + [1] * 10,
+            "ID": [0.0] * 10 + [1.0] * 10,
         })
         metadata = {
             "source": "test_data",
@@ -260,7 +370,7 @@ class TestTimeSeriesStaticCovariate:
         }
         for k, v in metadata.items():
             df[k] = v
-        add_metadata, metadata_cols = config
+
         if add_metadata is True:
             cols_to_include = ["value", "ID"] + list(metadata.keys())
         else:
@@ -274,56 +384,30 @@ class TestTimeSeriesStaticCovariate:
             df_subset, group_cols="ID", metadata_cols=metadata_cols
         )
         reconstructed = to_group_dataframe(
-            ts_list, add_static_cov=True, add_metadata=add_metadata
+            ts_list, add_static_covariates=True, add_metadata=add_metadata
         )
 
         expected = df_subset.sort_values("ID")
         reconstructed = reconstructed.sort_values("ID")
-        reconstructed["ID"] = reconstructed["ID"].astype(int)
         assert reconstructed.equals(expected)
 
-    @pytest.mark.parametrize("add_group_col", [True, "added_group_col"])
-    def test_no_group_col_by_default(self, add_group_col):
-        df = pd.DataFrame({
-            "time": pd.date_range("2023-01-01", periods=3, freq="D"),
-            "value": [1.0, 2.0, 3.0],
-            "ID": [0, 0, 0],
-        })
-
-        ts = TimeSeries.from_group_dataframe(
-            df,
-            group_cols="ID",
-            value_cols="value",
-            time_col="time",
-        )
-
-        reconstructed = to_group_dataframe(
-            ts, add_static_cov=True, add_metadata=False, add_group_col=add_group_col
-        )
-        if not isinstance(add_group_col, str):
-            add_group_col = "group"
-
-        assert add_group_col in reconstructed.columns
-        group_per_id = reconstructed.groupby("ID")[add_group_col].nunique()
-        assert (group_per_id == 1).all()
-        groups = sorted(reconstructed[add_group_col].unique())
-        assert groups == list(range(len(groups)))
-
     @pytest.mark.parametrize(
-        "config",
-        zip(
-            [True, ["split", "set", "ID"], ["set", "ID"]],
-            [["split", "set"], ["split", "set"], "set"],
-        ),
+        "add_static_cov,expected_cols",
+        [
+            (True, ["split", "set"]),
+            (["split", "set", "ID"], ["split", "set"]),
+            (["set", "ID"], "set"),
+        ],
     )
-    def test_grouped_global_static_cov_support(self, config):
+    def test_to_group_dataframe_global_static_cov_support(
+        self, add_static_cov, expected_cols
+    ):
         df = pd.DataFrame({
             "value": [float(i) for i in range(10)] * 3,
-            "ID": [0] * 10 + [1] * 10 + [2] * 10,
+            "ID": [0.0] * 10 + [1.0] * 10 + [2.0] * 10,
             "split": ["test"] * 10 + ["train"] * 20,
             "set": ["B"] * 20 + ["A"] * 10,
         })
-        add_static_cov, expected_cols = config
         expected_cols = (
             [expected_cols] if isinstance(expected_cols, str) else expected_cols
         )
@@ -332,51 +416,19 @@ class TestTimeSeriesStaticCovariate:
             df_subset, group_cols="ID", static_cols=expected_cols
         )
         reconstructed = to_group_dataframe(
-            ts_list, add_static_cov=add_static_cov, add_metadata=True
+            ts_list, add_static_covariates=add_static_cov, add_metadata=True
         )
-        reconstructed["ID"] = reconstructed["ID"].astype(int)
         expected = df_subset.sort_values(["ID"])
         reconstructed = reconstructed.sort_values(["ID"])
         reconstructed = reconstructed[expected.columns]
         assert reconstructed.equals(expected)
 
-    @pytest.mark.parametrize(
-        "add_static_cov, add_metadata",
-        [
-            (["static", 42], 3.14),
-            (42, ["source", None]),
-            (["static", "nonexistent_column"], ["source", "nonexistent_meta"]),
-        ],
-    )
-    def test_invalid_add_static_cov_metadata_type_raises(
-        self, add_static_cov, add_metadata
-    ):
-        df = pd.DataFrame({
-            "value": [1.0, 2.0, 3.0],
-            "ID": [0, 0, 0],
-            "static": ["A", "A", "A"],
-        })
-
-        ts1 = TimeSeries.from_group_dataframe(
-            df, group_cols="ID", static_cols=["static"]
-        )
-        with pytest.raises(ValueError):
-            to_group_dataframe(ts1, add_static_cov=add_static_cov)
-
-        df = df.drop(columns=["static"])
-        df["source"] = "test"
-        ts2 = TimeSeries.from_group_dataframe(
-            df, group_cols="ID", metadata_cols=["source"]
-        )
-        with pytest.raises(ValueError):
-            to_group_dataframe(ts2, add_metadata=add_metadata)
-
-    def test_grouped_component_level_static_covariates(self):
+    def test_to_group_dataframe_component_static_cov_support(self):
         df = pd.DataFrame({
             "time": pd.date_range("2023-01-01", periods=3, freq="D").tolist() * 2,
             "value1": [1.0, 2.0, 3.0] * 2,
             "value2": [4.0, 5.0, 6.0] * 2,
-            "ID": [0] * 3 + [1] * 3,
+            "ID": [0.0] * 3 + [1.0] * 3,
         })
         static_covs = pd.DataFrame(
             {
@@ -398,22 +450,51 @@ class TestTimeSeriesStaticCovariate:
 
         reconstructed = to_group_dataframe(
             ts_list,
-            add_static_cov=True,
+            add_static_covariates=True,
             add_metadata=False,
             time_as_index=False,
         )
         expected_cols = [
-            "value1_source",
-            "value2_source",
-            "value1_region",
-            "value2_region",
+            "source_value1",
+            "source_value2",
+            "region_value1",
+            "region_value2",
         ]
         assert all(col in reconstructed.columns for col in expected_cols)
 
-        assert (reconstructed["value1_source"] == static_covs["source"].loc[0]).all()
-        assert (reconstructed["value2_source"] == static_covs["source"].loc[1]).all()
-        assert (reconstructed["value1_region"] == static_covs["region"].loc[0]).all()
-        assert (reconstructed["value2_region"] == static_covs["region"].loc[1]).all()
+        assert (reconstructed["source_value1"] == static_covs["source"].loc[0]).all()
+        assert (reconstructed["source_value2"] == static_covs["source"].loc[1]).all()
+        assert (reconstructed["region_value1"] == static_covs["region"].loc[0]).all()
+        assert (reconstructed["region_value2"] == static_covs["region"].loc[1]).all()
+
+    @pytest.mark.parametrize("add_group_col", [True, "added_group_col"])
+    def test_to_group_dataframe_add_group_col(self, add_group_col):
+        df = pd.DataFrame({
+            "time": pd.date_range("2023-01-01", periods=10, freq="D"),
+            "value": np.arange(10).astype("float"),
+            "ID": [0] * 5 + [1] * 5,
+        })
+
+        ts = TimeSeries.from_group_dataframe(
+            df,
+            group_cols="ID",
+            value_cols="value",
+            time_col="time",
+        )
+
+        reconstructed = to_group_dataframe(
+            ts,
+            add_static_covariates=False,
+            add_metadata=False,
+            add_group_col=add_group_col,
+            time_as_index=False,
+        )
+        if not isinstance(add_group_col, str):
+            add_group_col = "group"
+
+        assert "ID" not in reconstructed.columns
+        reconstructed = reconstructed.rename(columns={add_group_col: "ID"})[df.columns]
+        assert reconstructed.equals(df)
 
     @pytest.mark.parametrize("backend", TEST_BACKENDS)
     def test_timeseries_from_longitudinal_df(self, backend):
