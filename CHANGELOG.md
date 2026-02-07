@@ -28,6 +28,8 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
   - Includes automatic downsampling for large series (configurable via `downsample_threshold` parameter) to avoid crashes when plotting large series
   - Integrates seamlessly with `plotting.use_darts_style` which now affects both `TimeSeries.plot()` and `TimeSeries.plotly()`
   - Plotly remains an optional dependency and can be installed with `pip install plotly`
+- `TimeSeries.to_dataframe()` now supports fine-grained control over adding the time series' metadata and static covariates to the output DataFrame with the new parameters `add_static_cov` and `add_metadata`. [#2965](https://github.com/unit8co/darts/issues/2965) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
+- Added method `TimeSeries.to_group_dataframe()` to convert a list of time series into a long DataFrame (pandas, polars, ...) - e.g. into the DataFrame format that is used as input for `from_group_dataframe()`. [#2965](https://github.com/unit8co/darts/issues/2965) by [Gabriel Margaria](https://github.com/Jaco-Pastorius).
 
 **Fixed**
 
@@ -43,6 +45,7 @@ but cannot always guarantee backwards compatibility. Changes that may **break co
 ### For developers of the library:
 
 - Migrated the dependency management and tooling to [uv](https://docs.astral.sh/uv/). Use `uv sync --group dev-all` to setup your development environment; See the [contribution guide](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md) for further information. [#2993](https://github.com/unit8co/darts/pull/2993) by [Jules Authier](https://github.com/authierj).
+- Removed unit tests from the package distribution (PyPI and conda-forge) to reduce package size. [#2979](https://github.com/unit8co/darts/pull/2979) and [u8darts-feedstock#59](https://github.com/conda-forge/u8darts-feedstock/pull/59) by [Zhihao Dai](https://github.com/daidahao).
 
 ## [0.40.0](https://github.com/unit8co/darts/tree/0.40.0) (2025-12-23)
 

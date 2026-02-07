@@ -828,7 +828,7 @@ class TimeSeries:
                     "`pandas.RangeIndex(len(df))`. If this is not desired consider adding a time column "
                     "to your `DataFrame` and defining `time_col`."
                 )
-            # if we are here, the dataframe was pandas
+            # if we are here, the DataFrame was pandas
             elif not (
                 isinstance(time_index, VALID_INDEX_TYPES)
                 or np.issubdtype(time_index.dtype, np.integer)
@@ -1802,27 +1802,37 @@ class TimeSeries:
         backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
         time_as_index: bool = True,
         suppress_warnings: bool = False,
+        add_static_covariates: Union[bool, str, list[str]] = False,
+        add_metadata: Union[bool, str, list[str]] = False,
     ):
         """Return a DataFrame representation of the series in a given `backend`.
 
         Each of the series components will appear as a column in the DataFrame.
-        If the series is stochastic, the samples are returned as columns of the dataframe with column names
+        If the series is stochastic, the samples are returned as columns of the DataFrame with column names
         as 'component_s#' (e.g. with two components and two samples:
         'comp0_s0', 'comp0_s1' 'comp1_s0' 'comp1_s1').
 
         Parameters
         ----------
         copy
-            Whether to return a copy of the dataframe. Leave it to True unless you know what you are doing.
+            Whether to return a copy of the DataFrame. Leave it to True unless you know what you are doing.
         backend
             The backend to which to export the `TimeSeries`. See the `narwhals documentation
             <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`__ for all supported
             backends.
         time_as_index
-            Whether to set the time index as the index of the dataframe or in the left-most column.
+            Whether to set the time index as the index of the DataFrame or in the left-most column.
             Only effective with the pandas `backend`.
         suppress_warnings
             Whether to suppress the warnings for the `DataFrame` creation.
+        add_static_covariates
+            Whether to add the series' static covariates to the resulting DataFrame (one column per component-static
+            covariate pair). If a bool, controls whether to add all static covariates or none. If a string, or list of
+            strings, specifies the subset of static covariate columns / names to add.
+        add_metadata
+            Whether to add the series' metadata to the resulting DataFrame (one column per metadata entry). If a bool,
+            controls whether to add all metadata entries or none. If a string, or list of strings, specifies the subset
+            of metadata keys / names to add.
 
         Returns
         -------
@@ -1859,6 +1869,66 @@ class TimeSeries:
         else:
             columns = self.components
             data = values[:, :, 0]
+        data = {col: data[:, idx] for idx, col in enumerate(columns)}
+
+        # handle static covariates
+        if add_static_covariates and self.has_static_covariates:
+            static_covs = self.static_covariates
+            components = list(static_covs.index)
+
+            if isinstance(add_static_covariates, bool):
+                static_cov_cols = static_covs.columns.tolist()
+            elif isinstance(add_static_covariates, str):
+                static_cov_cols = [add_static_covariates]
+            else:
+                static_cov_cols = add_static_covariates
+
+            missing_cols = set(static_cov_cols) - set(static_covs.columns)
+            if missing_cols:
+                raise_log(
+                    ValueError(
+                        f"The following static covariates to add via `add_static_covariates` "
+                        f"do not exist: {missing_cols}. Available static covariates are: "
+                        f"{static_covs.columns.tolist()}"
+                    ),
+                    logger=logger,
+                )
+
+            for static_cov_col in static_cov_cols:
+                for comp in components:
+                    value = static_covs.loc[comp, static_cov_col]
+                    data_col = np.full(len(self), value)
+                    if len(components) > 1:
+                        column = "_".join((static_cov_col, comp))
+                    else:
+                        column = static_cov_col
+                    data[column] = data_col
+
+        # handle metadata
+        if add_metadata and self.has_metadata:
+            metadata = self.metadata
+
+            if isinstance(add_metadata, bool):
+                metadata_cols = list(metadata)
+            elif isinstance(add_metadata, str):
+                metadata_cols = [add_metadata]
+            else:
+                metadata_cols = add_metadata
+
+            missing_cols = set(metadata_cols) - set(metadata)
+            if missing_cols:
+                raise_log(
+                    ValueError(
+                        f"The following metadata to add via `add_metadata` "
+                        f"do not exist: {missing_cols}. Available metadata are: "
+                        f"{set(metadata)}"
+                    ),
+                    logger=logger,
+                )
+
+            for metadata_col in metadata_cols:
+                data_col = np.full(len(self), metadata[metadata_col])
+                data[metadata_col] = data_col
 
         time_index = self._time_index
 
@@ -1868,12 +1938,10 @@ class TimeSeries:
 
         if time_as_index:
             # special path for pandas with index
-            return pd.DataFrame(data=data, index=time_index, columns=columns)
+            return pd.DataFrame(data=data, index=time_index)
 
-        data = {
-            time_index.name: time_index,  # set time_index as left-most column
-            **{col: data[:, idx] for idx, col in enumerate(columns)},
-        }
+        # set time_index as left-most column
+        data = {time_index.name or self.time_dim: time_index, **data}
 
         return nw.from_dict(data, backend=backend).to_native()
 
@@ -4127,7 +4195,7 @@ class TimeSeries:
                 logger,
             )
 
-        # read series dataframe
+        # read series DataFrame
         ts_df = self.to_dataframe(copy=False, suppress_warnings=True)
 
         # store some original attributes of the series
@@ -4265,7 +4333,7 @@ class TimeSeries:
                 drop_before_index:
             ]
 
-        # revert dataframe to TimeSeries
+        # revert DataFrame to TimeSeries
         new_index = original_index.__class__(resulting_transformations.index)
 
         if convert_hierarchy:
@@ -5933,7 +6001,7 @@ def concatenate(
     drop_hierarchy: bool = True,
     drop_metadata: bool = False,
 ):
-    """Concatenate multiple series along a given axis.
+    """Concatenates multiple series along a given axis.
 
     ``axis`` can be an integer in (0, 1, 2) to denote (time, component, sample) or, alternatively, a string denoting
     the corresponding dimension of the underlying ``DataArray``.
@@ -5968,6 +6036,9 @@ def concatenate(
     TimeSeries
         The concatenated series.
     """
+    if isinstance(series, TimeSeries):
+        series = [series]
+
     axis = TimeSeries._get_axis(axis)
     vals = [ts.all_values(copy=False) for ts in series]
 
@@ -6065,7 +6136,7 @@ def concatenate(
 
 
 def slice_intersect(series: Sequence[TimeSeries]) -> list[TimeSeries]:
-    """Return a list of series, where all series have been intersected along the time index.
+    """Returns a list of series, where all series have been intersected along the time index.
 
     Parameters
     ----------
@@ -6091,6 +6162,87 @@ def slice_intersect(series: Sequence[TimeSeries]) -> list[TimeSeries]:
         series_intersected.append(series_.slice_intersect(intersection))
 
     return series_intersected
+
+
+def to_group_dataframe(
+    series: Sequence[TimeSeries],
+    copy: bool = True,
+    backend: Union[ModuleType, Implementation, str] = Implementation.PANDAS,
+    time_as_index: bool = True,
+    suppress_warnings: bool = False,
+    add_static_covariates: Union[bool, str, list[str]] = True,
+    add_metadata: Union[bool, str, list[str]] = False,
+    add_group_col: Union[bool, str] = False,
+):
+    """Converts a sequence of `TimeSeries` into a long DataFrame representation.
+
+    It converts each series into individual DataFrames and then concatenates them row-wise into a long DataFrame
+    using the specified backend.
+
+    This is particularly useful when working with collections of time series that share a common schema
+    and need to be represented in a tabular format for downstream processing.
+
+    Parameters
+    ----------
+    series
+        A sequence of `TimeSeries` to convert into a long DataFrame.
+    copy
+        Whether to return a copy of the resulting DataFrame. Leave it to True unless you know what you are doing.
+    backend
+        The backend to which to export the `TimeSeries`. See the `narwhals documentation
+        <https://narwhals-dev.github.io/narwhals/api-reference/narwhals/#narwhals.from_dict>`__ for all supported
+        backends.
+    time_as_index
+        Whether to set the time index as the index of the DataFrame or in the left-most column.
+        Only effective with the pandas `backend`.
+    suppress_warnings
+        Whether to suppress warnings raised during the DataFrame creation.
+    add_static_covariates
+        Whether to add the series' static covariates to the resulting DataFrame (one column per component-static
+        covariate pair). If a bool, controls whether to add all static covariates or none. If a string, or list of
+        strings, specifies the subset of static covariate columns / names to add.
+    add_metadata
+        Whether to add the series' metadata to the resulting DataFrame (one column per metadata entry). If a bool,
+        controls whether to add all metadata entries or none. If a string, or list of strings, specifies the subset
+        of metadata keys / names to add.
+    add_group_col
+        Whether to add a integer group column to the resulting DataFrame that serves as a mapping between DataFrame
+        rows and their corresponding time series. If a bool, indicates whether to add a group column with the name
+        "group". If a string, adds a group column with the name being that string value.
+
+    Returns
+    -------
+    DataFrame
+        A long DataFrame representation of the input sequence of `TimeSeries` in the specified `backend`.
+    """
+
+    backend = Implementation.from_backend(backend)
+
+    if isinstance(series, TimeSeries):
+        series = [series]
+
+    df = []
+    group_col = add_group_col if isinstance(add_group_col, str) else "group"
+    for idx, series_ in enumerate(series):
+        df_ = series_.to_dataframe(
+            copy=copy,
+            backend=backend,
+            time_as_index=time_as_index,
+            suppress_warnings=suppress_warnings,
+            add_static_covariates=add_static_covariates,
+            add_metadata=add_metadata,
+        )
+        df_ = nw.from_native(df_)
+        if add_group_col:
+            df_ = df_.with_columns(nw.lit(idx).alias(group_col))
+        df.append(df_)
+
+    df = nw.concat(df).to_native()
+
+    # pandas keeps the row index of each df, reset it here if it does not represent the time index
+    if backend.is_pandas() and not time_as_index:
+        df.reset_index(inplace=True, drop=True)
+    return df
 
 
 def _finite_rows_boundaries(
