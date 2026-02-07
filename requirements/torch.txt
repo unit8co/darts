@@ -1,5 +1,0 @@
-pytorch-lightning>=2.0.0,<2.5.3
-tensorboardX>=2.1
-torch>=2.0.0
-huggingface-hub>=0.35.3
-safetensors>=0.6.2
