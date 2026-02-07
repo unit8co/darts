@@ -13,11 +13,11 @@ from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 
 from darts.logging import get_logger, raise_log
-from darts.models.forecasting.pl_forecasting_module import (
-    PLForecastingModule,
-)
+from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 
 logger = get_logger(__name__)
+
+from darts.models.forecasting.foundation_model import FoundationPLModule
 
 
 class HuggingFaceConnector:
@@ -109,10 +109,10 @@ class HuggingFaceConnector:
 
     def load_model(
         self,
-        module_class: type[PLForecastingModule],
+        module_class: type[FoundationPLModule],
         pl_module_params: dict,
         additional_params: Optional[dict] = None,
-    ) -> PLForecastingModule:
+    ) -> FoundationPLModule:
         """Load the model by creating an instance of the given module class and loading
         the weights. Some configuration files might contain external parameters that
         are not part of the module class constructor like `architectures`. They are filtered
@@ -140,7 +140,7 @@ class HuggingFaceConnector:
             **pl_module_params,
             **additional_params,
         )
-        self.load_model_weights(module)
+        self.load_model_weights(module.model)
         return module
 
     def _get_file_path(
