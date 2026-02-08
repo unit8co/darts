@@ -85,7 +85,7 @@ explicit = true  # Only use this index for packages explicitly configured to use
 zip-safe = false
 
 [tool.setuptools.packages.find]
-exclude = ["examples*", "datasets*", "docs*"]
+exclude = ["examples*", "datasets*", "docs*", "darts.tests*"]
 
 [tool.setuptools.package-data]
 darts = ["py.typed"]
@@ -149,7 +149,8 @@ dev = [
 torch-cpu = ["torch>=2.0.0"]
 optional = [
     "onnx>=1.20.1",
-    "onnxruntime>=1.23.2",
+    "onnxruntime>=1.24.1; python_version >= '3.11'",
+    "onnxruntime<1.24.1; python_version < '3.11'",  # 1.24.1 dropped python 3.10 support
     "optuna>=4.7.0",
     "optuna-integration[pytorch-lightning]>=4.7.0",
     "polars>=1.37.1",
