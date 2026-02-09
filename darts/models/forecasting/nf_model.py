@@ -3,26 +3,7 @@ NeuralForecastModel
 -------------------
 """
 
-from typing import Optional, TypedDict
-
-import torch
-from neuralforecast.common._base_model import BaseModel
-from neuralforecast.losses.pytorch import BasePointLoss
-
-from darts.logging import get_logger, raise_log
-from darts.models.forecasting.pl_forecasting_module import (
-    PLForecastingModule,
-    io_processor,
-)
-from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
-from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
-from darts.utils.likelihood_models.torch import TorchLikelihood
-
-logger = get_logger(__name__)
-
-
 """
-
 Throughout this file, we use the following notation for tensor shapes:
 
     SYMBOL: Darts / NeuralForecast definition
@@ -42,6 +23,22 @@ to see how these inputs are being built and used.
 
 We thus define the expected keys and their types below:
 """
+from typing import Optional, TypedDict
+
+import torch
+from neuralforecast.common._base_model import BaseModel
+from neuralforecast.losses.pytorch import BasePointLoss
+
+from darts.logging import get_logger, raise_log
+from darts.models.forecasting.pl_forecasting_module import (
+    PLForecastingModule,
+    io_processor,
+)
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data.torch_datasets.utils import PLModuleInput, TorchTrainingSample
+from darts.utils.likelihood_models.torch import TorchLikelihood
+
+logger = get_logger(__name__)
 
 
 class _WindowBatch(TypedDict):
