@@ -147,9 +147,6 @@ dev = [
     "testfixtures>=8.3.0",
 ]
 torch-cpu = ["torch>=2.0.0"]
-neuralforecast = [
-    "neuralforecast>=3.0.0",
-]
 optional = [
     "onnx>=1.20.1",
     "onnxruntime>=1.24.1; python_version >= '3.11'",
@@ -159,7 +156,8 @@ optional = [
     "polars>=1.37.1",
     "pydantic>=2.12.5",
     "ray>=2.53.0",
-    "plotly>=6.5.2"
+    "plotly>=6.5.2",
+    "neuralforecast>=3.0.0",
 ]
 release = [
     "bump-my-version>=1.2.5",
@@ -189,7 +187,6 @@ dev-all = [
     {include-group = "dev"},
     {include-group = "optional"},
     {include-group = "release"},
-    {include-group = "neuralforecast"},
     "darts[all]",
 ]
 
