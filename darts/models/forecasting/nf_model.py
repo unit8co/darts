@@ -303,16 +303,13 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             An instance of a `NeuralForecast` base model, e.g., ``KAN(input_size=..., h=...)``. Input and output chunk
             lengths are set to match ``input_size`` and ``h`` of the base model, respectively.
         output_chunk_shift
-            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
-            input chunk end). This will create a gap between the input and output. If the model supports
-            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
-            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
-            cannot generate autoregressive predictions (`n > output_chunk_length`). Default: `0`.
+            The number of steps to shift the start of the output chunk into the future (relative to the input
+            chunk end). This will create a gap between the input and output. Default: ``0``.
         use_static_covariates
             Whether to consider static covariates if supported by the base model. Default: `False`.
             See **Static covariates** section above for details and caveats.
         **kwargs
-            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Optional arguments to initialize the ``pytorch_lightning.Module``, ``pytorch_lightning.Trainer``, and
             Darts' :class:`TorchForecastingModel`.
 
         loss_fn
@@ -323,8 +320,8 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             A ``torchmetric.Metric`` or a ``MetricCollection`` used for evaluation. A full list of available metrics
             can be found `here <https://torchmetrics.readthedocs.io/en/latest/>`__. Default: ``None``.
         likelihood
-            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
-            probabilistic forecasts. Default: ``None``.
+            One of Darts' :meth:`TorchLikelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be
+            used for probabilistic forecasts. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
@@ -464,10 +461,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         >>> # create a NeuralForecast base model with `input_size` and `h` (forecast horizon)
         >>> nf_model = KAN(input_size=7, h=6)
         >>> # wrap it in `NeuralForecastModel`
-        >>> model = NeuralForecastModel(
-        >>>     model=nf_model,
-        >>>     n_epochs=20,
-        >>> )
+        >>> model = NeuralForecastModel(model=nf_model, n_epochs=20)
         >>> # fit and predict
         >>> model.fit(target, future_covariates=future_cov)
         >>> pred = model.predict(6)
@@ -481,6 +475,9 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         .. note::
             HINT is not supported as it is not a `NeuralForecast` base model.
+        .. note::
+            Recurrent `NeuralForecast` base models like ``GRU`` and ``LSTM`` are not supported. Many are, however,
+            natively implemented as :class:`RNNModel <darts.models.forecasting.rnn_model.RNNModel>` in Darts.
         .. note::
             Training-specific parameters of ``model`` such as ``loss``, ``learning_rate``, and ``hist_exog_list``
             will be ignored as Darts manages them via ``TorchForecastingModel`` APIs. Only architectural
