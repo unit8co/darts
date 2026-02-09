@@ -110,6 +110,23 @@ class _PLForecastingModule(PLForecastingModule):
         is_multivariate: bool,
         **kwargs,
     ):
+        """PyTorch Lightning module that wraps around the NeuralForecast model and
+        implements the :func:`forward()` API for Darts' ``PLForecastingModule``.
+
+        Parameters
+        ----------
+        nf_model
+            An instance of a NeuralForecast base model.
+        n_past_covs
+            Number of past covariate components (X).
+        n_future_covs
+            Number of future covariate components (F).
+        is_multivariate
+            Whether the NeuralForecast base model is multivariate (i.e., supports C >= 1 target components).
+        **kwargs
+            all parameters required for :class:`darts.models.forecasting.pl_forecasting_module.PLForecastingModule`
+            base class.
+        """
         super().__init__(**kwargs)
         self.nf = nf_model
         self.is_multivariate = is_multivariate
@@ -129,6 +146,23 @@ class _PLForecastingModule(PLForecastingModule):
 
     @io_processor
     def forward(self, x_in: PLModuleInput):
+        """PyTorch-native forward pass.
+
+        Parameters
+        ----------
+        x_in
+            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk, `x_future`
+            is the output/future chunk, and `x_static` is the static covariates.
+            Input dimensions are `(n_samples, n_time_steps, n_variables)` for `x_past` and `x_future`,
+            and `(n_samples, n_targets, n_static_covariates)` for `x_static`.
+
+        Returns
+        -------
+        torch.Tensor
+            the output tensor in the shape of `(n_samples, n_time_steps, n_targets, n_likelihood_params)`,
+            where `n_likelihood_params` is the number of parameters required by the likelihood model
+            (e.g., 2 for Gaussian likelihood with mean and variance) or 1 if no likelihood is specified.
+        """
         # unpack inputs
         # `x_past`: (B, L, C + X + F)
         # `x_future`: (B, H, F)
@@ -242,10 +276,10 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         - **Static covariates**: Supported only if the base model supports exogenous static variables:
 
-          - To enable support, simply set ``use_static_covariates=True``.
+          - Simply set ``use_static_covariates=True``.
 
           - For multivariate base models, `NeuralForecast` requires static covariates to be the same across time
-            series, but may be different across target components.
+            series, but may be different across target components. See the warning below for recommendations.
 
           - For univariate base models, static covariates can be different across time series.
 
@@ -268,7 +302,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             An instance of a `NeuralForecast` base model, e.g., ``KAN(input_size=..., h=...)``. Input and output chunk
             lengths are set to match ``input_size`` and ``h`` of the base model, respectively.
         output_chunk_shift
-            Must be set to 0 as `NeuralForecast` base models do not use output chunk shift. Default: `0`.
+            Must be 0 as `NeuralForecast` base models do not use output chunk shift. Default: `0`.
         use_static_covariates
             Whether to consider static covariates if supported by the base model. Default: `False`.
             See **Static covariates** section above for details and caveats.
@@ -411,6 +445,35 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
                 Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
 
+        Examples
+        --------
+        >>> from neuralforecast.models import KAN
+        >>> from darts.datasets import WeatherDataset
+        >>> from darts.models import NeuralForecastModel
+        >>> # load the dataset
+        >>> series = WeatherDataset().load().astype("float32")
+        >>> # predicting temperatures
+        >>> target = series['T (degC)'][:100]
+        >>> # optionally, use future atmospheric pressure (pretending this component is a forecast)
+        >>> future_cov = series['p (mbar)'][:106]
+        >>> # create a NeuralForecast base model with `input_size` and `h` (forecast horizon)
+        >>> nf_model = KAN(input_size=7, h=6)
+        >>> # wrap it in `NeuralForecastModel`
+        >>> model = NeuralForecastModel(
+        >>>     model=nf_model,
+        >>>     n_epochs=20,
+        >>> )
+        >>> # fit and predict
+        >>> model.fit(target, future_covariates=future_cov)
+        >>> pred = model.predict(6)
+        >>> print(pred.values())
+        [[ 1.6961709 ]
+        [-2.4282002 ]
+        [-0.01969378]
+        [ 3.3592758 ]
+        [-0.8043982 ]
+        [-2.2625582 ]]
+
         .. note::
             HINT is not supported as it is not a `NeuralForecast` base model.
         .. note::
@@ -419,13 +482,14 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             parameters, ``input_size``, and ``h`` in ``model`` are relevant and used.
         .. note::
             Under the hood, a new base model instance will be created with the relevant parameters from ``model``.
-            That means that ``model`` itself will not be trained or updated. Use :func:`nf_model()` to access the
-            base model instance that is being trained.
+            That means that ``model`` itself will not be trained or updated.
+            Use :func:`nf_model` to access the new base model instance.
         .. warning::
-            When static covariates are enabled for a multivariate base model, Darts will use the static covariates of
-            the first sample in each batch for compatibility. This may cause issues if you have multiple time series
-            with different static covariates. Please consider setting ``use_static_covariates=False`` to disable support
-            or setting ``batch_size=1`` to ensure that each batch only contains one time series.
+            For compatibility, when static covariates are enabled for a multivariate base model, Darts will use the
+            static covariates of the first sample in each batch as the static covariates for the entire batch.
+            This may cause issues if you have multiple time series with different static covariates.
+            Please consider setting ``use_static_covariates=False`` to disable support or
+            setting ``batch_size=1`` to ensure that each batch only contains one time series.
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
@@ -434,6 +498,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         # assign input/output chunk lengths
         self.pl_module_params["input_chunk_length"] = model.input_size
         self.pl_module_params["output_chunk_length"] = model.h
+        # TODO: support `output_chunk_shift` > 0
         # NeuralForecast models do not use output_chunk_shift
         if output_chunk_shift > 0:
             raise_log(
@@ -447,7 +512,9 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         self.nf_model_class = model.__class__
         self.nf_model_params = dict(model.hparams)
-        self._validate_nf_model_params()
+        self._validate_nf_model_params(
+            self.pl_module_params.get("use_reversible_instance_norm", False)
+        )
 
         if self.nf_model_class.RECURRENT:
             raise_log(
@@ -468,7 +535,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         # consider static covariates if supported by `nf_model_class`
         self._considers_static_covariates = use_static_covariates
 
-    def _validate_nf_model_params(self) -> None:
+    def _validate_nf_model_params(self, use_reversible_instance_norm: bool) -> None:
         ignored_params_in_use = IGNORED_NF_MODEL_PARAM_NAMES.intersection(
             self.nf_model_params.keys()
         )
@@ -480,6 +547,14 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             )
             for param in ignored_params_in_use:
                 self.nf_model_params.pop(param)
+        if self.nf_model_params.get("use_norm", False) and use_reversible_instance_norm:
+            logger.warning(
+                "NeuralForecast model's `use_norm=True` is incompatible with "
+                "PLForecastingModule's `use_reversible_instance_norm=True` since they"
+                "both apply normalization to the target series. Disabling `use_norm` "
+                "to avoid potential issues."
+            )
+            self.nf_model_params["use_norm"] = False
 
     def _create_model(self, train_sample: TorchTrainingSample) -> PLForecastingModule:
         # unpack train sample
