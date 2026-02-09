@@ -66,9 +66,9 @@ IGNORED_NF_MODEL_PARAM_NAMES = {
     "inference_windows_batch_size",
     "start_padding_enabled",
     "training_data_availability_threshold",
-    "n_series",  # TODO: manage internally
+    "n_series",
     "n_samples",
-    "h_train",  # TODO: check if this should be ignored
+    "h_train",
     "inference_input_size",
     "step_size",
     "num_lr_decays",
@@ -108,10 +108,12 @@ class _PLForecastingModule(PLForecastingModule):
         nf_model: _NFModel,
         n_past_covs: int,
         n_future_covs: int,
+        is_multivariate: bool,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.nf = nf_model
+        self.is_multivariate = is_multivariate
         self.past_slice = (
             slice(self.n_targets, self.n_targets + n_past_covs)
             if n_past_covs > 0
@@ -131,25 +133,61 @@ class _PLForecastingModule(PLForecastingModule):
         # unpack inputs
         # `x_past`: (B, L, C + X + F)
         # `x_future`: (B, H, F)
-        # `x_static`: (B, S)
+        # `x_static`: (B, C, S)
         x_past, x_future, x_static = x_in
 
         # build window_batch dict expected by `nf.forward()`
-        # Expacted shapes in the univariate case (C=1):
-        # `insample_y`: (B, L, C)
-        # `insample_mask`: (B, L)
-        # `hist_exog`: (B, L, X) or None
-        # `futr_exog`: (B, L + H, F) or None
-        # `stat_exog`: (B, C * S) or None
+        # Expected shapes in the univariate case (C=1):
+        # - `insample_y`: (B, L, C)
+        # - `insample_mask`: (B, L)
+        # - `hist_exog`: (B, L, X) or None
+        # - `futr_exog`: (B, L + H, F) or None
+        # - `stat_exog`: (B, C * S) or None
+        # Expected shapes in the multivariate case (C >= 1):
+        # - `insample_y`: (B, L, C)
+        # - `insample_mask`: (B, L)
+        # - `hist_exog`: (B, X, L, C) or None
+        # - `futr_exog`: (B, F, L + H, C) or None
+        # - `stat_exog`: (C, S) or None
+
         insample_y = x_past[:, :, : self.n_targets]
         insample_mask = torch.ones_like(x_past[:, :, 0])
         hist_exog, futr_exog, stat_exog = None, None, None
+
+        # process past covariates if supported and provided
         if self.past_slice is not None:
+            # `hist_exog`: (B, L, X)
             hist_exog = x_past[:, :, self.past_slice]
+            if self.is_multivariate:
+                # -> (B, X, L, 1)
+                hist_exog = hist_exog.transpose(1, 2).unsqueeze(-1)
+                # -> (B, X, L, C)
+                hist_exog = hist_exog.repeat(1, 1, 1, self.n_targets)
+
+        # process future covariates if supported and provided
         if x_future is not None:
+            # `futr_exog`: (B, L + H, F)
             futr_exog = torch.cat([x_past[:, :, self.future_slice], x_future], dim=1)
+            if self.is_multivariate:
+                # -> (B, F, L + H, 1)
+                futr_exog = futr_exog.transpose(1, 2).unsqueeze(-1)
+                # -> (B, F, L + H, C)
+                futr_exog = futr_exog.repeat(1, 1, 1, self.n_targets)
+
+        # process static covariates if supported and provided
         if x_static is not None:
-            stat_exog = x_static.squeeze(1)
+            if self.is_multivariate:
+                # `stat_exog`: (B, C, S) -> (C, S)
+                # For multivariate models, NeuralForecast expects `stat_exog` to be of
+                # shape (C, S) and shared across the batch dimension,
+                # but Darts provides them in shape (B, C, S).
+                # Here, we assume that static covariates are the same across each sample
+                # in the batch and simply take the first sample's static covariates.
+                stat_exog = x_static[0]
+            else:
+                # `stat_exog`: (B, C * S) [C=1]
+                stat_exog = x_static.squeeze(1)
+
         window_batch = _WindowBatch(
             insample_y=insample_y,
             insample_mask=insample_mask,
@@ -184,7 +222,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
     def __init__(
         self,
         model: BaseModel,
-        use_static_covariates: bool = True,
+        use_static_covariates: bool = False,
         **kwargs,
     ):
         super().__init__(**self._extract_torch_model_params(**self.model_params))
@@ -208,12 +246,13 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
                 ),
                 logger,
             )
-        if self.nf_model_class.MULTIVARIATE:
-            raise_log(
-                NotImplementedError(
-                    "Multivariate NeuralForecast models are currently not supported."
-                ),
-                logger,
+        if self.supports_multivariate and use_static_covariates:
+            logger.warning(
+                "Multivariate NeuralForecast models require static covariates to be the same "
+                "across time series, but may be different across target components. "
+                "If you have multiple time series, setting `use_static_covariates=True` "
+                "will use the static covariates of the first sample in each batch, instead of "
+                "providing different static covariates per time series."
             )
 
         # consider static covariates if supported by `nf_model_class`
@@ -252,11 +291,11 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
         # validate number of target components
         n_targets = future_target.shape[1]
-        if n_targets != 1:
+        if n_targets != 1 and not self.supports_multivariate:
             raise_log(
                 ValueError(
-                    f"NeuralForecastModel currently only supports univariate targets. "
-                    f"Found {n_targets} target components."
+                    f"The provided {self.nf_model_class.__name__} is a univariate model "
+                    f"but the target has {n_targets} component(s)."
                 ),
                 logger,
             )
@@ -274,7 +313,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             n_past_covs = past_covariates.shape[1]
             hist_exog_list = build_exog_list("hist_exog", n_past_covs)
         if static_covariates is not None:
-            n_stat_covs = static_covariates.size
+            n_stat_covs = static_covariates.shape[1]
             stat_exog_list = build_exog_list("stat_exog", n_stat_covs)
 
         # set loss to pseudo loss with correct number of likelihood parameters
@@ -284,7 +323,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         nf_model = self.nf_model_class(
             **self.nf_model_params,
             loss=loss,
-            n_series=1,  # TODO: multivariate support
+            n_series=n_targets,
             futr_exog_list=futr_exog_list,
             hist_exog_list=hist_exog_list,
             stat_exog_list=stat_exog_list,
@@ -295,8 +334,13 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             nf_model=nf_model,  # pyright: ignore[reportArgumentType]
             n_past_covs=n_past_covs,
             n_future_covs=n_future_covs,
+            is_multivariate=self.supports_multivariate,
             **pl_module_params,
         )
+
+    @property
+    def supports_multivariate(self) -> bool:
+        return self.nf_model_class.MULTIVARIATE
 
     @property
     def supports_past_covariates(self) -> bool:
