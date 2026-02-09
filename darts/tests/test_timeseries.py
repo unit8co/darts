@@ -1582,7 +1582,7 @@ class TestTimeSeries:
 
         # using offset to avoid nan in the first value
         times = pd.date_range(
-            start=pd.Timestamp("20200101233000"), periods=10, freq="15" + "min"
+            start=pd.Timestamp("20200101233000"), periods=10, freq="15min"
         )
         pd_series = pd.Series(range(10), index=times)
         timeseries = TimeSeries.from_series(pd_series)

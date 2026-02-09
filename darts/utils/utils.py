@@ -16,7 +16,6 @@ import numpy as np
 import pandas as pd
 from joblib import Parallel, delayed
 from narwhals import DataFrame
-from packaging import version
 from pandas._libs.tslibs.offsets import BusinessMixin
 from sklearn.utils import check_random_state
 from tqdm import tqdm
@@ -37,8 +36,6 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
-
-PANDAS_30_OR_GREATER = version.parse(pd.__version__) >= version.parse("3.0.0")
 
 logger = get_logger(__name__)
 
@@ -513,14 +510,14 @@ def infer_freq_intersection(
 
     if isinstance(freq, int):
         # e.g. (4, 1), (24, 3)
-        n_self, n_other = freq, other
+        n_freq, n_other = freq, other
     elif freq.base == other.base:
         # e.g. (4W-MON, W-MON), (24h, 3h); frequency with the same base frequency
-        n_self, n_other = freq.n, other.n
+        n_freq, n_other = freq.n, other.n
     else:
         try:
             # e.g. (4D, 2h), (24h, 3min); only frequency with constant / fixed period
-            n_self, n_other = freq.nanos, other.nanos
+            n_freq, n_other = freq.nanos, other.nanos
         except ValueError as exc:
             # e.g. (W-MON, MS, ...); frequencies with non-fixed period
             raise_log(
@@ -529,7 +526,7 @@ def infer_freq_intersection(
                 ),
                 logger=logger,
             )
-    return freq * (math.lcm(n_self, n_other) // n_self)
+    return freq * (math.lcm(n_freq, n_other) // n_freq)
 
 
 def generate_index(
@@ -589,13 +586,11 @@ def generate_index(
         freq = "D" if freq is None else freq
         freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
 
-        freq.rollforward(start)
-
         if start is not None:
-            # roll `start` so that it intersects with `freq`:
+            # roll `start` so that it intersects with `freq`
             start = freq.rollforward(start) if freq.n >= 0 else freq.rollback(start)
         elif end is not None:
-            # roll `end` so that it intersects with `freq`:
+            # roll `end` so that it intersects with `freq`
             end = freq.rollback(end) if freq.n >= 0 else freq.rollforward(end)
 
         index = pd.date_range(

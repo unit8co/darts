@@ -7,6 +7,7 @@ import narwhals as nw
 import numpy as np
 import pandas as pd
 import pytest
+from packaging import version
 
 from darts import TimeSeries, concatenate, to_group_dataframe
 from darts.dataprocessing.transformers import BoxCox, Scaler
@@ -17,7 +18,7 @@ from darts.timeseries import (
     STATIC_COV_TAG,
 )
 from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.utils import PANDAS_30_OR_GREATER, generate_index
+from darts.utils.utils import generate_index
 
 TEST_BACKENDS = ["pandas"]
 
@@ -27,6 +28,8 @@ if POLARS_AVAILABLE:
     TEST_BACKENDS.append("polars")
 else:
     pl = None
+
+PANDAS_30_OR_GREATER = version.parse(pd.__version__) >= version.parse("3.0.0")
 
 
 def setup_test_case():
