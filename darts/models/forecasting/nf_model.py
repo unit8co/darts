@@ -263,7 +263,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
 
           - For multivariate base models, you should set ``n_series`` in the base model to an arbitrary
             positive integer as it is required by `NeuralForecast`,
-            e.g., ``model=TSMixerx(input_size=..., h=..., n_series=...)``.
+            e.g., ``model=TSMixerx(input_size=..., h=..., n_series=1)``.
             However, it will be overridden internally by Darts when fitting to match the number of target components.
 
         - **Multivariate forecasting**: Supported only if the base model is multivariate.
@@ -293,13 +293,21 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
           - Simply set ``likelihood`` to a :meth:`TorchLikelihood <darts.utils.likelihood_models.torch.TorchLikelihood>`
             instance to be used for probabilistic forecasting.
 
+        - **Output chunk shift**: Supported for any base model, univariate or multivariate.
+
+          - Simply set ``output_chunk_shift`` to create a time gap between the input and output.
+
         Parameters
         ----------
         model
             An instance of a `NeuralForecast` base model, e.g., ``KAN(input_size=..., h=...)``. Input and output chunk
             lengths are set to match ``input_size`` and ``h`` of the base model, respectively.
         output_chunk_shift
-            Must be 0 as `NeuralForecast` base models do not use output chunk shift. Default: `0`.
+            Optionally, the number of steps to shift the start of the output chunk into the future (relative to the
+            input chunk end). This will create a gap between the input and output. If the model supports
+            `future_covariates`, the future values are extracted from the shifted output chunk. Predictions will start
+            `output_chunk_shift` steps after the end of the target `series`. If `output_chunk_shift` is set, the model
+            cannot generate autoregressive predictions (`n > output_chunk_length`). Default: `0`.
         use_static_covariates
             Whether to consider static covariates if supported by the base model. Default: `False`.
             See **Static covariates** section above for details and caveats.
@@ -495,17 +503,16 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         # assign input/output chunk lengths
         self.pl_module_params["input_chunk_length"] = model.input_size
         self.pl_module_params["output_chunk_length"] = model.h
-        # TODO: support `output_chunk_shift` > 0
-        # NeuralForecast models do not use output_chunk_shift
+        # NeuralForecast models do not use `output_chunk_shift`, but we still allow users
+        # to set it to create a time gap. From the base model's perspective, it is trained
+        # to predict the shifted output chunk as if it immediately follows the input chunk.
         if output_chunk_shift > 0:
-            raise_log(
-                ValueError(
-                    "NeuralForecast models do not use `output_chunk_shift`. "
-                    "Please set `output_chunk_shift=0` when initializing `NeuralForecastModel`."
-                ),
-                logger,
+            logger.warning(
+                f"NeuralForecast base models natively do not use `output_chunk_shift`. "
+                f"Setting `output_chunk_shift={output_chunk_shift}` will create a time gap "
+                f"that is imperceptible to the base model. The model is trained to predict "
+                f"the shifted output chunk as if it immediately follows the input chunk."
             )
-        self.pl_module_params["output_chunk_shift"] = 0
 
         self.nf_model_class = model.__class__
         self.nf_model_params = dict(model.hparams)
