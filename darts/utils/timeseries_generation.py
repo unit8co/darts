@@ -4,7 +4,8 @@ Utils for TimeSeries generation
 """
 
 from collections.abc import Sequence
-from typing import Any, Callable, Optional, Union
+from datetime import tzinfo
+from typing import Any, Callable, Optional, TypeAlias, Union
 
 import holidays
 import numpy as np
@@ -20,6 +21,8 @@ from darts.timeseries import (
     TimeSeries,
 )
 from darts.utils.utils import generate_index
+
+TimeZones: TypeAlias = str | tzinfo | None | int
 
 logger = get_logger(__name__)
 
@@ -483,7 +486,7 @@ def holidays_timeseries(
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
     dtype: np.dtype = np.float64,
-    tz: Optional[str] = None,
+    tz: TimeZones = None,
 ) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
@@ -512,7 +515,8 @@ def holidays_timeseries(
     dtype
         The desired NumPy dtype (np.float32 or np.float64) for the resulting series.
     tz
-        Optionally, a time zone to convert the time index to before generating the holidays.
+        Optionally, a time zone to convert the time index before computing attributes,
+        using a string, an integer time zone offset, or a tzinfo object from datetime.
 
     Returns
     -------
@@ -549,7 +553,7 @@ def datetime_attribute_timeseries(
     add_length: int = 0,
     dtype=np.float64,
     with_columns: Optional[Union[list[str], str]] = None,
-    tz: Optional[str] = None,
+    tz: TimeZones = None,
 ) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
@@ -590,7 +594,8 @@ def datetime_attribute_timeseries(
         - If `one_hot` is ``True``, must be a list of strings of the same length as the generated one hot encoded
           features.
     tz
-        Optionally, a time zone to convert the time index to before computing the attributes.
+        Optionally, a time zone to convert the time index before computing attributes,
+        using a string, an integer time zone offset, or a tzinfo object from datetime.
 
     Returns
     -------
@@ -900,7 +905,7 @@ def _generate_new_dates(
 
 def _process_time_index(
     time_index: Union[TimeSeries, pd.DatetimeIndex],
-    tz: Optional[str] = None,
+    tz: TimeZones = None,
     until: Optional[Union[int, str, pd.Timestamp]] = None,
     add_length: int = 0,
 ) -> tuple[pd.DatetimeIndex, pd.DatetimeIndex]:
