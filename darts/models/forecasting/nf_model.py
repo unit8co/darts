@@ -474,10 +474,12 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         [-2.2625582 ]]
 
         .. note::
-            HINT is not supported as it is not a `NeuralForecast` base model.
-        .. note::
-            Recurrent `NeuralForecast` base models like ``GRU`` and ``LSTM`` are not supported. Many are, however,
-            natively implemented as :class:`RNNModel <darts.models.forecasting.rnn_model.RNNModel>` in Darts.
+            The following `NeuralForecast` models are not supported:
+              - Core ``NeuralForecast`` class which is a combination of multiple base models.
+              - Automatic models like ``AutoInformer`` and ``AutoMLP`` which are not base models.
+              - ``HINT`` model which is not a base model.
+              - Recurrent base models like ``GRU`` and ``LSTM``. Many are, however, natively implemented
+                as :class:`RNNModel <darts.models.forecasting.rnn_model.RNNModel>` in Darts.
         .. note::
             Training-specific parameters of ``model`` such as ``loss``, ``learning_rate``, and ``hist_exog_list``
             will be ignored as Darts manages them via ``TorchForecastingModel`` APIs. Only architectural
