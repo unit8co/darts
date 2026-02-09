@@ -536,62 +536,72 @@ class TestTimeSeries:
 
     @pytest.mark.parametrize(
         "config",
-        list(
-            itertools.product(
-                [
-                    (1, 1, 1),  # integer step
-                    (1, 2, 2),
-                    (3, 4, 12),
-                    ("h", "h", "h"),  # same freq base (with fixed period)
-                    ("h", "2h", "2h"),
-                    ("3h", "4h", "12h"),
-                    ("D", "D", "D"),  # same freq base (with fixed period)
-                    ("D", "2D", "2D"),
-                    ("3D", "4D", "12D"),
-                    ("W-MON", "W-MON", "W-MON"),  # same freq base (no fixed period)
-                    ("W-MON", "2W-MON", "2W-MON"),
-                    ("3W-MON", "4W-MON", "12W-MON"),
-                    ("2MS", "11MS", "22MS"),
-                    (
-                        "h",
-                        "D",
-                        "24h",
-                    ),  # mixed bases but with fixed period (returns multiple of first freq)
-                    ("D", "24h", "D"),
-                    ("3h", "D", "24h"),
-                    ("3h", "33min", "33h"),
-                    ("33min", "3h", "1980min"),
-                    (
-                        "D1h",
-                        "4h",
-                        "100h",
-                    ),  # "D1h" gets converted to "25h" -> result in "100h"
-                    ("4h", "D1h", "100h"),
-                    (
-                        "7D",
-                        "W-MON",
-                        "raises",
-                    ),  # otherwise, raises with at least one non-fixed freq
-                    ("W-MON", "W-TUE", "raises"),
-                    ("h", "MS", "raises"),
-                    ("B", "1h", "raises"),
-                ],
-                [1, 2, 3],
-            )
-        )[3:4],
+        itertools.product(
+            [
+                (False, 1, 1, 1),  # integer step
+                (False, 1, 2, 2),
+                (False, 3, 4, 12),
+                (False, "h", "h", "h"),  # same freq base (with fixed period)
+                (False, "h", "2h", "2h"),
+                (False, "3h", "4h", "12h"),
+                (False, "D", "D", "D"),  # same freq base (with fixed period)
+                (False, "D", "2D", "2D"),
+                (False, "3D", "4D", "12D"),
+                (False, "W-MON", "W-MON", "W-MON"),  # same freq base (no fixed period)
+                (False, "W-MON", "2W-MON", "2W-MON"),
+                (False, "3W-MON", "4W-MON", "12W-MON"),
+                (
+                    False,
+                    "h",
+                    "D",
+                    "24h",
+                ),  # mixed bases but with fixed period (returns multiple of first freq)
+                (False, "D", "24h", "D"),
+                (False, "3h", "D", "24h"),
+                (False, "3h", "33min", "33h"),
+                (False, "33min", "3h", "1980min"),
+                (
+                    False,
+                    "D1h",
+                    "4h",
+                    "100h",
+                ),  # "D1h" gets converted to "25h" -> result in "100h"
+                (False, "4h", "D1h", "100h"),
+                (
+                    False,
+                    "W-MON",
+                    "7D",
+                    "W-MON",
+                ),  # otherwise, raises with at least one non-fixed freq
+                (True, "h", "MS", "MS"),
+                (True, "B", "1h", "B"),
+            ],
+            [1, 2, 3],
+        ),
     )
     def test_intersect_more_freqs(self, config):
         """Tests slice intersection between two series with datetime or range index with identical and
         mixed frequencies."""
 
-        (freq, other, expected), n_intersection = config
+        (will_raise, freq, other, expected), n_intersection = config
         # generate the intersecting indices
         if isinstance(freq, int):
-            index_freq = pd.RangeIndex(start=0, stop=freq * 1000, step=freq)
-            index_other = pd.RangeIndex(start=0, stop=other * 1000, step=other)
+            start = 0
+            end = start + (n_intersection - 1) * expected
+            index_freq = pd.RangeIndex(start=start, stop=end + 1, step=freq)
+            index_other = pd.RangeIndex(start=start, stop=end + 1, step=other)
         else:
-            index_freq = pd.date_range("2000-01-01", periods=1000, freq=freq)
-            index_other = pd.date_range("2000-01-01", periods=1000, freq=other)
+            freq_expected = pd.tseries.frequencies.to_offset(expected)
+            # apply trick to resample a timestamp to the desired frequency
+            start = (
+                pd.Series(index=[pd.Timestamp("2000-01-01")])
+                .resample(freq_expected)
+                .mean()
+                .index[0]
+            )
+            end = start + (n_intersection - 1) * freq_expected
+            index_freq = pd.date_range(start=start, end=end, freq=freq)
+            index_other = pd.date_range(start=start, end=end, freq=other)
 
         # pandas can natively infer the frequency with at least 3 entries
         intersection_working = index_freq.intersection(index_other)[:n_intersection]
@@ -612,13 +622,17 @@ class TestTimeSeries:
             times=index_other,
             values=np.arange(len(index_other)),
         )
-        if expected == "raises" and n_intersection < 3:
+        if will_raise and n_intersection == 2:
             with pytest.raises(ValueError, match=""):
                 _ = ts_freq.slice_intersect(ts_other)
         else:
             ts_intersection = ts_freq.slice_intersect(ts_other)
             assert len(ts_intersection) == n_intersection
-            assert ts_intersection.freq == expected
+            if n_intersection == 1:
+                # pandas wrongly picks the left frequency, instead of the least common multiple
+                assert ts_intersection.freq == freq
+            else:
+                assert ts_intersection.freq == expected
 
     def test_shift(self):
         helper_test_shift(self.series1)
