@@ -16,7 +16,7 @@ from darts.utils.data.tabularization import (
     create_lagged_training_data,
 )
 from darts.utils.timeseries_generation import linear_timeseries
-from darts.utils.utils import freqs, generate_index, n_steps_between
+from darts.utils.utils import generate_index, n_steps_between
 
 
 def helper_create_multivariate_linear_timeseries(
@@ -1142,7 +1142,7 @@ class TestCreateLaggedTrainingData:
         itertools.product(
             [0, 1, 3],
             [False, True],
-            list(itertools.product(["datetime"], ["D", "2D", freqs["ms"], freqs["YE"]]))
+            list(itertools.product(["datetime"], ["D", "2D", "ms", "YE"]))
             + list(itertools.product(["integer"], [1, 2])),
         ),
     )

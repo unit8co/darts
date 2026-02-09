@@ -16,7 +16,7 @@ from darts import TimeSeries
 from darts.logging import get_logger
 from darts.models import Prophet
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import freqs, generate_index
+from darts.utils.utils import generate_index
 
 logger = get_logger(__name__)
 
@@ -80,24 +80,24 @@ class TestProphet:
         perform_full_test = False
 
         test_cases_all = {
-            freqs["YE"]: 12,
+            "YE": 12,
             "W": 7,
-            freqs["BME"]: 12,
+            "BME": 12,
             "C": 5,
             "D": 7,
             "MS": 12,
             "B": 5,
-            freqs["h"]: 24,
-            freqs["bh"]: 8,
-            freqs["QE"]: 4,
-            freqs["min"]: 60,
-            freqs["s"]: 60,
-            "30" + freqs["s"]: 60,
-            "24" + freqs["min"]: 60,
+            "h": 24,
+            "bh": 8,
+            "QE": 4,
+            "min": 60,
+            "s": 60,
+            "30" + "s": 60,
+            "24" + "min": 60,
         }
 
         test_cases_fast = {
-            key: test_cases_all[key] for key in ["MS", "D", freqs["h"]]
+            key: test_cases_all[key] for key in ["MS", "D", "h"]
         }  # monthly, daily, hourly
 
         self.helper_test_freq_coversion(test_cases_all)
@@ -182,8 +182,7 @@ class TestProphet:
 
         assert (
             abs(
-                Prophet._freq_to_days(freq="30" + freqs["s"])
-                - 30 * Prophet._freq_to_days(freq=freqs["s"])
+                Prophet._freq_to_days(freq="30s") - 30 * Prophet._freq_to_days(freq="s")
             )
             < 10e-9
         )

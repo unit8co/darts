@@ -14,8 +14,6 @@ from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
-# Those freqs can be used to divide Time deltas (the others can't):
-DIVISIBLE_FREQS = {"D", "h", "H", "T", "min", "s", "S", "L", "ms", "U", "us", "N", "ns"}
 # supported built-in sample weight generators for regression and torch models
 SUPPORTED_SAMPLE_WEIGHT = {"linear", "exponential"}
 
