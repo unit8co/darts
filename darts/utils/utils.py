@@ -671,39 +671,6 @@ def generate_index(
     return index
 
 
-def get_lower_frequency(
-    freq: Union[int, pd.tseries.offsets.DateOffset],
-    other: Union[int, pd.tseries.offsets.DateOffset],
-) -> Union[int, pd.tseries.offsets.DateOffset]:
-    """Returns the lower (larger period) frequency between `freq` and `other`.
-
-    Parameters
-    ----------
-    freq
-        The first frequency.
-    other
-        The other frequency.
-    """
-    if freq == other:
-        return freq
-
-    # frequency represents a non-ambiguous timedelta value (not ‘M’, ‘Y’ or ‘y’, 'W'), or integer step
-    # simply get the max
-    if isinstance(freq, int) or (
-        pd.to_timedelta(freq, errors="coerce") is not pd.NaT
-        and pd.to_timedelta(other, errors="coerce") is not pd.NaT
-    ):
-        return min(freq, other)
-
-    # otherwise, find the lower frequency by comparing the number of steps between two arbitrary points for each
-    # frequency
-    freq_steps = 4
-    start = pd.Timestamp("2000-01-01")
-    end = start + freq_steps * freq
-    other_steps = n_steps_between(end=end, start=start, freq=other)
-    return freq if other_steps > freq_steps else other
-
-
 def expand_arr(arr: np.ndarray, ndim: int):
     """Expands a np.ndarray to `ndim` dimensions (if not already satisfied)."""
     shape = arr.shape

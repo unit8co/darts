@@ -2758,7 +2758,7 @@ class TimeSeries:
             time_index = self.time_index.intersection(other.time_index)
             # frequency is lost when len(time_index) < 3
             if (
-                len(time_index) > 0
+                0 < len(time_index) < 3
                 and isinstance(time_index, pd.DatetimeIndex)
                 and time_index.freq is None
             ):

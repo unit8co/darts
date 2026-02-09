@@ -628,7 +628,9 @@ class TestTimeSeries:
         else:
             ts_intersection = ts_freq.slice_intersect(ts_other)
             assert len(ts_intersection) == n_intersection
-            if n_intersection == 1:
+            if n_intersection == 3 and expected == "24h":
+                assert ts_intersection.freq == "D"
+            elif n_intersection == 1:
                 # pandas wrongly picks the left frequency, instead of the least common multiple
                 assert ts_intersection.freq == freq
             else:

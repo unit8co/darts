@@ -650,45 +650,29 @@ class Prophet(FutureCovariatesLocalForecastingModel):
 
         seconds_per_day = 86400
         days = 0
-        if freq in ["YE", "YS", "BYE", "BYS", "RE"] or freq.startswith((
-            "YE",
-            "YS",
-            "BYE",
-            "BYS",
+        if freq.startswith((
+            "Y",
+            "BY",
             "RE",
         )):  # year
             days = 365.25
-        elif freq in ["QE", "BQE", "QS", "BQS", "REQ"] or freq.startswith((
-            "QE",
-            "BQE",
-            "QS",
-            "BQS",
+        elif freq.startswith((
+            "Q",
+            "BQ",
             "REQ",
         )):  # quarter
             days = 3 * 30.4375
-        elif freq in [
-            "ME",
-            "BME",
-            "CBME",
-            "MS",
-            "BMS",
-            "CBMS",
-            "WOM",
-            "LWOM",
-        ] or freq.startswith((
-            "ME",
-            "BME",
-            "CBME",
-            "MS",
-            "BMS",
-            "CBMS",
+        elif freq.startswith((
+            "M",
+            "BM",
+            "CBM",
             "WOM",
             "LWOM",
         )):  # month
             days = 30.4375
-        elif freq in ["SME", "SMS"] or freq.startswith(("SME", "SMS")):  # semi-month
+        elif freq.startswith("SM"):  # semi-month
             days = 30.4375 / 2
-        elif freq == "W" or freq.startswith("W-"):  # week
+        elif freq.startswith("W"):  # week
             days = 7.0
         elif freq in ["B", "C"]:  # business day
             days = 1 * 7 / 5
