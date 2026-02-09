@@ -7,6 +7,7 @@ import narwhals as nw
 import numpy as np
 import pandas as pd
 import pytest
+from packaging import version
 
 from darts import TimeSeries, concatenate, to_group_dataframe
 from darts.dataprocessing.transformers import BoxCox, Scaler
@@ -27,6 +28,8 @@ if POLARS_AVAILABLE:
     TEST_BACKENDS.append("polars")
 else:
     pl = None
+
+PANDAS_30_OR_GREATER = version.parse(pd.__version__) >= version.parse("3.0.0")
 
 
 def setup_test_case():
@@ -789,9 +792,11 @@ class TestTimeSeriesStaticCovariate:
         assert (ts.static_covariates_values(copy=False) != -1.0).all()
 
         # changing values of view should change original DataFrame
-        vals = ts.static_covariates_values(copy=False)
-        vals[:] = -1.0
-        assert (ts.static_covariates_values(copy=False) == -1.0).all()
+        # In pandas 3.0+, DataFrame.values returns a read-only array
+        if not PANDAS_30_OR_GREATER:
+            vals = ts.static_covariates_values(copy=False)
+            vals[:] = -1.0
+            assert (ts.static_covariates_values(copy=False) == -1.0).all()
 
         ts = ts.with_static_covariates(None)
         assert ts.static_covariates is None

@@ -10,7 +10,6 @@ from darts import TimeSeries
 from darts import concatenate as darts_concat
 from darts.dataprocessing.transformers import Diff
 from darts.utils.timeseries_generation import linear_timeseries, sine_timeseries
-from darts.utils.utils import freqs
 
 
 class TestDiff:
@@ -271,7 +270,7 @@ class TestDiff:
         )
         series2 = TimeSeries.from_times_and_values(
             values=vals,
-            times=pd.date_range(start="1/1/2018", freq=freqs["ME"], periods=10),
+            times=pd.date_range(start="1/1/2018", freq="ME", periods=10),
         )
         diff = Diff(lags=1, dropna=True)
         diff.fit(series1)

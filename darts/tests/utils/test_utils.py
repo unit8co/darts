@@ -16,8 +16,8 @@ from darts.utils.missing_values import extract_subseries
 from darts.utils.ts_utils import retain_period_common_to_all
 from darts.utils.utils import (
     expand_arr,
-    freqs,
     generate_index,
+    infer_freq_intersection,
     n_steps_between,
     sample_from_quantiles,
 )
@@ -186,11 +186,11 @@ class TestUtils:
             ("2000-01-01", "2000-02-01", None, None, "MS", 2),
             ("2000-01-01", "2000-03-01", None, None, "MS", 3),
             # month end
-            ("2000-01-01", "2000-01-02", None, None, freqs["ME"], 0),
-            ("2000-01-31", "2000-02-29", None, None, freqs["ME"], 2),
+            ("2000-01-01", "2000-01-02", None, None, "ME", 0),
+            ("2000-01-31", "2000-02-29", None, None, "ME", 2),
             # 2 * months
             ("2000-01-01", "2000-01-01", None, None, "2MS", 1),
-            ("2000-01-01", "2000-02-11", None, "2000-01-01", "2MS", 1),
+            ("2000-01-01", "2000-02-11", None, "2000-02-01", "2MS", 1),
             ("2000-01-01", "2000-03-01", None, None, "2MS", 2),
             ("2000-01-01", "2000-05-01", None, None, "2MS", 3),
             # quarter
@@ -198,7 +198,7 @@ class TestUtils:
             # year
             ("2000-01-01", "2001-04-01", None, "2001-01-01", "YS", 2),
             # 2*year
-            ("2001-01-01", "2010-04-01", None, "2009-01-01", "2YS", 5),
+            ("2001-01-01", "2010-04-01", None, "2010-01-01", "2YS", 5),
             (0, -1, None, None, 1, 0),  # empty int index
             (0, -1, None, None, -1, 2),  # decreasing int index
             (0, 0, None, None, 1, 1),  # increasing int index
@@ -306,8 +306,8 @@ class TestUtils:
             ("2000-01-01", "2000-02-01", "MS", 2),
             ("2000-01-01", "2000-03-01", "MS", 3),
             # month end
-            ("2000-01-01", None, freqs["ME"], 0),
-            ("2000-01-31", "2000-02-29", freqs["ME"], 2),
+            ("2000-01-01", None, "ME", 0),
+            ("2000-01-31", "2000-02-29", "ME", 2),
             # 2 * months
             ("2000-01-01", "2000-01-01", "2MS", 1),
             ("2000-01-01", "2000-03-01", "2MS", 2),
@@ -390,8 +390,8 @@ class TestUtils:
             ("2000-01-01", "2000-02-01", "MS", 2),
             ("2000-01-01", "2000-03-01", "MS", 3),
             # month end
-            (None, "2000-01-01", freqs["ME"], 0),
-            ("2000-01-31", "2000-02-29", freqs["ME"], 2),
+            (None, "2000-01-01", "ME", 0),
+            ("2000-01-31", "2000-02-29", "ME", 2),
             # 2 * months
             ("2000-01-01", "2000-01-01", "2MS", 1),
             ("2000-01-01", "2000-03-01", "2MS", 2),
@@ -451,6 +451,61 @@ class TestUtils:
         assert idx.equals(idx_expected)
 
     @pytest.mark.parametrize(
+        "freq,other,expected",
+        [
+            (1, 1, 1),  # integer step
+            (1, 2, 2),
+            (3, 4, 12),
+            ("h", "h", "h"),  # same freq base (with fixed period)
+            ("h", "2h", "2h"),
+            ("3h", "4h", "12h"),
+            ("D", "D", "D"),  # same freq base (with fixed period)
+            ("D", "2D", "2D"),
+            ("3D", "4D", "12D"),
+            ("W-MON", "W-MON", "W-MON"),  # same freq base (no fixed period)
+            ("W-MON", "2W-MON", "2W-MON"),
+            ("3W-MON", "4W-MON", "12W-MON"),
+            ("2MS", "11MS", "22MS"),
+            (
+                "h",
+                "D",
+                "24h",
+            ),  # mixed bases but with fixed period (returns multiple of first freq)
+            ("D", "24h", "D"),
+            ("3h", "D", "24h"),
+            ("3h", "33min", "33h"),
+            ("33min", "3h", "1980min"),
+            ("D1h", "4h", "100h"),  # "D1h" gets converted to "25h" -> result in "100h"
+            ("4h", "D1h", "100h"),
+            (
+                "7D",
+                "W-MON",
+                "raises",
+            ),  # otherwise, raises with at least one non-fixed freq
+            ("W-MON", "W-TUE", "raises"),
+            ("h", "MS", "raises"),
+            ("B", "1h", "raises"),
+        ],
+    )
+    def test_freq_intersection(self, freq, other, expected):
+        if expected == "raises":
+            with pytest.raises(ValueError, match="Cannot find intersecting frequency"):
+                infer_freq_intersection(freq, other)
+            return
+
+        assert infer_freq_intersection(freq, other) == expected
+        if isinstance(freq, int):
+            index_freq = pd.RangeIndex(start=0, stop=freq * 1000, step=freq)
+            index_other = pd.RangeIndex(start=0, stop=other * 1000, step=other)
+            assert index_freq.intersection(index_other).step == expected
+        else:
+            index_freq = pd.date_range("2000-01-01", periods=1000, freq=freq)
+            index_other = pd.date_range("2000-01-01", periods=1000, freq=other)
+            if expected == "24h":
+                expected = "D"
+            assert index_freq.intersection(index_other).freq == expected
+
+    @pytest.mark.parametrize(
         "config",
         [
             # regular date offset frequencies
@@ -496,21 +551,21 @@ class TestUtils:
                 1,
             ),
             # month
-            ("2000-01-01", "2000-01-02", freqs["ME"], 0),
-            ("2000-01-01", "2000-01-01", freqs["ME"], 0),
-            ("2000-01-01", "2000-02-01", freqs["ME"], 1),
-            ("2000-01-01", "2000-03-01", freqs["ME"], 2),
+            ("2000-01-01", "2000-01-02", "ME", 0),
+            ("2000-01-01", "2000-01-01", "ME", 0),
+            ("2000-01-01", "2000-02-01", "ME", 1),
+            ("2000-01-01", "2000-03-01", "ME", 2),
             # 2 * months
-            ("2000-01-01", "2000-01-01", "2" + freqs["ME"], 0),
-            ("2000-01-01", "2000-02-11", "2" + freqs["ME"], 0),
-            ("2000-01-01", "2000-03-01", "2" + freqs["ME"], 1),
-            ("2000-01-01", "2000-05-01", "2" + freqs["ME"], 2),
+            ("2000-01-01", "2000-01-01", "2" + "ME", 0),
+            ("2000-01-01", "2000-02-11", "2" + "ME", 0),
+            ("2000-01-01", "2000-03-01", "2" + "ME", 1),
+            ("2000-01-01", "2000-05-01", "2" + "ME", 2),
             # quarter
-            ("2000-01-01", "2000-04-01", freqs["QE"], 1),
+            ("2000-01-01", "2000-04-01", "QE", 1),
             # year
-            ("2000-01-01", "2001-04-01", freqs["YE"], 1),
+            ("2000-01-01", "2001-04-01", "YE", 1),
             # 2*year
-            ("2000-01-01", "2010-04-01", "2" + freqs["YE"], 5),
+            ("2000-01-01", "2010-04-01", "2" + "YE", 5),
             # custom frequencies
             # business day
             (
