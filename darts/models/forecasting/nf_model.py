@@ -1,6 +1,6 @@
 """
 NeuralForecastModel
-------------------
+-------------------
 """
 
 from typing import Optional, TypedDict
@@ -89,7 +89,6 @@ IGNORED_NF_MODEL_PARAM_NAMES = {
 }
 
 
-# TODO: implement pseudo loss class to pass to `nf_model.loss`
 class _PseudoLoss(BasePointLoss):
     def __init__(self, likelihood: Optional[TorchLikelihood]):
         n_likelihood_params = likelihood.num_parameters if likelihood is not None else 1
@@ -206,25 +205,228 @@ class _PLForecastingModule(PLForecastingModule):
 
 
 class NeuralForecastModel(MixedCovariatesTorchModel):
-    """NeuralForecastModel is a wrapper for NeuralForecast models to be used in Darts.
-
-    Parameters
-    ----------
-    model
-        An instance of a NeuralForecast model (inheriting from `NeuralForecast.BaseModel`).
-    quantiles
-        Optionally, produce quantile predictions at `quantiles` levels when performing probabilistic forecasting
-        with `num_samples > 1` or `predict_likelihood_parameters=True`.
-    random_state
-        Controls the randomness for reproducible forecasting.
-    """
-
     def __init__(
         self,
         model: BaseModel,
+        output_chunk_shift: int = 0,
         use_static_covariates: bool = False,
         **kwargs,
     ):
+        """NeuralForecast Model.
+
+        Can be used to fit any `NeuralForecast` univariate or multivariate base model.
+        For a list of available base models,
+        see `NeuralForecast package <https://nixtlaverse.nixtla.io/neuralforecast/docs/capabilities/overview.html>`__.
+
+        This converts the `NeuralForecast` base model into a ``TorchForecastingModel`` and enable full Darts
+        functionality, such as covariate support, probabilistic forecasting, backtesting, etc.
+        See `Torch Forecasting Models User Guide <https://unit8co.github.io/darts/userguide/torch_forecasting_models.html>`__
+        for details and usage examples.
+
+        Our ``NeuralForecastModel`` has the following support, depending on the provided `NeuralForecast` base model:
+
+        - **Univariate forecasting**: Supported for any base model, univariate or multivariate.
+
+          - Simply set ``model`` to a base model instance when initializing ``NeuralForecastModel``,
+            e.g., ``model=KAN(input_size=..., h=...)``.
+
+          - For multivariate base models, you should set ``n_series`` in the base model to an arbitrary
+            positive integer as it is required by `NeuralForecast`,
+            e.g., ``model=TSMixerx(input_size=..., h=..., n_series=...)``.
+            However, it will be overridden internally by Darts when fitting to match the number of target components.
+
+        - **Multivariate forecasting**: Supported only if the base model is multivariate.
+
+        - **Past/future covariates**: Supported only if the base model supports exogenous historical/future variables,
+          respectively.
+
+        - **Static covariates**: Supported only if the base model supports exogenous static variables:
+
+          - To enable support, simply set ``use_static_covariates=True``.
+
+          - For multivariate base models, `NeuralForecast` requires static covariates to be the same across time
+            series, but may be different across target components.
+
+          - For univariate base models, static covariates can be different across time series.
+
+        - **Multiple time series**: Supported for any base model, univariate or multivariate.
+
+          - Simply pass a sequence of time series as ``series`` to :func:`fit()` and :func:`predict()`.
+
+        - **Loss function**: Supported for any base model, univariate or multivariate.
+
+          - Simply set ``loss_fn`` to a PyTorch loss function (default is ``torch.nn.MSELoss()``).
+
+        - **Probabilistic forecasting**: Supported for any base model, univariate or multivariate.
+
+          - Simply set ``likelihood`` to a :meth:`TorchLikelihood <darts.utils.likelihood_models.torch.TorchLikelihood>`
+            instance to be used for probabilistic forecasting.
+
+        Parameters
+        ----------
+        model
+            An instance of a `NeuralForecast` base model, e.g., ``KAN(input_size=..., h=...)``. Input and output chunk
+            lengths are set to match ``input_size`` and ``h`` of the base model, respectively.
+        output_chunk_shift
+            Must be set to 0 as `NeuralForecast` base models do not use output chunk shift. Default: `0`.
+        use_static_covariates
+            Whether to consider static covariates if supported by the base model. Default: `False`.
+            See **Static covariates** section above for details and caveats.
+        **kwargs
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
+
+        loss_fn
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
+            Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            A ``torchmetric.Metric`` or a ``MetricCollection`` used for evaluation. A full list of available metrics
+            can be found `here <https://torchmetrics.readthedocs.io/en/latest/>`__. Default: ``None``.
+        likelihood
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.torch.TorchLikelihood>` models to be used for
+            probabilistic forecasts. Default: ``None``.
+        optimizer_cls
+            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
+            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
+            will be used. Default: ``None``.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
+            to using a constant learning rate. Default: ``None``.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
+        use_reversible_instance_norm
+            Whether to use reversible instance normalization `RINorm` against distribution shift as shown in [1]_.
+            It is only applied to the features of the target series and not the covariates.
+        batch_size
+            Number of time series (input and output sequences) used in each training pass. Default: ``32``.
+        n_epochs
+            Number of epochs over which to train the model. Default: ``100``.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string ``"YYYY-mm-dd_HH_MM_SS_torch_model_run_PID"``, where the initial part
+            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            spawned at the same time by different processes to share the same model_name). E.g.,
+            ``"2021-06-14_09_53_32_torch_model_run_44607"``.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            Default: current working directory.
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            ``"{work_dir}/darts_logs/{model_name}/logs/"``. Default: ``False``.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.
+        force_reset
+            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded). Default: ``False``.
+        save_checkpoints
+            Whether to automatically save the untrained model and checkpoints from training.
+            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
+            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
+            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
+            :func:`save()` and loaded using :func:`load()`. Default: ``False``.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.dataprocessing.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                def encode_year(idx):
+                    return (idx.year - 1950) / 50
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'past': ['relative'], 'future': ['relative']},
+                    'custom': {'past': [encode_year]},
+                    'transformer': Scaler(),
+                    'tz': 'CET'
+                }
+            ..
+        random_state
+            Controls the randomness of the weights initialization and reproducible forecasting.
+        pl_trainer_kwargs
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            that performs the training, validation and prediction processes. These presets include automatic
+            checkpointing, tensorboard logging, setting the torch device and more.
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`__ for more information about the
+            supported kwargs. Default: ``None``.
+            Running on GPU(s) is also possible using ``pl_trainer_kwargs`` by specifying keys ``"accelerator",
+            "devices", and "auto_select_gpus"``. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+            dict:
+
+            - ``{"accelerator": "cpu"}`` for CPU,
+            - ``{"accelerator": "gpu", "devices": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+            - ``{"accelerator": "gpu", "devices": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+            For more info, see here:
+            `trainer flags
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags>`__,
+            and `training on multiple gpus
+            <https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_basic.html#train-on-multiple-gpus>`__.
+
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more information on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`__
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor="val_loss",
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={"callbacks": [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
+        show_warnings
+            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+            your forecasting use case. Default: ``False``.
+
+        References
+        ----------
+        .. [1] T. Kim et al. "Reversible Instance Normalization for Accurate Time-Series Forecasting against
+                Distribution Shift", https://openreview.net/forum?id=cGDAkQo1C0p
+
+        .. note::
+            HINT is not supported as it is not a `NeuralForecast` base model.
+        .. note::
+            Training-specific parameters of ``model`` such as ``loss``, ``learning_rate``, and ``hist_exog_list``
+            will be ignored as Darts manages them via ``TorchForecastingModel`` APIs. Only architectural
+            parameters, ``input_size``, and ``h`` in ``model`` are relevant and used.
+        .. note::
+            Under the hood, a new base model instance will be created with the relevant parameters from ``model``.
+            That means that ``model`` itself will not be trained or updated. Use :func:`nf_model()` to access the
+            base model instance that is being trained.
+        .. warning::
+            When static covariates are enabled for a multivariate base model, Darts will use the static covariates of
+            the first sample in each batch for compatibility. This may cause issues if you have multiple time series
+            with different static covariates. Please consider setting ``use_static_covariates=False`` to disable support
+            or setting ``batch_size=1`` to ensure that each batch only contains one time series.
+        """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
         # extract pytorch lightning module kwargs
@@ -233,6 +435,14 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         self.pl_module_params["input_chunk_length"] = model.input_size
         self.pl_module_params["output_chunk_length"] = model.h
         # NeuralForecast models do not use output_chunk_shift
+        if output_chunk_shift > 0:
+            raise_log(
+                ValueError(
+                    "NeuralForecast models do not use `output_chunk_shift`. "
+                    "Please set `output_chunk_shift=0` when initializing `NeuralForecastModel`."
+                ),
+                logger,
+            )
         self.pl_module_params["output_chunk_shift"] = 0
 
         self.nf_model_class = model.__class__
@@ -337,6 +547,16 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             is_multivariate=self.supports_multivariate,
             **pl_module_params,
         )
+
+    @property
+    def nf_model(self) -> BaseModel:
+        if not isinstance(self.model, _PLForecastingModule):
+            raise_log(
+                ValueError(
+                    "The underlying NeuralForecast model has not been created yet."
+                )
+            )
+        return self.model.nf
 
     @property
     def supports_multivariate(self) -> bool:
