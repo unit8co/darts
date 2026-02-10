@@ -586,11 +586,13 @@ def generate_index(
         freq = "D" if freq is None else freq
         freq = pd.tseries.frequencies.to_offset(freq) if isinstance(freq, str) else freq
 
+        # performance notes: rolling a timestamp is only costly if the timestamp does not intersect
+        # with the offset (frequency)
         if start is not None:
-            # roll `start` so that it intersects with `freq`
+            # adjust `start` so that it intersects with `freq`
             start = freq.rollforward(start) if freq.n >= 0 else freq.rollback(start)
-        elif end is not None:
-            # roll `end` so that it intersects with `freq`
+        if end is not None:
+            # adjust `end` so that it intersects with `freq`
             end = freq.rollback(end) if freq.n >= 0 else freq.rollforward(end)
 
         index = pd.date_range(
