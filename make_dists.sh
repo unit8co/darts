@@ -8,13 +8,10 @@ export PATH="/opt/homebrew/bin:$PATH"
 VERSION=$(grep '^version = ' pyproject.toml | head -1 | cut -d'"' -f2)
 
 echo "============================================"
-echo "Building Darts Packages v$VERSION"
+echo "Building Darts Package Version $VERSION"
 echo "============================================"
 echo ""
 
-# --- Build main darts package ---
-echo "[1/2] Building 'darts' package..."
-echo "--------------------------------------"
 rm -rf dist/ build/ *.egg-info/
 uv build
 echo "✓ Built darts package:"
@@ -26,7 +23,7 @@ echo "============================================"
 echo "Build Complete! Version $VERSION"
 echo "============================================"
 echo ""
-echo "Packages built:"
+echo "Package built:"
 ls -1 dist/
 echo ""
 echo "To upload to PyPI:"
