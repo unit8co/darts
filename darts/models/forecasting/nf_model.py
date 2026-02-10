@@ -22,6 +22,16 @@ containing all inputs. See `BaseModel._parse_windows()` and `BaseModel.training_
 to see how these inputs are being built and used.
 
 We thus define the expected keys and their types below:
+- `insample_y`: (B, L, C), historical target values in the input window.
+- `insample_mask`: (B, L), binary mask indicating available target values in `insample_y`.
+- `hist_exog`: (B, L, X) for univariate models or (B, X, L, C) for multivariate models,
+    historic exogenous variables in the input window (if any).
+- `futr_exog`: (B, L + H, F) for univariate models or (B, F, L + H, C) for multivariate models,
+    future exogenous variables in the input window (if any).
+- `stat_exog`: (B, C * S) for univariate models or (C, S) for multivariate models,
+    static exogenous variables (if any). For multivariate models, NeuralForecast expects `stat_exog`
+    to be shared across the batch dimension, but may be different across target components.
+    For univariate models, static exogenous variables can be different across time series.
 """
 from typing import Optional, TypedDict
 
@@ -44,8 +54,6 @@ logger = get_logger(__name__)
 class _WindowBatch(TypedDict):
     insample_y: torch.Tensor
     insample_mask: torch.Tensor
-    # outsample_y: Optional[torch.Tensor]
-    # outsample_mask: Optional[torch.Tensor]
     hist_exog: Optional[torch.Tensor]
     futr_exog: Optional[torch.Tensor]
     stat_exog: Optional[torch.Tensor]
@@ -87,6 +95,15 @@ IGNORED_NF_MODEL_PARAM_NAMES = {
 
 
 class _PseudoLoss(BasePointLoss):
+    """A pseudo loss class to create a compatible interface for NeuralForecast models that expect a loss function to
+    be specified, but the actual loss will be managed by Darts' `TorchForecastingModel`.
+
+    The key attribute here is `outputsize_multiplier`, which is set to the number of parameters required by the
+    likelihood model (e.g., 2 for Gaussian likelihood with mean and variance) or 1 if no likelihood is specified.
+    This allows the NeuralForecast base model to output the correct number of parameters for probabilistic forecasting.
+
+    """
+
     def __init__(self, likelihood: Optional[TorchLikelihood]):
         n_likelihood_params = likelihood.num_parameters if likelihood is not None else 1
         super().__init__(outputsize_multiplier=n_likelihood_params)
@@ -195,7 +212,7 @@ class _PLForecastingModule(PLForecastingModule):
                 hist_exog = hist_exog.repeat(1, 1, 1, self.n_targets)
 
         # process future covariates if supported and provided
-        if x_future is not None:
+        if x_future is not None and self.future_slice is not None:
             # `futr_exog`: (B, L + H, F)
             futr_exog = torch.cat([x_past[:, :, self.future_slice], x_future], dim=1)
             if self.is_multivariate:
@@ -497,6 +514,11 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
+        if not isinstance(model, BaseModel):
+            raise ValueError(
+                "`model` must be a NeuralForecast base model imported from `neuralforecast.models`."
+            )
+
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
         # assign input/output chunk lengths
@@ -632,6 +654,7 @@ class NeuralForecastModel(MixedCovariatesTorchModel):
             raise_log(
                 ValueError(
                     "The underlying NeuralForecast model has not been created yet."
+                    "Make sure to call `fit()` before accessing `nf_model`."
                 )
             )
         return self.model.nf
