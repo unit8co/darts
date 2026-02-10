@@ -55,8 +55,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ steps.bump_version.outputs.new_version }}
-          release_name: Darts ${{ github.event.inputs.bump_type }} ${{ steps.bump_version.outputs.new_version }}
+          tag_name: ${{ steps.bump_version.outputs.current-version }}
+          release_name: Darts ${{ github.event.inputs.bump_type }} ${{ steps.bump_version.outputs.current-version }}
           draft: false
           body_path: .github/RELEASE_TEMPLATE/release_body.md
 

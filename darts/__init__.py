@@ -19,7 +19,7 @@ from darts.timeseries import (
     to_group_dataframe,
 )
 
-__version__ = "0.41.0"
+__version__ = "0.40.0"
 
 __all__ = [
     "TimeSeries",
