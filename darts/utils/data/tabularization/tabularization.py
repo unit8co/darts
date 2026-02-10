@@ -24,8 +24,7 @@ from darts.utils.utils import n_steps_between
 
 logger = get_logger(__name__)
 
-NP_2_OR_ABOVE = int(np.__version__.split(".")[0]) >= 2
-STABLE_SORT_KWARGS = {"stable": True} if NP_2_OR_ABOVE else {"kind": "stable"}
+STABLE_SORT_KWARGS = {"stable": True}
 
 ArrayOrArraySequence = Union[np.ndarray, Sequence[np.ndarray]]
 
@@ -1353,7 +1352,9 @@ def _create_lagged_data_by_intersecting_times(
                 new_start = shared_times[0] if add_to_start else None
                 new_end = shared_times[-1] if add_to_end else None
                 num_prepended = (
-                    (time_index_i[0] - shared_times[0]) // series_i.freq
+                    n_steps_between(
+                        start=shared_times[0], end=time_index_i[0], freq=series_i.freq
+                    )
                     if add_to_start
                     else 0
                 )

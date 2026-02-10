@@ -4,20 +4,19 @@ import pytest
 from darts import TimeSeries
 from darts.models import ExponentialSmoothing
 from darts.utils import timeseries_generation as tg
-from darts.utils.utils import freqs
 
 
 class TestExponentialSmoothing:
-    series = tg.sine_timeseries(length=100, freq=freqs["h"])
+    series = tg.sine_timeseries(length=100, freq="h")
 
     @pytest.mark.parametrize(
         "freq_string,expected_seasonal_periods",
         [
             ("D", 7),
-            (freqs["h"], 24),
-            (freqs["ME"], 12),
+            ("h", 24),
+            ("ME", 12),
             ("W", 52),
-            (freqs["QE"], 4),
+            ("QE", 4),
             ("B", 5),
         ],
     )
@@ -38,7 +37,7 @@ class TestExponentialSmoothing:
 
     def test_multiple_fit(self):
         """Test whether a model that inferred a seasonality period before will do it again for a new series"""
-        series1 = tg.sine_timeseries(length=100, freq=freqs["ME"])
+        series1 = tg.sine_timeseries(length=100, freq="ME")
         series2 = tg.sine_timeseries(length=100, freq="D")
         model = ExponentialSmoothing()
         model.fit(series1)
@@ -94,7 +93,7 @@ class TestExponentialSmoothing:
 
     def test_random_errors(self):
         """Test whether random_errors parameter is correctly passed to simulate()"""
-        series = tg.sine_timeseries(length=100, freq="H")
+        series = tg.sine_timeseries(length=100, freq="h")
         model = ExponentialSmoothing(random_state=42)
         model.fit(series)
         pred = model.predict(n=10, num_samples=10, random_state=42)
@@ -108,7 +107,7 @@ class TestExponentialSmoothing:
 
     def test_error(self):
         """Test whether error parameter is correctly passed to simulate()"""
-        series = tg.sine_timeseries(length=100, freq="H")
+        series = tg.sine_timeseries(length=100, freq="h")
         model = ExponentialSmoothing(random_state=42)
         model.fit(series)
         pred = model.predict(n=10, num_samples=10, random_state=42)

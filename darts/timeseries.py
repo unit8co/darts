@@ -78,6 +78,7 @@ from darts.utils.utils import (
     dataframe_col_to_time_index,
     expand_arr,
     generate_index,
+    infer_freq_intersection,
     n_steps_between,
 )
 
@@ -418,9 +419,9 @@ class TimeSeries:
 
             # Calling astype is costly even when there's no change...
             if not cols_to_cast.empty:
-                static_covariates = static_covariates.astype(
-                    {col: self.dtype for col in cols_to_cast}, copy=False
-                )
+                static_covariates = static_covariates.astype({
+                    col: self.dtype for col in cols_to_cast
+                })
 
         # prepare metadata
         if metadata is not None and not isinstance(metadata, dict):
@@ -1517,9 +1518,7 @@ class TimeSeries:
 
         static_covariates_ = parsed.pop("static_covariates", None)
         if static_covariates_ is not None and static_covariates is None:
-            static_covariates = pd.read_json(
-                StringIO(json.dumps(static_covariates_)), orient="split"
-            )
+            static_covariates = pd.DataFrame(**static_covariates_)
 
         hierarchy_ = parsed.pop("hierarchy", None)
         if hierarchy is None:
@@ -2757,6 +2756,13 @@ class TimeSeries:
             return self[start:end]
         else:
             time_index = self.time_index.intersection(other.time_index)
+            # frequency is lost when len(time_index) < 3
+            if (
+                0 < len(time_index) < 3
+                and isinstance(time_index, pd.DatetimeIndex)
+                and time_index.freq is None
+            ):
+                time_index.freq = infer_freq_intersection(self.freq, other.freq)
             return self[time_index]
 
     def slice_intersect_values(self, other: Self, copy: bool = False) -> np.ndarray:

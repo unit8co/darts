@@ -10,7 +10,7 @@ import pytest
 
 from darts import TimeSeries, concatenate, to_group_dataframe
 from darts.dataprocessing.transformers import BoxCox, Scaler
-from darts.tests.conftest import POLARS_AVAILABLE
+from darts.tests.conftest import PANDAS_30_OR_GREATER, POLARS_AVAILABLE
 from darts.timeseries import (
     DEFAULT_GLOBAL_STATIC_COV_NAME,
     METADATA_TAG,
@@ -789,9 +789,11 @@ class TestTimeSeriesStaticCovariate:
         assert (ts.static_covariates_values(copy=False) != -1.0).all()
 
         # changing values of view should change original DataFrame
-        vals = ts.static_covariates_values(copy=False)
-        vals[:] = -1.0
-        assert (ts.static_covariates_values(copy=False) == -1.0).all()
+        # In pandas 3.0+, DataFrame.values returns a read-only array
+        if not PANDAS_30_OR_GREATER:
+            vals = ts.static_covariates_values(copy=False)
+            vals[:] = -1.0
+            assert (ts.static_covariates_values(copy=False) == -1.0).all()
 
         ts = ts.with_static_covariates(None)
         assert ts.static_covariates is None
