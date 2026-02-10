@@ -39,7 +39,7 @@ jobs:
 
       - name: "Bump version, commit, and tag"
         id: bump_version
-        uses: callowayproject/bump-my-version@v0.27.0
+        uses: callowayproject/bump-my-version@v1.2
         with:
           args: ${{ github.event.inputs.bump_type }}
           github-token: ${{ secrets.RELEASE_WORKFLOW_TOKEN_NEW_FINE_GRAINED }}
